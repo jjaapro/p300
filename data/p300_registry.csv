@@ -1,0 +1,14 @@
+sleeve_key,id,name,bucket,role,asset,direction,weight_target_pct,weight_floor_pct,weight_ceiling_pct,firing_rate_yr,typical_active_pct_days,validated_sharpe,validated_mdd,validated_window_start,validated_window_end,execution,ai_oversight,corr_to_btc_bh
+ema_1w_btc,S-002,EMA 1W 5/21 L/S BTC,A,slow_trend_anchor,BTC,L/S,18.0,0.0,25.0,4,85,0.75,0.300,2020-01-01,2026-04-12,"spot long, perp short (funding rule)",veto_allowed_on_regime_shift,+0.105
+gold_mom_dynamic,GOLD,Mom-Dynamic GOLD (PAXG),A,crisis_hedge,PAXG,L,20.0,15.0,55.0,12,100,0.95,0.180,2020-01-01,2026-04-12,"spot PAXG on MEXC",regime_read_informs_rotation,+0.077
+stable_yield,STABLE,Stablecoin yield floor,A,reserve_plus_yield,USDT,earn,8.0,5.0,10.0,0,100,1.00,0.005,2020-01-01,2026-04-12,"MEXC earn / sUSDe",none,-0.000
+s099_r4_btc,S-099,R4 BTC Mon+Wed Wk1-2,B,tactical_long,BTC,L,12.0,0.0,12.0,48,13,0.50,0.100,2020-01-01,2026-04-12,"Tue 18:00 → Mon 18:00 UTC + Tue 18:00 → Wed 18:00 UTC (24h each)",veto_on_adverse_fomc_cpi,+0.430
+s001_r4_eth,S-001,R4 ETH Wed Wk1-2,B,tactical_long,ETH,L,10.0,0.0,10.0,24,7,0.40,0.150,2020-01-01,2026-04-17,"Tue 20:00 → Wed 23:00 UTC (27h)",veto_on_adverse_fomc_cpi,+0.235
+s003_adx_ls,S-003,ADX Regime Flip L/S,B,trend_follower,BTC,L/S,15.0,0.0,15.0,6,40,0.91,0.100,2020-01-01,2026-04-12,"daily ADX flip, SL-10%",size_down_on_event_week,-0.016
+s078_carry,S-078,Delta-neutral funding carry,B,continuous_yield,BTC,delta_neutral,8.0,0.0,8.0,365,80,7.25,0.013,2020-01-01,2026-04-12,"spot long + perp short, balance daily",veto_on_funding_regime_break,+0.023
+s096_v4_thu_bear,S-096 V4,Thu Bear CPI/NFP-adjacent,B,event_short,BTC+ETH,S,6.0,0.0,6.0,12,3,1.42,0.090,2020-01-01,2026-04-17,"Thursday 00:00 UTC, filter CPI/NFP ±1 excluding OPEX ±1",confirm_event_proximity,-0.224
+pdo_retouch_btc,PDO-L-RF (BTC),PDO Retouch Long BTC regime-filtered,B,intraday_mean_rev_long,BTC,L,6.0,0.0,6.0,15,5,0.40,0.060,2020-01-01,2026-04-12,"gap>=2%, hold 24h, PDO touch, regime filter -10%",size_down_on_heavy_event_week,+0.055
+pdo_retouch_eth,PDO-L-RF (ETH),PDO Retouch Long ETH regime-filtered,B,intraday_mean_rev_long,ETH,L,5.0,0.0,5.0,22,6,0.27,0.080,2020-01-01,2026-04-17,"gap>=2%, hold 4h, PDO touch, regime filter -10%",size_down_on_heavy_event_week,+0.078
+cpr_btc,CPR (BTC),Contrarian Positioning Reversal BTC,B,squeeze_long_experimental,BTC,L,3.0,0.0,3.0,3,1,0.30,0.050,2021-01-01,2026-04-12,"funding+L/S bottom 20% of 180d + close>EMA20 + EMA20>EMA50, BB upper target, 5% stop, 15d time",high_conviction_filter_required,+0.011
+cpr_eth,CPR (ETH),Contrarian Positioning Reversal ETH,B,squeeze_long_experimental,ETH,L,2.0,0.0,2.0,2,1,0.14,0.080,2021-01-01,2026-04-17,"funding+L/S bottom 20% of 180d + close>EMA20 + EMA20>EMA50",high_conviction_filter_required,+0.071
+reserve_cash,RESERVE,Cash reserve,C,margin_buffer,USDT,cash,5.0,5.0,10.0,0,100,0.00,0.000,2020-01-01,2026-04-12,"cash, not allocated",none,+0.000
