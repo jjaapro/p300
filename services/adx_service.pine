@@ -1,0 +1,151 @@
+//@version=5
+// ═════════════════════════════════════════════════════════════════════════════
+// S-003 ADX Regime Flip — Long/Short Trend Follower with 10% Hard SL
+//
+// Source: P-200 v1.3 diversifier (20% weight).
+// Rationale: ADX(14) > 20 indicates trending regime. Direction chosen by
+// close vs EMA(50). Flat when ADX < 20 (consolidation). Hard SL at -10%.
+//
+// Realistic expectation (per Fundamental Law audit 2026-04-18):
+//   Headline daily-series Sh ~10.45 is BREADTH-INFLATED by a factor of 11.5x.
+//   Per-trade bootstrap gives honest annualized IR 0.91 [0.51, 1.51].
+//   Live expectation: plausible, but modest. ~4 trades/year.
+//
+// Recommended chart: BTCUSDT 1D (daily close decides the regime).
+// ═════════════════════════════════════════════════════════════════════════════
+
+strategy("S-003 ADX Regime Flip (SL-10)",
+         overlay=true,
+         default_qty_type=strategy.percent_of_equity,
+         default_qty_value=100,
+         commission_type=strategy.commission.percent,
+         commission_value=0.05,  // 5bp per side; 10bp round-trip
+         process_orders_on_close=true,
+         calc_on_every_tick=false)
+
+// ─── Inputs ────────────────────────────────────────────────────────────────
+adx_len     = input.int(14,   "ADX period")
+adx_high    = input.float(25, "ADX entry threshold (cross up triggers regime)",
+                         minval=10, maxval=50, step=1)
+adx_low     = input.float(20, "ADX exit threshold (cross down flattens)",
+                         minval=5, maxval=40, step=1)
+ema_len     = input.int(50,   "Direction EMA length")
+trend_ema_len   = input.int(150, "Trend filter EMA length (0 to disable)",
+                            minval=0, maxval=400, step=10,
+                            tooltip="If > 0, blocks entries that disagree with this MA. " +
+                                    "LONG only when close > EMA(N), SHORT only when close < EMA(N). " +
+                                    "Bitstamp BTC/USD 2018-2024 in-sample optimum = 150 (tied 150-160). " +
+                                    "Walk-forward 2024-2026 OOS confirms: drops 9 losers + 1 winner " +
+                                    "(net: +800pp total return vs no filter). Set to 0 for raw S-003.")
+sl_pct      = input.float(10, "Hard SL %", minval=0, step=1)
+allow_short = input.bool(true,  "Enable SHORT regime")
+show_bg     = input.bool(true,  "Highlight trend-regime bars")
+
+// ─── ADX computation ───────────────────────────────────────────────────────
+up       = ta.change(high)
+down     = -ta.change(low)
+plus_dm  = na(up)   ? na : (up   > down and up   > 0 ? up   : 0)
+minus_dm = na(down) ? na : (down > up   and down > 0 ? down : 0)
+
+tr_rma   = ta.rma(ta.tr, adx_len)
+plus_di  = 100 * ta.rma(plus_dm,  adx_len) / tr_rma
+minus_di = 100 * ta.rma(minus_dm, adx_len) / tr_rma
+dx       = 100 * math.abs(plus_di - minus_di) / (plus_di + minus_di + 1e-9)
+adx_val  = ta.rma(dx, adx_len)
+
+// ─── State machine (exact match of Python backtest_adx_regime.py) ─────────
+// Python rule:
+//   1. was_low starts False. Sets to True whenever ADX < adx_low.
+//   2. ENTRY fires when was_low AND ADX >= adx_high. Direction is chosen
+//      AT THIS MOMENT from close vs EMA(50). was_low resets to False.
+//   3. EXIT fires when in a position AND ADX < adx_low.
+//   4. Direction does NOT flip on EMA cross mid-trend. Only a new cross-up
+//      event can flip direction (closes existing, opens opposite).
+ema50 = ta.ema(close, ema_len)
+trend_ema = trend_ema_len > 0 ? ta.ema(close, trend_ema_len) : na
+
+var bool was_low = false
+// Persist current position direction for regime-flip detection (Pine's
+// strategy.position_size alone doesn't tell us the original entry intent
+// after a reversal). We mirror it from the strategy state explicitly.
+var string cur_dir = na
+
+if adx_val < adx_low
+    was_low := true
+
+entry_event = was_low and adx_val >= adx_high
+exit_event  = not na(cur_dir) and adx_val < adx_low
+new_dir = close > ema50 ? "long" : "short"
+
+// Trend filter: with trend_ema_len > 0, the ADX entry must agree with the
+// longer-MA direction. LONG requires close > trend_ema, SHORT requires
+// close < trend_ema. Bitstamp BTC 2018-2026 backtest: drops 9 losers + 1
+// winner (the 9 losers are mostly counter-trend whipsaw shorts in 2021/2024
+// bull markets that hit -10% SL). Net: total return ~+1551% -> ~+2370%.
+trend_ok = trend_ema_len <= 0 or na(trend_ema) or
+           (new_dir == "long"  and close > trend_ema) or
+           (new_dir == "short" and close < trend_ema)
+
+// ─── Entry / Exit logic (matches Python ordering: exit first, then entry) ─
+// Python processes: if ADX < low AND in-position -> exit. Then: if cross-up
+// event -> entry (with flip if direction differs from current).
+
+// EXIT: ADX fell below low_thresh. Flatten.
+if exit_event
+    strategy.close_all(comment="ADX < 20")
+    cur_dir := na
+
+// ENTRY: was_low AND ADX >= high_thresh AND trend filter agrees.
+// Consume the was_low flag so the same cross doesn't re-fire — applies to
+// both fired AND filter-blocked attempts (one entry attempt per compression
+// cycle, matching Python backtest semantics).
+if entry_event
+    was_low := false
+    if trend_ok
+        // If we're already positioned opposite, flip. Same-direction re-entry
+        // is impossible here because exit_event would have cleared cur_dir first.
+        if not na(cur_dir) and cur_dir != new_dir
+            strategy.close_all(comment="regime flip")
+            cur_dir := na
+
+        if na(cur_dir)
+            if new_dir == "long"
+                strategy.entry("S003_LONG",  strategy.long)
+                cur_dir := "long"
+            else if allow_short
+                strategy.entry("S003_SHORT", strategy.short)
+                cur_dir := "short"
+            // else: short is disabled -> skip entry, leave cur_dir na
+
+// Hard SL on whichever leg is open.
+if strategy.position_size > 0 and sl_pct > 0
+    sl_long = strategy.position_avg_price * (1.0 - sl_pct / 100.0)
+    strategy.exit("S003_LONG_SL",  from_entry="S003_LONG",  stop=sl_long)
+
+if strategy.position_size < 0 and sl_pct > 0
+    sl_short = strategy.position_avg_price * (1.0 + sl_pct / 100.0)
+    strategy.exit("S003_SHORT_SL", from_entry="S003_SHORT", stop=sl_short)
+
+// ─── Visualisation ─────────────────────────────────────────────────────────
+plot(ema50, title="EMA50", color=color.orange)
+plot(trend_ema_len > 0 ? trend_ema : na, title=str.format("EMA{0} trend filter", trend_ema_len),
+     color=color.new(color.purple, 0), linewidth=2)
+
+// Highlight bars where the strategy is currently in a position.
+in_long  = cur_dir == "long"
+in_short = cur_dir == "short"
+bgcolor(show_bg and in_long  ? color.new(color.green, 90) : na, title="In LONG regime")
+bgcolor(show_bg and in_short ? color.new(color.red,   90) : na, title="In SHORT regime")
+
+fired_long_entry  = entry_event and trend_ok and new_dir == "long"
+fired_short_entry = entry_event and trend_ok and new_dir == "short" and allow_short
+blocked_entry     = entry_event and not trend_ok  // shown so you can see what the filter rejects
+plotshape(fired_long_entry,  title="Long entry",  style=shape.triangleup,
+          location=location.belowbar, color=color.green, size=size.small)
+plotshape(fired_short_entry, title="Short entry", style=shape.triangledown,
+          location=location.abovebar, color=color.red,   size=size.small)
+plotshape(blocked_entry, title="Trend-filter block", style=shape.xcross,
+          location=location.belowbar, color=color.new(color.gray, 30), size=size.tiny)
+plotshape(exit_event, title="Regime exit",
+          style=shape.xcross, location=location.absolute,
+          color=color.gray, size=size.tiny)

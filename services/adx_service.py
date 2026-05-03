@@ -25,6 +25,8 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
+from services import clock
+
 log = logging.getLogger("dashboard.adx_service")
 
 TRADER_DB = Path(__file__).resolve().parent.parent / "data" / "trader.db"
@@ -35,22 +37,58 @@ ADX_PERIOD = 14
 ADX_LOW_THRESH = 20.0
 ADX_HIGH_THRESH = 25.0
 EMA_LEN = 50
-WARMUP_BARS = max(ADX_PERIOD * 3, EMA_LEN + 1)
+# Trend filter EMA length. Set to 0 to disable. Bitstamp BTC/USD walk-forward
+# 2018-2024 in-sample optimum tied at 150 / 160 (+1181% with SL=12% vs +747%
+# baseline); 2024-2026 OOS confirms the choice (+50% vs baseline +42%).
+# Filter rule: LONG requires close > EMA(N) AND close > EMA(50);
+#              SHORT requires close < EMA(N) AND close < EMA(50).
+# Catches counter-trend whipsaws (mostly bull-market shorts in 2021/2024
+# that hit -10% SL). 2026-04-26 LONG signal that fired at $78,660 with
+# close < EMA(150) $79,325 is the live example.
+TREND_EMA_LEN = 150
+WARMUP_BARS = max(ADX_PERIOD * 3, EMA_LEN + 1, TREND_EMA_LEN + 1)
+
+# State-machine version of was_low (matches the Pine reference exactly).
+# Replaces a rolling 20-bar lookback variant that shipped originally — that
+# version had two pathologies: (a) flip-flop in chop, since the lookback
+# stayed armed for ~20 bars after every <20 reading and re-fired on each
+# direction change, and (b) it BLOCKED legitimate flips during sustained
+# trends because once 20 bars passed without an ADX<20 reading, no entry
+# could fire. Bitstamp 8.7y backtest: rolling-lookback +175% / DD -89.6%
+# vs stateful +924% / DD -40.1% (both with 10% SL). See
+# bitstamp_adx_backtest.py for the calibration vs the TradingView Pine
+# reference. — 2026-05-01.
+
+# Round-trip transaction cost (5bp each leg on BTC perps — taker estimate).
+COST_BP_RT = 10.0
+
+# Dedup the trend-filter-block log message — the daily signal is stable for
+# the whole UTC day, so without this dedup we'd log the same block 1440
+# times/day in live (one per minute tick). Keyed by variant_id, value is the
+# (signal_date, close, trend_ema) tuple last logged.
+_trend_block_logged: dict[str, tuple] = {}
 
 
 # ─── Data loading + indicator computation ────────────────────────────────────
 
 def _load_btc_daily_candles(limit_days: int = 200) -> list[dict]:
     """Return last N days of BTC 1D candles as [{ts, dt, open, high, low, close}].
-    Uses cd_futures_ohlcv, aggregated to daily. Newest last."""
+    Uses cd_spot_binance (BTC spot 1h), aggregated to daily. Newest last.
+
+    Switched 2026-05-01 from cd_futures_ohlcv (perp) to cd_spot_binance (spot)
+    to match TradingView's default "BTCUSDT 1D" feed. The perp/spot ADX delta
+    can be 1-2 points on calm tape (e.g. 2026-04-27 spot crossed 25 while perp
+    only hit 24.2), enough to flip entry decisions. All execution prices are
+    already spot (price_feed reads btc_1m); this aligns the signal source."""
     from collections import defaultdict
     days_back = int(limit_days + WARMUP_BARS + 10)
-    since_ts = int(datetime.now(timezone.utc).timestamp()) - days_back * 86400
+    upper_ts = clock.now_ts()
+    since_ts = upper_ts - days_back * 86400
     con = sqlite3.connect(str(TRADER_DB))
     rows = con.execute(
-        "SELECT timestamp, open, high, low, close FROM cd_futures_ohlcv "
-        "WHERE timestamp >= ? ORDER BY timestamp",
-        (since_ts,),
+        "SELECT timestamp, open, high, low, close FROM cd_spot_binance "
+        "WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp",
+        (since_ts, upper_ts),
     ).fetchall()
     con.close()
     days = defaultdict(list)
@@ -59,8 +97,14 @@ def _load_btc_daily_candles(limit_days: int = 200) -> list[dict]:
             continue
         dt = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d")
         days[dt].append((ts, o, h, l, c))
+    # Drop today's (still-forming) daily bar so the signal only uses
+    # closed daily candles — matches the backtest convention and prevents
+    # intraday flapping on partial ADX/EMA reads.
+    today = clock.now_utc().strftime("%Y-%m-%d")
     out = []
     for d in sorted(days.keys()):
+        if d == today:
+            continue
         bars = days[d]
         out.append({
             "ts": bars[0][0], "dt": d,
@@ -134,16 +178,40 @@ def _calc_adx(candles: list[dict], period: int) -> list[float]:
 # ─── Signal evaluation ──────────────────────────────────────────────────────
 
 def _current_signal(candles: list[dict]) -> dict | None:
-    """Evaluate today's S-003 signal state.
+    """Evaluate today's S-003 signal state via the stateful was_low machine.
+
+    State rules (exact port of the Pine reference):
+      1. was_low starts False at the first warmed-up bar.
+      2. was_low := True on every bar where ADX < ADX_LOW_THRESH.
+      3. Entry event fires when was_low AND ADX >= ADX_HIGH_THRESH; on that
+         bar was_low is consumed (set False). Direction = close vs EMA(50)
+         at the moment of consumption.
+      4. TREND FILTER (when TREND_EMA_LEN > 0): the entry direction must
+         additionally agree with close vs EMA(TREND_EMA_LEN). LONG requires
+         close > trend_ema; SHORT requires close < trend_ema. If the filter
+         rejects, was_low is still consumed (one entry attempt per cycle).
+      5. Exit fires when in-position AND ADX < ADX_LOW_THRESH (also re-arms
+         was_low for the next entry).
+
+    `entry_sig` is set ONLY when the latest candle (i = n-1, the most recent
+    closed daily bar) IS the consumption bar AND the trend filter agrees.
+    This means the live tick fires exactly once per regime change, mirroring
+    Pine's strategy.entry().
 
     Returns a dict with:
-      date        — latest candle's UTC date
-      adx         — latest ADX reading
-      close       — latest close
-      ema         — latest EMA(50)
-      was_low     — did ADX sink below LOW_THRESH in the lookback window?
-      entry_sig   — 'long' | 'short' | None (signal to open a new position)
-      exit_sig    — True if ADX dropped below LOW_THRESH (close any open pos)
+      date            — latest candle's UTC date
+      adx             — latest ADX reading
+      close           — latest close
+      ema             — latest EMA(50)
+      trend_ema       — latest EMA(TREND_EMA_LEN), or None if disabled
+      was_low_pending — True if a fresh ADX<low has been observed but not
+                        yet consumed by an entry (informational only)
+      entry_sig       — 'long'|'short'|None — fires only on the consumption
+                        bar AND trend filter agreement
+      entry_blocked_by_trend — True when an entry would have fired but was
+                        rejected by the trend filter (log-only, useful for
+                        dashboard observation)
+      exit_sig        — True if latest ADX < LOW_THRESH (caller closes pos)
     None if insufficient history.
     """
     if len(candles) < WARMUP_BARS + 2:
@@ -151,28 +219,54 @@ def _current_signal(candles: list[dict]) -> dict | None:
     closes = [c["close"] for c in candles]
     adx = _calc_adx(candles, ADX_PERIOD)
     ema = _calc_ema(closes, EMA_LEN)
+    trend_ema = _calc_ema(closes, TREND_EMA_LEN) if TREND_EMA_LEN > 0 else None
     i = len(candles) - 1
     if math.isnan(adx[i]) or math.isnan(ema[i]):
         return None
+    if trend_ema is not None and math.isnan(trend_ema[i]):
+        # Not enough history for the trend filter yet — treat the same as a
+        # filter-disabled run so we don't silently block every entry.
+        trend_ema = None
 
-    # Look back across recent history for "was_low" evidence (last 20 bars).
-    was_low = any(
-        not math.isnan(adx[j]) and adx[j] < ADX_LOW_THRESH
-        for j in range(max(0, i - 20), i + 1)
-    )
+    # Walk forward from the start of warmup, tracking was_low and the last
+    # entry-event bar. State machine is deterministic, so this is equivalent
+    # to maintaining was_low across ticks — just recomputed each call, which
+    # keeps the service stateless w.r.t. the DB.
+    was_low = False
+    last_entry_idx = -1
+    last_entry_dir: str | None = None
+    last_entry_blocked = False
+    for j in range(len(candles)):
+        if math.isnan(adx[j]) or math.isnan(ema[j]):
+            continue
+        if adx[j] < ADX_LOW_THRESH:
+            was_low = True
+        if was_low and adx[j] >= ADX_HIGH_THRESH:
+            new_dir = "long" if closes[j] > ema[j] else "short"
+            blocked = False
+            if trend_ema is not None and not math.isnan(trend_ema[j]):
+                if new_dir == "long" and closes[j] <= trend_ema[j]:
+                    blocked = True
+                elif new_dir == "short" and closes[j] >= trend_ema[j]:
+                    blocked = True
+            last_entry_idx = j
+            last_entry_dir = None if blocked else new_dir
+            last_entry_blocked = blocked
+            was_low = False  # consume regardless of block — one attempt/cycle
 
-    entry_sig = None
+    entry_sig = last_entry_dir if last_entry_idx == i else None
+    blocked_now = last_entry_blocked if last_entry_idx == i else False
     exit_sig = adx[i] < ADX_LOW_THRESH
-    if was_low and adx[i] >= ADX_HIGH_THRESH:
-        entry_sig = "long" if closes[i] > ema[i] else "short"
 
     return {
         "date": candles[i]["dt"],
         "adx": round(adx[i], 2),
         "close": closes[i],
         "ema": round(ema[i], 2),
-        "was_low": was_low,
+        "trend_ema": (round(trend_ema[i], 2) if trend_ema is not None else None),
+        "was_low_pending": was_low,
         "entry_sig": entry_sig,
+        "entry_blocked_by_trend": blocked_now,
         "exit_sig": exit_sig,
     }
 
@@ -189,17 +283,21 @@ def _next_sj_id(con: sqlite3.Connection) -> str:
     return f"SJ-{num:04d}"
 
 
-def _get_open_adx_trade(variant_id: str) -> dict | None:
+def _get_open_adx_trades(variant_id: str) -> list[dict]:
+    """Return ALL open ADX trades for this variant (newest first). The
+    strategy's invariant is single-open; this returns a list so that if
+    prior-version code left multiple opens, every close path sweeps them
+    all rather than leaking trades."""
     con = sqlite3.connect(str(DASH_DB))
     con.row_factory = sqlite3.Row
-    row = con.execute(
+    rows = con.execute(
         "SELECT * FROM trades WHERE strategy_variant = ? "
         "AND strategy = 'ADX' AND status = 'open' "
-        "ORDER BY actual_entry_time DESC LIMIT 1",
+        "ORDER BY actual_entry_time DESC",
         (variant_id,),
-    ).fetchone()
+    ).fetchall()
     con.close()
-    return dict(row) if row else None
+    return [dict(r) for r in rows]
 
 
 def _adx_trade_exists_today(variant_id: str, today_utc: str) -> bool:
@@ -227,7 +325,7 @@ def _open_adx_shadow(variant: dict, direction: str, entry_price: float,
                     trade_db.get_config("paper_account_usdt") or 10000)
     size_usdt = capital * (allocation_pct / 100.0) * leverage
     qty = size_usdt / entry_price if entry_price > 0 else 0
-    now_iso = datetime.now(timezone.utc).isoformat()
+    now_iso = clock.now_utc().isoformat()
     con = sqlite3.connect(str(DASH_DB))
     try:
         tid = _next_sj_id(con)
@@ -249,22 +347,39 @@ def _open_adx_shadow(variant: dict, direction: str, entry_price: float,
 
 
 def _close_adx_shadow(trade_id: str, exit_price: float, reason: str) -> None:
-    now_iso = datetime.now(timezone.utc).isoformat()
+    now = clock.now_utc()
+    now_iso = now.isoformat()
     con = sqlite3.connect(str(DASH_DB))
     con.row_factory = sqlite3.Row
     row = con.execute(
-        "SELECT entry_price, qty, size_usdt, direction, notes FROM trades WHERE id=?",
+        "SELECT entry_price, qty, size_usdt, direction, actual_entry_time, notes "
+        "FROM trades WHERE id=?",
         (trade_id,),
     ).fetchone()
     if row is None:
         con.close()
         return
     if row["direction"] == "LONG":
-        pnl_usdt = (exit_price - row["entry_price"]) * row["qty"]
+        price_pnl = (exit_price - row["entry_price"]) * row["qty"]
     else:
-        pnl_usdt = (row["entry_price"] - exit_price) * row["qty"]
+        price_pnl = (row["entry_price"] - exit_price) * row["qty"]
+    # Round-trip cost (entry+exit taker fees).
+    cost_usdt = row["size_usdt"] * (COST_BP_RT / 10000.0)
+    # Accrued perp funding over the hold window (BTC only for S-003).
+    from services.funding_util import accrued_funding_pct
+    try:
+        entry_dt = datetime.fromisoformat(row["actual_entry_time"])
+        if entry_dt.tzinfo is None:
+            entry_dt = entry_dt.replace(tzinfo=timezone.utc)
+        funding_pct = accrued_funding_pct("BTC", entry_dt, now, row["direction"])
+    except (TypeError, ValueError):
+        funding_pct = 0.0
+    funding_usdt = row["size_usdt"] * funding_pct / 100.0
+    pnl_usdt = price_pnl - cost_usdt + funding_usdt
     pnl_pct = (pnl_usdt / row["size_usdt"] * 100) if row["size_usdt"] > 0 else 0
-    notes_suffix = f"\nADX_EXIT: {reason}"
+    notes_suffix = (f"\nADX_EXIT: {reason}; "
+                    f"fees={COST_BP_RT:.0f}bp RT, "
+                    f"funding={funding_pct:+.3f}%")
     con.execute("""
         UPDATE trades SET status='closed', actual_exit_time=?, exit_price=?,
             pnl_usdt=?, pnl_pct=?, resolution='filled_closed',
@@ -273,6 +388,13 @@ def _close_adx_shadow(trade_id: str, exit_price: float, reason: str) -> None:
     """, (now_iso, exit_price, pnl_usdt, pnl_pct, notes_suffix, trade_id))
     con.commit()
     con.close()
+    from services.trade_db import format_close_summary
+    log.info("[adx] " + format_close_summary(
+        trade_id=trade_id, asset="BTC", direction=row["direction"],
+        entry_price=row["entry_price"], exit_price=exit_price,
+        pnl_pct=pnl_pct, pnl_usdt=pnl_usdt,
+        entry_time_iso=row["actual_entry_time"], exit_time_iso=now_iso,
+        reason=reason))
 
 
 # ─── Public tick ─────────────────────────────────────────────────────────────
@@ -290,6 +412,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     on the first tick of a new day when a signal changes.
     """
     from services.price_feed import _get_current_price
+    from services.risk_config import effective_price_move_sl_pct
 
     alloc_pct = float(sleeve_cfg.get("weight_pct", 0.0))
     params = sleeve_cfg.get("params") or {}
@@ -297,73 +420,111 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     # Per-sleeve leverage injected by variant_engine._tick_composition.
     # Defaults to 1.0 when called outside the composition tick (tests, etc.).
     leverage = float(sleeve_cfg.get("_effective_leverage", 1.0))
+    # Translate the configured SL through the active semantic (price-move vs
+    # margin-loss). In 'price_move' mode this is a no-op; in 'margin' mode
+    # the threshold is divided by leverage so a 10% margin loss becomes a
+    # 2% price-move trigger at k=5x.
+    sl_price_thresh = effective_price_move_sl_pct(stop_loss_pct, leverage)
 
     candles = _load_btc_daily_candles()
     sig = _current_signal(candles)
     if sig is None:
         return {"status": "warmup", "reason": "insufficient history"}
 
-    today = sig["date"]
-    open_trade = _get_open_adx_trade(variant["id"])
+    # "today" is the wall-clock UTC day — NOT sig["date"] (which is yesterday,
+    # since today's partial daily candle is dropped). Using sig["date"] here
+    # was the cause of the accumulated-open-trades bug: the idempotency gate
+    # was looking for "entries on yesterday" and never found one, so every
+    # hourly tick opened another trade on the real today.
+    today = clock.now_utc().strftime("%Y-%m-%d")
+    open_trades = _get_open_adx_trades(variant["id"])
 
-    # Step 1: stop-loss check on any open position (independent of daily signal)
-    if open_trade:
-        current_price = _get_current_price("BTC") or sig["close"]
-        entry_price = float(open_trade["entry_price"])
-        if open_trade["direction"] == "LONG":
+    # Step 1: stop-loss sweep — iterate ALL open ADX trades for this variant.
+    # Even though the invariant is single-open, we sweep the full set so a
+    # stray leaked trade from a prior-version run gets cleaned up instead of
+    # ignored forever.
+    current_price = _get_current_price("BTC") or sig["close"]
+    still_open: list[dict] = []
+    for tr in open_trades:
+        entry_price = float(tr["entry_price"])
+        if tr["direction"] == "LONG":
             live_pnl_pct = (current_price - entry_price) / entry_price * 100
         else:
             live_pnl_pct = (entry_price - current_price) / entry_price * 100
-        if live_pnl_pct <= -stop_loss_pct:
-            _close_adx_shadow(open_trade["id"], current_price,
+        if live_pnl_pct <= -sl_price_thresh:
+            _close_adx_shadow(tr["id"], current_price,
                               f"stop_loss {live_pnl_pct:.2f}%")
-            log.info(f"[adx {variant['id']}] SL hit: closed {open_trade['id']} "
-                     f"{open_trade['direction']} at {current_price:.2f} "
-                     f"({live_pnl_pct:.2f}%)")
-            open_trade = None
+            log.info(f"[adx {variant['id']}] SL hit: closed {tr['id']} "
+                     f"{tr['direction']} at {current_price:.2f} "
+                     f"({live_pnl_pct:.2f}% px, threshold={sl_price_thresh:.2f}%)")
+        else:
+            still_open.append(tr)
+    open_trades = still_open
 
-    # Step 2: once-per-day signal check (daily cadence)
+    # Step 2: once-per-day signal check (daily cadence).
+    # Uses the wall-clock today so hourly ticks within the same day don't
+    # re-evaluate entries after an action.
     if _adx_trade_exists_today(variant["id"], today):
         return {"status": "already_fired_today", "date": today}
 
-    # Exit signal: ADX back below LOW_THRESH — close at current price
-    if open_trade and sig["exit_sig"]:
-        current_price = _get_current_price("BTC") or sig["close"]
-        _close_adx_shadow(open_trade["id"], current_price, "ADX < 20")
-        log.info(f"[adx {variant['id']}] ADX exit: closed {open_trade['id']} "
-                 f"at {current_price:.2f}")
-        open_trade = None
+    # Step 3: Exit signal — close ALL remaining open ADX trades if ADX < 20.
+    if open_trades and sig["exit_sig"]:
+        for tr in open_trades:
+            _close_adx_shadow(tr["id"], current_price, "ADX < 20")
+            log.info(f"[adx {variant['id']}] ADX exit: closed {tr['id']} "
+                     f"at {current_price:.2f}")
+        open_trades = []
 
-    # Entry signal: ADX crossed into trend
+    # Step 4: Entry signal — direction flip closes any opposite-direction
+    # trades; new entry only fires when the open-trade count is zero.
+    if sig.get("entry_blocked_by_trend"):
+        # Diagnostic: cross-up event happened today but the EMA(150) trend
+        # filter rejected the direction. Log so the decision is visible in
+        # the dashboard / log files even though no trade is opened.
+        sig_key = (sig["date"], round(sig["close"], 2), sig["trend_ema"])
+        if _trend_block_logged.get(variant["id"]) != sig_key:
+            _trend_block_logged[variant["id"]] = sig_key
+            log.info(f"[adx {variant['id']}] trend-filter BLOCKED entry: "
+                     f"close={sig['close']:.2f} vs EMA({TREND_EMA_LEN})="
+                     f"{sig['trend_ema']} (ADX={sig['adx']}, EMA50={sig['ema']})")
+        return {"status": "trend_filter_block",
+                "date": today, "adx": sig["adx"],
+                "close": sig["close"], "trend_ema": sig["trend_ema"]}
+
     if sig["entry_sig"]:
         new_dir = sig["entry_sig"].upper()
-        # Reversal: close existing opposite-direction trade first
-        if open_trade and open_trade["direction"] != new_dir:
-            current_price = _get_current_price("BTC") or sig["close"]
-            _close_adx_shadow(open_trade["id"], current_price, "direction flip")
-            log.info(f"[adx {variant['id']}] reversal: closed {open_trade['id']} "
-                     f"{open_trade['direction']} -> new {new_dir}")
-            open_trade = None
-        # Open new position at current price (live shadow doesn't wait for next bar)
-        if open_trade is None:
-            entry_price = _get_current_price("BTC") or sig["close"]
+        # Close every trade whose direction disagrees with the new signal.
+        for tr in list(open_trades):
+            if tr["direction"] != new_dir:
+                _close_adx_shadow(tr["id"], current_price, "direction flip")
+                log.info(f"[adx {variant['id']}] reversal: closed {tr['id']} "
+                         f"{tr['direction']} -> new {new_dir}")
+                open_trades.remove(tr)
+        # Single-open invariant: only open if NO trades remain.
+        if not open_trades:
+            entry_price = current_price
             reason = {
                 "trigger": "S-003_ADX_entry",
                 "variant_id": variant["id"],
                 "sleeve": "ADX",
                 "adx": sig["adx"],
                 "ema50": sig["ema"],
+                "trend_ema": sig.get("trend_ema"),
+                "trend_ema_len": TREND_EMA_LEN,
                 "close": sig["close"],
-                "direction_rule": f"close {'>' if new_dir == 'LONG' else '<'} EMA(50)",
+                "direction_rule": (f"close {'>' if new_dir == 'LONG' else '<'} EMA(50) "
+                                   f"AND close {'>' if new_dir == 'LONG' else '<'} EMA({TREND_EMA_LEN})"),
                 "regime": "unknown",
                 "stop_loss_pct": stop_loss_pct,
+                "sl_semantic_price_thresh_pct": sl_price_thresh,
             }
             tid = _open_adx_shadow(variant, new_dir, entry_price, "BTC",
                                    alloc_pct, reason, leverage=leverage)
             log.info(f"[adx {variant['id']}] opened {tid} BTC {new_dir} @ "
-                     f"{entry_price:.2f} (ADX={sig['adx']}, EMA={sig['ema']}, "
+                     f"{entry_price:.2f} (ADX={sig['adx']}, EMA50={sig['ema']}, "
+                     f"EMA{TREND_EMA_LEN}={sig.get('trend_ema')}, "
                      f"alloc={alloc_pct}%, k={leverage}x)")
             return {"status": "opened", "trade_id": tid, "direction": new_dir}
 
     return {"status": "no_action", "date": today, "adx": sig["adx"],
-            "has_open_position": open_trade is not None}
+            "open_count": len(open_trades)}
