@@ -30,13 +30,7 @@ adx_high    = input.float(25, "ADX entry threshold (cross up triggers regime)",
 adx_low     = input.float(20, "ADX exit threshold (cross down flattens)",
                          minval=5, maxval=40, step=1)
 ema_len     = input.int(50,   "Direction EMA length")
-trend_ema_len   = input.int(150, "Trend filter EMA length (0 to disable)",
-                            minval=0, maxval=400, step=10,
-                            tooltip="If > 0, blocks entries that disagree with this MA. " +
-                                    "LONG only when close > EMA(N), SHORT only when close < EMA(N). " +
-                                    "Bitstamp BTC/USD 2018-2024 in-sample optimum = 150 (tied 150-160). " +
-                                    "Walk-forward 2024-2026 OOS confirms: drops 9 losers + 1 winner " +
-                                    "(net: +800pp total return vs no filter). Set to 0 for raw S-003.")
+trend_ema_len   = input.int(150, "Trend filter EMA length (0 to disable)", minval=0, maxval=400, step=10, tooltip="If > 0, blocks entries that disagree with this MA. LONG only when close > EMA(N), SHORT only when close < EMA(N). Bitstamp BTC/USD 2018-2024 in-sample optimum = 150 (tied 150-160). Walk-forward 2024-2026 OOS confirms: drops 9 losers + 1 winner (net: +800pp total return vs no filter). Set to 0 for raw S-003.")
 sl_pct      = input.float(10, "Hard SL %", minval=0, step=1)
 allow_short = input.bool(true,  "Enable SHORT regime")
 show_bg     = input.bool(true,  "Highlight trend-regime bars")
@@ -128,7 +122,7 @@ if strategy.position_size < 0 and sl_pct > 0
 
 // ─── Visualisation ─────────────────────────────────────────────────────────
 plot(ema50, title="EMA50", color=color.orange)
-plot(trend_ema_len > 0 ? trend_ema : na, title=str.format("EMA{0} trend filter", trend_ema_len),
+plot(trend_ema_len > 0 ? trend_ema : na, title="Trend EMA filter",
      color=color.new(color.purple, 0), linewidth=2)
 
 // Highlight bars where the strategy is currently in a position.
