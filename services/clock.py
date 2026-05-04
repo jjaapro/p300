@@ -9,6 +9,7 @@ Simulated mode:   set_simulated_now(T) then now_utc() returns T. All services
 
 Services must use:
   - clock.now_utc()      — datetime (UTC)
+  - clock.now_iso()       — ISO 8601 string (for trades.actual_entry_time etc.)
   - clock.now_ts()        — unix seconds (for cd_futures_ohlcv, cd_funding_rate)
   - clock.now_ts_ms()     — unix ms     (for btc_1m, eth_1m)
   - clock.is_simulated()  — feature flag (e.g., staleness checks)
@@ -29,6 +30,14 @@ def now_utc() -> datetime:
     if _simulated_now is not None:
         return _simulated_now
     return datetime.now(timezone.utc)
+
+
+def now_iso() -> str:
+    """ISO 8601 representation of the current UTC time. Used wherever a
+    sleeve writes a timestamp column as text (trades.actual_entry_time,
+    actual_exit_time, etc.). Equivalent to ``now_utc().isoformat()`` —
+    exists as a one-call shortcut so callers don't repeat the chain."""
+    return now_utc().isoformat()
 
 
 def now_ts() -> int:

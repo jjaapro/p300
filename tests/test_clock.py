@@ -52,3 +52,21 @@ def test_now_ts_and_ms_are_coherent():
     target = datetime(2023, 6, 1, 8, 0, tzinfo=timezone.utc)
     clock.set_simulated_now(target)
     assert clock.now_ts_ms() == clock.now_ts() * 1000
+
+
+def test_now_iso_matches_now_utc_isoformat():
+    """now_iso() is a one-call shortcut for now_utc().isoformat()."""
+    target = datetime(2024, 5, 4, 14, 30, 45, tzinfo=timezone.utc)
+    clock.set_simulated_now(target)
+    assert clock.now_iso() == target.isoformat()
+    assert clock.now_iso() == clock.now_utc().isoformat()
+    clock.set_simulated_now(None)
+
+
+def test_now_iso_in_live_mode_returns_parseable_iso_string():
+    """In live mode, now_iso() returns a parseable ISO 8601 string close to wall clock."""
+    clock.set_simulated_now(None)
+    parsed = datetime.fromisoformat(clock.now_iso())
+    real = datetime.now(timezone.utc)
+    assert parsed.tzinfo is not None
+    assert abs((parsed - real).total_seconds()) < 2.0

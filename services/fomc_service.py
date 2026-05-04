@@ -229,7 +229,7 @@ def _upsert_observer_decision(fomc_date: str, eval_result: dict,
               json.dumps(eval_result.get("expected_action_meta") or {}),
               eval_result["fear_greed"], eval_result["fear_greed_bucket"],
               entry_dt.isoformat(), exit_dt.isoformat(),
-              clock.now_utc().isoformat()))
+              clock.now_iso()))
         con.commit()
     finally:
         con.close()

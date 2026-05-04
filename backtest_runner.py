@@ -178,7 +178,7 @@ def mark_remaining_at_end(variant_id: str) -> int:
         price = _get_current_price(t["asset"])
         if price is None:
             log.warning(f"[end-mark] no price for {t['asset']} at clock "
-                        f"{clock.now_utc().isoformat()} — {t['id']} left open")
+                        f"{clock.now_iso()} — {t['id']} left open")
             continue
         close_fn = _load_close_fn(t["strategy"])
         if close_fn is not None:
@@ -264,7 +264,7 @@ def tick_replay_variant(variant: dict) -> None:
         try:
             dispatcher(variant, sleeve_with_k)
         except Exception:
-            log.exception(f"{strategy_id} dispatch error at {clock.now_utc().isoformat()}")
+            log.exception(f"{strategy_id} dispatch error at {clock.now_iso()}")
 
 
 # ─── NAV + metrics ────────────────────────────────────────────────────────────

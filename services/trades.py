@@ -127,7 +127,7 @@ def open_shadow_trade(*, variant: dict, sleeve_name: str,
     size_usdt = capital * (allocation_pct / 100.0) * leverage
     qty = size_usdt / entry_price if entry_price > 0 else 0.0
 
-    now_iso = clock.now_utc().isoformat()
+    now_iso = clock.now_iso()
     exit_iso = (scheduled_exit_dt.isoformat() if scheduled_exit_dt is not None
                 else _NO_SCHEDULED_EXIT_ISO)
     if regime_value is None:

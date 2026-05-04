@@ -136,7 +136,7 @@ def _create_shadow_trade(
                     trade_db.get_config("paper_account_usdt") or "10000")
     size_usdt = capital * (allocation_pct / 100.0) * leverage
     qty = size_usdt / entry_price if entry_price > 0 else 0
-    now_iso = clock.now_utc().isoformat()
+    now_iso = clock.now_iso()
 
     con = sqlite3.connect(db)
     con.row_factory = sqlite3.Row
@@ -216,7 +216,7 @@ def _close_shadow_trade(trade_id: str, exit_price: float) -> None:
     import sqlite3
     from pathlib import Path
     db = str(Path(__file__).resolve().parent.parent / "data" / "dashboard.db")
-    now_iso = clock.now_utc().isoformat()
+    now_iso = clock.now_iso()
     con = sqlite3.connect(db)
     con.row_factory = sqlite3.Row
     row = con.execute(

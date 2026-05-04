@@ -52,7 +52,7 @@ def _already_computed_today(variant_id: str, date_iso: str) -> bool:
 def _write_daily_return(variant_id: str, date_iso: str, return_pct: float,
                         regime: str) -> None:
     con = sqlite3.connect(str(db.DASH_DB))
-    now_iso = clock.now_utc().isoformat()
+    now_iso = clock.now_iso()
     con.execute(
         "INSERT OR REPLACE INTO variant_daily_returns "
         "(variant_id, date, return_1x_pct, source, regime, created_at) "
