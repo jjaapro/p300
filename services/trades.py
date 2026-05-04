@@ -33,10 +33,9 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from services import clock
+from services import db
 
 log = logging.getLogger("dashboard.trades")
-
-DASH_DB = Path(__file__).resolve().parent.parent / "data" / "dashboard.db"
 
 # Standard round-trip taker fee on a single perp leg, in basis points.
 DEFAULT_COST_BP_RT = 10.0
@@ -103,7 +102,7 @@ def open_shadow_trade(*, variant: dict, sleeve_name: str,
     if regime_value is None:
         regime_value = reason.get("regime", "unknown")
 
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     try:
         tid = _next_sj_id(con)
         con.execute("""
@@ -194,7 +193,7 @@ def persist_close(trade_id: str, exit_price: float, exit_time_iso: str,
     BEFORE the close (so callers can log entry-side details), or None if
     no row matched the trade_id.
     """
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     try:
         row = con.execute(
@@ -234,7 +233,7 @@ def close_perp_trade(trade_id: str, exit_price: float, reason: str,
     Reads the trade row, computes PnL via ``compute_perp_close``, persists,
     and logs a one-line close summary tagged with the sleeve_name.
     """
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     try:
         row = con.execute(
@@ -289,7 +288,7 @@ def close_carry_trade(trade_id: str, exit_price: float, reason: str,
     assumed zero (delta-neutral). The short-perp leg's funding accrual is
     computed as ``services.funding.accrued_pct(BTC, entry, now, "SHORT")``.
     """
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     try:
         row = con.execute(

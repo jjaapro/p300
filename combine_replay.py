@@ -36,8 +36,8 @@ sys.path.insert(0, str(REPO))
 
 from services import variant_registry  # noqa: E402
 from jplus import simulate as core_sim  # noqa: E402
+from services import db
 
-DASH_DB = REPO / "data" / "dashboard.db"
 LIVE_VARIANT_ID = "p300_aggressive_v2_v1_0"
 
 W_CORE = 0.50
@@ -48,7 +48,7 @@ W_CASH = 0.00
 def load_tactical_returns(variant_id: str) -> dict[str, float]:
     """Read {date_iso: return_1x_pct} from variant_daily_returns for the
     given tactical replay variant."""
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     rows = con.execute(
         "SELECT date, return_1x_pct FROM variant_daily_returns "
         "WHERE variant_id = ? AND source = 'replay' ORDER BY date",
@@ -61,7 +61,7 @@ def load_tactical_returns(variant_id: str) -> dict[str, float]:
 def ensure_variant(variant_id: str, short_name: str, notes: str,
                    capital: float = 10_000.0) -> None:
     """Idempotent: create the variant row if missing."""
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     cur = con.cursor()
     existing = cur.execute(
         "SELECT id FROM variants WHERE id = ?", (variant_id,),
@@ -97,7 +97,7 @@ def ensure_variant(variant_id: str, short_name: str, notes: str,
 def write_daily_returns(variant_id: str, rows: list[tuple[str, float]]) -> None:
     """Persist daily returns to variant_daily_returns (source='replay')."""
     now_iso = datetime.now(timezone.utc).isoformat()
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     rows_full = [(variant_id, d, r, "replay", None, now_iso)
                  for d, r in rows]
     con.executemany("""

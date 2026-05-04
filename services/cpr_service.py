@@ -32,11 +32,9 @@ from pathlib import Path
 import numpy as np
 
 from services import clock
+from services import db
 
 log = logging.getLogger(__name__)
-
-DASH_DB = Path(__file__).resolve().parent.parent / "data" / "dashboard.db"
-TRADER_DB = Path(__file__).resolve().parent.parent / "data" / "trader.db"
 
 COST_BP_RT = 10.0
 STOP_PCT = 0.05
@@ -75,7 +73,7 @@ def _load_daily_closes(asset: str) -> tuple[list[str], np.ndarray, np.ndarray, n
     table = f"{asset.lower()}_1m"
     upper_ms = clock.now_ts_ms()
     since_ms = upper_ms - _DAILY_LOOKBACK_DAYS * 86400_000
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     rows = con.execute(
         f"SELECT open_time, open, high, low, close FROM {table} "
         f"WHERE open_time >= ? AND open_time <= ? ORDER BY open_time",
@@ -133,7 +131,7 @@ def _load_ls_ratio_daily(asset: str) -> dict[str, float]:
     if cached is not None:
         return cached
     upper_ts = clock.now_ts()
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     rows = con.execute(
         "SELECT date(timestamp,'unixepoch'), ratio FROM ca_long_short_ratio "
         "WHERE asset=? AND timestamp <= ? ORDER BY timestamp",
@@ -239,7 +237,7 @@ def _evaluate_today(asset: str) -> dict | None:
 def _get_open_cpr_trades(variant_id: str, asset: str) -> list[dict]:
     """All open CPR trades for (variant, asset), newest first. Invariant is
     single-open; sweep the full list on close paths."""
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     rows = con.execute(
         "SELECT * FROM trades WHERE strategy_variant=? AND strategy='CPR' "
@@ -252,7 +250,7 @@ def _get_open_cpr_trades(variant_id: str, asset: str) -> list[dict]:
 
 def _cpr_action_today(variant_id: str, asset: str, today_utc: str) -> bool:
     """Any CPR action for this variant+asset today (open or close)?"""
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     row = con.execute(
         "SELECT 1 FROM trades WHERE strategy_variant=? AND strategy='CPR' AND asset=? "
         "AND (actual_entry_time LIKE ? OR actual_exit_time LIKE ?) LIMIT 1",

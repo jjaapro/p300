@@ -221,12 +221,11 @@ def test_self_sweep_closes_past_exit_trade(tmp_path, monkeypatch):
     con.commit()
     con.close()
 
-    # Redirect DASH_DB to tmp; stub price + funding feeds. Note: services.trades
-    # owns the close-path SQL after the 2026-05-04 refactor, so its DASH_DB
-    # constant must be patched too.
-    monkeypatch.setattr(fomc_service, "DASH_DB", db)
-    from services import trades as trades_module
-    monkeypatch.setattr(trades_module, "DASH_DB", db)
+    # Redirect DASH_DB to tmp; stub price + funding feeds. Single source of
+    # truth: services.db.DASH_DB is read via attribute lookup by every consumer
+    # (fomc_service, trades, etc.), so this single patch reaches everyone.
+    from services import db as _db_mod
+    monkeypatch.setattr(_db_mod, "DASH_DB", db)
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 43000.0)
     from services import funding
     monkeypatch.setattr(funding, "accrued_pct", lambda *a, **k: 0.0)
@@ -279,7 +278,8 @@ def test_self_sweep_no_op_before_exit_time(tmp_path, monkeypatch):
     con.commit()
     con.close()
 
-    monkeypatch.setattr(fomc_service, "DASH_DB", db)
+    from services import db as _db_mod
+    monkeypatch.setattr(_db_mod, "DASH_DB", db)
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 43000.0)
 
     # Clock at 12:00 UTC — well before exit_time (19:30 UTC)

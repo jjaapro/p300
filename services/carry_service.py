@@ -28,11 +28,9 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 from services import clock
+from services import db
 
 log = logging.getLogger("dashboard.carry_service")
-
-TRADER_DB = Path(__file__).resolve().parent.parent / "data" / "trader.db"
-DASH_DB = Path(__file__).resolve().parent.parent / "data" / "dashboard.db"
 
 # S-078 V2 filtered canonical params (match backtest_tail_harvester)
 FR_WINDOW_DAYS = 7
@@ -64,7 +62,7 @@ def _load_recent_daily_funding(days: int = 30) -> list[dict]:
     funding_by_day = funding.daily_sums_pct("BTC", since_ts, upper_ts,
                                              complete_only=True)
 
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     spot_rows = con.execute(
         "SELECT timestamp, close FROM cd_spot_binance "
         "WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp",
@@ -151,7 +149,7 @@ def _get_open_carry_trades(variant_id: str) -> list[dict]:
     """Return ALL open CARRY trades for this variant (newest first). Strategy
     invariant is single-open; sweep the full list on close paths so any stray
     legacy trades get cleaned up instead of ignored."""
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     rows = con.execute(
         "SELECT * FROM trades WHERE strategy_variant = ? AND strategy = 'CARRY' "
@@ -164,7 +162,7 @@ def _get_open_carry_trades(variant_id: str) -> list[dict]:
 
 def _carry_action_today(variant_id: str, today_utc: str) -> bool:
     """Has a CARRY open/close already happened for this variant today?"""
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     row = con.execute(
         "SELECT 1 FROM trades WHERE strategy_variant = ? AND strategy = 'CARRY' "
         "AND (actual_entry_time LIKE ? OR actual_exit_time LIKE ?) LIMIT 1",

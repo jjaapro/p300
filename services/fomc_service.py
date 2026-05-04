@@ -50,13 +50,11 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from services import clock
+from services import db
 
 log = logging.getLogger("p300.fomc")
 
 REPO = Path(__file__).resolve().parent.parent
-TRADER_DB = REPO / "data" / "trader.db"
-DASH_DB = REPO / "data" / "dashboard.db"
-
 ET = ZoneInfo("America/New_York")
 
 # Trade window (minutes from FOMC announcement)
@@ -70,7 +68,7 @@ WINDOW_TOL_MIN = 1
 
 def init_schema() -> None:
     """Create fomc_observer table if missing. Idempotent."""
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     try:
         con.execute("""
             CREATE TABLE IF NOT EXISTS fomc_observer (
@@ -102,7 +100,7 @@ def init_schema() -> None:
 def _remaining_2026_meetings_after(date_str: str) -> int:
     """Count FOMC dates in scheduled_events strictly AFTER `date_str`,
     within calendar year 2026."""
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     try:
         n = con.execute("""
             SELECT COUNT(*) FROM scheduled_events
@@ -186,7 +184,7 @@ def next_fomc_date(now_utc: datetime, lookahead_days: int = 60) -> str | None:
     None if no upcoming FOMC in the window."""
     today = now_utc.date()
     horizon = today + timedelta(days=lookahead_days)
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     try:
         row = con.execute("""
             SELECT date FROM scheduled_events
@@ -201,7 +199,7 @@ def next_fomc_date(now_utc: datetime, lookahead_days: int = 60) -> str | None:
 # ─── Observer recording ──────────────────────────────────────────────────────
 
 def _has_observer_record(fomc_date: str) -> bool:
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     try:
         return con.execute(
             "SELECT 1 FROM fomc_observer WHERE fomc_date = ?",
@@ -214,7 +212,7 @@ def _upsert_observer_decision(fomc_date: str, eval_result: dict,
                                 announcement: datetime) -> None:
     """Idempotent insert of the decision row. P&L fields filled later."""
     init_schema()
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     try:
         entry_dt = announcement + timedelta(minutes=ENTRY_OFFSET_MIN)
         exit_dt = announcement + timedelta(minutes=EXIT_OFFSET_MIN)
@@ -238,7 +236,7 @@ def _upsert_observer_decision(fomc_date: str, eval_result: dict,
 
 
 def _record_entry_price(fomc_date: str, price: float) -> None:
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     try:
         con.execute("UPDATE fomc_observer SET entry_price = ? "
                     "WHERE fomc_date = ? AND entry_price IS NULL",
@@ -249,7 +247,7 @@ def _record_entry_price(fomc_date: str, price: float) -> None:
 
 
 def _record_exit_price(fomc_date: str, price: float) -> None:
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     con.row_factory = sqlite3.Row
     try:
         row = con.execute("SELECT entry_price FROM fomc_observer "
@@ -302,7 +300,7 @@ def tick_observer() -> dict:
     # Phase 2: entry-price snapshot at T-10h
     target_entry = announcement + timedelta(minutes=ENTRY_OFFSET_MIN)
     if abs((now - target_entry).total_seconds()) <= WINDOW_TOL_MIN * 60:
-        con = sqlite3.connect(str(TRADER_DB))
+        con = sqlite3.connect(str(db.TRADER_DB))
         con.row_factory = sqlite3.Row
         try:
             row = con.execute(
@@ -369,7 +367,7 @@ def _close_fomc_shadow(trade_id: str, exit_price: float, reason: str) -> None:
 def _has_fomc_trade(variant_id: str, fomc_date: str) -> bool:
     """True if a FOMC trade for this (variant, fomc_date) already exists."""
     import sqlite3
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     try:
         # Idempotent on entry_time (which we set to T-10h; a second open
         # at the same minute would be a duplicate).
@@ -392,7 +390,7 @@ def _sweep_stuck_opens(variant_id: str) -> int:
     import sqlite3
     from services.price_feed import get_current_price
     now = clock.now_utc()
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     try:
         rows = con.execute(
@@ -519,7 +517,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
 def get_decisions(limit: int = 20) -> list[dict]:
     """Return recent observer rows, newest first. For health checks / dashboards."""
     init_schema()
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     con.row_factory = sqlite3.Row
     try:
         rows = con.execute(

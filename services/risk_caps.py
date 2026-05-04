@@ -25,10 +25,9 @@ from __future__ import annotations
 import logging
 import sqlite3
 from pathlib import Path
+from services import db
 
 log = logging.getLogger("dashboard.risk_caps")
-
-DASH_DB = Path(__file__).resolve().parent.parent / "data" / "dashboard.db"
 
 # Per-variant spec override keys (read from variant.spec.allocator_notes).
 _DEFAULT_MAX_NET_BTC_PCT = 15.0
@@ -38,7 +37,7 @@ def _open_btc_long_alloc_pct(variant_id: str) -> float:
     """Sum of allocation_pct across currently-open LONG-BTC trades from the
     BTC-capped sleeves (PDO_RETOUCH, CPR). Pre-leverage percentage of capital.
     """
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     row = con.execute(
         "SELECT COALESCE(SUM(allocation_pct), 0) FROM trades "
         "WHERE strategy_variant = ? AND status = 'open' "

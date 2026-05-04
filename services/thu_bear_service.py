@@ -41,11 +41,9 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 from services import clock
+from services import db
 
 log = logging.getLogger("dashboard.thu_bear_service")
-
-DASH_DB = Path(__file__).resolve().parent.parent / "data" / "dashboard.db"
-TRADER_DB = Path(__file__).resolve().parent.parent / "data" / "trader.db"
 
 # Round-trip taker fee estimate (5bp entry + 5bp exit) on BTC/ETH perps.
 COST_BP_RT = 10.0
@@ -91,7 +89,7 @@ def _load_event_windows() -> dict[str, set[str]]:
     include: set[str] = set()
     exclude: set[str] = set()
     try:
-        con = sqlite3.connect(str(TRADER_DB))
+        con = sqlite3.connect(str(db.TRADER_DB))
         for kind, bucket in [(V4_INCLUDE_EVENT_TYPES, include),
                               (V4_EXCLUDE_EVENT_TYPES, exclude)]:
             qmarks = ",".join("?" for _ in kind)
@@ -159,7 +157,7 @@ def _get_regime_for_prev_day(today_utc: datetime) -> str | None:
 
 def _thu_bear_trade_today(variant_id: str, today_utc: str, asset: str) -> dict | None:
     """Return today's THU_BEAR trade for this variant + asset, if any (pending/open/closed)."""
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     row = con.execute(
         "SELECT * FROM trades WHERE strategy_variant = ? AND strategy = 'THU_BEAR' "
@@ -174,7 +172,7 @@ def _get_open_thu_bear_trades(variant_id: str, asset: str) -> list[dict]:
     """Return ALL open THU_BEAR trades for (variant, asset), newest first.
     Needed so SL/exit sweeps reach trades left open by previous Thursdays
     rather than only the current Thursday's entry."""
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     rows = con.execute(
         "SELECT * FROM trades WHERE strategy_variant = ? AND strategy = 'THU_BEAR' "

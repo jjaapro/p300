@@ -33,10 +33,9 @@ import sqlite3
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from services import db
 
 REPO = Path(__file__).resolve().parent
-TRADER_DB = REPO / "data" / "trader.db"
-DASH_DB = REPO / "data" / "dashboard.db"
 UNFILLABLE_PATH = REPO / "data" / "known_unfillable.json"
 VARIANT_ID = "p300_aggressive_v2_v1_0"
 
@@ -119,7 +118,7 @@ def _gap_is_unfillable(gap_start: int, gap_end: int,
 
 def check_databases() -> None:
     print("\n=== Databases ===")
-    for name, path in [("trader.db", TRADER_DB), ("dashboard.db", DASH_DB)]:
+    for name, path in [("trader.db", db.TRADER_DB), ("dashboard.db", db.DASH_DB)]:
         if not path.exists():
             _fail(name, f"missing at {path}", 1)
         # Open/close to verify readable
@@ -140,7 +139,7 @@ def check_trader_tables() -> None:
         ("ca_long_short_ratio", "timestamp", "BTC long/short ratio",     86_400 * 2),  # 48h (refreshed by binance_feed)
         ("scheduled_events",    "date",      "static event calendar",    None),
     ]
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     tables = {r[0] for r in con.execute(
         "SELECT name FROM sqlite_master WHERE type='table'"
     ).fetchall()}
@@ -175,7 +174,7 @@ def check_trader_tables() -> None:
 def check_dashboard_tables() -> None:
     print("\n=== dashboard.db tables ===")
     required = ["variants", "variant_events", "variant_daily_returns", "trades", "config"]
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     tables = {r[0] for r in con.execute(
         "SELECT name FROM sqlite_master WHERE type='table'"
     ).fetchall()}
@@ -190,7 +189,7 @@ def check_dashboard_tables() -> None:
 
 def check_variant_registration() -> None:
     print("\n=== variant registration ===")
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     row = con.execute(
         "SELECT id, short_name, status, enabled FROM variants WHERE id = ?",
@@ -207,7 +206,7 @@ def check_variant_registration() -> None:
 def check_dispatch_wired() -> None:
     print("\n=== dispatch wiring ===")
     import json
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     row = con.execute("SELECT spec_json FROM variants WHERE id = ?",
                       (VARIANT_ID,)).fetchone()
     con.close()
@@ -227,7 +226,7 @@ def check_dispatch_wired() -> None:
 
 def check_warmup_sufficiency() -> None:
     print("\n=== warmup data sufficiency ===")
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     # Core J+ needs ≥ 80 BTC daily candles
     daily_count = con.execute("""
         SELECT COUNT(DISTINCT date(timestamp, 'unixepoch')) FROM cd_futures_ohlcv
@@ -463,7 +462,7 @@ def check_data_continuity() -> None:
     Honors data/known_unfillable.json — gaps verified to be source-side
     holes (no provider has the data) are reported but don't cause FAIL."""
     print("\n=== data continuity ===")
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     failures: list[str] = []
     unfillable_map = _load_unfillable()
 
@@ -511,7 +510,7 @@ def check_data_continuity() -> None:
 
 def check_single_open_invariant() -> None:
     print("\n=== single-open invariant ===")
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     # Count open trades per (variant, strategy, asset)
     rows = con.execute("""

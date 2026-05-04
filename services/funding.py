@@ -37,11 +37,11 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 
+from services import db
+
 log = logging.getLogger("dashboard.funding")
 
 # Module-level constant — overridable in tests via monkeypatch.
-TRADER_DB = Path(__file__).resolve().parent.parent / "data" / "trader.db"
-
 # Binance funding settles 3x/day at 00:00, 08:00, 16:00 UTC. As Unix seconds
 # these are exact multiples of SETTLEMENT_PERIOD_SECONDS.
 SETTLEMENT_PERIOD_SECONDS = 8 * 3600
@@ -68,7 +68,7 @@ def _connect_or_warn(asset: str, table: str) -> sqlite3.Connection | None:
     """Open a DB connection and verify the table exists. Returns None and
     logs a warning if the table is missing (defensive — callers see no
     funding rather than crashing)."""
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     if not _table_exists(con, table):
         con.close()
         log.warning(

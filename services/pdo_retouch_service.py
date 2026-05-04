@@ -31,11 +31,9 @@ from pathlib import Path
 import numpy as np
 
 from services import clock
+from services import db
 
 log = logging.getLogger(__name__)
-
-DASH_DB = Path(__file__).resolve().parent.parent / "data" / "dashboard.db"
-TRADER_DB = Path(__file__).resolve().parent.parent / "data" / "trader.db"
 
 GAP_THRESHOLD_PCT = 2.0
 REGIME_THRESHOLD_PCT = -10.0
@@ -70,7 +68,7 @@ def _load_today_open_and_pdo(asset: str) -> dict | None:
     yesterday_start_ms = int(yesterday_start.timestamp() * 1000)
     upper_ms = clock.now_ts_ms()
 
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     # PDO: first minute of prev UTC day
     pdo_row = con.execute(
         f"SELECT open_time, open FROM {table} "
@@ -114,7 +112,7 @@ def _btc_30d_return_pct() -> float | None:
     # Bar that closes at T-721h has open_ts = T - 722h.
     old_bar_open_ts = upper_ts - 722 * 3600
 
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     prev_row = con.execute(
         "SELECT close FROM cd_spot_binance WHERE timestamp = ?",
         (prev_bar_open_ts,),
@@ -150,7 +148,7 @@ def _get_hourly_bar_for_today(asset: str) -> dict | None:
     cur_hour_start = now.replace(minute=0, second=0, microsecond=0)
     prev_hour_start_ms = int((cur_hour_start - timedelta(hours=1)).timestamp() * 1000)
     cur_hour_start_ms = int(cur_hour_start.timestamp() * 1000)
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     row = con.execute(
         f"SELECT MIN(low), MAX(high) FROM {table} "
         f"WHERE open_time >= ? AND open_time < ?",
@@ -176,7 +174,7 @@ def _get_open_pdo_trades(variant_id: str, asset: str) -> list[dict]:
     """All open PDO_RETOUCH trades for (variant, asset), newest first.
     Single-open invariant; close paths sweep all so stray legacy opens get
     cleaned up rather than ignored."""
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     rows = con.execute(
         "SELECT * FROM trades WHERE strategy_variant=? AND strategy='PDO_RETOUCH' "
@@ -198,7 +196,7 @@ def _pdo_action_for_bar_day(variant_id: str, asset: str,
     """
     lower = (bar_day_start + timedelta(hours=1)).isoformat()
     upper = (bar_day_start + timedelta(days=1, hours=1)).isoformat()
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     row = con.execute(
         "SELECT 1 FROM trades WHERE strategy_variant=? AND strategy='PDO_RETOUCH' "
         "AND asset=? AND actual_entry_time >= ? AND actual_entry_time < ? LIMIT 1",

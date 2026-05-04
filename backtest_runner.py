@@ -35,10 +35,10 @@ sys.path.insert(0, str(REPO))
 
 from services import clock, trade_db, variant_engine, variant_registry  # noqa: E402
 from services.price_feed import _get_current_price  # noqa: E402
+from services import db
 
 log = logging.getLogger("p300.backtest")
 
-DASH_DB = REPO / "data" / "dashboard.db"
 LIVE_VARIANT_ID = "p300_aggressive_v2_v1_0"
 REPLAY_VARIANT_ID_PREFIX = "p300_aggressive_v2_v1_0__replay"
 
@@ -70,7 +70,7 @@ def ensure_replay_variant(variant_id: str, reset: bool = False) -> dict:
         raise SystemExit(f"Live variant {LIVE_VARIANT_ID} not registered — "
                          f"run `python register_p300.py` first.")
 
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     cur = con.cursor()
 
     if reset:
@@ -165,7 +165,7 @@ def mark_remaining_at_end(variant_id: str) -> int:
     """Force-close any trades still open at end of backtest, at the current
     clock's price. Uses each sleeve's own close (fees + funding applied).
     Returns count closed."""
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     opens = con.execute("""
         SELECT id, asset, strategy FROM trades
@@ -192,7 +192,7 @@ def close_due_for_variant(variant_id: str, now_utc: datetime) -> int:
     has passed. Dispatches to the sleeve-specific close (so fees/funding are
     applied); falls back to a simple mark-to-close if no sleeve owns the
     strategy. Returns count closed."""
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     opens = con.execute("""
         SELECT id, asset, strategy, exit_time FROM trades
@@ -272,7 +272,7 @@ def tick_replay_variant(variant: dict) -> None:
 def build_daily_nav(variant_id: str, capital: float, start: datetime,
                     end: datetime) -> list[dict]:
     """Aggregate closed-trade PnL by UTC date, compound into NAV curve."""
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     rows = con.execute("""
         SELECT actual_exit_time, pnl_usdt, strategy
@@ -306,7 +306,7 @@ def build_daily_nav(variant_id: str, capital: float, start: datetime,
 
 def write_replay_daily_returns(variant_id: str, nav_rows: list[dict]) -> None:
     """Persist the daily NAV series as variant_daily_returns rows (source='replay')."""
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     now_iso = datetime.now(timezone.utc).isoformat()
     con.execute("DELETE FROM variant_daily_returns WHERE variant_id = ?",
                 (variant_id,))
@@ -355,7 +355,7 @@ def compute_metrics(nav_rows: list[dict], capital: float) -> dict:
 
 
 def per_sleeve_pnl(variant_id: str) -> dict[str, dict]:
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     rows = con.execute("""
         SELECT strategy,
                COUNT(*) AS n,

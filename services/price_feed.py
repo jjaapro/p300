@@ -28,10 +28,9 @@ import sqlite3
 from pathlib import Path
 
 from services import clock
+from services import db
 
 log = logging.getLogger("dashboard.price_feed")
-
-TRADER_DB = Path(__file__).resolve().parent.parent / "data" / "trader.db"
 
 # Both BTC and ETH use 1m bars; allow up to 10 min of staleness before
 # rejecting. (Previous code allowed 75 min for BTC because it was on 1h
@@ -75,7 +74,7 @@ def get_current_price(asset: str) -> float | None:
     clock_ts = clock.now_ts()
     clock_ts_ms = clock.now_ts_ms()
     table = {"BTC": "btc_1m", "ETH": "eth_1m"}[asset]
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     try:
         row = con.execute(
             f"SELECT open_time, close FROM {table} "

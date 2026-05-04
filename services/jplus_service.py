@@ -28,10 +28,9 @@ from datetime import timedelta
 from pathlib import Path
 
 from services import clock
+from services import db
 
 log = logging.getLogger("dashboard.jplus_service")
-
-DASH_DB = Path(__file__).resolve().parent.parent / "data" / "dashboard.db"
 
 # Magic strategy_id the variant_engine uses to route dispatch here.
 # Matches the composition entry injected by register_p300.py.
@@ -40,7 +39,7 @@ STRATEGY_ID = "JPLUS-CORE"
 
 def _already_computed_today(variant_id: str, date_iso: str) -> bool:
     """Has Core produced a return for this (variant, date) already?"""
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     row = con.execute(
         "SELECT 1 FROM variant_daily_returns "
         "WHERE variant_id = ? AND date = ? AND source = 'live_computed' LIMIT 1",
@@ -52,7 +51,7 @@ def _already_computed_today(variant_id: str, date_iso: str) -> bool:
 
 def _write_daily_return(variant_id: str, date_iso: str, return_pct: float,
                         regime: str) -> None:
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     now_iso = clock.now_utc().isoformat()
     con.execute(
         "INSERT OR REPLACE INTO variant_daily_returns "

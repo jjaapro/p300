@@ -16,12 +16,9 @@ import argparse
 import sqlite3
 from datetime import date
 from pathlib import Path
+from services import db
 
 REPO = Path(__file__).resolve().parent
-DASH_DB = REPO / "data" / "dashboard.db"
-TRADER_DB = REPO / "data" / "trader.db"
-
-
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--tag", required=True)
@@ -30,7 +27,7 @@ def main(argv=None):
     variant_id = f"p300_aggressive_v2_v1_0__replay_{args.tag}"
 
     # Pull FOMC trades + observer rows + join on fomc_date inferred from notes
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     trades = con.execute("""
         SELECT id, asset, actual_entry_time, actual_exit_time,
@@ -47,7 +44,7 @@ def main(argv=None):
         return
 
     # Pull observer rows for cross-reference
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     con.row_factory = sqlite3.Row
     obs = {r["fomc_date"]: dict(r) for r in con.execute(
         "SELECT * FROM fomc_observer").fetchall()}

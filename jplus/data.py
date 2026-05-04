@@ -28,9 +28,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from services import clock
-
-TRADER_DB = Path(__file__).resolve().parent.parent / "data" / "trader.db"
-
+from services import db
 
 # ─── BTC hourly (perp) ───────────────────────────────────────────────────────
 
@@ -42,7 +40,7 @@ def load_btc_hourly() -> list[tuple[int, float, float, float, float, float]]:
     Switched from cd_futures_ohlcv (perp) on 2026-05-01 — see module docstring.
     """
     upper_ts = clock.now_ts()
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     rows = con.execute(
         "SELECT timestamp, open, high, low, close, volume FROM cd_spot_binance "
         "WHERE timestamp >= strftime('%s','2019-09-01') AND timestamp <= ? "
@@ -76,7 +74,7 @@ def load_eth_hourly() -> dict[tuple[str, int], tuple[float, float]]:
     aggregation step.
     """
     upper_ms = clock.now_ts_ms()
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     rows = con.execute(
         "SELECT open_time, open, close FROM eth_1m "
         "WHERE open_time <= ? ORDER BY open_time",
@@ -125,7 +123,7 @@ def load_btc_daily() -> dict[str, dict]:
 def load_eth_daily() -> dict[str, dict]:
     """ETH daily {date: {o, c}} aggregated from eth_1m."""
     upper_ms = clock.now_ts_ms()
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     rows = con.execute(
         "SELECT open_time, open, close FROM eth_1m "
         "WHERE open_time <= ? ORDER BY open_time",
@@ -148,7 +146,7 @@ def load_eth_daily() -> dict[str, dict]:
 def load_ls_ratio_btc() -> dict[str, float]:
     """{date_iso: long_pct} for BTC from ca_long_short_ratio, bounded by clock."""
     upper_ts = clock.now_ts()
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     rows = con.execute(
         "SELECT timestamp, long_pct FROM ca_long_short_ratio "
         "WHERE asset='BTC' AND timestamp <= ? ORDER BY timestamp",

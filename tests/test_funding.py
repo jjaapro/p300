@@ -36,7 +36,7 @@ def funding_db(tmp_path, monkeypatch):
                     (ts, r, r, r, r))
     con.commit()
     con.close()
-    monkeypatch.setattr(funding, "TRADER_DB", db)
+    from services import db as _db_mod; monkeypatch.setattr(_db_mod, "TRADER_DB", db)
     return db
 
 
@@ -71,7 +71,7 @@ def _build_hourly_db(tmp_path, monkeypatch, day_count: int,
                         (ts, rate, rate, rate, rate))
     con.commit()
     con.close()
-    monkeypatch.setattr(funding, "TRADER_DB", db)
+    from services import db as _db_mod; monkeypatch.setattr(_db_mod, "TRADER_DB", db)
     return db
 
 
@@ -195,7 +195,7 @@ def test_daily_sums_pct_drops_incomplete_days_by_default(tmp_path, monkeypatch):
         con.execute("INSERT INTO cd_funding_rate VALUES (?,?,?,?,?)",
                     (ts, r, r, r, r))
     con.commit(); con.close()
-    monkeypatch.setattr(funding, "TRADER_DB", db)
+    from services import db as _db_mod; monkeypatch.setattr(_db_mod, "TRADER_DB", db)
 
     since = int(base.timestamp())
     until = since + 3 * 86400

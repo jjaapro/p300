@@ -25,11 +25,10 @@ import math
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
+from services import db
 
 # clock import is done lazily inside load_daily so this module can still be
 # imported by scripts that don't need the services package.
-
-TRADER_DB = Path(__file__).resolve().parent / "data" / "trader.db"
 
 REGIME_LABELS = ("bull_trend", "bear_trend", "chop", "sell_off")
 SLOPE_LOOKBACK_DAYS = 10
@@ -53,7 +52,7 @@ def load_daily(symbol: str = "BTC") -> list[tuple[str, dict]]:
         raise NotImplementedError(f"regime_classifier only supports BTC, got {symbol}")
     from services import clock  # lazy — avoid import cycles at module init
     upper_ts = clock.now_ts()
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     rows = con.execute(
         "SELECT timestamp, open, close FROM cd_spot_binance "
         "WHERE timestamp >= strftime('%s','2020-01-01') "

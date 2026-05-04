@@ -19,13 +19,11 @@ import argparse
 import random
 import sqlite3
 from pathlib import Path
+from services import db
 
 REPO = Path(__file__).resolve().parent
-DASH_DB = REPO / "data" / "dashboard.db"
-
-
 def load_trades(variant_id: str) -> list[dict]:
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     rows = con.execute("""
         SELECT actual_entry_time, actual_exit_time, entry_price, exit_price,

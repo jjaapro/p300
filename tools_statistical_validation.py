@@ -23,14 +23,11 @@ import sqlite3
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
+from services import db
 
 REPO = Path(__file__).resolve().parent
-DASH_DB = REPO / "data" / "dashboard.db"
-TRADER_DB = REPO / "data" / "trader.db"
-
-
 def load_returns(variant_id: str) -> list[tuple[str, float]]:
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     rows = con.execute(
         "SELECT date, return_1x_pct FROM variant_daily_returns "
         "WHERE variant_id = ? AND source = 'replay' ORDER BY date",
@@ -41,7 +38,7 @@ def load_returns(variant_id: str) -> list[tuple[str, float]]:
 
 
 def load_variant_capital(variant_id: str) -> float:
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     row = con.execute(
         "SELECT capital_usdt FROM variants WHERE id = ?", (variant_id,),
     ).fetchone()
@@ -51,7 +48,7 @@ def load_variant_capital(variant_id: str) -> float:
 
 def load_btc_daily_returns() -> dict[str, float]:
     """BTC daily log-returns keyed by date."""
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     rows = con.execute(
         "SELECT timestamp, close FROM cd_futures_ohlcv ORDER BY timestamp"
     ).fetchall()

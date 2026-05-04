@@ -29,9 +29,6 @@ from services import clock
 
 log = logging.getLogger("dashboard.adx_service")
 
-TRADER_DB = Path(__file__).resolve().parent.parent / "data" / "trader.db"
-DASH_DB = Path(__file__).resolve().parent.parent / "data" / "dashboard.db"
-
 # S-003 canonical parameters (match backtest_adx_regime.py defaults)
 ADX_PERIOD = 14
 ADX_LOW_THRESH = 20.0
@@ -89,7 +86,7 @@ def _load_btc_daily_candles(limit_days: int = 200) -> list[dict]:
     days_back = int(limit_days + WARMUP_BARS + 10)
     upper_ts = clock.now_ts()
     since_ts = upper_ts - days_back * 86400
-    con = sqlite3.connect(str(TRADER_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     rows = con.execute(
         "SELECT timestamp, open, high, low, close FROM cd_spot_binance "
         "WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp",
@@ -124,6 +121,7 @@ def _load_btc_daily_candles(limit_days: int = 200) -> list[dict]:
 # EMA + ADX math lives in services.indicators (single source of truth across
 # the live service, bitstamp validators, and the JPLUS regime classifier).
 from services.indicators import ema, adx
+from services import db
 
 
 # ─── Signal evaluation ──────────────────────────────────────────────────────
@@ -239,7 +237,7 @@ def _get_open_adx_trades(variant_id: str) -> list[dict]:
     strategy's invariant is single-open; this returns a list so that if
     prior-version code left multiple opens, every close path sweeps them
     all rather than leaking trades."""
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     rows = con.execute(
         "SELECT * FROM trades WHERE strategy_variant = ? "
@@ -253,7 +251,7 @@ def _get_open_adx_trades(variant_id: str) -> list[dict]:
 
 def _adx_trade_exists_today(variant_id: str, today_utc: str) -> bool:
     """Has an ADX trade already been created/closed for this variant today?"""
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     row = con.execute(
         "SELECT 1 FROM trades WHERE strategy_variant = ? AND strategy = 'ADX' "
         "AND (actual_entry_time LIKE ? OR actual_exit_time LIKE ?) LIMIT 1",

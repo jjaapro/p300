@@ -129,8 +129,9 @@ def test_compute_custom_cost_bp():
 
 @pytest.fixture
 def trades_db(tmp_path, monkeypatch):
-    """Tmp dashboard.db with a single open trade. Patches services.trades.DASH_DB
-    to point at it."""
+    """Tmp dashboard.db with a single open trade. Patches services.db.DASH_DB
+    to point at it (services.db owns the canonical path; services.trades reads
+    it via attribute lookup so this single patch reaches everyone)."""
     db = tmp_path / "dashboard.db"
     con = sqlite3.connect(str(db))
     con.execute("""
@@ -153,7 +154,8 @@ def trades_db(tmp_path, monkeypatch):
     """)
     con.commit()
     con.close()
-    monkeypatch.setattr(trades, "DASH_DB", db)
+    from services import db as _db_mod
+    monkeypatch.setattr(_db_mod, "DASH_DB", db)
     return db
 
 
@@ -282,7 +284,8 @@ def empty_trades_db(tmp_path, monkeypatch):
     """)
     con.commit()
     con.close()
-    monkeypatch.setattr(trades, "DASH_DB", db)
+    from services import db as _db_mod
+    monkeypatch.setattr(_db_mod, "DASH_DB", db)
     return db
 
 

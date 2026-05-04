@@ -22,13 +22,11 @@ import sqlite3
 from collections import defaultdict
 from datetime import date, timedelta
 from pathlib import Path
+from services import db
 
 REPO = Path(__file__).resolve().parent
-DASH_DB = REPO / "data" / "dashboard.db"
-
-
 def load_trades(variant_id: str) -> list[dict]:
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     rows = con.execute("""
         SELECT id, asset, strategy, direction, actual_entry_time,
@@ -114,7 +112,7 @@ def main(argv=None):
     args = ap.parse_args(argv)
 
     variant_id = f"p300_aggressive_v2_v1_0__replay_{args.tag}"
-    con = sqlite3.connect(str(DASH_DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     v = con.execute("SELECT capital_usdt FROM variants WHERE id=?",
                      (variant_id,)).fetchone()
     con.close()
