@@ -305,34 +305,11 @@ def _open_cpr_shadow(variant: dict, asset: str, entry_price: float,
 
 
 def _close_cpr_shadow(trade_id: str, exit_price: float, reason: str) -> None:
-    now_iso = clock.now_utc().isoformat()
-    cost = COST_BP_RT / 10000.0
-    con = sqlite3.connect(str(DASH_DB))
-    con.row_factory = sqlite3.Row
-    row = con.execute(
-        "SELECT asset, direction, entry_price, qty, size_usdt, "
-        "       actual_entry_time FROM trades WHERE id=?", (trade_id,)
-    ).fetchone()
-    if row is None:
-        con.close(); return
-    # LONG: pnl = (exit - entry) * qty, cost applied as roundtrip
-    pnl_usdt = (exit_price - row["entry_price"]) * row["qty"] - row["size_usdt"] * cost
-    pnl_pct = (pnl_usdt / row["size_usdt"] * 100) if row["size_usdt"] > 0 else 0
-    notes_suffix = f"\nCPR_EXIT: {reason}"
-    con.execute("""
-        UPDATE trades SET status='closed', actual_exit_time=?, exit_price=?,
-            pnl_usdt=?, pnl_pct=?, resolution='filled_closed',
-            notes = COALESCE(notes,'') || ?
-        WHERE id=?
-    """, (now_iso, exit_price, pnl_usdt, pnl_pct, notes_suffix, trade_id))
-    con.commit(); con.close()
-    from services.trade_db import format_close_summary
-    log.info("[cpr] " + format_close_summary(
-        trade_id=trade_id, asset=row["asset"], direction=row["direction"],
-        entry_price=row["entry_price"], exit_price=exit_price,
-        pnl_pct=pnl_pct, pnl_usdt=pnl_usdt,
-        entry_time_iso=row["actual_entry_time"], exit_time_iso=now_iso,
-        reason=reason))
+    """Sleeve close — delegates to services.trades.close_perp_trade.
+    No funding modeling: CPR holds are intraday so the accrual is negligible."""
+    from services.trades import close_perp_trade
+    close_perp_trade(trade_id, exit_price, reason, sleeve_name="CPR",
+                     cost_bp_rt=COST_BP_RT, apply_funding=False)
 
 
 # ─── Public tick ─────────────────────────────────────────────────────────────

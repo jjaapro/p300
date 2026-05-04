@@ -221,8 +221,12 @@ def test_self_sweep_closes_past_exit_trade(tmp_path, monkeypatch):
     con.commit()
     con.close()
 
-    # Redirect DASH_DB to tmp; stub price + funding feeds
+    # Redirect DASH_DB to tmp; stub price + funding feeds. Note: services.trades
+    # owns the close-path SQL after the 2026-05-04 refactor, so its DASH_DB
+    # constant must be patched too.
     monkeypatch.setattr(fomc_service, "DASH_DB", db)
+    from services import trades as trades_module
+    monkeypatch.setattr(trades_module, "DASH_DB", db)
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 43000.0)
     from services import funding
     monkeypatch.setattr(funding, "accrued_pct", lambda *a, **k: 0.0)

@@ -216,54 +216,11 @@ def _open_carry_shadow(variant: dict, entry_price: float, allocation_pct: float,
 
 
 def _close_carry_shadow(trade_id: str, exit_price: float, reason: str) -> None:
-    """Close a CARRY trade. P&L = collected funding (per-settlement, summed
-    over [entry_ts, exit_ts]) minus round-trip fees. Basis P&L is assumed
-    zero (delta-neutral long-spot + short-perp).
-
-    Short-perp leg earns when funding rate > 0 — identical math to a SHORT
-    perp position, which is what services.funding.accrued_pct returns
-    for direction='SHORT'.
-    """
-    now = clock.now_utc()
-    now_iso = now.isoformat()
-    con = sqlite3.connect(str(DASH_DB))
-    con.row_factory = sqlite3.Row
-    row = con.execute(
-        "SELECT entry_price, qty, size_usdt, actual_entry_time "
-        "FROM trades WHERE id=?",
-        (trade_id,),
-    ).fetchone()
-    if row is None:
-        con.close()
-        return
-    from services import funding
-    try:
-        entry_dt = datetime.fromisoformat(row["actual_entry_time"])
-        if entry_dt.tzinfo is None:
-            entry_dt = entry_dt.replace(tzinfo=timezone.utc)
-        funding_pct = funding.accrued_pct("BTC", entry_dt, now, "SHORT")
-    except (TypeError, ValueError):
-        funding_pct = 0.0
-    net_pct = funding_pct - ENTRY_EXIT_COST_PCT
-    pnl_usdt = row["size_usdt"] * net_pct / 100.0
-    notes_suffix = (f"\nCARRY_EXIT: {reason}; "
-                    f"funding={funding_pct:.3f}% (per-settlement), "
-                    f"fees={ENTRY_EXIT_COST_PCT:.2f}%, net={net_pct:.3f}%")
-    con.execute("""
-        UPDATE trades SET status='closed', actual_exit_time=?, exit_price=?,
-            pnl_usdt=?, pnl_pct=?, resolution='filled_closed',
-            notes = COALESCE(notes,'') || ?
-        WHERE id=?
-    """, (now_iso, exit_price, pnl_usdt, net_pct, notes_suffix, trade_id))
-    con.commit()
-    con.close()
-    from services.trade_db import format_close_summary
-    log.info("[carry] " + format_close_summary(
-        trade_id=trade_id, asset="BTC", direction="DELTA_NEUTRAL",
-        entry_price=row["entry_price"], exit_price=exit_price,
-        pnl_pct=net_pct, pnl_usdt=pnl_usdt,
-        entry_time_iso=row["actual_entry_time"], exit_time_iso=now_iso,
-        reason=reason))
+    """Sleeve close — delegates to services.trades.close_carry_trade. CARRY is
+    delta-neutral, so its close has no price-PnL component (just funding
+    collected − fees on both legs)."""
+    from services.trades import close_carry_trade
+    close_carry_trade(trade_id, exit_price, reason, cost_pct=ENTRY_EXIT_COST_PCT)
 
 
 # ─── Public tick ─────────────────────────────────────────────────────────────

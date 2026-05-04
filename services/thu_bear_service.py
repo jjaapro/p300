@@ -232,50 +232,10 @@ def _open_thu_bear_shadow(variant: dict, asset: str, entry_price: float,
 
 
 def _close_thu_bear_shadow(trade_id: str, exit_price: float, reason: str) -> None:
-    now = clock.now_utc()
-    now_iso = now.isoformat()
-    con = sqlite3.connect(str(DASH_DB))
-    con.row_factory = sqlite3.Row
-    row = con.execute(
-        "SELECT asset, entry_price, qty, size_usdt, direction, actual_entry_time "
-        "FROM trades WHERE id=?",
-        (trade_id,),
-    ).fetchone()
-    if row is None:
-        con.close()
-        return
-    # SHORT: pnl = (entry - exit) * qty
-    price_pnl = (row["entry_price"] - exit_price) * row["qty"]
-    cost_usdt = row["size_usdt"] * (COST_BP_RT / 10000.0)
-    from services import funding
-    try:
-        entry_dt = datetime.fromisoformat(row["actual_entry_time"])
-        if entry_dt.tzinfo is None:
-            entry_dt = entry_dt.replace(tzinfo=timezone.utc)
-        funding_pct = funding.accrued_pct(row["asset"], entry_dt, now,
-                                          row["direction"])
-    except (TypeError, ValueError):
-        funding_pct = 0.0
-    funding_usdt = row["size_usdt"] * funding_pct / 100.0
-    pnl_usdt = price_pnl - cost_usdt + funding_usdt
-    pnl_pct = (pnl_usdt / row["size_usdt"] * 100) if row["size_usdt"] > 0 else 0
-    notes_suffix = (f"\nTHU_BEAR_EXIT: {reason}; fees={COST_BP_RT:.0f}bp RT, "
-                    f"funding={funding_pct:+.3f}%")
-    con.execute("""
-        UPDATE trades SET status='closed', actual_exit_time=?, exit_price=?,
-            pnl_usdt=?, pnl_pct=?, resolution='filled_closed',
-            notes = COALESCE(notes,'') || ?
-        WHERE id=?
-    """, (now_iso, exit_price, pnl_usdt, pnl_pct, notes_suffix, trade_id))
-    con.commit()
-    con.close()
-    from services.trade_db import format_close_summary
-    log.info("[thu_bear] " + format_close_summary(
-        trade_id=trade_id, asset=row["asset"], direction=row["direction"],
-        entry_price=row["entry_price"], exit_price=exit_price,
-        pnl_pct=pnl_pct, pnl_usdt=pnl_usdt,
-        entry_time_iso=row["actual_entry_time"], exit_time_iso=now_iso,
-        reason=reason))
+    """Sleeve close — delegates to services.trades.close_perp_trade."""
+    from services.trades import close_perp_trade
+    close_perp_trade(trade_id, exit_price, reason, sleeve_name="THU_BEAR",
+                     cost_bp_rt=COST_BP_RT, apply_funding=True)
 
 
 # ─── Public tick ─────────────────────────────────────────────────────────────
