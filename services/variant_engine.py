@@ -26,7 +26,7 @@ import logging
 from datetime import datetime, timezone, timedelta
 from typing import Any
 
-from services import trade_db, variant_registry
+from services import clock, trade_db, variant_registry
 from services.price_feed import _get_current_price
 
 log = logging.getLogger("dashboard.variant_engine")
@@ -136,7 +136,7 @@ def _create_shadow_trade(
                     trade_db.get_config("paper_account_usdt") or "10000")
     size_usdt = capital * (allocation_pct / 100.0) * leverage
     qty = size_usdt / entry_price if entry_price > 0 else 0
-    now_iso = datetime.now(timezone.utc).isoformat()
+    now_iso = clock.now_utc().isoformat()
 
     con = sqlite3.connect(db)
     con.row_factory = sqlite3.Row
@@ -167,16 +167,27 @@ def _create_shadow_trade(
 
 
 def _close_due_shadows(now_utc: datetime) -> None:
-    """Close any open shadow trade whose scheduled exit_time has passed."""
+    """Close any open shadow trade whose scheduled exit_time has passed.
+
+    SCOPE: only trades belonging to ENABLED variants. Replay variants are
+    registered with enabled=0 (see backtest_runner.ensure_replay_variant)
+    so the live engine does not touch their phantom trades. Without this
+    filter, the live tick sees a backtest's open shadow trade (with
+    historical exit_time long past wall-clock now) and silently closes it
+    at the live price — corrupting any backtest run while the live bot
+    is up. This is the root cause of the SJ-1169/1506/1557/1562 leaks.
+    """
     import sqlite3
     from pathlib import Path
     db = str(Path(__file__).resolve().parent.parent / "data" / "dashboard.db")
     con = sqlite3.connect(db)
     con.row_factory = sqlite3.Row
     opens = con.execute(
-        "SELECT id, asset, strategy_variant, exit_time, entry_price, qty, "
-        "size_usdt, direction FROM trades "
-        "WHERE execution_mode = 'SHADOW' AND status = 'open'"
+        "SELECT t.id, t.asset, t.strategy_variant, t.exit_time, t.entry_price, "
+        "       t.qty, t.size_usdt, t.direction "
+        "FROM trades t JOIN variants v ON t.strategy_variant = v.id "
+        "WHERE t.execution_mode = 'SHADOW' AND t.status = 'open' "
+        "  AND v.enabled = 1"
     ).fetchall()
     con.close()
 
@@ -205,7 +216,7 @@ def _close_shadow_trade(trade_id: str, exit_price: float) -> None:
     import sqlite3
     from pathlib import Path
     db = str(Path(__file__).resolve().parent.parent / "data" / "dashboard.db")
-    now_iso = datetime.now(timezone.utc).isoformat()
+    now_iso = clock.now_utc().isoformat()
     con = sqlite3.connect(db)
     con.row_factory = sqlite3.Row
     row = con.execute(
@@ -328,13 +339,16 @@ def _load_dispatch():
     if STRATEGY_DISPATCH:
         return
     from services import (adx_service, thu_bear_service, carry_service,
-                                     pdo_retouch_service, cpr_service)
+                                     pdo_retouch_service, cpr_service,
+                                     jplus_service, fomc_service)
     STRATEGY_DISPATCH = {
-        "S-003":    adx_service.try_fire_for_variant,
-        "S-096":    thu_bear_service.try_fire_for_variant,
-        "S-078":    carry_service.try_fire_for_variant,
-        "PDO-L-RF": pdo_retouch_service.try_fire_for_variant,
-        "CPR":      cpr_service.try_fire_for_variant,
+        "S-003":      adx_service.try_fire_for_variant,
+        "S-096":      thu_bear_service.try_fire_for_variant,
+        "S-078":      carry_service.try_fire_for_variant,
+        "PDO-L-RF":   pdo_retouch_service.try_fire_for_variant,
+        "CPR":        cpr_service.try_fire_for_variant,
+        "JPLUS-CORE": jplus_service.try_fire_for_variant,
+        "FOMC":       fomc_service.try_fire_for_variant,
     }
 
 
@@ -342,7 +356,7 @@ _warned_missing: set[tuple[str, str]] = set()
 
 
 _SLEEVE_KEY_FOR_STRATEGY = {"S-003": "s003", "S-096": "s096", "S-078": "s078",
-                             "PDO-L-RF": "pdo", "CPR": "cpr"}
+                             "PDO-L-RF": "pdo", "CPR": "cpr", "FOMC": "fomc"}
 
 
 def _resolve_sleeve_leverage(spec: dict, sleeve: dict) -> float:
@@ -417,12 +431,21 @@ def tick() -> None:
     """Scheduler entry point — runs every minute.
 
     1. Close any shadow trades whose scheduled exit_time has passed.
-    2. For each enabled shadow variant:
+    2. Tick the FOMC observer (records would-be FOMC decisions + P&L
+       without opening shadow trades). Out-of-portfolio research feed.
+    3. For each enabled shadow variant:
        - signal_overlay variants: evaluate their R4 window modifiers
        - full_portfolio with composition: dispatch each sleeve to its service
     """
-    now_utc = datetime.now(timezone.utc)
+    now_utc = clock.now_utc()
     _close_due_shadows(now_utc)
+
+    # FOMC observer — runs unconditionally each tick, regardless of variants.
+    try:
+        from services import fomc_service
+        fomc_service.tick_observer()
+    except Exception as e:
+        log.exception(f"[fomc-observer] tick error: {e}")
 
     shadows = variant_registry.get_active_shadows()
     for v in shadows:

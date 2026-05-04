@@ -1,0 +1,441 @@
+# P-300 Aggressive 2.0 — Portfolio Composition
+
+A complete reference for what the bot trades, when each strategy fires, what
+leverage it uses, and how the pieces compose. All percentages are **fractions
+of total capital** unless stated otherwise.
+
+> Variant ID: `p300_aggressive_v2_v1_0` · Status: SHADOW (paper-only)
+> Last updated: 2026-04-30 (FOMC sleeve added).
+
+---
+
+## 1. Top-level allocation
+
+| Block | Capital | Mechanism | What it writes |
+|---|---|---|---|
+| **Core J+ engine** | **50%** | daily-return accrual via `jplus.simulate()` | `variant_daily_returns` (one row/day, `source='live_computed'`) |
+| **Tactical stack** | **50%** | discrete entries/exits in 6 sleeves | `trades` table (`execution_mode='SHADOW'`) |
+| ~~Stable reserve~~ | 0% | (removed 2026-04-30 — FOMC absorbed the slot) | — |
+
+The Core's daily return is computed once per day after midnight UTC. The
+6 tactical sleeves each tick every minute, opening / closing phantom trades
+based on their own signal logic.
+
+---
+
+## 2. The Tactical Stack — 6 sleeves, 50% of capital
+
+Each sleeve has its own service module under [services/](services/) and is
+dispatched per-minute by [services/variant_engine.py](services/variant_engine.py).
+
+| Sleeve | Allocation | Leverage | Asset | Direction | Holding period |
+|---|---|---|---|---|---|
+| [S-003 ADX](services/adx_service.py) | **15%** | 5× | BTC | both | days–weeks |
+| [S-078 Carry](services/carry_service.py) | **8%** | 5× | BTC (delta-neutral) | n/a | days |
+| [S-096 V4 Thu Bear](services/thu_bear_service.py) | **6%** (3% BTC + 3% ETH) | 5× | BTC + ETH | SHORT | 24h (Thursdays) |
+| [S-102 PDO-L-RF](services/pdo_retouch_service.py) | **11%** (5.5% BTC + 5.5% ETH) | 1× | BTC + ETH | LONG | 24h |
+| [S-101 CPR](services/cpr_service.py) | **5%** (2.5% BTC + 2.5% ETH) | 1× | BTC + ETH | LONG | up to 15 days |
+| [S-103 FOMC](services/fomc_service.py) | **5%** | 10× | BTC | LONG | ~10.5h (FOMC days only) |
+
+**Total: 50%** (matches Core's 50% so the portfolio is fully allocated.)
+
+### 2.1 S-003 ADX — Trend-flip on BTC
+
+- **Signal**: 14-period ADX crosses 25 with EMA(20) < or > EMA(50). LONG when EMA20 > EMA50 + ADX confirms; SHORT when reversed.
+- **Entry**: at the crossover bar. Stops out at -2% spot (10% of size after k=5×).
+- **Exit**: opposite ADX flip, OR stop loss, OR trend exhaustion.
+- **Edge thesis**: catches medium-term trends in BTC; takes the loss when trend reverses.
+
+### 2.2 S-078 Carry — Delta-neutral funding harvest
+
+- **Signal**: 7-day average BTC perp funding > +0.01%. Entry opens spot-long + perp-short of equal notional → market-neutral.
+- **Income**: collects funding payments every 8h while the perp side is short.
+- **Exit**: 3 consecutive negative funding days, or scheduled time-stop.
+- **Edge thesis**: structurally positive funding in bullish regimes is paid for free if you can hedge cheaply. P&L is dominated by funding accrual, not price moves.
+
+### 2.3 S-096 V4 Thu Bear — Calendar-driven Thursday short
+
+- **Signal**: Thursdays only. V4 filter: trade only if Thursday is within ±1 day of CPI or NFP, AND not within ±1 day of OPEX. Prior-day regime must be `bear_trend / sell_off / chop` (not `bull_trend`).
+- **Entry**: Thursday 00:00 UTC. SHORT BTC + ETH equally.
+- **Exit**: Friday 01:00 UTC, or stop-loss at -1% spot (5% margin at k=5×).
+- **Edge thesis**: weekly Thursday selling pressure during macro-event-adjacent periods, conditioned on being already in a non-bull regime.
+- **Caveat**: V4 event filter was derived post-hoc from V3's Thursday attribution — in-sample selection bias applies.
+
+### 2.4 S-102 PDO-L-RF — Pullback Daily Open Retouch Long
+
+- **Signal**: After a daily gap-down ≥ 2%, wait for the price to retouch the prior daily open (PDO). Regime must not be deeply bearish (`regime_threshold_pct: -10%` recent peak DD).
+- **Entry**: at the PDO retouch.
+- **Exit**: scheduled time-stop, or stop-loss.
+- **Edge thesis**: gap-fills are a known intraday phenomenon in crypto. Mean-reversion long after a down-gap.
+- **Caveat**: parameters (gap %, regime threshold) were swept in upstream research without visible walk-forward CV — data-snooping exposure.
+
+### 2.5 S-101 CPR — Contrarian Positioning Reversal
+
+- **Signal**: All four conditions must agree:
+  1. 3-day mean funding rate < 20-percentile of trailing window
+  2. LSR (long-short ratio) < 20-percentile of trailing window
+  3. BTC daily close > EMA(20)
+  4. EMA(20) > EMA(50)
+- **Setup logic**: persistent negative funding + crowd is short + price still in uptrend → expected short squeeze.
+- **Entry**: at the next 1m bar after signal trigger.
+- **Exits**: target at +2.93% (BB upper band), stop at -5%, or 15-day time-stop.
+- **Edge thesis**: contrarian-position-with-trend setup. Theoretically high-quality but historically thin sample (12 BTC + 9 ETH events from upstream).
+
+### 2.6 S-103 FOMC — Long into Fed announcement, regime-filtered
+
+- **Signal**: Only fires on FOMC dates (8/year, from `scheduled_events`).
+- **Entry**: T-10h before announcement (08:00 UTC, or 09:00 UTC for EST meetings).
+- **Exit**: T+0.5h after (when Powell starts speaking).
+- **Filter rule** (combined regime + sentiment + Polymarket):
+  - HARD SKIP if `expected_action == 'cut_25bp'` (historical 20% win rate)
+  - HARD SKIP if F&G bucket == `extreme_greed` (40% win rate)
+  - HARD TRADE if F&G == `extreme_fear` AND phase ≠ `mid_hold` (8/8 historical wins)
+  - SKIP if `phase == 'mid_hold'` (25% win rate)
+  - TRADE otherwise (peak_hold / hiking / zirp_hold / cutting in good context)
+- **Inputs**:
+  - **Phase**: from [services/fed_funds_service.py](services/fed_funds_service.py) — NY Fed XML, classified as `zirp_hold / hiking / peak_hold / cutting / mid_hold`.
+  - **F&G**: from [services/sentiment_index_service.py](services/sentiment_index_service.py) — alternative.me daily Fear & Greed.
+  - **Expected action**: from [services/polymarket_service.py](services/polymarket_service.py) — implied per-meeting cut probability from the "How many Fed rate cuts in 2026?" market.
+- **Audit trail**: every FOMC date writes a row to `fomc_observer` in `data/trader.db` with the decision + reason + inputs, even when the decision is SKIP.
+- **Edge thesis**: short-window event trade. Drift up into the announcement, partial fade after. Filter weeds out the regimes where this fails.
+- **Caveat**: filter was tuned on the same 52-event historical cohort the in-sample backtest is drawn from. Going-forward edge unproven.
+
+---
+
+## 3. Core J+ Engine — 50% of capital, daily-return accrual
+
+The Core is a single composite strategy that emits **one number per day**: a
+combined daily return percentage. It does NOT write per-trade rows. Its
+machinery lives in the [jplus/](jplus/) package.
+
+```
+                 ┌──────────────────────────────────────┐
+                 │   regime classifier (T-1 inputs)     │
+                 │   strong_bull / mild_bull /          │
+                 │   uncertain / bear                   │
+                 └──────────┬───────────────────────────┘
+                            │
+        ┌───────────────────┴───────────────────┐
+        │  per-regime weighting (Layer 2)       │
+        │  selects how much each sub-sleeve     │
+        │  contributes today                    │
+        └───┬─────────┬─────────┬──────────────┘
+            │         │         │       │
+       ┌────▼──┐  ┌──▼───┐  ┌──▼───┐  ┌▼─────────┐
+       │ EMA   │  │ ETH  │  │ R4   │  │ R4       │
+       │ (BTC) │  │ daily│  │ BTC  │  │ ETH      │
+       │       │  │      │  │ ←2.5×│  │ ←2.5×    │ Layer 1
+       │       │  │      │  │ when │  │ when     │ (R4 inner)
+       │       │  │      │  │ no   │  │ no gate  │
+       │       │  │      │  │ gate │  │          │
+       └───┬───┘  └──┬───┘  └──┬───┘  └─┬────────┘
+           │         │         │        │
+           └────────►◄────────►◄────────┘
+                  combined 1× daily return rl
+                            │
+                  ┌─────────▼─────────┐
+                  │ vol-target (Layer 3)
+                  │ 30d realized vol → daily lev
+                  │ regime-capped 1.5×–3.0×
+                  │ floored 0.5×
+                  └─────────┬─────────┘
+                            │
+                  final daily return = rl × lev
+```
+
+### 3.1 Sub-sleeves
+
+Four signal sources contribute to the daily 1× return. Each sub-sleeve's
+*final* contribution to the day = (its return) × (regime weight, see §3.2)
+× (any inner leverage, see §3.3) × (vol-target outer leverage, see §3.5).
+
+| Sub-sleeve | Module | What it returns | Inner leverage |
+|---|---|---|---|
+| EMA(BTC) | [jplus/ema_sleeve.py](jplus/ema_sleeve.py) | position direction × BTC daily return | 1× |
+| ETH daily | [jplus/data.py](jplus/data.py) | ETH's daily return | 1× |
+| R4 BTC | [jplus/r4.py](jplus/r4.py) | intraday 06→18 UTC window return | **2.5× / 1×** (gated) |
+| R4 ETH | [jplus/r4.py](jplus/r4.py) | 24h Tue 20→Wed 20 UTC window return | **2.5× / 1×** (gated) |
+
+#### 3.1.1 EMA(BTC) — Weekly crossover position-flip
+
+- **Signal**: EMA(5) vs EMA(21) on **weekly** BTC closes (BTC hourly aggregated to 168h buckets). LONG when EMA5 > EMA21, SHORT when EMA5 < EMA21.
+- **Position state** (called `ema_p` in the simulator): `+1` while LONG, `-1` while SHORT, `0` during warmup.
+- **Entry**: at the **next weekly candle's open** after a cross is detected. (No same-bar entry — strict T+1 to avoid look-ahead.)
+- **Exit**: at the **next weekly candle's open** after the reverse cross. Effectively the sleeve is always in one of long / short / flat — there's no idle exit-to-cash state once the weekly EMAs have crossed.
+- **Daily contribution** to Core: `ema_p × today's BTC daily return × regime weight`. So an EMA-LONG day with BTC up +2% contributes +2% × regime_weight; an EMA-SHORT day with BTC up +2% contributes -2% × regime_weight.
+- **Cost model**: 0.1% round-trip commission charged at each weekly cross (in the simulator's pre-aggregation logic).
+- **Edge thesis**: medium-term trend follower on BTC. Captures multi-week directional moves; pays the spread/fee on whipsaws.
+- **Active in**: every regime (regime weights 0.30 in `mild_bull / uncertain / bear`, 0.50 in `strong_bull`).
+
+#### 3.1.2 ETH daily — Passive ETH long, regime-gated
+
+- **Signal**: none — this isn't a discretionary signal sleeve. It's a "long ETH at regime-weighted size" position.
+- **Position**: long ETH spot. Held continuously while the regime is `strong_bull` or `mild_bull`; **idle** in `uncertain` and `bear` (regime weight = 0).
+- **Entry**: the day the regime classifier flips into `strong_bull` or `mild_bull`. No T+1 delay (ETH daily return is already a closed-day measure).
+- **Exit**: the day the regime classifier flips out of bull. (In practice — daily mark-to-market: each day's `er` is added with the appropriate weight.)
+- **Daily contribution**: `ETH daily return × regime weight` (0.20 strong_bull, 0.10 mild_bull, 0 otherwise).
+- **Cost model**: assumed zero — modeled as exposure in a notional sense, not discrete trades.
+- **Edge thesis**: pure long-ETH-beta during bull regimes. ETH outperforms BTC on the way up; this gives the portfolio that exposure when conditions are constructive.
+- **Active in**: `strong_bull` and `mild_bull` only.
+
+#### 3.1.3 S-099 R4 BTC — Mon + Wed intraday long, weeks 1–2 only
+
+- **Signal**: pure calendar trigger. Fires on Mondays and Wednesdays whose date is **≤ 14 of the month** (first half only).
+- **Entry**: `06:00 UTC` open price of that day.
+- **Exit**: `18:00 UTC` open price (i.e., end of the 12-hour window), same day.
+- **Direction**: LONG always.
+- **Return per fire**: `(price_at_18:00 − price_at_06:00) / price_at_06:00 − 10bp RT cost`.
+- **Inner leverage**: **2.5×** normally, **1.0×** when the vol-percentile gate fires (§3.3).
+- **Daily contribution**: `R4_BTC_return × inner_lev × regime_weight` (0.30 in `uncertain`, 0.20 in `mild_bull`, 0.15 in `strong_bull`, 0 in `bear`).
+- **Cost model**: 10bp round-trip taker fee, baked into the windowed return.
+- **Edge thesis**: a known intraday window in BTC where US/Europe overlap drives directional pressure. Concentrated in early-month days when month-start flows hit. Empirically: ~96 fires over 973 days, mean +0.052%/day, +61.8% compounded if run alone.
+- **Active in**: every non-`bear` regime.
+
+#### S-099 3.1.4 R4 ETH — Tue → Wed 24h long, weeks 1–2 only
+
+- **Signal**: pure calendar trigger. Fires on **Tuesdays whose next-day (Wed) is ≤ 14 of the month**.
+- **Entry**: `Tue 20:00 UTC` open price.
+- **Exit**: `Wed 20:00 UTC` open price (24h hold, crossing the next calendar day).
+- **Direction**: LONG always.
+- **Return per fire**: `(price_at_Wed_20:00 − price_at_Tue_20:00) / price_at_Tue_20:00 − 10bp RT cost`.
+- **Inner leverage**: **2.5×** normally, **1.0×** when the vol-percentile gate fires (§3.3).
+- **Daily contribution**: keyed by Wed date — `R4_ETH_return × inner_lev × regime_weight` (0.40 in `uncertain`, 0.30 in `mild_bull`, 0.15 in `strong_bull`, 0 in `bear`).
+- **Cost model**: 10bp round-trip taker fee.
+- **Edge thesis**: an early-month Tue→Wed ETH window that's been the highest-alpha sub-sleeve in the J+ history. Empirically: 48 fires over 973 days, mean **+0.088%/day** (highest of all sub-sleeves), +116.5% compounded if run alone.
+- **Active in**: every non-`bear` regime; weighted heaviest in `uncertain` (40%).
+- **Caveat**: 48 events in 2.6 years is a thin sample. The +116% compounded standalone return is striking and demands skepticism — could be genuine alpha, could be a quirk of how ETH happened to behave on those exact dates in 2024–2025. Worth a longer-horizon sanity check.
+
+### S-095 3.2 Per-regime allocation weights ([jplus/simulate.py:108-117](jplus/simulate.py))
+
+| Mode | EMA(BTC) | ETH daily | R4 ETH | R4 BTC | Sum | When this fires |
+|---|---|---|---|---|---|---|
+| **strong_bull** | 0.50 | 0.20 | 0.15 | 0.15 | 1.00 | full risk-on |
+| **mild_bull** | 0.30 | 0.10 | 0.30 | 0.20 | 0.90 | partial risk-on, R4 emphasised |
+| **uncertain** | 0.30 | 0.00 | 0.40 | 0.30 | 1.00 | calendar-driven only (R4 carries) |
+| **bear** | 0.30 | 0.00 | 0.00 | 0.00 | 0.30 | EMA only, R4 idle |
+
+The bot spent 62% of the 2023-09 → 2026-04 window in `uncertain` and 25% in
+`bear` — so for most days, R4 BTC and R4 ETH are doing the real work when
+they fire, and EMA carries the rest.
+
+### 3.3 Layer 1 — R4 inner multiplier ([jplus/simulate.py:26-27](jplus/simulate.py))
+
+R4 BTC and R4 ETH (and ONLY those two — not EMA, not ETH daily) get an inner
+amplification on top of their raw windowed return:
+
+| State | Multiplier | Why |
+|---|---|---|
+| Normal day | **2.5×** | R4 is a sized sleeve within the J+ portfolio |
+| **Vol-percentile gate fired** | **1.0×** | de-lever in high-vol regimes |
+
+The gate ([jplus/gate.py](jplus/gate.py)) fires when the trailing 30-day BTC realized vol is in the **top 25%** of the 365-day distribution — strictly using T-1 data, no look-ahead. Fired on **29.7% of days** in the v6 backtest window.
+
+### 3.4 Layer 2 — regime weights
+
+See table 3.2 above.
+
+### 3.5 Layer 3 — vol-target outer leverage ([jplus/voltarget.py](jplus/voltarget.py))
+
+After all sub-sleeves are weighted and summed (`rl`), the daily strategy return is multiplied by a vol-target leverage `lev`:
+
+```
+lev = clamp(LEV_FLOOR=0.5×,  regime_cap,  TARGET_VOL=50% / realized_vol_30d_ann)
+```
+
+Per-regime caps:
+| Mode | Max leverage |
+|---|---|
+| strong_bull | 3.0× |
+| mild_bull | 2.5× |
+| uncertain | 2.0× |
+| **bear** | **1.5×** |
+
+The simulator targets **50% annualised volatility** for the strategy. When realised vol is HIGHER than that, leverage drops. When realised vol is LOWER, leverage rises (capped by regime). Floored at 0.5× — never zero.
+
+### 3.6 Effective leverage for a single R4 trade
+
+Stacking the 3 layers on a representative day: R4 ETH firing on a Tuesday in `uncertain` regime, gate not fired, vol-target lev 2.0:
+
+```
+final_contrib_to_daily_return =
+    raw_R4_ETH_return × R4_inner(2.5) × regime_weight(0.40) × vol_target(2.0)
+  = raw × 2.0
+```
+
+So R4 ETH's effective leverage on that day is **2.0× of raw spot move**, applied to **20% of capital** (Core's 50% × the portion of `rl` that R4 ETH contributes that day, ~40%).
+
+---
+
+## 4. Regime classifier ([jplus/regime.py](jplus/regime.py))
+
+Classifies each day into one of 4 modes using **only T-1 data** (look-ahead-safe).
+
+| Mode | Trigger |
+|---|---|
+| **strong_bull** | close > EMA(50) AND close > EMA(20) AND m30 > 0 AND m7 > 0 |
+| **mild_bull** | close > EMA(50) AND (m30 > 0 OR close > EMA(20)) |
+| **bear** | close < EMA(50) AND m30 < 0 |
+| **uncertain** | otherwise — OR peak-DD > 5% while bullish, OR LS circuit-breaker active |
+
+Two override rules:
+- **LS circuit breaker**: if 7-day LSR delta < -15 (long crowd unwinding), force `uncertain` for next 7 calendar days.
+- **Peak-DD override**: if current close is > 5% off trailing peak AND mode would otherwise be bullish, demote to `uncertain`.
+
+Inputs: BTC daily close, EMA(20), EMA(50), 30-day momentum, 7-day momentum, LSR snapshots, spot peak — all at T-1.
+
+---
+
+## 5. Risk profile
+
+### 5.1 Empirical concurrent notional (v6 backtest 2023-09 → 2026-04)
+
+| Metric | Value |
+|---|---|
+| Mean | 81% of capital |
+| P50 | 80% |
+| P95 | 118% |
+| P99 | 148% |
+| Max | 153% |
+
+The portfolio cross-margins. Half the time the bot has more than 100% notional
+in positions because multiple sleeves overlap.
+
+### 5.2 Per-sleeve time-occupancy
+
+| Sleeve | Time in market | Why |
+|---|---|---|
+| CPR | 101% (multi-asset overlap) | always-on contrarian |
+| CARRY | 91% | always holding while funding regime is positive |
+| ADX | 54% | trend follower |
+| THU_BEAR | 7% | Thursdays only |
+| PDO-L-RF | 1% | rare gap-retouch setup |
+| **FOMC** | **0.5%** | 8 days/year × ~10.5h |
+
+### 5.3 Pairwise overlap (% of window where both have a position)
+
+```
+                 ADX     CARRY     CPR     FOMC    PDO     THU_BEAR
+ADX           54.3%    49.4%    53.7%    0.24%    0.71%    3.75%
+CARRY                  91.0%    91.7%    0.47%    1.16%    5.92%
+CPR                              112.7%   0.52%    1.16%    6.51%
+FOMC                                     0.52%    0.02%    0.00%
+PDO                                              1.24%    0.15%
+THU_BEAR                                                  13.4%
+```
+
+FOMC is **time-disjoint** from THU_BEAR (FOMC is always Tue/Wed, THU_BEAR is Thursday)
+and effectively-disjoint from everything else (< 0.5% pairwise). Adding FOMC at
+10× leverage raises mean concurrent notional by < 0.3% of capital.
+
+---
+
+## 6. Portfolio-level performance summary (v6 simulation, all-spot signals)
+
+In-sample backtest, 973 days / 2.66 years (2023-09-01 → 2026-04-30).
+This is the canonical baseline as of 2026-05-01 — all signal computations
+read spot data (`cd_spot_binance`, `btc_1m`), aligned with TradingView's
+default BTCUSDT 1D feed. Earlier v1–v5 numbers used perp data and are
+superseded; do not compare side-by-side.
+
+| Component | Final equity | Total return | CAGR | Max DD |
+|---|---|---|---|---|
+| Core J+ alone (100%-basis) | $58,573 | +485.7% | ~95% | -32.1% |
+| Tactical alone (100%-basis) | $22,108 | +121.1% | 34.7% | -7.3% |
+| **Combined P-300** (50% Core + 50% Tactical) | **$39,480** | **+294.8%** | **~66%** | **-15.7%** |
+
+**Core sub-sleeve contribution** (each compounded as-if-standalone):
+| Sub-sleeve | Compounded return alone | Days fired | Mean per active day |
+|---|---|---|---|
+| R4 ETH | +116.7% | 64 | +0.088% |
+| R4 BTC | +62.0% | 128 | +0.052% |
+| EMA(BTC) | +41.2% | 973 (every day) | +0.044% |
+| ETH daily | +29.8% | 119 | +0.028% |
+
+(Numbers don't sum to total because they each compound independently — the
+real total combines them with vol-target leverage applied.)
+
+**Regime mix over the window:**
+- `uncertain`: 62.5% of days (R4 sleeves carry the load)
+- `bear`: 25.3% (only EMA fires)
+- `strong_bull`: 9.8%
+- `mild_bull`: 2.5%
+- Vol-target gate fired: 29.7% of days
+
+**Tactical sleeve contribution** ($10k starting):
+| Sleeve | Trades | Win% | Total $ |
+|---|---|---|---|
+| CARRY | 11 | 55% | $6,546 |
+| ADX | **21** | 33% | **$3,508** |
+| THU_BEAR | 68 | 63% | $1,371 |
+| FOMC | 11 | 100% | $668 |
+| PDO_RETOUCH | 43 | 40% | $9 |
+| CPR | 23 | 74% | $6 |
+
+**v6 vs v5 (perp signals) deltas**: combined NAV +$1,925, max DD improved by 1.7pp,
+ADX gained one trade and +$538 (the 2026-04-27 long entry that perp ADX missed
+because spot crossed 25 while perp peaked at 24.2). All other tactical sleeves
+unchanged — only signals that read raw OHLC (ADX, regime classifier, JPLUS R4)
+were affected by the data-source switch.
+
+---
+
+## 7. Methodology caveats
+
+1. **In-sample selection bias**. The Aggressive 2.0 family was chosen
+   from {Conservative / Regime-dynamic / Kelly / Aggressive} based on
+   backtest performance. Core J+'s regime weights, R4 windows, and ETH
+   weights were tuned on roughly the same era of data. Live forward
+   performance will likely be lower than the in-sample +294.8% total
+   (~66% CAGR).
+
+2. **Look-ahead protections** are real and tested ([tests/test_jplus_lookahead.py](tests/test_jplus_lookahead.py)) — the upstream ML R4 gate had
+   within-day look-ahead and was REPLACED by a rule-based gate. But not
+   every input has been audited at the same depth.
+
+3. **GOLD overlay is dropped.** Upstream P-100 J+ MLgate had a 15–55%
+   GOLD allocation as crisis hedge. p300 has no `macro_daily` table and
+   the asset isn't wired. The crypto side now stands at 1.0 weight.
+
+4. **FOMC sleeve (added 2026-04-30) has only 11 in-sample backtest events.**
+   100% in-sample win rate. Bootstrap on the 52-event historical cohort
+   (73% win) projects ~12% sleeve max DD at 10× leverage. Live edge
+   unproven; first real-time test on the next 6+ FOMC events.
+
+5. **CPR's historical sample is thin** (12 BTC + 9 ETH events upstream)
+   and **PDO's params** were selected via parameter sweeps without
+   walk-forward CV — both carry data-snooping exposure.
+
+6. **S-096 V4 event filter** (CPI/NFP-adjacent, ex-OPEX) was derived
+   post-hoc from V3's Thursday attribution. V4 backtest comparisons are
+   in-sample; live paper is the first genuine OOS record.
+
+7. **Sharpe / MDD numbers are not deflated for multiple-testing.** No
+   bootstrap CI, no Monte Carlo, no White's reality check. Treat point
+   estimates as suggestive only.
+
+8. **Daily-NAV MDD understates intraday DD at 5–10× leverage** in stress
+   regimes. Factor this into any risk claim — the -17.4% combined max DD
+   is computed on daily closes, not intraday low-water marks.
+
+9. **Live BTC-long cap (skip-if-over) vs simulator cap (proportional
+   down-scale) diverge by construction** — live NAV ≠ sim NAV even with
+   identical signals.
+
+---
+
+## 8. Where to look in the code
+
+| Concern | File |
+|---|---|
+| Variant registration + weights | [register_p300.py](register_p300.py) |
+| Sleeve dispatch + spec resolution | [services/variant_engine.py](services/variant_engine.py) |
+| Per-tactical-sleeve services | [services/](services/) — adx, carry, cpr, fomc, pdo_retouch, thu_bear |
+| Core J+ engine | [jplus/](jplus/) — simulate, regime, ema_sleeve, r4, voltarget, gate, data |
+| Decision rule for FOMC | [services/fomc_service.py:evaluate()](services/fomc_service.py) |
+| FOMC observer audit log | `data/trader.db:fomc_observer` |
+| Look-ahead clock infrastructure | [services/clock.py](services/clock.py) |
+| Price feed (1m spot, strict-`<`) | [services/price_feed.py](services/price_feed.py) |
+| Standardized close log | [services/trade_db.py:format_close_summary()](services/trade_db.py) |
+| Backtest replay engine | [backtest_runner.py](backtest_runner.py) |
+| Combined Core+Tactical NAV | [combine_replay.py](combine_replay.py) |
+| Data-layer health checks | [health.py](health.py) |

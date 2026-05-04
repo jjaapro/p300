@@ -1,1 +1,6 @@
 numpy>=1.24
+# Windows: Python's zoneinfo module needs an IANA tzdata source. Linux/Mac
+# read /usr/share/zoneinfo; Windows has no equivalent, so we depend on the
+# tzdata PyPI package. Required by services/fomc_service.py for DST-aware
+# FOMC announcement timing (14:00 ET -> UTC).
+tzdata; sys_platform == "win32"

@@ -1,0 +1,107 @@
+//@version=5
+// ═════════════════════════════════════════════════════════════════════════════
+// S-096 Thu Bear V4 — Event-Conditioned Thursday Short
+//
+// Source: P-200 v1.3 diversifier (5% weight).
+// Rationale: Historical short edge on Thursdays DURING bear/chop regime
+// concentrates around CPI- and NFP-adjacent release days and is weak around
+// OPEX (options expiration) weeks. V4 filter:
+//    Thursday AND bear_regime AND (CPI±1 OR NFP±1) AND NOT OPEX±1
+//
+// In-sample result (backtest, post-hoc):
+//    Active-day Sh 0.97 -> 1.42 (+47%), per-trade mean +0.48% -> +1.04%,
+//    MDD -27% -> -9%. Bootstrap P(mean>0) = 1.000.
+//
+// IMPORTANT: V4 was selected POST-HOC on the 2021-2026 panel. Paper/live is
+// the real OOS. Expect some honest shrinkage in production.
+//
+// Calendar APPROXIMATION (Pine cannot query the FRED/BLS calendar):
+//   NFP-adjacent Thursday ≈ Thursday with dom ≤ 7  (first-Friday week)
+//   CPI-adjacent Thursday ≈ Thursday with dom in [9, 13] (mid-month release)
+//   OPEX-adjacent Thursday ≈ Thursday with dom in [14, 22] (3rd-Friday week)
+//   => V4-eligible Thursdays: dom in {1..7} OR {9..13}
+//
+// This differs from the Python service which uses the actual FRED calendar.
+// Accuracy should be ~90% — adequate for experimentation but not authoritative.
+// For real v1.3 paper fills, use the dashboard, not this script.
+//
+// Recommended chart: BTCUSDT 1H or 4H.
+// ═════════════════════════════════════════════════════════════════════════════
+
+strategy("S-096 Thu Bear V4 (event-conditioned)",
+         overlay=true,
+         default_qty_type=strategy.percent_of_equity,
+         default_qty_value=100,
+         commission_type=strategy.commission.percent,
+         commission_value=0.05,
+         process_orders_on_close=true,
+         calc_on_every_tick=false)
+
+// ─── Inputs ────────────────────────────────────────────────────────────────
+regime_ema_len = input.int(50,    "Regime EMA length (bear if close < EMA)")
+sl_pct         = input.float(5.0, "Hard SL %", minval=0, step=0.5)
+entry_hour     = input.int(0,     "Thursday entry hour UTC",  minval=0, maxval=23)
+exit_hour      = input.int(0,     "Friday exit hour UTC (0 = Fri 00:00)", minval=0, maxval=23)
+enable_nfp     = input.bool(true,  "Enable NFP-adjacent Thu (dom 1-7)")
+enable_cpi     = input.bool(true,  "Enable CPI-adjacent Thu (dom 9-13)")
+exclude_opex   = input.bool(true,  "Exclude OPEX-adjacent Thu (dom 14-22)")
+show_bg        = input.bool(true,  "Highlight V4-eligible Thursdays")
+
+// ─── Regime filter (bear = close < EMA on daily timeframe) ─────────────────
+ema_daily = request.security(syminfo.tickerid, "D",
+                              ta.ema(close, regime_ema_len),
+                              barmerge.gaps_off, barmerge.lookahead_off)
+close_d   = request.security(syminfo.tickerid, "D", close,
+                              barmerge.gaps_off, barmerge.lookahead_off)
+bear_regime = close_d < ema_daily
+
+// ─── Calendar approximation ────────────────────────────────────────────────
+dow = dayofweek(time, "UTC")
+dom = dayofmonth(time, "UTC")
+hr  = hour(time, "UTC")
+
+is_thursday = dow == dayofweek.thursday
+
+nfp_adj_thu = is_thursday and dom >= 1  and dom <= 7  and enable_nfp
+cpi_adj_thu = is_thursday and dom >= 9  and dom <= 13 and enable_cpi
+opex_adj_thu= is_thursday and dom >= 14 and dom <= 22 and exclude_opex
+
+v4_eligible = (nfp_adj_thu or cpi_adj_thu) and not opex_adj_thu
+
+is_entry_bar = v4_eligible and bear_regime and hr == entry_hour and hr[1] != entry_hour
+// Exit: next day (Friday) at exit_hour. Simpler: close when dow becomes Friday.
+is_friday   = dow == dayofweek.friday
+is_exit_bar = is_friday and hr == exit_hour
+
+// ─── Entry / Exit ──────────────────────────────────────────────────────────
+if is_entry_bar and strategy.position_size == 0
+    strategy.entry("S096_SHORT", strategy.short)
+
+if strategy.position_size < 0 and sl_pct > 0
+    sl_price = strategy.position_avg_price * (1.0 + sl_pct / 100.0)
+    strategy.exit("S096_SL", from_entry="S096_SHORT", stop=sl_price)
+
+if is_exit_bar and strategy.position_size < 0
+    strategy.close("S096_SHORT", comment="Fri_exit")
+
+// Safety: if still short past Friday's exit hour for any reason, flatten.
+if strategy.position_size < 0 and not is_thursday and not is_friday
+    strategy.close("S096_SHORT", comment="past_window")
+
+// ─── Visualisation ─────────────────────────────────────────────────────────
+// Plot-and-fill for eligibility shading (keeps it on the price pane).
+elig = show_bg and v4_eligible and bear_regime
+top_y = elig ? high : na
+bot_y = elig ? low  : na
+pV_top = plot(top_y, title="V4 eligible top", color=color.new(color.red, 100))
+pV_bot = plot(bot_y, title="V4 eligible bot", color=color.new(color.red, 100))
+fill(pV_top, pV_bot, color=elig ? color.new(color.red, 85) : na,
+     title="V4 eligible fill")
+
+plot(ema_daily, title="Daily EMA (regime)", color=color.orange, linewidth=1)
+
+plotshape(is_entry_bar, title="V4 Short entry", style=shape.triangledown,
+          location=location.abovebar, color=color.red, size=size.small)
+plotshape(is_exit_bar and strategy.position_size[1] < 0, title="Fri exit",
+          style=shape.xcross, location=location.belowbar,
+          color=color.gray, size=size.tiny)

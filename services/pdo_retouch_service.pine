@@ -1,0 +1,133 @@
+// PDO Retouch Long (regime-filtered) — Pine v6 Strategy
+//
+// Validated 2026-04-21 across full robustness + regime-filter audit on BTC+ETH.
+// Source: probes/diagnostic_cdo_pdo_retouch.py
+//       + diagnostic_pdo_retouch_full_robustness.py
+//       + diagnostic_pdo_retouch_filter_corr.py
+//
+// MECHANISM:
+//   Day D opens >= gap_threshold% above prior day's open (PDO) → "setup day."
+//   During the day, watch for an hourly bar whose range contains the PDO level.
+//   Enter long at close of that bar (market-on-touch). Hold for hold_bars hours
+//   or exit at next day's open — whichever is first. One trade per day.
+//
+// REGIME FILTER (default ON, essential):
+//   Skip trades when BTC 30-day trailing return < -10%. Drawdown-regime trades
+//   contribute ~all tail risk (Python BTC MDD 17.7%→6.1%) for ~zero expected return.
+//   Per-year stability improves to 7/7 on BTC with filter enabled.
+//
+// PER-ASSET PARAMETERS (change hold_bars via Settings):
+//   BTC: gap=2.0%, hold=24  (Python 2020-2026 filtered: n=89, Sh+0.398, MDD 6.1%, Calmar 2.28, 7/7 years)
+//   ETH: gap=2.0%, hold=4   (Python 2020-2026 filtered: n=124, Sh+0.274, MDD 8.0%, Calmar 1.47, 6/7 years)
+//
+// CORRELATIONS (Python daily returns, pure alpha):
+//   vs BTC B&H:      +0.11 (BTC), +0.13 (ETH)
+//   vs R4 ETH proxy: +0.04 (BTC), +0.03 (ETH)
+//   vs EMA 1W 5/21:  0.00
+//
+// TRADINGVIEW VALIDATION (2026-04-21, filter ON):
+//   BTC 2017-2026: 132 trades (15.2/yr), PF 1.507, MDD 21.22%, +61.06%
+//   ETH 2017-2026: 188 trades (21.7/yr), PF 1.391, MDD 48.53%, +66.19%
+//   TV samples 2017-2026 (longer than Python's 2020-2026). Per-year trade
+//   rates match Python (~15/yr BTC filtered, ~20/yr ETH filtered). MDD
+//   inflated on TV due to 2017-2019 bear period Python sample excludes.
+//
+// PINE GOTCHA (fixed 2026-04-21):
+//   Using request.security("BINANCE:BTCUSDT", "D", close[31], ...) at daily
+//   resolution mis-offsets the index. Use HOURLY resolution instead with
+//   close[721] (≈30 days back on 1H bars). Works correctly on any chart symbol.
+//
+// Use on 1-hour chart. Cost: commission 0.05%/side (10bp RT), slippage 2 ticks.
+
+//@version=6
+strategy("PDO Retouch Long (regime-filtered)",
+     shorttitle         = "PDO-L-RF",
+     overlay            = true,
+     initial_capital    = 10000,
+     default_qty_type   = strategy.percent_of_equity,
+     default_qty_value  = 100,
+     commission_type    = strategy.commission.percent,
+     commission_value   = 0.05,
+     slippage           = 2,
+     process_orders_on_close = true,
+     pyramiding         = 0,
+     calc_on_order_fills = false,
+     calc_on_every_tick = false)
+
+// ─── Entry inputs ───
+gapThreshPct = input.float(2.0, "Gap threshold (%)",  minval=0.1,  step=0.1,  group="PDO Entry",
+                           tooltip="Day open must be ≥ this % above prior day open to qualify")
+holdBars     = input.int(24,    "Hold bars (hours)",  minval=1,              group="PDO Entry",
+                         tooltip="BTC=24, ETH=4 per validated per-asset configs")
+touchTolPct  = input.float(0.10, "Touch tolerance (%)", step=0.01,           group="PDO Entry",
+                           tooltip="Tolerance when detecting PDO touch (default 0.10%)") / 100
+
+// ─── Regime filter inputs ───
+regimeEnabled      = input.bool(true,   "Enable regime filter",          group="Regime Filter",
+                                tooltip="Skip trades when BTC 30-day return is below threshold")
+regimeThresholdPct = input.float(-10.0, "BTC 30d return threshold (%)", step=0.5, group="Regime Filter",
+                                 tooltip="Skip trades when BTC 30-day return < this value. -10% is pre-committed; -7% appears stronger in-sample audit but is post-hoc.")
+
+// ─── Position sizing ───
+leverageMult       = input.float(1.0,  "Leverage multiplier", minval=1.0, maxval=3.0, step=0.25, group="Sizing",
+                                  tooltip="1.0 = 100% equity (default). 1.5/2.0 require margin. Python-sample MDD scales linearly; TV 2017-2026 MDD is 3-6x higher — at 2x leverage ETH could see 96% MDD, size with that in mind.")
+
+// ─── BTC 30d return via HOURLY request.security (works on any chart symbol) ───
+// close[1] = 1 hour ago, close[721] = 721 hours ago ≈ 30.04 days
+[btcPrev, btc30dAgo] = request.security("BINANCE:BTCUSDT", "60", [close[1], close[721]],
+                                        lookahead=barmerge.lookahead_off)
+btc30dReturnPct = not na(btc30dAgo) and btc30dAgo > 0 ? (btcPrev - btc30dAgo) / btc30dAgo * 100 : 0.0
+bearishRegime = regimeEnabled and not na(btc30dAgo) and btc30dReturnPct < regimeThresholdPct
+
+// ─── Track daily opens ───
+newDay = ta.change(time("D")) != 0
+var float CDO = na
+var float PDO = na
+if newDay
+    PDO := CDO
+    CDO := open
+
+// ─── Setup detection (gated by regime) ───
+gapPct = not na(PDO) and PDO > 0 ? (CDO - PDO) / PDO * 100 : 0.0
+setupDay = gapPct >= gapThreshPct and not bearishRegime
+
+// ─── Per-day entry tracker ───
+var bool triedToday = false
+if newDay
+    triedToday := false
+
+// ─── Touch-based market entry ───
+pdoHi = not na(PDO) ? PDO * (1 + touchTolPct) : na
+pdoLo = not na(PDO) ? PDO * (1 - touchTolPct) : na
+touched = setupDay and not triedToday and strategy.position_size == 0 and not na(PDO) and low <= pdoHi and high >= pdoLo
+
+if touched
+    qty = (strategy.equity * leverageMult) / close
+    strategy.entry("PDO_L", strategy.long, qty=qty, comment="touch")
+    triedToday := true
+
+// ─── Track entry bar for time-based exit ───
+var int entryBarIdx = na
+if strategy.position_size > 0 and (na(strategy.position_size[1]) or strategy.position_size[1] == 0)
+    entryBarIdx := bar_index
+if strategy.position_size == 0
+    entryBarIdx := na
+
+barsHeld = not na(entryBarIdx) ? bar_index - entryBarIdx : 0
+
+// ─── Exit logic ───
+if strategy.position_size > 0
+    if barsHeld >= holdBars
+        strategy.close("PDO_L", comment="HoldLimit")
+    else if newDay
+        strategy.close("PDO_L", comment="DayEnd")
+
+// ─── Visualization ───
+plot(PDO, "PDO (prior day open)", color=color.new(color.orange, 0),  linewidth=2, style=plot.style_linebr)
+plot(CDO, "CDO (current day open)", color=color.new(color.blue, 40), linewidth=1, style=plot.style_linebr)
+plotshape(setupDay and not triedToday, "Setup", location=location.belowbar, color=color.new(color.yellow, 0),
+          style=shape.triangleup, size=size.tiny)
+plotshape(touched, "Touch", location=location.belowbar, color=color.new(color.lime, 0),
+          style=shape.circle, size=size.small)
+bgcolor(strategy.position_size > 0 ? color.new(color.green, 92) : na)
+bgcolor(bearishRegime ? color.new(color.red, 96) : na, title="Bearish regime (filter active)")

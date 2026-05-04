@@ -26,6 +26,9 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
+# clock import is done lazily inside load_daily so this module can still be
+# imported by scripts that don't need the services package.
+
 TRADER_DB = Path(__file__).resolve().parent / "data" / "trader.db"
 
 REGIME_LABELS = ("bull_trend", "bear_trend", "chop", "sell_off")
@@ -35,16 +38,28 @@ SLOPE_LOOKBACK_DAYS = 10
 # ─── Data loader (inlined from crisis_alpha_gate.load_daily) ──────────────────
 
 def load_daily(symbol: str = "BTC") -> list[tuple[str, dict]]:
-    """Daily aggregated OHLC from cd_futures_ohlcv (BTC only is supported here).
+    """Daily aggregated OHLC from cd_spot_binance (BTC only is supported here).
 
-    Returns [(iso_date, {open, close, dt}), ...] chronological.
+    Returns [(iso_date, {open, close, dt}), ...] chronological, bounded by
+    the current clock (so a replay at time T sees bars only up to T).
+
+    Switched 2026-05-01 from cd_futures_ohlcv (perp) to cd_spot_binance (spot)
+    so all signal computations use the same feed TradingView's "BTCUSDT 1D"
+    defaults to. The regime label drives THU_BEAR's prev-day filter and
+    feeds into JPLUS's classification — keeping these on spot avoids the
+    1-2pt label flips that perp/spot ADX divergence can cause.
     """
     if symbol != "BTC":
         raise NotImplementedError(f"regime_classifier only supports BTC, got {symbol}")
+    from services import clock  # lazy — avoid import cycles at module init
+    upper_ts = clock.now_ts()
     con = sqlite3.connect(str(TRADER_DB))
     rows = con.execute(
-        "SELECT timestamp, open, close FROM cd_futures_ohlcv "
-        "WHERE timestamp >= strftime('%s','2020-01-01') ORDER BY timestamp"
+        "SELECT timestamp, open, close FROM cd_spot_binance "
+        "WHERE timestamp >= strftime('%s','2020-01-01') "
+        "AND timestamp <= ? "
+        "ORDER BY timestamp",
+        (upper_ts,),
     ).fetchall()
     con.close()
     daily: dict[str, dict] = {}

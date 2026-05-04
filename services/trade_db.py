@@ -97,6 +97,47 @@ def set_config(key: str, value: str) -> None:
         (key, value, value),
     )
     con.commit()
+
+
+# ─── Per-trade close-log formatter (shared by every sleeve) ─────────────────
+
+def format_close_summary(*, trade_id: str, asset: str, direction: str,
+                          entry_price: float, exit_price: float,
+                          pnl_pct: float, pnl_usdt: float,
+                          entry_time_iso: str, exit_time_iso: str,
+                          reason: str, leverage: float | None = None) -> str:
+    """One canonical receipt line printed by every sleeve when it closes.
+
+    Format:
+      CLOSE SJ-id ASSET DIR  $entry -> $exit  pnl=±X.XX% (±$X.XX)  hold=Yd Zh  k=Kx  reason=...
+
+    Hold duration falls back to "?" if either timestamp is unparseable. The
+    `reason` is sleeve-specific (e.g. 'target_hit@29900', 'stop_loss',
+    'eod', 'scheduled_exit', 'time_stop_15d', 'fomc_T+0.5h')."""
+    from datetime import datetime, timezone
+    try:
+        a = datetime.fromisoformat(entry_time_iso)
+        b = datetime.fromisoformat(exit_time_iso)
+        if a.tzinfo is None: a = a.replace(tzinfo=timezone.utc)
+        if b.tzinfo is None: b = b.replace(tzinfo=timezone.utc)
+        delta = b - a
+        days = delta.days
+        hours = (delta.seconds // 3600)
+        if days > 0:
+            hold = f"{days}d{hours:02d}h"
+        elif hours > 0:
+            hold = f"{hours}h{(delta.seconds % 3600) // 60:02d}m"
+        else:
+            hold = f"{delta.seconds // 60}m"
+    except (TypeError, ValueError):
+        hold = "?"
+    sign = "+" if pnl_pct >= 0 else ""
+    pnl_dollar_sign = "+" if pnl_usdt >= 0 else "-"
+    lev_part = f"  k={leverage:.1f}x" if leverage is not None else ""
+    return (f"CLOSE {trade_id} {asset} {direction}  "
+            f"${entry_price:,.2f} -> ${exit_price:,.2f}  "
+            f"pnl={sign}{pnl_pct:.2f}% ({pnl_dollar_sign}${abs(pnl_usdt):,.2f})  "
+            f"hold={hold}{lev_part}  reason={reason}")
     con.close()
 
 

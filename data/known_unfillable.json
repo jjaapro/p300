@@ -1,0 +1,325 @@
+{
+  "_comment": "Data gaps that have been verified unfillable from any available source. health.py treats these as INFO instead of FAIL. fetch_coinalyze.py appends here automatically when a gap-fetch returns 0 rows. Each entry: {table, asset, start_ts (inclusive, seconds UTC), end_ts (inclusive, seconds UTC), reason, recorded_at}.",
+  "entries": [
+    {
+      "table": "ca_long_short_ratio",
+      "asset": "BTC",
+      "start_ts": 1613779200,
+      "end_ts": 1613779200,
+      "reason": "Coinalyze has no data for 2021-02-20 (verified empty response from /long-short-ratio-history)",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "ca_long_short_ratio",
+      "asset": "BTC",
+      "start_ts": 1648944000,
+      "end_ts": 1648944000,
+      "reason": "Coinalyze has no data for 2022-04-03 (verified empty response)",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "ca_long_short_ratio",
+      "asset": "BTC",
+      "start_ts": 1649203200,
+      "end_ts": 1649289600,
+      "reason": "Coinalyze has no data for 2022-04-06 / 2022-04-07 (verified empty response)",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "ca_long_short_ratio",
+      "asset": "BTC",
+      "start_ts": 1651104000,
+      "end_ts": 1651190400,
+      "reason": "Coinalyze has no data for 2022-04-28 / 2022-04-29 (verified empty response)",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "ca_long_short_ratio",
+      "asset": "BTC",
+      "start_ts": 1652140800,
+      "end_ts": 1652227200,
+      "reason": "Coinalyze has no data for 2022-05-10 / 2022-05-11 (verified empty response)",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "ca_long_short_ratio",
+      "asset": "ETH",
+      "start_ts": 1613779200,
+      "end_ts": 1613779200,
+      "reason": "Coinalyze has no data for 2021-02-20 (same source-side hole as BTC)",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "ca_long_short_ratio",
+      "asset": "ETH",
+      "start_ts": 1648944000,
+      "end_ts": 1648944000,
+      "reason": "Coinalyze has no data for 2022-04-03 (same source-side hole as BTC)",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "ca_long_short_ratio",
+      "asset": "ETH",
+      "start_ts": 1649203200,
+      "end_ts": 1649289600,
+      "reason": "Coinalyze has no data for 2022-04-06 / 2022-04-07 (same source-side hole as BTC)",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "ca_long_short_ratio",
+      "asset": "ETH",
+      "start_ts": 1651104000,
+      "end_ts": 1651190400,
+      "reason": "Coinalyze has no data for 2022-04-28 / 2022-04-29 (same source-side hole as BTC)",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "ca_long_short_ratio",
+      "asset": "ETH",
+      "start_ts": 1652140800,
+      "end_ts": 1652227200,
+      "reason": "Coinalyze has no data for 2022-05-10 / 2022-05-11 (same source-side hole as BTC)",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "btc_1m",
+      "asset": "",
+      "start_ts": 1581213600,
+      "end_ts": 1581217140,
+      "reason": "Binance source-side outage (60m starting 2020-02-09 02:00 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "btc_1m",
+      "asset": "",
+      "start_ts": 1582112160,
+      "end_ts": 1582133340,
+      "reason": "Binance source-side outage (354m starting 2020-02-19 11:36 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "btc_1m",
+      "asset": "",
+      "start_ts": 1583313720,
+      "end_ts": 1583321340,
+      "reason": "Binance source-side outage (128m starting 2020-03-04 09:22 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "btc_1m",
+      "asset": "",
+      "start_ts": 1587780000,
+      "end_ts": 1587788940,
+      "reason": "Binance source-side outage (150m starting 2020-04-25 02:00 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "btc_1m",
+      "asset": "",
+      "start_ts": 1593309600,
+      "end_ts": 1593322140,
+      "reason": "Binance source-side outage (210m starting 2020-06-28 02:00 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "btc_1m",
+      "asset": "",
+      "start_ts": 1606716000,
+      "end_ts": 1606719540,
+      "reason": "Binance source-side outage (60m starting 2020-11-30 06:00 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "btc_1m",
+      "asset": "",
+      "start_ts": 1608558480,
+      "end_ts": 1608573540,
+      "reason": "Binance source-side outage (252m starting 2020-12-21 13:48 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "btc_1m",
+      "asset": "",
+      "start_ts": 1608861600,
+      "end_ts": 1608865140,
+      "reason": "Binance source-side outage (60m starting 2020-12-25 02:00 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "btc_1m",
+      "asset": "",
+      "start_ts": 1613014860,
+      "end_ts": 1613019540,
+      "reason": "Binance source-side outage (79m starting 2021-02-11 03:41 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "btc_1m",
+      "asset": "",
+      "start_ts": 1614996000,
+      "end_ts": 1615001340,
+      "reason": "Binance source-side outage (90m starting 2021-03-06 02:00 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "btc_1m",
+      "asset": "",
+      "start_ts": 1618884000,
+      "end_ts": 1618892940,
+      "reason": "Binance source-side outage (150m starting 2021-04-20 02:00 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "btc_1m",
+      "asset": "",
+      "start_ts": 1619323260,
+      "end_ts": 1619340240,
+      "reason": "Binance source-side outage (284m starting 2021-04-25 04:01 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "btc_1m",
+      "asset": "",
+      "start_ts": 1628820000,
+      "end_ts": 1628836140,
+      "reason": "Binance source-side outage (270m starting 2021-08-13 02:00 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "btc_1m",
+      "asset": "",
+      "start_ts": 1632898800,
+      "end_ts": 1632905940,
+      "reason": "Binance source-side outage (120m starting 2021-09-29 07:00 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "btc_1m",
+      "asset": "",
+      "start_ts": 1679661600,
+      "end_ts": 1679666340,
+      "reason": "Binance source-side outage (80m starting 2023-03-24 12:40 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "eth_1m",
+      "asset": "",
+      "start_ts": 1581213600,
+      "end_ts": 1581217140,
+      "reason": "Binance source-side outage (60m starting 2020-02-09 02:00 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "eth_1m",
+      "asset": "",
+      "start_ts": 1582112160,
+      "end_ts": 1582133340,
+      "reason": "Binance source-side outage (354m starting 2020-02-19 11:36 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "eth_1m",
+      "asset": "",
+      "start_ts": 1583313720,
+      "end_ts": 1583321340,
+      "reason": "Binance source-side outage (128m starting 2020-03-04 09:22 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "eth_1m",
+      "asset": "",
+      "start_ts": 1587780000,
+      "end_ts": 1587788940,
+      "reason": "Binance source-side outage (150m starting 2020-04-25 02:00 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "eth_1m",
+      "asset": "",
+      "start_ts": 1593309600,
+      "end_ts": 1593322140,
+      "reason": "Binance source-side outage (210m starting 2020-06-28 02:00 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "eth_1m",
+      "asset": "",
+      "start_ts": 1606716000,
+      "end_ts": 1606719540,
+      "reason": "Binance source-side outage (60m starting 2020-11-30 06:00 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "eth_1m",
+      "asset": "",
+      "start_ts": 1608559740,
+      "end_ts": 1608573540,
+      "reason": "Binance source-side outage (231m starting 2020-12-21 14:09 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "eth_1m",
+      "asset": "",
+      "start_ts": 1608861600,
+      "end_ts": 1608865140,
+      "reason": "Binance source-side outage (60m starting 2020-12-25 02:00 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "eth_1m",
+      "asset": "",
+      "start_ts": 1613014860,
+      "end_ts": 1613019540,
+      "reason": "Binance source-side outage (79m starting 2021-02-11 03:41 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "eth_1m",
+      "asset": "",
+      "start_ts": 1614996000,
+      "end_ts": 1615001340,
+      "reason": "Binance source-side outage (90m starting 2021-03-06 02:00 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "eth_1m",
+      "asset": "",
+      "start_ts": 1618884000,
+      "end_ts": 1618892940,
+      "reason": "Binance source-side outage (150m starting 2021-04-20 02:00 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "eth_1m",
+      "asset": "",
+      "start_ts": 1619323260,
+      "end_ts": 1619340240,
+      "reason": "Binance source-side outage (284m starting 2021-04-25 04:01 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "eth_1m",
+      "asset": "",
+      "start_ts": 1628820000,
+      "end_ts": 1628836140,
+      "reason": "Binance source-side outage (270m starting 2021-08-13 02:00 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "eth_1m",
+      "asset": "",
+      "start_ts": 1632898800,
+      "end_ts": 1632905940,
+      "reason": "Binance source-side outage (120m starting 2021-09-29 07:00 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    },
+    {
+      "table": "eth_1m",
+      "asset": "",
+      "start_ts": 1679661600,
+      "end_ts": 1679666340,
+      "reason": "Binance source-side outage (80m starting 2023-03-24 12:40 UTC) -- verified missing after backfill-klines + 1s-archive merge; gap exists in both btc_1m and eth_1m so confirmed exchange-wide",
+      "recorded_at": "2026-04-27"
+    }
+  ]
+}

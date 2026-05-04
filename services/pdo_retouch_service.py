@@ -30,6 +30,8 @@ from pathlib import Path
 
 import numpy as np
 
+from services import clock
+
 log = logging.getLogger(__name__)
 
 DASH_DB = Path(__file__).resolve().parent.parent / "data" / "dashboard.db"
@@ -43,35 +45,43 @@ HOLD_BARS_BY_ASSET = {"BTC": 24, "ETH": 4}
 
 # ─── Data loaders ─────────────────────────────────────────────────────────────
 
+def _bar_day_start(now: datetime) -> datetime:
+    """The UTC midnight of the calendar day the just-closed 1H bar belongs to.
+
+    The just-closed bar at clock T covers [T-1h, T). Its 'day' is the date
+    of T-1h. At T = HH:00 with HH > 0 this equals T's date; at T = 00:00
+    this is the previous day. Pine's setupDay/PDO/CDO logic follows the
+    bar's day, not the clock's day, so all PDO state must be keyed on this.
+    """
+    return (now - timedelta(hours=1)).replace(
+        hour=0, minute=0, second=0, microsecond=0)
+
+
 def _load_today_open_and_pdo(asset: str) -> dict | None:
-    """Return {date, pdo, today_open, gap_pct} or None if data insufficient."""
+    """Return {date, pdo, today_open, gap_pct} for the day of the just-closed
+    1H bar, or None if data insufficient. PDO = open of the prior day's
+    first 1m bar; CDO = open of bar_day's first 1m bar."""
     table = f"{asset.lower()}_1m"
-    con = sqlite3.connect(str(TRADER_DB))
-    # Last two distinct UTC days — need prev day open (PDO) and today's open
-    row = con.execute(
-        f"SELECT MIN(open_time), MAX(open_time) FROM {table}"
-    ).fetchone()
-    con.close()
-    if not row or row[0] is None:
-        return None
-    now = datetime.now(timezone.utc)
-    today_utc_str = now.strftime("%Y-%m-%d")
-    yesterday_utc = (now - timedelta(days=1))
-    yesterday_utc_str = yesterday_utc.strftime("%Y-%m-%d")
+    now = clock.now_utc()
+    bar_day_start = _bar_day_start(now)
+    today_utc_str = bar_day_start.strftime("%Y-%m-%d")
+    yesterday_start = bar_day_start - timedelta(days=1)
+    today_start_ms = int(bar_day_start.timestamp() * 1000)
+    yesterday_start_ms = int(yesterday_start.timestamp() * 1000)
+    upper_ms = clock.now_ts_ms()
 
     con = sqlite3.connect(str(TRADER_DB))
     # PDO: first minute of prev UTC day
     pdo_row = con.execute(
         f"SELECT open_time, open FROM {table} "
         f"WHERE open_time >= ? AND open_time < ? ORDER BY open_time LIMIT 1",
-        (int(yesterday_utc.replace(hour=0, minute=0, second=0, microsecond=0).timestamp() * 1000),
-         int(now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp() * 1000)),
+        (yesterday_start_ms, today_start_ms),
     ).fetchone()
-    # Today's open
+    # Today's open (first minute of today, ≤ now)
     today_row = con.execute(
         f"SELECT open_time, open FROM {table} "
-        f"WHERE open_time >= ? ORDER BY open_time LIMIT 1",
-        (int(now.replace(hour=0, minute=0, second=0, microsecond=0).timestamp() * 1000),),
+        f"WHERE open_time >= ? AND open_time <= ? ORDER BY open_time LIMIT 1",
+        (today_start_ms, upper_ms),
     ).fetchone()
     con.close()
     if pdo_row is None or today_row is None:
@@ -84,42 +94,80 @@ def _load_today_open_and_pdo(asset: str) -> dict | None:
 
 
 def _btc_30d_return_pct() -> float | None:
-    """BTC 30d trailing return in %. Used as portfolio regime filter
-    (shared across assets — per PDO spec)."""
-    now = datetime.now(timezone.utc)
+    """BTC 30d trailing return matching Pine's request.security("60",
+    [close[1], close[721]]) at the touch-evaluation bar.
+
+    At the just-closed 1H bar that ends at clock T, Pine evaluates:
+        btcPrev    = close[1]   -> close of bar before the just-closed bar
+                                  = price at T-1h
+        btc30dAgo  = close[721] -> close of bar 721 1H bars ago
+                                  = price at T-721h
+    ratio = (btcPrev - btc30dAgo) / btc30dAgo * 100
+    The 720-hour gap = exactly 30 days.
+
+    Reads cd_spot_binance (the same BINANCE:BTCUSDT 1H feed Pine subscribes
+    to) so the regime number aligns to Pine within rounding."""
+    upper_ts = clock.now_ts()
+    # cd_spot_binance.timestamp = bar OPEN in seconds; bar covers [ts, ts+3600).
+    # Bar that closes at T-1h has open_ts = T-7200.
+    prev_bar_open_ts = upper_ts - 7200
+    # Bar that closes at T-721h has open_ts = T - 722h.
+    old_bar_open_ts = upper_ts - 722 * 3600
+
     con = sqlite3.connect(str(TRADER_DB))
-    # Latest close
-    now_row = con.execute(
-        "SELECT open_time, close FROM btc_1m ORDER BY open_time DESC LIMIT 1"
+    prev_row = con.execute(
+        "SELECT close FROM cd_spot_binance WHERE timestamp = ?",
+        (prev_bar_open_ts,),
     ).fetchone()
-    # Close ~30 days ago
-    thirty_ago_ms = int((now - timedelta(days=30)).timestamp() * 1000)
     old_row = con.execute(
-        "SELECT open_time, close FROM btc_1m WHERE open_time >= ? ORDER BY open_time LIMIT 1",
-        (thirty_ago_ms,),
+        "SELECT close FROM cd_spot_binance WHERE timestamp = ?",
+        (old_bar_open_ts,),
     ).fetchone()
     con.close()
-    if now_row is None or old_row is None:
+    if prev_row is None or old_row is None:
         return None
-    return (float(now_row[1]) - float(old_row[1])) / float(old_row[1]) * 100
+    prev_close = float(prev_row[0])
+    old_close = float(old_row[0])
+    if old_close <= 0:
+        return None
+    return (prev_close - old_close) / old_close * 100
 
 
 def _get_hourly_bar_for_today(asset: str) -> dict | None:
-    """Return latest hourly bar with high/low for touch detection.
-    Touch is detected across the current hour — the latest-observed (not
-    yet closed) hour is examined."""
+    """Return the JUST-CLOSED 1H bar (low/high/close) for touch detection.
+
+    Pine reference uses `process_orders_on_close=true` — the strategy evaluates
+    a touch when a 1H bar CLOSES (its full [low, high] range is final). To
+    match: at any tick within hour H, look at the bar that closed at the start
+    of H, i.e. covering [H-1:00, H:00). At HH:00:00 sharp this is the bar that
+    just finished; later in the hour we still report the same just-closed bar
+    so live and replay produce the same once-per-hour decision.
+
+    Returns None until at least one full prior 1H bar exists in the table.
+    """
     table = f"{asset.lower()}_1m"
-    now = datetime.now(timezone.utc)
-    hour_start_ms = int(now.replace(minute=0, second=0, microsecond=0).timestamp() * 1000)
+    now = clock.now_utc()
+    cur_hour_start = now.replace(minute=0, second=0, microsecond=0)
+    prev_hour_start_ms = int((cur_hour_start - timedelta(hours=1)).timestamp() * 1000)
+    cur_hour_start_ms = int(cur_hour_start.timestamp() * 1000)
     con = sqlite3.connect(str(TRADER_DB))
     row = con.execute(
-        f"SELECT MIN(low), MAX(high), close FROM {table} WHERE open_time >= ?",
-        (hour_start_ms,),
+        f"SELECT MIN(low), MAX(high) FROM {table} "
+        f"WHERE open_time >= ? AND open_time < ?",
+        (prev_hour_start_ms, cur_hour_start_ms),
+    ).fetchone()
+    # Close of the just-closed 1H bar = close of its last 1m bar
+    close_row = con.execute(
+        f"SELECT close FROM {table} "
+        f"WHERE open_time >= ? AND open_time < ? "
+        f"ORDER BY open_time DESC LIMIT 1",
+        (prev_hour_start_ms, cur_hour_start_ms),
     ).fetchone()
     con.close()
-    if row is None or row[0] is None:
+    if row is None or row[0] is None or close_row is None:
         return None
-    return {"low": float(row[0]), "high": float(row[1]), "close": float(row[2])}
+    return {"low": float(row[0]), "high": float(row[1]),
+            "close": float(close_row[0])}
 
 
 # ─── DB helpers ──────────────────────────────────────────────────────────────
@@ -134,24 +182,37 @@ def _next_sj_id(con: sqlite3.Connection) -> str:
     return f"SJ-{num:04d}"
 
 
-def _get_open_pdo_trade(variant_id: str, asset: str) -> dict | None:
+def _get_open_pdo_trades(variant_id: str, asset: str) -> list[dict]:
+    """All open PDO_RETOUCH trades for (variant, asset), newest first.
+    Single-open invariant; close paths sweep all so stray legacy opens get
+    cleaned up rather than ignored."""
     con = sqlite3.connect(str(DASH_DB))
     con.row_factory = sqlite3.Row
-    row = con.execute(
+    rows = con.execute(
         "SELECT * FROM trades WHERE strategy_variant=? AND strategy='PDO_RETOUCH' "
-        "AND asset=? AND status='open' LIMIT 1",
+        "AND asset=? AND status='open' ORDER BY actual_entry_time DESC",
         (variant_id, asset),
-    ).fetchone()
+    ).fetchall()
     con.close()
-    return dict(row) if row else None
+    return [dict(r) for r in rows]
 
 
-def _pdo_action_today(variant_id: str, asset: str, today_utc: str) -> bool:
+def _pdo_action_for_bar_day(variant_id: str, asset: str,
+                             bar_day_start: datetime) -> bool:
+    """True if a PDO trade was fired for this (variant, asset, bar_day).
+
+    Bar_day's setupDay can fire entries at any clock between bar_day's 01:00
+    UTC (close of bar [00:00, 01:00)) and bar_day+1's 00:00 UTC (close of
+    bar [23:00, 00:00 next day)). So the actual_entry_time of a bar_day
+    trade falls in [bar_day 01:00 UTC, bar_day+1 01:00 UTC).
+    """
+    lower = (bar_day_start + timedelta(hours=1)).isoformat()
+    upper = (bar_day_start + timedelta(days=1, hours=1)).isoformat()
     con = sqlite3.connect(str(DASH_DB))
     row = con.execute(
         "SELECT 1 FROM trades WHERE strategy_variant=? AND strategy='PDO_RETOUCH' "
-        "AND asset=? AND actual_entry_time LIKE ? LIMIT 1",
-        (variant_id, asset, f"{today_utc}%"),
+        "AND asset=? AND actual_entry_time >= ? AND actual_entry_time < ? LIMIT 1",
+        (variant_id, asset, lower, upper),
     ).fetchone()
     con.close()
     return row is not None
@@ -165,12 +226,17 @@ def _open_pdo_shadow(variant: dict, asset: str, entry_price: float,
                     trade_db.get_config("paper_account_usdt") or 10000)
     size_usdt = capital * (allocation_pct / 100.0) * leverage
     qty = size_usdt / entry_price if entry_price > 0 else 0
-    now = datetime.now(timezone.utc)
+    now = clock.now_utc()
     now_iso = now.isoformat()
-    # Exit time: min(now + hold_hours, end of UTC day)
-    end_of_day = now.replace(hour=23, minute=59, second=0, microsecond=0)
+    # Exit time: Pine's `else if newDay` closes at the close of the first
+    # 1H bar of the day AFTER bar_day (= bar_day+1 at 01:00 UTC). Capped by
+    # hold_hours (HoldLimit). Bar_day = day of the just-closed bar, derived
+    # from `now` so trades fired at bar_day+1's 00:00 UTC (against bar_day's
+    # last-hour bar) get the next-bar exit, not a 25h DayEnd.
+    bar_day_start = _bar_day_start(now)
+    day_after_01_utc = bar_day_start + timedelta(days=1, hours=1)
     by_hold = now + timedelta(hours=hold_hours)
-    exit_dt = min(end_of_day, by_hold)
+    exit_dt = min(day_after_01_utc, by_hold)
 
     con = sqlite3.connect(str(DASH_DB))
     try:
@@ -193,12 +259,13 @@ def _open_pdo_shadow(variant: dict, asset: str, entry_price: float,
 
 
 def _close_pdo_shadow(trade_id: str, exit_price: float, reason: str) -> None:
-    now_iso = datetime.now(timezone.utc).isoformat()
+    now_iso = clock.now_utc().isoformat()
     cost = 10.0 / 10000.0  # 10bp RT
     con = sqlite3.connect(str(DASH_DB))
     con.row_factory = sqlite3.Row
     row = con.execute(
-        "SELECT entry_price, qty, size_usdt FROM trades WHERE id=?", (trade_id,)
+        "SELECT asset, direction, entry_price, qty, size_usdt, "
+        "       actual_entry_time FROM trades WHERE id=?", (trade_id,)
     ).fetchone()
     if row is None:
         con.close(); return
@@ -212,6 +279,13 @@ def _close_pdo_shadow(trade_id: str, exit_price: float, reason: str) -> None:
         WHERE id=?
     """, (now_iso, exit_price, pnl_usdt, pnl_pct, notes_suffix, trade_id))
     con.commit(); con.close()
+    from services.trade_db import format_close_summary
+    log.info("[pdo] " + format_close_summary(
+        trade_id=trade_id, asset=row["asset"], direction=row["direction"],
+        entry_price=row["entry_price"], exit_price=exit_price,
+        pnl_pct=pnl_pct, pnl_usdt=pnl_usdt,
+        entry_time_iso=row["actual_entry_time"], exit_time_iso=now_iso,
+        reason=reason))
 
 
 # ─── Public tick ─────────────────────────────────────────────────────────────
@@ -234,7 +308,9 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     leverage = float(sleeve_cfg.get("_effective_leverage", 1.0))
     per_asset_alloc = alloc_pct / max(1, len(assets))
 
-    today_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    now_utc = clock.now_utc()
+    bar_day_start = _bar_day_start(now_utc)
+    bar_day_str = bar_day_start.strftime("%Y-%m-%d")
     results = []
 
     # Regime check once
@@ -244,32 +320,37 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     for asset in assets:
         hold_hours = HOLD_BARS_BY_ASSET.get(asset, 24)
 
-        # Manage existing open position first (scheduled exit fires via engine's
-        # close-due loop; here we only check immediate hold-bar hit)
-        open_trade = _get_open_pdo_trade(variant["id"], asset)
-        if open_trade:
-            # Check if hold_bars have passed since entry
-            entry_time = datetime.fromisoformat(open_trade["actual_entry_time"])
-            now = datetime.now(timezone.utc)
+        # Manage existing open positions first — iterate ALL open PDO trades
+        # for this (variant, asset); close any whose hold_hours has elapsed.
+        # Invariant is single-open; sweeping the full list cleans up any
+        # stray legacy opens.
+        open_trades = _get_open_pdo_trades(variant["id"], asset)
+        still_open: list[dict] = []
+        for tr in open_trades:
+            entry_time = datetime.fromisoformat(tr["actual_entry_time"])
+            now = clock.now_utc()
             if (now - entry_time).total_seconds() >= hold_hours * 3600:
-                try:
-                    exit_price = _get_current_price(asset)
-                    _close_pdo_shadow(open_trade["id"], exit_price, f"hold_{hold_hours}h")
-                    log.info(f"[pdo {variant['id']} {asset}] closed {open_trade['id']} "
-                             f"@ {exit_price:.2f} (hold {hold_hours}h)")
-                    results.append({"asset": asset, "status": "closed_hold",
-                                    "trade_id": open_trade["id"]})
+                exit_price = _get_current_price(asset)
+                if exit_price is None:
+                    still_open.append(tr)
+                    results.append({"asset": asset, "status": "stale_price_skip",
+                                    "trade_id": tr["id"]})
                     continue
-                except Exception as e:
-                    log.exception(f"[pdo {variant['id']} {asset}] close error: {e}")
-                    results.append({"asset": asset, "status": "error", "error": str(e)})
-                    continue
+                _close_pdo_shadow(tr["id"], exit_price, f"hold_{hold_hours}h")
+                log.info(f"[pdo {variant['id']} {asset}] closed {tr['id']} "
+                         f"@ {exit_price:.2f} (hold {hold_hours}h)")
+                results.append({"asset": asset, "status": "closed_hold",
+                                "trade_id": tr["id"]})
+            else:
+                still_open.append(tr)
+        if still_open:
+            # At least one trade still within its hold window — no new entry.
             results.append({"asset": asset, "status": "open_waiting",
-                            "trade_id": open_trade["id"]})
+                            "open_count": len(still_open)})
             continue
 
-        # Already fired today (one-trade-per-day rule)
-        if _pdo_action_today(variant["id"], asset, today_utc):
+        # Already fired for this bar_day's setupDay (one-trade-per-day rule)
+        if _pdo_action_for_bar_day(variant["id"], asset, bar_day_start):
             results.append({"asset": asset, "status": "already_fired_today"})
             continue
 
@@ -279,7 +360,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                             "btc_30d_pct": btc_30d})
             continue
 
-        # Load today's open + PDO
+        # Load bar_day's open + PDO (PDO=prev day's open, CDO=bar_day's open)
         sig = _load_today_open_and_pdo(asset)
         if sig is None:
             results.append({"asset": asset, "status": "data_missing"})
@@ -291,7 +372,12 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                             "gap_pct": round(sig["gap_pct"], 2)})
             continue
 
-        # Touch detection: current hour's bar range contains PDO?
+        # Touch detection: just-closed 1H bar's range contains PDO?
+        # At clock HH:00..HH:59, _get_hourly_bar_for_today returns the bar
+        # that closed at HH:00, i.e. covering [HH-1:00, HH:00). At HH=0 that
+        # bar belongs to yesterday — which is correctly bar_day for the
+        # PDO/CDO/idempotency above, so we evaluate Pine's last-hour-of-day
+        # entry opportunity here too.
         hr = _get_hourly_bar_for_today(asset)
         if hr is None:
             results.append({"asset": asset, "status": "no_hour_bar"})
@@ -306,11 +392,17 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                             "hour_high": round(hr["high"], 2)})
             continue
 
+        # Cross-sleeve BTC-long cap (max_net_btc) — pre-leverage % of capital.
+        if asset == "BTC":
+            from services.risk_caps import btc_long_cap_allows
+            if not btc_long_cap_allows(variant, per_asset_alloc):
+                results.append({"asset": asset, "status": "btc_cap_block"})
+                continue
+
         # Fire
-        try:
-            entry_price = _get_current_price(asset)
-        except Exception as e:
-            log.exception(f"[pdo {variant['id']} {asset}] price fetch error: {e}")
+        entry_price = _get_current_price(asset)
+        if entry_price is None:
+            results.append({"asset": asset, "status": "stale_price_skip"})
             continue
 
         reason = {
@@ -337,7 +429,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                     "already_fired_today", "open_waiting")]
     return {
         "status": "dispatched" if non_neutral else "no_action",
-        "date": today_utc,
+        "date": bar_day_str,
         "btc_30d_pct": btc_30d,
         "regime_ok": regime_ok,
         "assets": results,

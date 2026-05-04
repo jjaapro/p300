@@ -31,6 +31,8 @@ from pathlib import Path
 
 import numpy as np
 
+from services import clock
+
 log = logging.getLogger(__name__)
 
 DASH_DB = Path(__file__).resolve().parent.parent / "data" / "dashboard.db"
@@ -45,46 +47,108 @@ PCTILE_THRESHOLD = 0.20
 
 # ─── Data loaders ─────────────────────────────────────────────────────────────
 
+# CPR's signal is a DAILY signal computed on the latest fully-closed day. Within
+# the same UTC day the result is stationary — it does not change with intraday
+# ticks. We cache loaded series per (day_key, asset) so hourly ticks within a
+# day reuse the heavy per-minute aggregation. This benefits BOTH live (small)
+# and backtest (large — full 1m history is millions of rows).
+_DAILY_LOOKBACK_DAYS = PCTILE_WINDOW + 60  # 180 + 60 = 240d, matches _evaluate_today
+_daily_closes_cache: dict[tuple[str, str], tuple] = {}
+_funding_map_cache: tuple[str, dict] | None = None
+_ls_map_cache: dict[tuple[str, str], dict] = {}
+
+
 def _load_daily_closes(asset: str) -> tuple[list[str], np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
-    """Daily OHLC from trader.db for given asset. Returns (dates_str, open, high, low, close)."""
+    """Daily OHLC from trader.db for given asset. Returns (dates_str, open, high, low, close).
+
+    Drops today's (still-forming) day so the caller sees only closed daily
+    bars — matches a daily-close backtest convention.
+
+    Cached per (asset, UTC-day). Only loads the last _DAILY_LOOKBACK_DAYS of
+    1m data — enough for CPR's PCTILE_WINDOW (180d) + a warmup buffer.
+    """
+    day_key = clock.now_utc().strftime("%Y-%m-%d")
+    cached = _daily_closes_cache.get((asset, day_key))
+    if cached is not None:
+        return cached
+
     table = f"{asset.lower()}_1m"
+    upper_ms = clock.now_ts_ms()
+    since_ms = upper_ms - _DAILY_LOOKBACK_DAYS * 86400_000
     con = sqlite3.connect(str(TRADER_DB))
     rows = con.execute(
-        f"SELECT open_time, open, high, low, close FROM {table} ORDER BY open_time"
+        f"SELECT open_time, open, high, low, close FROM {table} "
+        f"WHERE open_time >= ? AND open_time <= ? ORDER BY open_time",
+        (since_ms, upper_ms),
     ).fetchall()
     con.close()
+    if not rows:
+        out = ([], np.empty(0), np.empty(0), np.empty(0), np.empty(0))
+        _daily_closes_cache[(asset, day_key)] = out
+        return out
     arr = np.asarray(rows, dtype=np.float64)
     ts_ms = arr[:, 0].astype(np.int64)
     day = ts_ms // 86400000
     starts = np.concatenate([[0], np.where(np.diff(day) != 0)[0] + 1, [len(day)]])
     n = len(starts) - 1
-    dates: list[str] = []; o = np.empty(n); h = np.empty(n); l = np.empty(n); c = np.empty(n)
+    today_day = int(clock.now_ts() // 86400)
+    dates: list[str] = []
+    o_l, h_l, l_l, c_l = [], [], [], []
     for i in range(n):
         s, e = starts[i], starts[i + 1]
+        if int(day[s]) == today_day:
+            continue  # drop today's partial bar
         dt = datetime.fromtimestamp(day[s] * 86400, tz=timezone.utc)
         dates.append(dt.strftime("%Y-%m-%d"))
-        o[i] = arr[s, 1]; h[i] = arr[s:e, 2].max(); l[i] = arr[s:e, 3].min(); c[i] = arr[e - 1, 4]
-    return dates, o, h, l, c
+        o_l.append(arr[s, 1]); h_l.append(arr[s:e, 2].max())
+        l_l.append(arr[s:e, 3].min()); c_l.append(arr[e - 1, 4])
+    out = (dates, np.asarray(o_l), np.asarray(h_l), np.asarray(l_l), np.asarray(c_l))
+    # Prune cache to avoid unbounded growth during long replays.
+    if len(_daily_closes_cache) > 8:
+        _daily_closes_cache.clear()
+    _daily_closes_cache[(asset, day_key)] = out
+    return out
 
 
 def _load_funding_daily() -> dict[str, float]:
-    """Daily mean funding rate (fr_close) from cd_funding_rate."""
+    """Daily mean funding rate (fr_close) from cd_funding_rate, bounded by clock.
+    Cached per UTC day."""
+    global _funding_map_cache
+    day_key = clock.now_utc().strftime("%Y-%m-%d")
+    if _funding_map_cache and _funding_map_cache[0] == day_key:
+        return _funding_map_cache[1]
+    upper_ts = clock.now_ts()
     con = sqlite3.connect(str(TRADER_DB))
     rows = con.execute(
-        "SELECT date(timestamp,'unixepoch'), AVG(fr_close) FROM cd_funding_rate GROUP BY 1 ORDER BY 1"
+        "SELECT date(timestamp,'unixepoch'), AVG(fr_close) FROM cd_funding_rate "
+        "WHERE timestamp <= ? GROUP BY 1 ORDER BY 1",
+        (upper_ts,),
     ).fetchall()
     con.close()
-    return {r[0]: r[1] for r in rows}
+    out = {r[0]: r[1] for r in rows}
+    _funding_map_cache = (day_key, out)
+    return out
 
 
 def _load_ls_ratio_daily(asset: str) -> dict[str, float]:
+    """Cached per (asset, UTC-day)."""
+    day_key = clock.now_utc().strftime("%Y-%m-%d")
+    cached = _ls_map_cache.get((asset, day_key))
+    if cached is not None:
+        return cached
+    upper_ts = clock.now_ts()
     con = sqlite3.connect(str(TRADER_DB))
     rows = con.execute(
-        "SELECT date(timestamp,'unixepoch'), ratio FROM ca_long_short_ratio WHERE asset=? ORDER BY timestamp",
-        (asset.upper(),),
+        "SELECT date(timestamp,'unixepoch'), ratio FROM ca_long_short_ratio "
+        "WHERE asset=? AND timestamp <= ? ORDER BY timestamp",
+        (asset.upper(), upper_ts),
     ).fetchall()
     con.close()
-    return {r[0]: r[1] for r in rows}
+    out = {r[0]: r[1] for r in rows}
+    if len(_ls_map_cache) > 8:
+        _ls_map_cache.clear()
+    _ls_map_cache[(asset, day_key)] = out
+    return out
 
 
 # ─── Signal evaluator ────────────────────────────────────────────────────────
@@ -186,16 +250,18 @@ def _next_sj_id(con: sqlite3.Connection) -> str:
     return f"SJ-{num:04d}"
 
 
-def _get_open_cpr_trade(variant_id: str, asset: str) -> dict | None:
+def _get_open_cpr_trades(variant_id: str, asset: str) -> list[dict]:
+    """All open CPR trades for (variant, asset), newest first. Invariant is
+    single-open; sweep the full list on close paths."""
     con = sqlite3.connect(str(DASH_DB))
     con.row_factory = sqlite3.Row
-    row = con.execute(
+    rows = con.execute(
         "SELECT * FROM trades WHERE strategy_variant=? AND strategy='CPR' "
-        "AND asset=? AND status='open' LIMIT 1",
+        "AND asset=? AND status='open' ORDER BY actual_entry_time DESC",
         (variant_id, asset),
-    ).fetchone()
+    ).fetchall()
     con.close()
-    return dict(row) if row else None
+    return [dict(r) for r in rows]
 
 
 def _cpr_action_today(variant_id: str, asset: str, today_utc: str) -> bool:
@@ -218,7 +284,7 @@ def _open_cpr_shadow(variant: dict, asset: str, entry_price: float,
                     trade_db.get_config("paper_account_usdt") or 10000)
     size_usdt = capital * (allocation_pct / 100.0) * leverage
     qty = size_usdt / entry_price if entry_price > 0 else 0
-    now = datetime.now(timezone.utc)
+    now = clock.now_utc()
     now_iso = now.isoformat()
     exit_dt = now + timedelta(days=TIME_STOP_DAYS)
     con = sqlite3.connect(str(DASH_DB))
@@ -243,12 +309,13 @@ def _open_cpr_shadow(variant: dict, asset: str, entry_price: float,
 
 
 def _close_cpr_shadow(trade_id: str, exit_price: float, reason: str) -> None:
-    now_iso = datetime.now(timezone.utc).isoformat()
+    now_iso = clock.now_utc().isoformat()
     cost = COST_BP_RT / 10000.0
     con = sqlite3.connect(str(DASH_DB))
     con.row_factory = sqlite3.Row
     row = con.execute(
-        "SELECT entry_price, qty, size_usdt FROM trades WHERE id=?", (trade_id,)
+        "SELECT asset, direction, entry_price, qty, size_usdt, "
+        "       actual_entry_time FROM trades WHERE id=?", (trade_id,)
     ).fetchone()
     if row is None:
         con.close(); return
@@ -263,6 +330,13 @@ def _close_cpr_shadow(trade_id: str, exit_price: float, reason: str) -> None:
         WHERE id=?
     """, (now_iso, exit_price, pnl_usdt, pnl_pct, notes_suffix, trade_id))
     con.commit(); con.close()
+    from services.trade_db import format_close_summary
+    log.info("[cpr] " + format_close_summary(
+        trade_id=trade_id, asset=row["asset"], direction=row["direction"],
+        entry_price=row["entry_price"], exit_price=exit_price,
+        pnl_pct=pnl_pct, pnl_usdt=pnl_usdt,
+        entry_time_iso=row["actual_entry_time"], exit_time_iso=now_iso,
+        reason=reason))
 
 
 # ─── Public tick ─────────────────────────────────────────────────────────────
@@ -283,7 +357,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
 
     # Split allocation across assets (default: even split)
     per_asset_alloc = alloc_pct / max(1, len(assets))
-    today_utc = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    today_utc = clock.now_utc().strftime("%Y-%m-%d")
 
     results = []
     for asset in assets:
@@ -296,46 +370,58 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             results.append({"asset": asset, "status": "no_signal", "reason": sig.get("reason") if sig else "none"})
             continue
 
-        # Check open position first — manage stop / target / time-stop exits
-        open_trade = _get_open_cpr_trade(variant["id"], asset)
-        if open_trade:
+        # Manage ALL open CPR positions for this (variant, asset). For each,
+        # check stop / target / time-stop; close any that trigger. Invariant
+        # is single-open; sweeping the full list guards against stray legacy
+        # opens.
+        open_trades = _get_open_cpr_trades(variant["id"], asset)
+        still_open: list[dict] = []
+        price = _get_current_price(asset) if open_trades else None
+        for tr in open_trades:
+            if price is None:
+                still_open.append(tr)
+                results.append({"asset": asset, "status": "stale_price_skip",
+                                "trade_id": tr["id"]})
+                continue
             try:
-                price = _get_current_price(asset)
-                entry_price = float(open_trade["entry_price"])
+                entry_price = float(tr["entry_price"])
                 stop_px = entry_price * (1 - STOP_PCT)
-                # Target from notes JSON
-                notes = open_trade.get("notes") or "{}"
+                notes = tr.get("notes") or "{}"
                 try:
                     notes_data = json.loads(notes.split("\n")[0])
                     target_px = float(notes_data.get("target", 0))
                 except (json.JSONDecodeError, ValueError):
                     target_px = 0.0
-                # Check stop
                 if price <= stop_px:
-                    _close_cpr_shadow(open_trade["id"], stop_px, "stop_hit")
-                    log.info(f"[cpr {variant['id']} {asset}] closed {open_trade['id']} stop={stop_px:.2f}")
-                    results.append({"asset": asset, "status": "closed_stop", "trade_id": open_trade["id"]})
+                    _close_cpr_shadow(tr["id"], price, f"stop_hit@{price:.2f}")
+                    log.info(f"[cpr {variant['id']} {asset}] closed {tr['id']} "
+                             f"stop (fill={price:.2f}, level={stop_px:.2f})")
+                    results.append({"asset": asset, "status": "closed_stop", "trade_id": tr["id"]})
                     continue
-                # Check target
                 if target_px > 0 and price >= target_px:
-                    _close_cpr_shadow(open_trade["id"], target_px, "target_hit")
-                    log.info(f"[cpr {variant['id']} {asset}] closed {open_trade['id']} target={target_px:.2f}")
-                    results.append({"asset": asset, "status": "closed_target", "trade_id": open_trade["id"]})
+                    _close_cpr_shadow(tr["id"], price, f"target_hit@{price:.2f}")
+                    log.info(f"[cpr {variant['id']} {asset}] closed {tr['id']} "
+                             f"target (fill={price:.2f}, level={target_px:.2f})")
+                    results.append({"asset": asset, "status": "closed_target", "trade_id": tr["id"]})
                     continue
-                # Check time-stop (age > 15d)
-                entry_time = datetime.fromisoformat(open_trade["actual_entry_time"])
-                age_days = (datetime.now(timezone.utc) - entry_time).days
+                entry_time = datetime.fromisoformat(tr["actual_entry_time"])
+                age_days = (clock.now_utc() - entry_time).days
                 if age_days >= TIME_STOP_DAYS:
-                    _close_cpr_shadow(open_trade["id"], price, f"time_stop_{age_days}d")
-                    log.info(f"[cpr {variant['id']} {asset}] closed {open_trade['id']} time_stop")
-                    results.append({"asset": asset, "status": "closed_time", "trade_id": open_trade["id"]})
+                    _close_cpr_shadow(tr["id"], price, f"time_stop_{age_days}d")
+                    log.info(f"[cpr {variant['id']} {asset}] closed {tr['id']} time_stop")
+                    results.append({"asset": asset, "status": "closed_time", "trade_id": tr["id"]})
                     continue
-                results.append({"asset": asset, "status": "open_waiting", "trade_id": open_trade["id"]})
-                continue
+                still_open.append(tr)
             except Exception as e:
                 log.exception(f"[cpr {variant['id']} {asset}] exit-check error: {e}")
+                still_open.append(tr)
                 results.append({"asset": asset, "status": "error", "error": str(e)})
-                continue
+
+        if still_open:
+            # Single-open invariant: if any trade remains open, skip new entry.
+            results.append({"asset": asset, "status": "open_waiting",
+                            "open_count": len(still_open)})
+            continue
 
         # No open position — check if signal fired today
         if not sig.get("fire"):
@@ -346,11 +432,17 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             results.append({"asset": asset, "status": "already_fired_today"})
             continue
 
+        # Cross-sleeve BTC-long cap — shared with PDO_RETOUCH.
+        if asset == "BTC":
+            from services.risk_caps import btc_long_cap_allows
+            if not btc_long_cap_allows(variant, per_asset_alloc):
+                results.append({"asset": asset, "status": "btc_cap_block"})
+                continue
+
         # Fire entry
-        try:
-            entry_price = _get_current_price(asset)
-        except Exception as e:
-            log.exception(f"[cpr {variant['id']} {asset}] price fetch error: {e}")
+        entry_price = _get_current_price(asset)
+        if entry_price is None:
+            results.append({"asset": asset, "status": "stale_price_skip"})
             continue
 
         target = sig["bb_upper"]
