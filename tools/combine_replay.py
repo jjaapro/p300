@@ -31,7 +31,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent
+REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
 from services import variant_registry  # noqa: E402

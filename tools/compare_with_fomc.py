@@ -24,7 +24,7 @@ from datetime import date, timedelta
 from pathlib import Path
 from services import db
 
-REPO = Path(__file__).resolve().parent
+REPO = Path(__file__).resolve().parent.parent
 def load_trades(variant_id: str) -> list[dict]:
     con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row

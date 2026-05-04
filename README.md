@@ -10,7 +10,7 @@ history comes from Coinalyze (free tier).
 > **Status: SHADOW validation in progress.** All prior upstream backtest
 > numbers are treated as compromised and have been stripped. A clean replay
 > over 2021-07 → 2026-04 with no look-ahead produced Sharpe ≈ 1.73 with a
-> bootstrap 95% CI of [0.96, 2.44] (`python tools_statistical_validation.py`).
+> bootstrap 95% CI of [0.96, 2.44] (`python tools/tools_statistical_validation.py`).
 > Live SHADOW accumulation is the only real OOS validation path.
 
 ## What runs live here
@@ -122,9 +122,15 @@ p300/
 ├── regime_classifier.py           # BTC regime gate (used by S-096 V3/V4)
 ├── health.py                      # 7 invariant checks for live operation
 ├── backtest_runner.py             # clock-driven hourly replay over a date window
-├── combine_replay.py              # combines tactical replay + Core J+ daily returns
-├── backtest_report.py             # per-variant deep metrics report
-├── tools_statistical_validation.py# bootstrap Sharpe CI + rolling/year breakdown
+├── tools/
+│   ├── backtest_report.py          # per-variant deep metrics report
+│   ├── bitstamp_adx_backtest.py    # Pine S-003 ADX validator (vs TV BITSTAMP)
+│   ├── bitstamp_thu_bear_backtest.py # Pine S-096 THU_BEAR validator
+│   ├── combine_replay.py           # combines tactical replay + Core J+ daily returns
+│   ├── compare_with_fomc.py        # A/B comparison helper
+│   ├── fomc_backtest_drilldown.py  # FOMC trade-by-trade attribution
+│   ├── fomc_leverage_sensitivity.py# FOMC leverage sweep
+│   └── tools_statistical_validation.py # bootstrap Sharpe CI + rolling/year breakdown
 ├── requirements.txt               # numpy only
 ├── data/
 │   ├── trader.db                  # market data (built by bootstrap; live-refreshed)
@@ -210,7 +216,7 @@ whether any specific backtest is trusted:
   wiring through an `execution_service` that the stripped `variant_engine`
   doesn't have — this bot only writes phantom trades.
 - **No dashboard.** Introspection is via sqlite queries (examples above) and
-  `python backtest_report.py --variant <id>` for replay metrics.
+  `python tools/backtest_report.py --variant <id>` for replay metrics.
 - **No prior-backtest equity seed.** Any daily-returns panel present in older
   versions of this repo has been removed as compromised. Equity attribution
   begins from the first clean replay or live SHADOW fill.

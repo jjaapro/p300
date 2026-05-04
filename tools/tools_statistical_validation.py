@@ -25,7 +25,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from services import db
 
-REPO = Path(__file__).resolve().parent
+REPO = Path(__file__).resolve().parent.parent
 def load_returns(variant_id: str) -> list[tuple[str, float]]:
     con = sqlite3.connect(str(db.DASH_DB))
     rows = con.execute(

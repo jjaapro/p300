@@ -36,7 +36,7 @@ import urllib.request
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent
+REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
 # Pine inputs (mirrored verbatim from services/thu_bear_service.pine)

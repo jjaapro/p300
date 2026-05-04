@@ -16,16 +16,21 @@ from __future__ import annotations
 
 import argparse
 import sqlite3
+import sys
 from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-DB = Path(__file__).resolve().parent / "data" / "dashboard.db"
+# tools/ scripts run from repo root via `python tools/backtest_report.py ...`
+# Add the repo root to sys.path so `from services import db` resolves.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from services import db  # noqa: E402
+
 DEFAULT_VARIANT = "p300_aggressive_v2_v1_0__replay"
 
 
 def load_variant_capital(variant_id: str) -> float:
-    con = sqlite3.connect(str(DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     row = con.execute("SELECT capital_usdt FROM variants WHERE id=?",
                       (variant_id,)).fetchone()
     con.close()
@@ -34,7 +39,7 @@ def load_variant_capital(variant_id: str) -> float:
 
 def load_nav_series(variant_id: str) -> list[tuple[str, float, float]]:
     """[(date, return_pct, equity)] — equity compounded from return_pct."""
-    con = sqlite3.connect(str(DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     rows = con.execute("""
         SELECT date, return_1x_pct FROM variant_daily_returns
         WHERE variant_id = ? AND source = 'replay'
@@ -52,7 +57,7 @@ def load_nav_series(variant_id: str) -> list[tuple[str, float, float]]:
 
 
 def load_trades(variant_id: str) -> list[dict]:
-    con = sqlite3.connect(str(DB))
+    con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     rows = con.execute("""
         SELECT * FROM trades

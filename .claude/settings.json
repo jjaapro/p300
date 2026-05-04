@@ -79,7 +79,8 @@
       "Bash(grep -E --line-buffered \"Replay variant|Total ticks|Replay complete|TACTICAL-ONLY|Final equity|Total return|CAGR|Sharpe|Max drawdown|trades/s|Per-sleeve|^  [A-Z_-]+ +[0-9]|Traceback|ERROR|FAILED|t/s eta=[0-9]+s\\\\$\")",
       "Bash(python -c \"from services.risk_config import sl_semantic, effective_price_move_sl_pct; print\\('semantic:', sl_semantic\\(\\)\\); print\\('SL 10pct k=5:', effective_price_move_sl_pct\\(10.0, 5.0\\)\\)\")",
       "Bash(python bitstamp_adx_backtest.py --start 2023-09-01 --end 2026-05-04 --mode stateful --sl-pct 10)",
-      "Bash(python -c \"from services import adx_service; print\\('OK; TREND_EMA_LEN=', adx_service.TREND_EMA_LEN\\)\")"
+      "Bash(python -c \"from services import adx_service; print\\('OK; TREND_EMA_LEN=', adx_service.TREND_EMA_LEN\\)\")",
+      "Bash(git restore *)"
     ],
     "additionalDirectories": [
       "\\tmp"
