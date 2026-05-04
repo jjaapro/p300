@@ -172,16 +172,6 @@ def _get_hourly_bar_for_today(asset: str) -> dict | None:
 
 # ─── DB helpers ──────────────────────────────────────────────────────────────
 
-def _next_sj_id(con: sqlite3.Connection) -> str:
-    row = con.execute(
-        "SELECT id FROM trades WHERE series='SJ' ORDER BY id DESC LIMIT 1"
-    ).fetchone()
-    if row is None:
-        return "SJ-0001"
-    num = int(row[0].split("-")[1]) + 1
-    return f"SJ-{num:04d}"
-
-
 def _get_open_pdo_trades(variant_id: str, asset: str) -> list[dict]:
     """All open PDO_RETOUCH trades for (variant, asset), newest first.
     Single-open invariant; close paths sweep all so stray legacy opens get
@@ -221,41 +211,26 @@ def _pdo_action_for_bar_day(variant_id: str, asset: str,
 def _open_pdo_shadow(variant: dict, asset: str, entry_price: float,
                      allocation_pct: float, leverage: float,
                      hold_hours: int, reason: dict) -> str:
-    from services import trade_db
-    capital = float(variant.get("capital_usdt") or
-                    trade_db.get_config("paper_account_usdt") or 10000)
-    size_usdt = capital * (allocation_pct / 100.0) * leverage
-    qty = size_usdt / entry_price if entry_price > 0 else 0
+    """Open a PDO_RETOUCH shadow trade — delegates to services.trades.open_shadow_trade.
+
+    Scheduled exit: Pine's ``else if newDay`` closes at the close of the
+    first 1H bar of the day AFTER bar_day (= bar_day+1 at 01:00 UTC),
+    capped by hold_hours (HoldLimit). Bar_day = day of the just-closed bar,
+    derived from ``now`` so trades fired at bar_day+1's 00:00 UTC (against
+    bar_day's last-hour bar) get the next-bar exit, not a 25h DayEnd.
+    """
+    from services.trades import open_shadow_trade
     now = clock.now_utc()
-    now_iso = now.isoformat()
-    # Exit time: Pine's `else if newDay` closes at the close of the first
-    # 1H bar of the day AFTER bar_day (= bar_day+1 at 01:00 UTC). Capped by
-    # hold_hours (HoldLimit). Bar_day = day of the just-closed bar, derived
-    # from `now` so trades fired at bar_day+1's 00:00 UTC (against bar_day's
-    # last-hour bar) get the next-bar exit, not a 25h DayEnd.
     bar_day_start = _bar_day_start(now)
     day_after_01_utc = bar_day_start + timedelta(days=1, hours=1)
     by_hold = now + timedelta(hours=hold_hours)
     exit_dt = min(day_after_01_utc, by_hold)
-
-    con = sqlite3.connect(str(DASH_DB))
-    try:
-        tid = _next_sj_id(con)
-        con.execute("""
-            INSERT INTO trades (id, series, asset, direction, strategy, regime,
-                allocation_pct, leverage, entry_time, exit_time, status,
-                execution_mode, strategy_variant, actual_entry_time,
-                entry_price, size_usdt, qty, order_ids, notes)
-            VALUES (?, 'SJ', ?, 'LONG', 'PDO_RETOUCH', ?, ?, ?, ?, ?, 'open',
-                    'SHADOW', ?, ?, ?, ?, ?, ?, ?)
-        """, (tid, asset, reason.get("regime", "unknown"), allocation_pct,
-              leverage, now_iso, exit_dt.isoformat(), variant["id"], now_iso,
-              entry_price, size_usdt, qty, json.dumps([f"SHADOW-{tid}"]),
-              json.dumps(reason, default=str)))
-        con.commit()
-    finally:
-        con.close()
-    return tid
+    return open_shadow_trade(
+        variant=variant, sleeve_name="PDO_RETOUCH",
+        asset=asset, direction="LONG",
+        entry_price=entry_price, allocation_pct=allocation_pct, leverage=leverage,
+        reason=reason, scheduled_exit_dt=exit_dt,
+    )
 
 
 def _close_pdo_shadow(trade_id: str, exit_price: float, reason: str) -> None:

@@ -25,6 +25,7 @@ one module.
 """
 from __future__ import annotations
 
+import json
 import logging
 import sqlite3
 from dataclasses import dataclass
@@ -42,6 +43,86 @@ DEFAULT_COST_BP_RT = 10.0
 # CARRY pays fees on BOTH the spot leg and the perp leg, both sides — 4 taker
 # fills × 5bp = 20bp per round-trip on the synthetic position.
 CARRY_COST_PCT = 0.20
+
+# Distant-future sentinel for "open-ended" trades (CARRY, ADX) — written to
+# the exit_time column so the engine's close_due loop never matches them.
+_NO_SCHEDULED_EXIT_ISO = "2099-12-31T00:00:00+00:00"
+
+
+def _next_sj_id(con: sqlite3.Connection) -> str:
+    """Mint the next sequential SJ-NNNN trade ID. Looks at MAX(id)+1 in the
+    SJ series. Race-safe under SQLite's single-writer semantics; caller is
+    expected to hold the connection through the subsequent INSERT."""
+    row = con.execute(
+        "SELECT id FROM trades WHERE series='SJ' ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+    if row is None:
+        return "SJ-0001"
+    return f"SJ-{int(row[0].split('-')[1]) + 1:04d}"
+
+
+def open_shadow_trade(*, variant: dict, sleeve_name: str,
+                      asset: str, direction: str,
+                      entry_price: float, allocation_pct: float,
+                      leverage: float = 1.0,
+                      reason: dict,
+                      scheduled_exit_dt: datetime | None = None,
+                      regime_value: str | None = None) -> str:
+    """Insert a new shadow trade row and return its trade ID.
+
+    Centralizes the per-sleeve open path: capital lookup, size_usdt math,
+    qty math, ID mint, INSERT — previously duplicated 6× across services.
+
+    Parameters that vary per sleeve:
+      sleeve_name        goes into the trades.strategy column (uppercased)
+      asset              "BTC" / "ETH" — written to trades.asset
+      direction          "LONG" / "SHORT" — written to trades.direction
+      scheduled_exit_dt  if provided, written to trades.exit_time so the
+                         engine's close_due loop has a fallback close time;
+                         None means open-ended (signal-based exit only).
+      regime_value       what to write to the trades.regime column. Defaults
+                         to ``reason.get("regime", "unknown")``. FOMC uses
+                         ``reason.get("phase", ...)`` so passes it explicitly.
+      reason             arbitrary dict — serialized into trades.notes for
+                         post-hoc inspection.
+
+    Sizing:
+      capital = variant.capital_usdt or paper_account_usdt config or $10k
+      size_usdt = capital × (allocation_pct / 100) × leverage
+      qty = size_usdt / entry_price  (clamped to 0 if entry_price <= 0)
+    """
+    from services import trade_db
+    capital = float(variant.get("capital_usdt") or
+                    trade_db.get_config("paper_account_usdt") or 10000)
+    size_usdt = capital * (allocation_pct / 100.0) * leverage
+    qty = size_usdt / entry_price if entry_price > 0 else 0.0
+
+    now_iso = clock.now_utc().isoformat()
+    exit_iso = (scheduled_exit_dt.isoformat() if scheduled_exit_dt is not None
+                else _NO_SCHEDULED_EXIT_ISO)
+    if regime_value is None:
+        regime_value = reason.get("regime", "unknown")
+
+    con = sqlite3.connect(str(DASH_DB))
+    try:
+        tid = _next_sj_id(con)
+        con.execute("""
+            INSERT INTO trades (id, series, asset, direction, strategy, regime,
+                allocation_pct, leverage, entry_time, exit_time, status,
+                execution_mode, strategy_variant, actual_entry_time,
+                entry_price, size_usdt, qty, order_ids, notes)
+            VALUES (?, 'SJ', ?, ?, ?, ?, ?, ?, ?, ?, 'open',
+                    'SHADOW', ?, ?, ?, ?, ?, ?, ?)
+        """, (tid, asset, direction.upper(), sleeve_name.upper(),
+              regime_value, allocation_pct, leverage,
+              now_iso, exit_iso, variant["id"], now_iso,
+              entry_price, size_usdt, qty,
+              json.dumps([f"SHADOW-{tid}"]),
+              json.dumps(reason, default=str)))
+        con.commit()
+    finally:
+        con.close()
+    return tid
 
 
 @dataclass(frozen=True)

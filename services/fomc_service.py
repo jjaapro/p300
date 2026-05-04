@@ -343,42 +343,20 @@ COST_BP_RT = 10.0
 def _open_fomc_long(variant: dict, asset: str, entry_price: float,
                      allocation_pct: float, leverage: float,
                      reason: dict, exit_iso: str) -> str:
-    """Mirror the standard tactical-sleeve open path. Writes to dashboard.db
-    'trades' table tagged with the variant_id, strategy='FOMC', execution_mode
-    ='SHADOW'. Idempotency is the caller's responsibility."""
-    import json
-    import sqlite3
-    from services import trade_db
-    capital = float(variant.get("capital_usdt") or
-                    trade_db.get_config("paper_account_usdt") or 10000)
-    size_usdt = capital * (allocation_pct / 100.0) * leverage
-    qty = size_usdt / entry_price if entry_price > 0 else 0
-    now_iso = clock.now_utc().isoformat()
-    con = sqlite3.connect(str(DASH_DB))
-    try:
-        row = con.execute(
-            "SELECT id FROM trades WHERE series='SJ' ORDER BY id DESC LIMIT 1"
-        ).fetchone()
-        if row is None:
-            tid = "SJ-0001"
-        else:
-            tid = f"SJ-{int(row[0].split('-')[1]) + 1:04d}"
-        con.execute("""
-            INSERT INTO trades (id, series, asset, direction, strategy, regime,
-                allocation_pct, leverage, entry_time, exit_time, status,
-                execution_mode, strategy_variant, actual_entry_time,
-                entry_price, size_usdt, qty, order_ids, notes)
-            VALUES (?, 'SJ', ?, 'LONG', 'FOMC', ?, ?, ?, ?, ?, 'open',
-                    'SHADOW', ?, ?, ?, ?, ?, ?, ?)
-        """, (tid, asset, reason.get("phase", "unknown"), allocation_pct,
-              leverage, now_iso, exit_iso, variant["id"], now_iso,
-              entry_price, size_usdt, qty,
-              json.dumps([f"SHADOW-{tid}"]),
-              json.dumps(reason, default=str)))
-        con.commit()
-    finally:
-        con.close()
-    return tid
+    """Open a FOMC LONG shadow trade — delegates to services.trades.open_shadow_trade.
+
+    FOMC is the one sleeve that uses ``reason["phase"]`` (not "regime") as
+    the regime-column value, so we pass it explicitly via regime_value.
+    """
+    from services.trades import open_shadow_trade
+    exit_dt = datetime.fromisoformat(exit_iso)
+    return open_shadow_trade(
+        variant=variant, sleeve_name="FOMC",
+        asset=asset, direction="LONG",
+        entry_price=entry_price, allocation_pct=allocation_pct, leverage=leverage,
+        reason=reason, scheduled_exit_dt=exit_dt,
+        regime_value=reason.get("phase", "unknown"),
+    )
 
 
 def _close_fomc_shadow(trade_id: str, exit_price: float, reason: str) -> None:

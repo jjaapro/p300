@@ -259,3 +259,154 @@ def test_close_perp_trade_disabled_funding_omits_funding_in_notes(trades_db):
     con.close()
     assert "fees=10bp RT" in r[0]
     assert "funding=" not in r[0]
+
+
+# ─── open_shadow_trade ───────────────────────────────────────────────────────
+
+@pytest.fixture
+def empty_trades_db(tmp_path, monkeypatch):
+    """Tmp dashboard.db with the trades schema but no rows. For testing the
+    open path."""
+    db = tmp_path / "dashboard.db"
+    con = sqlite3.connect(str(db))
+    con.execute("""
+        CREATE TABLE trades (
+            id TEXT PRIMARY KEY, series TEXT, asset TEXT, direction TEXT,
+            strategy TEXT, regime TEXT, allocation_pct REAL, leverage REAL,
+            entry_time TEXT, exit_time TEXT, status TEXT, execution_mode TEXT,
+            strategy_variant TEXT, actual_entry_time TEXT,
+            actual_exit_time TEXT, entry_price REAL, exit_price REAL,
+            size_usdt REAL, qty REAL, pnl_usdt REAL, pnl_pct REAL,
+            resolution TEXT, order_ids TEXT, notes TEXT, created_at TEXT
+        )
+    """)
+    con.commit()
+    con.close()
+    monkeypatch.setattr(trades, "DASH_DB", db)
+    return db
+
+
+def _stub_paper_account_default(monkeypatch):
+    """Make trade_db.get_config('paper_account_usdt') return a known value
+    so the test doesn't depend on whatever's in dashboard.db's config table."""
+    from services import trade_db
+    monkeypatch.setattr(trade_db, "get_config",
+                         lambda key: 10000.0 if key == "paper_account_usdt" else None)
+
+
+def test_open_shadow_trade_inserts_row_with_expected_fields(empty_trades_db, monkeypatch):
+    _stub_paper_account_default(monkeypatch)
+    clock.set_simulated_now(datetime(2024, 6, 15, 12, 0, tzinfo=timezone.utc))
+    try:
+        tid = trades.open_shadow_trade(
+            variant={"id": "test_variant", "capital_usdt": 50000.0},
+            sleeve_name="ADX",
+            asset="BTC", direction="LONG",
+            entry_price=70000.0, allocation_pct=15.0, leverage=5.0,
+            reason={"trigger": "ADX_cross_up", "regime": "uncertain"},
+        )
+    finally:
+        clock.set_simulated_now(None)
+    assert tid == "SJ-0001"
+    con = sqlite3.connect(str(empty_trades_db))
+    r = con.execute("SELECT * FROM trades WHERE id=?", (tid,)).fetchone()
+    con.close()
+    cols = [c[1] for c in sqlite3.connect(str(empty_trades_db)).execute(
+        "PRAGMA table_info(trades)").fetchall()]
+    row = dict(zip(cols, r))
+    # Sizing: 50_000 × 15% × 5x = 37,500 notional. qty = 37500 / 70000.
+    assert row["size_usdt"] == pytest.approx(37500.0)
+    assert row["qty"] == pytest.approx(37500.0 / 70000.0)
+    assert row["asset"] == "BTC"
+    assert row["direction"] == "LONG"
+    assert row["strategy"] == "ADX"
+    assert row["regime"] == "uncertain"
+    assert row["status"] == "open"
+    assert row["execution_mode"] == "SHADOW"
+    assert row["strategy_variant"] == "test_variant"
+    assert row["allocation_pct"] == 15.0
+    assert row["leverage"] == 5.0
+    # Open-ended trade: scheduled exit is the distant-future sentinel.
+    assert row["exit_time"].startswith("2099")
+
+
+def test_open_shadow_trade_with_scheduled_exit(empty_trades_db, monkeypatch):
+    _stub_paper_account_default(monkeypatch)
+    clock.set_simulated_now(datetime(2024, 6, 15, 12, 0, tzinfo=timezone.utc))
+    exit_dt = datetime(2024, 6, 15, 19, 30, tzinfo=timezone.utc)
+    try:
+        tid = trades.open_shadow_trade(
+            variant={"id": "fomc_test", "capital_usdt": 10000.0},
+            sleeve_name="FOMC",
+            asset="BTC", direction="LONG",
+            entry_price=68000.0, allocation_pct=5.0, leverage=10.0,
+            reason={"phase": "T-10h"},
+            scheduled_exit_dt=exit_dt,
+            regime_value="T-10h",
+        )
+    finally:
+        clock.set_simulated_now(None)
+    con = sqlite3.connect(str(empty_trades_db))
+    r = con.execute("SELECT exit_time, regime FROM trades WHERE id=?", (tid,)).fetchone()
+    con.close()
+    assert r[0] == "2024-06-15T19:30:00+00:00"
+    assert r[1] == "T-10h"  # regime_value override (not reason["regime"])
+
+
+def test_open_shadow_trade_id_increments(empty_trades_db, monkeypatch):
+    """Two opens get sequential SJ ids; third skips to SJ-0003."""
+    _stub_paper_account_default(monkeypatch)
+    clock.set_simulated_now(datetime(2024, 6, 15, 12, 0, tzinfo=timezone.utc))
+    try:
+        ids = [
+            trades.open_shadow_trade(
+                variant={"id": "v", "capital_usdt": 10000.0},
+                sleeve_name="ADX", asset="BTC", direction="LONG",
+                entry_price=70000.0, allocation_pct=10.0, leverage=1.0,
+                reason={},
+            )
+            for _ in range(3)
+        ]
+    finally:
+        clock.set_simulated_now(None)
+    assert ids == ["SJ-0001", "SJ-0002", "SJ-0003"]
+
+
+def test_open_shadow_trade_zero_entry_price_yields_zero_qty(empty_trades_db, monkeypatch):
+    """Defensive: bad price input must not crash with ZeroDivisionError."""
+    _stub_paper_account_default(monkeypatch)
+    clock.set_simulated_now(datetime(2024, 6, 15, 12, 0, tzinfo=timezone.utc))
+    try:
+        tid = trades.open_shadow_trade(
+            variant={"id": "v", "capital_usdt": 10000.0},
+            sleeve_name="ADX", asset="BTC", direction="LONG",
+            entry_price=0.0, allocation_pct=10.0, leverage=1.0,
+            reason={},
+        )
+    finally:
+        clock.set_simulated_now(None)
+    con = sqlite3.connect(str(empty_trades_db))
+    r = con.execute("SELECT qty, size_usdt FROM trades WHERE id=?", (tid,)).fetchone()
+    con.close()
+    assert r[0] == 0.0
+    assert r[1] == pytest.approx(1000.0)  # 10000 × 10% × 1
+
+
+def test_open_shadow_trade_falls_back_to_paper_account_default(empty_trades_db, monkeypatch):
+    """If variant has no capital_usdt, falls back to paper_account_usdt config."""
+    _stub_paper_account_default(monkeypatch)
+    clock.set_simulated_now(datetime(2024, 6, 15, 12, 0, tzinfo=timezone.utc))
+    try:
+        tid = trades.open_shadow_trade(
+            variant={"id": "novalue"},  # no capital_usdt
+            sleeve_name="ADX", asset="BTC", direction="LONG",
+            entry_price=100.0, allocation_pct=10.0, leverage=1.0,
+            reason={},
+        )
+    finally:
+        clock.set_simulated_now(None)
+    con = sqlite3.connect(str(empty_trades_db))
+    r = con.execute("SELECT size_usdt FROM trades WHERE id=?", (tid,)).fetchone()
+    con.close()
+    # 10000 (stub default) × 10% × 1 = 1000.
+    assert r[0] == pytest.approx(1000.0)

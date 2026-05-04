@@ -236,16 +236,6 @@ def _evaluate_today(asset: str) -> dict | None:
 
 # ─── DB helpers ──────────────────────────────────────────────────────────────
 
-def _next_sj_id(con: sqlite3.Connection) -> str:
-    row = con.execute(
-        "SELECT id FROM trades WHERE series='SJ' ORDER BY id DESC LIMIT 1"
-    ).fetchone()
-    if row is None:
-        return "SJ-0001"
-    num = int(row[0].split("-")[1]) + 1
-    return f"SJ-{num:04d}"
-
-
 def _get_open_cpr_trades(variant_id: str, asset: str) -> list[dict]:
     """All open CPR trades for (variant, asset), newest first. Invariant is
     single-open; sweep the full list on close paths."""
@@ -275,33 +265,18 @@ def _cpr_action_today(variant_id: str, asset: str, today_utc: str) -> bool:
 def _open_cpr_shadow(variant: dict, asset: str, entry_price: float,
                      target: float, stop: float, allocation_pct: float,
                      leverage: float, reason: dict) -> str:
-    from services import trade_db
-    capital = float(variant.get("capital_usdt") or
-                    trade_db.get_config("paper_account_usdt") or 10000)
-    size_usdt = capital * (allocation_pct / 100.0) * leverage
-    qty = size_usdt / entry_price if entry_price > 0 else 0
-    now = clock.now_utc()
-    now_iso = now.isoformat()
-    exit_dt = now + timedelta(days=TIME_STOP_DAYS)
-    con = sqlite3.connect(str(DASH_DB))
-    try:
-        tid = _next_sj_id(con)
-        con.execute("""
-            INSERT INTO trades (id, series, asset, direction, strategy, regime,
-                allocation_pct, leverage, entry_time, exit_time, status,
-                execution_mode, strategy_variant, actual_entry_time,
-                entry_price, size_usdt, qty, order_ids, notes)
-            VALUES (?, 'SJ', ?, 'LONG', 'CPR', ?, ?, ?, ?, ?, 'open',
-                    'SHADOW', ?, ?, ?, ?, ?, ?, ?)
-        """, (tid, asset, reason.get("regime", "unknown"), allocation_pct,
-              leverage, now_iso, exit_dt.isoformat(), variant["id"], now_iso,
-              entry_price, size_usdt, qty, json.dumps([f"SHADOW-{tid}"]),
-              json.dumps({**reason, "target": target, "stop": stop},
-                         default=str)))
-        con.commit()
-    finally:
-        con.close()
-    return tid
+    """Open a CPR shadow trade — delegates to services.trades.open_shadow_trade.
+    target/stop are folded into the reason dict (stored in trades.notes JSON)
+    so post-hoc inspection can reconstruct the level structure of the entry."""
+    from services.trades import open_shadow_trade
+    exit_dt = clock.now_utc() + timedelta(days=TIME_STOP_DAYS)
+    return open_shadow_trade(
+        variant=variant, sleeve_name="CPR",
+        asset=asset, direction="LONG",
+        entry_price=entry_price, allocation_pct=allocation_pct, leverage=leverage,
+        reason={**reason, "target": target, "stop": stop},
+        scheduled_exit_dt=exit_dt,
+    )
 
 
 def _close_cpr_shadow(trade_id: str, exit_price: float, reason: str) -> None:

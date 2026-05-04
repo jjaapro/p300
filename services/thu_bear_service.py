@@ -157,16 +157,6 @@ def _get_regime_for_prev_day(today_utc: datetime) -> str | None:
 
 # ─── DB helpers (variant-scoped) ─────────────────────────────────────────────
 
-def _next_sj_id(con: sqlite3.Connection) -> str:
-    row = con.execute(
-        "SELECT id FROM trades WHERE series='SJ' ORDER BY id DESC LIMIT 1"
-    ).fetchone()
-    if row is None:
-        return "SJ-0001"
-    num = int(row[0].split("-")[1]) + 1
-    return f"SJ-{num:04d}"
-
-
 def _thu_bear_trade_today(variant_id: str, today_utc: str, asset: str) -> dict | None:
     """Return today's THU_BEAR trade for this variant + asset, if any (pending/open/closed)."""
     con = sqlite3.connect(str(DASH_DB))
@@ -198,37 +188,19 @@ def _get_open_thu_bear_trades(variant_id: str, asset: str) -> list[dict]:
 def _open_thu_bear_shadow(variant: dict, asset: str, entry_price: float,
                          allocation_pct: float, reason: dict,
                          leverage: float = 1.0) -> str:
-    """Per-sleeve `leverage` multiplier applied to size_usdt and recorded on
-    the trade row. Defaults to 1.0x for un-levered variants."""
-    from services import trade_db
-    capital = float(variant.get("capital_usdt") or
-                    trade_db.get_config("paper_account_usdt") or 10000)
-    size_usdt = capital * (allocation_pct / 100.0) * leverage
-    qty = size_usdt / entry_price if entry_price > 0 else 0
+    """Open a THU_BEAR shadow trade — delegates to services.trades.open_shadow_trade.
+    Scheduled exit: Friday 01:00 UTC (matches Pine reference). The engine's
+    close-due loop picks this up as a fallback if our own EXIT_HOUR tick misses."""
+    from services.trades import open_shadow_trade
     now = clock.now_utc()
-    now_iso = now.isoformat()
-    # Scheduled exit: Friday 01:00 UTC — the engine's close loop picks this up
-    # if our own EXIT_HOUR tick misses. Mirrors the active exit at EXIT_HOUR.
     exit_dt = (now + timedelta(days=1)).replace(
         hour=EXIT_HOUR, minute=0, second=0, microsecond=0)
-    con = sqlite3.connect(str(DASH_DB))
-    try:
-        tid = _next_sj_id(con)
-        con.execute("""
-            INSERT INTO trades (id, series, asset, direction, strategy, regime,
-                allocation_pct, leverage, entry_time, exit_time, status,
-                execution_mode, strategy_variant, actual_entry_time,
-                entry_price, size_usdt, qty, order_ids, notes)
-            VALUES (?, 'SJ', ?, 'SHORT', 'THU_BEAR', ?, ?, ?, ?, ?, 'open',
-                    'SHADOW', ?, ?, ?, ?, ?, ?, ?)
-        """, (tid, asset, reason.get("regime", "unknown"), allocation_pct,
-              leverage, now_iso, exit_dt.isoformat(), variant["id"], now_iso,
-              entry_price, size_usdt, qty, json.dumps([f"SHADOW-{tid}"]),
-              json.dumps(reason, default=str)))
-        con.commit()
-    finally:
-        con.close()
-    return tid
+    return open_shadow_trade(
+        variant=variant, sleeve_name="THU_BEAR",
+        asset=asset, direction="SHORT",
+        entry_price=entry_price, allocation_pct=allocation_pct, leverage=leverage,
+        reason=reason, scheduled_exit_dt=exit_dt,
+    )
 
 
 def _close_thu_bear_shadow(trade_id: str, exit_price: float, reason: str) -> None:
