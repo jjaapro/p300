@@ -151,16 +151,8 @@ def load_daily(symbol: str, start_iso: str, end_iso: str) -> list[dict]:
 
 # ─── EMA on daily closes ─────────────────────────────────────────────────────
 
-def calc_ema(prices: list[float], period: int) -> list[float]:
-    out = [float("nan")] * len(prices)
-    if len(prices) < period:
-        return out
-    seed = sum(prices[:period]) / period
-    out[period - 1] = seed
-    k = 2.0 / (period + 1)
-    for i in range(period, len(prices)):
-        out[i] = prices[i] * k + out[i - 1] * (1 - k)
-    return out
+# Indicator math lives in services.indicators (single source of truth).
+from services.indicators import ema as calc_ema  # noqa: F401
 
 
 # ─── Strategy walk ───────────────────────────────────────────────────────────

@@ -144,6 +144,7 @@ p300/
 │   ├── trade_db.py                # trade log schema + runtime config
 │   ├── price_feed.py              # last-close reader with staleness guard
 │   ├── funding.py                 # funding accrual + daily sums/means (BTC + ETH)
+│   ├── indicators.py              # pure EMA + ADX math (no I/O); used by services + validators + jplus
 │   ├── risk_caps.py               # cross-sleeve BTC-long cap enforcement
 │   ├── risk_config.py             # SL semantic (price-move vs margin-loss)
 │   ├── adx_service.py             # S-003 ADX live dispatcher
@@ -152,7 +153,7 @@ p300/
 │   ├── pdo_retouch_service.py     # PDO-L-RF live dispatcher
 │   ├── cpr_service.py             # CPR live dispatcher
 │   └── jplus_service.py           # JPLUS-CORE daily-return dispatcher
-└── tests/                         # 73 tests including look-ahead canary
+└── tests/                         # 109 tests including look-ahead canary
 ```
 
 ## Data the services need

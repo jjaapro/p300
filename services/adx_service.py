@@ -121,63 +121,9 @@ def _load_btc_daily_candles(limit_days: int = 200) -> list[dict]:
     return out
 
 
-def _calc_ema(prices: list[float], period: int) -> list[float]:
-    """Standard EMA. Returns NaN for indices before period-1."""
-    out = [float("nan")] * len(prices)
-    if len(prices) < period:
-        return out
-    seed = sum(prices[:period]) / period
-    out[period - 1] = seed
-    k = 2.0 / (period + 1)
-    for i in range(period, len(prices)):
-        out[i] = prices[i] * k + out[i - 1] * (1 - k)
-    return out
-
-
-def _calc_adx(candles: list[dict], period: int) -> list[float]:
-    """ADX via Wilder smoothing. Matches backtest_adx_breakout.calc_adx output.
-    Returns NaN until warmup complete."""
-    n = len(candles)
-    if n < period * 2 + 1:
-        return [float("nan")] * n
-    tr = [0.0] * n
-    plus_dm = [0.0] * n
-    minus_dm = [0.0] * n
-    for i in range(1, n):
-        h, l = candles[i]["high"], candles[i]["low"]
-        ph, pl, pc = candles[i - 1]["high"], candles[i - 1]["low"], candles[i - 1]["close"]
-        tr[i] = max(h - l, abs(h - pc), abs(l - pc))
-        up = h - ph
-        down = pl - l
-        plus_dm[i] = up if up > down and up > 0 else 0.0
-        minus_dm[i] = down if down > up and down > 0 else 0.0
-    atr = [float("nan")] * n
-    pdi = [float("nan")] * n
-    mdi = [float("nan")] * n
-    dx = [float("nan")] * n
-    atr[period] = sum(tr[1: period + 1])
-    pdm_sum = sum(plus_dm[1: period + 1])
-    mdm_sum = sum(minus_dm[1: period + 1])
-    for i in range(period + 1, n):
-        atr[i] = atr[i - 1] - atr[i - 1] / period + tr[i]
-        pdm_sum = pdm_sum - pdm_sum / period + plus_dm[i]
-        mdm_sum = mdm_sum - mdm_sum / period + minus_dm[i]
-        if atr[i] > 0:
-            pdi[i] = 100 * pdm_sum / atr[i]
-            mdi[i] = 100 * mdm_sum / atr[i]
-            denom = pdi[i] + mdi[i]
-            dx[i] = 100 * abs(pdi[i] - mdi[i]) / denom if denom > 0 else 0.0
-    adx = [float("nan")] * n
-    # Seed ADX as average of first `period` valid DX values
-    first = period * 2
-    if first < n:
-        window = [dx[i] for i in range(period + 1, first + 1) if not math.isnan(dx[i])]
-        if window:
-            adx[first] = sum(window) / len(window)
-            for i in range(first + 1, n):
-                if not math.isnan(dx[i]):
-                    adx[i] = (adx[i - 1] * (period - 1) + dx[i]) / period
-    return adx
+# EMA + ADX math lives in services.indicators (single source of truth across
+# the live service, bitstamp validators, and the JPLUS regime classifier).
+from services.indicators import ema, adx
 
 
 # ─── Signal evaluation ──────────────────────────────────────────────────────
@@ -225,11 +171,11 @@ def _current_signal(candles: list[dict]) -> dict | None:
     if len(candles) < WARMUP_BARS + 2:
         return None
     closes = [c["close"] for c in candles]
-    adx = _calc_adx(candles, ADX_PERIOD)
-    ema = _calc_ema(closes, EMA_LEN)
-    trend_ema = _calc_ema(closes, TREND_EMA_LEN) if TREND_EMA_LEN > 0 else None
+    adx_series = adx(candles, ADX_PERIOD)
+    ema_series = ema(closes, EMA_LEN)
+    trend_ema = ema(closes, TREND_EMA_LEN) if TREND_EMA_LEN > 0 else None
     i = len(candles) - 1
-    if math.isnan(adx[i]) or math.isnan(ema[i]):
+    if math.isnan(adx_series[i]) or math.isnan(ema_series[i]):
         return None
     if trend_ema is not None and math.isnan(trend_ema[i]):
         # Not enough history for the trend filter yet — treat the same as a
@@ -245,12 +191,12 @@ def _current_signal(candles: list[dict]) -> dict | None:
     last_entry_dir: str | None = None
     last_entry_blocked = False
     for j in range(len(candles)):
-        if math.isnan(adx[j]) or math.isnan(ema[j]):
+        if math.isnan(adx_series[j]) or math.isnan(ema_series[j]):
             continue
-        if adx[j] < ADX_LOW_THRESH:
+        if adx_series[j] < ADX_LOW_THRESH:
             was_low = True
-        if was_low and adx[j] >= ADX_HIGH_THRESH:
-            new_dir = "long" if closes[j] > ema[j] else "short"
+        if was_low and adx_series[j] >= ADX_HIGH_THRESH:
+            new_dir = "long" if closes[j] > ema_series[j] else "short"
             blocked = False
             # ASYMMETRIC trend filter: applies to LONGs only.
             # Rationale: counter-trend SHORTs in bull markets earn perp funding
@@ -271,13 +217,13 @@ def _current_signal(candles: list[dict]) -> dict | None:
 
     entry_sig = last_entry_dir if last_entry_idx == i else None
     blocked_now = last_entry_blocked if last_entry_idx == i else False
-    exit_sig = adx[i] < ADX_LOW_THRESH
+    exit_sig = adx_series[i] < ADX_LOW_THRESH
 
     return {
         "date": candles[i]["dt"],
-        "adx": round(adx[i], 2),
+        "adx": round(adx_series[i], 2),
         "close": closes[i],
-        "ema": round(ema[i], 2),
+        "ema": round(ema_series[i], 2),
         "trend_ema": (round(trend_ema[i], 2) if trend_ema is not None else None),
         "was_low_pending": was_low,
         "entry_sig": entry_sig,

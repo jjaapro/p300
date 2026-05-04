@@ -149,59 +149,10 @@ def load_bitstamp_daily(symbol: str, warmup_start: str, end_date: str,
 
 # ─── Indicators (verbatim port of services/adx_service.py) ───────────────────
 
-def calc_ema(prices: list[float], period: int) -> list[float]:
-    out = [float("nan")] * len(prices)
-    if len(prices) < period:
-        return out
-    seed = sum(prices[:period]) / period
-    out[period - 1] = seed
-    k = 2.0 / (period + 1)
-    for i in range(period, len(prices)):
-        out[i] = prices[i] * k + out[i - 1] * (1 - k)
-    return out
-
-
-def calc_adx(candles: list[dict], period: int) -> list[float]:
-    n = len(candles)
-    if n < period * 2 + 1:
-        return [float("nan")] * n
-    tr = [0.0] * n
-    plus_dm = [0.0] * n
-    minus_dm = [0.0] * n
-    for i in range(1, n):
-        h, l = candles[i]["high"], candles[i]["low"]
-        ph, pl, pc = candles[i - 1]["high"], candles[i - 1]["low"], candles[i - 1]["close"]
-        tr[i] = max(h - l, abs(h - pc), abs(l - pc))
-        up = h - ph
-        down = pl - l
-        plus_dm[i] = up if up > down and up > 0 else 0.0
-        minus_dm[i] = down if down > up and down > 0 else 0.0
-    atr = [float("nan")] * n
-    pdi = [float("nan")] * n
-    mdi = [float("nan")] * n
-    dx = [float("nan")] * n
-    atr[period] = sum(tr[1: period + 1])
-    pdm_sum = sum(plus_dm[1: period + 1])
-    mdm_sum = sum(minus_dm[1: period + 1])
-    for i in range(period + 1, n):
-        atr[i] = atr[i - 1] - atr[i - 1] / period + tr[i]
-        pdm_sum = pdm_sum - pdm_sum / period + plus_dm[i]
-        mdm_sum = mdm_sum - mdm_sum / period + minus_dm[i]
-        if atr[i] > 0:
-            pdi[i] = 100 * pdm_sum / atr[i]
-            mdi[i] = 100 * mdm_sum / atr[i]
-            denom = pdi[i] + mdi[i]
-            dx[i] = 100 * abs(pdi[i] - mdi[i]) / denom if denom > 0 else 0.0
-    adx = [float("nan")] * n
-    first = period * 2
-    if first < n:
-        window = [dx[i] for i in range(period + 1, first + 1) if not math.isnan(dx[i])]
-        if window:
-            adx[first] = sum(window) / len(window)
-            for i in range(first + 1, n):
-                if not math.isnan(dx[i]):
-                    adx[i] = (adx[i - 1] * (period - 1) + dx[i]) / period
-    return adx
+# Indicator math lives in services.indicators (single source of truth).
+# Local aliases preserve the original calc_* names so the rest of this script
+# (and any in-file documentation referencing them) keeps working unchanged.
+from services.indicators import ema as calc_ema, adx as calc_adx  # noqa: F401
 
 
 # ─── Strategy walk-forward ───────────────────────────────────────────────────

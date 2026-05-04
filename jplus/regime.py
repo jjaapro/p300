@@ -38,17 +38,9 @@ from datetime import datetime, timedelta
 REGIMES = ("strong_bull", "mild_bull", "uncertain", "bear")
 
 
-def ema_calc(values: list[float], period: int) -> list[float]:
-    """Standard EMA seeded with SMA of first `period` values. Returns a list
-    of the same length as `values`, with NaN for indices < period-1."""
-    out: list[float] = [float("nan")] * len(values)
-    if len(values) < period:
-        return out
-    out[period - 1] = sum(values[:period]) / period
-    k = 2.0 / (period + 1)
-    for i in range(period, len(values)):
-        out[i] = values[i] * k + out[i - 1] * (1 - k)
-    return out
+# EMA lives in services.indicators (single source of truth). Re-exported under
+# the legacy name `ema_calc` so callers in this package keep working.
+from services.indicators import ema as ema_calc  # noqa: F401, E402
 
 
 def classify_day(
