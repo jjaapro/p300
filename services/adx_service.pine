@@ -30,7 +30,7 @@ adx_high    = input.float(25, "ADX entry threshold (cross up triggers regime)",
 adx_low     = input.float(20, "ADX exit threshold (cross down flattens)",
                          minval=5, maxval=40, step=1)
 ema_len     = input.int(50,   "Direction EMA length")
-trend_ema_len   = input.int(150, "Trend filter EMA length (0 to disable)", minval=0, maxval=400, step=10, tooltip="If > 0, blocks entries that disagree with this MA. LONG only when close > EMA(N), SHORT only when close < EMA(N). Bitstamp BTC/USD 2018-2024 in-sample optimum = 150 (tied 150-160). Walk-forward 2024-2026 OOS confirms: drops 9 losers + 1 winner (net: +800pp total return vs no filter). Set to 0 for raw S-003.")
+trend_ema_len   = input.int(150, "Trend filter EMA length (0 to disable)", minval=0, maxval=400, step=10, tooltip="ASYMMETRIC since 2026-05-04: LONG entries require close > EMA(N); SHORT entries are unfiltered. The funding-aware backtest_runner replay showed the symmetric variant losing money because it dropped winning counter-trend shorts that earned perp funding. LONG-only filter keeps the bull-market whipsaw protection. Bitstamp BTC/USD 2018-2024 in-sample optimum = 150. Set to 0 for raw S-003.")
 sl_pct      = input.float(10, "Hard SL %", minval=0, step=1)
 allow_short = input.bool(true,  "Enable SHORT regime")
 show_bg     = input.bool(true,  "Highlight trend-regime bars")
@@ -71,14 +71,18 @@ entry_event = was_low and adx_val >= adx_high
 exit_event  = not na(cur_dir) and adx_val < adx_low
 new_dir = close > ema50 ? "long" : "short"
 
-// Trend filter: with trend_ema_len > 0, the ADX entry must agree with the
-// longer-MA direction. LONG requires close > trend_ema, SHORT requires
-// close < trend_ema. Bitstamp BTC 2018-2026 backtest: drops 9 losers + 1
-// winner (the 9 losers are mostly counter-trend whipsaw shorts in 2021/2024
-// bull markets that hit -10% SL). Net: total return ~+1551% -> ~+2370%.
+// Trend filter (asymmetric — LONGs only since 2026-05-04): when
+// trend_ema_len > 0, LONG entries require close > trend_ema; SHORT entries
+// pass through unfiltered. Rationale: counter-trend SHORTs in bull markets
+// earn perp funding (longs pay shorts) AND many pay off on price too. The
+// 2026-05-04 funding-aware backtest_runner replay over 2023-09 → 2026-05
+// showed the symmetric filter losing ~$1.1k vs no-filter because it dropped
+// winning post-funding SHORTs (e.g. 2025-02-22 +15.93%, 2025-10-11 +29.63%,
+// 2026-01-21 +20.04%). LONG-only filter retains the original whipsaw
+// protection (bull-market LONGs that fight the daily EMA(150) trend).
 trend_ok = trend_ema_len <= 0 or na(trend_ema) or
-           (new_dir == "long"  and close > trend_ema) or
-           (new_dir == "short" and close < trend_ema)
+           new_dir == "short" or
+           (new_dir == "long" and close > trend_ema)
 
 // ─── Entry / Exit logic (matches Python ordering: exit first, then entry) ─
 // Python processes: if ADX < low AND in-position -> exit. Then: if cross-up

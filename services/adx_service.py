@@ -37,14 +37,19 @@ ADX_PERIOD = 14
 ADX_LOW_THRESH = 20.0
 ADX_HIGH_THRESH = 25.0
 EMA_LEN = 50
-# Trend filter EMA length. Set to 0 to disable. Bitstamp BTC/USD walk-forward
-# 2018-2024 in-sample optimum tied at 150 / 160 (+1181% with SL=12% vs +747%
-# baseline); 2024-2026 OOS confirms the choice (+50% vs baseline +42%).
-# Filter rule: LONG requires close > EMA(N) AND close > EMA(50);
-#              SHORT requires close < EMA(N) AND close < EMA(50).
-# Catches counter-trend whipsaws (mostly bull-market shorts in 2021/2024
-# that hit -10% SL). 2026-04-26 LONG signal that fired at $78,660 with
-# close < EMA(150) $79,325 is the live example.
+# Trend filter EMA length. Set to 0 to disable.
+# Filter rule (asymmetric — LONGs only, since 2026-05-04):
+#   LONG  requires close > EMA(N) AND close > EMA(50);
+#   SHORT has no trend filter (close < EMA(50) is the only direction gate).
+# Bitstamp BTC/USD walk-forward 2018-2024 in-sample optimum tied at 150/160
+# with the symmetric filter (+1181% with SL=12% vs +747% baseline). The
+# 2026-05-04 funding-aware backtest_runner replay over 2023-09 → 2026-05
+# showed the symmetric variant losing $1,121 vs no-filter because counter-
+# trend SHORTs in bull markets earn perp funding AND often pay off on price
+# (e.g. 2025-02-22 +15.93%, 2025-10-11 +29.63%, 2026-01-21 +20.04%, all
+# net of funding). LONG-only filter keeps the bull-market whipsaw protection
+# the symmetric variant was designed for (e.g. 2026-04-26 LONG at $78,660
+# with close < EMA(150) $79,325).
 TREND_EMA_LEN = 150
 WARMUP_BARS = max(ADX_PERIOD * 3, EMA_LEN + 1, TREND_EMA_LEN + 1)
 
@@ -186,10 +191,13 @@ def _current_signal(candles: list[dict]) -> dict | None:
       3. Entry event fires when was_low AND ADX >= ADX_HIGH_THRESH; on that
          bar was_low is consumed (set False). Direction = close vs EMA(50)
          at the moment of consumption.
-      4. TREND FILTER (when TREND_EMA_LEN > 0): the entry direction must
-         additionally agree with close vs EMA(TREND_EMA_LEN). LONG requires
-         close > trend_ema; SHORT requires close < trend_ema. If the filter
-         rejects, was_low is still consumed (one entry attempt per cycle).
+      4. TREND FILTER (when TREND_EMA_LEN > 0): LONG entries additionally
+         require close > EMA(TREND_EMA_LEN). SHORT entries have no trend
+         filter — applied asymmetrically since 2026-05-04 because counter-
+         trend SHORTs in bull markets earn perp funding and often pay off
+         on price too (the symmetric variant lost ~$1.1k vs no-filter on
+         the funding-aware 2023-09 → 2026-05 replay). If the filter
+         rejects a LONG, was_low is still consumed (one attempt per cycle).
       5. Exit fires when in-position AND ADX < ADX_LOW_THRESH (also re-arms
          was_low for the next entry).
 
@@ -244,10 +252,17 @@ def _current_signal(candles: list[dict]) -> dict | None:
         if was_low and adx[j] >= ADX_HIGH_THRESH:
             new_dir = "long" if closes[j] > ema[j] else "short"
             blocked = False
+            # ASYMMETRIC trend filter: applies to LONGs only.
+            # Rationale: counter-trend SHORTs in bull markets earn perp funding
+            # (longs pay shorts when funding > 0) AND many of them work on price
+            # too — the 2026-05-04 funding-aware backtest showed the symmetric
+            # filter dropped ~$700 of winning post-funding SHORT P&L over the
+            # 2023-09 → 2026-05 window (e.g. 2025-02-22 +15.93%, 2025-10-11
+            # +29.63%, 2026-01-21 +20.04%). Bull-market LONGs that fight the
+            # daily EMA(150) trend are still filtered out, which was the
+            # original whipsaw-protection motivation.
             if trend_ema is not None and not math.isnan(trend_ema[j]):
                 if new_dir == "long" and closes[j] <= trend_ema[j]:
-                    blocked = True
-                elif new_dir == "short" and closes[j] >= trend_ema[j]:
                     blocked = True
             last_entry_idx = j
             last_entry_dir = None if blocked else new_dir
@@ -512,8 +527,11 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                 "trend_ema": sig.get("trend_ema"),
                 "trend_ema_len": TREND_EMA_LEN,
                 "close": sig["close"],
-                "direction_rule": (f"close {'>' if new_dir == 'LONG' else '<'} EMA(50) "
-                                   f"AND close {'>' if new_dir == 'LONG' else '<'} EMA({TREND_EMA_LEN})"),
+                "direction_rule": (
+                    f"close > EMA(50) AND close > EMA({TREND_EMA_LEN})"
+                    if new_dir == "LONG"
+                    else f"close < EMA(50)  [SHORT: trend filter not applied]"
+                ),
                 "regime": "unknown",
                 "stop_loss_pct": stop_loss_pct,
                 "sl_semantic_price_thresh_pct": sl_price_thresh,
