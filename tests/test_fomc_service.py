@@ -224,9 +224,8 @@ def test_self_sweep_closes_past_exit_trade(tmp_path, monkeypatch):
     # Redirect DASH_DB to tmp; stub price + funding feeds
     monkeypatch.setattr(fomc_service, "DASH_DB", db)
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 43000.0)
-    from services import funding_util
-    monkeypatch.setattr(funding_util, "accrued_funding_pct",
-                         lambda *a, **k: 0.0)
+    from services import funding
+    monkeypatch.setattr(funding, "accrued_pct", lambda *a, **k: 0.0)
 
     # Set clock past exit_time, then sweep
     clock.set_simulated_now(datetime(2024, 1, 31, 20, 0, tzinfo=timezone.utc))

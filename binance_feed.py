@@ -5,8 +5,8 @@ Handles 7 feeds via Binance public REST (no API key needed):
   eth_1m               — ETHUSDT spot 1-min klines (for PDO, CPR)
   cd_futures_ohlcv     — BTCUSDT perp 1-hour klines (for ADX, carry, regime, price_feed)
   cd_spot_binance      — BTCUSDT spot 1-hour klines (for carry)
-  cd_funding_rate      — BTCUSDT perp funding rate history (for carry, cpr, funding_util)
-  cd_funding_rate_eth  — ETHUSDT perp funding rate history (for funding_util/THU_BEAR ETH leg)
+  cd_funding_rate      — BTCUSDT perp funding rate history (read via services.funding)
+  cd_funding_rate_eth  — ETHUSDT perp funding rate history (read via services.funding)
   ca_long_short_ratio  — BTCUSDT + ETHUSDT global long/short account ratio (for regime CB + CPR signal).
                          Binance serves only ~30d of history per call; rolling refresh keeps the table
                          current as long as binance_feed runs at least monthly. Older history is

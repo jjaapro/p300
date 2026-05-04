@@ -247,12 +247,12 @@ def _close_thu_bear_shadow(trade_id: str, exit_price: float, reason: str) -> Non
     # SHORT: pnl = (entry - exit) * qty
     price_pnl = (row["entry_price"] - exit_price) * row["qty"]
     cost_usdt = row["size_usdt"] * (COST_BP_RT / 10000.0)
-    from services.funding_util import accrued_funding_pct
+    from services import funding
     try:
         entry_dt = datetime.fromisoformat(row["actual_entry_time"])
         if entry_dt.tzinfo is None:
             entry_dt = entry_dt.replace(tzinfo=timezone.utc)
-        funding_pct = accrued_funding_pct(row["asset"], entry_dt, now,
+        funding_pct = funding.accrued_pct(row["asset"], entry_dt, now,
                                           row["direction"])
     except (TypeError, ValueError):
         funding_pct = 0.0

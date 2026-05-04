@@ -45,27 +45,26 @@ ENTRY_EXIT_COST_PCT = 0.20   # 20bp as percent
 # ─── Funding rate loading ────────────────────────────────────────────────────
 
 def _load_recent_daily_funding(days: int = 30) -> list[dict]:
-    """Aggregate cd_funding_rate 8h-settlement rows into daily sums. Returns
-    list of {date, daily_funding_pct, spot_close, perp_close} oldest-first.
+    """Return ``[{date, daily_funding_pct, spot_close, perp_close}]`` oldest-first.
 
-    Daily funding is the sum of the 3 settlement rates (00/08/16 UTC) as a
-    percentage of notional; only complete days (>=3 settlements) are returned.
+    Daily funding is the sum of the 3 settlement rates per day (00/08/16 UTC)
+    as a percentage of notional; only complete days are returned. Funding
+    aggregation is delegated to ``services.funding.daily_sums_pct`` which is
+    the single source of truth for funding access — see commit 2ca7cdc for
+    the bug class that motivated the consolidation.
 
-    NOTE: cd_funding_rate stores HOURLY OHLC (24 rows/day), but funding only
-    pays at the 8h settlement boundaries. We filter to timestamps where
-    ts % 28800 == 0 so each settlement is counted exactly once. Without this
-    filter the daily funding was 8x overstated — the same bug funding_util
-    had until 2026-05-04.
+    Spot + perp closes are joined inline because they're carry-specific (not
+    a generic funding concern). Today is excluded because the day's funding
+    settlements may not all be in yet.
     """
+    from services import funding
     upper_ts = clock.now_ts()
     since_ts = upper_ts - (days + 2) * 86400
+
+    funding_by_day = funding.daily_sums_pct("BTC", since_ts, upper_ts,
+                                             complete_only=True)
+
     con = sqlite3.connect(str(TRADER_DB))
-    fr_rows = con.execute(
-        "SELECT timestamp, fr_close FROM cd_funding_rate "
-        "WHERE timestamp >= ? AND timestamp <= ? "
-        "AND timestamp % 28800 = 0 ORDER BY timestamp",
-        (since_ts, upper_ts),
-    ).fetchall()
     spot_rows = con.execute(
         "SELECT timestamp, close FROM cd_spot_binance "
         "WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp",
@@ -78,23 +77,6 @@ def _load_recent_daily_funding(days: int = 30) -> list[dict]:
     ).fetchall()
     con.close()
 
-    from collections import defaultdict
-    fr_by_day: dict[str, list[float]] = defaultdict(list)
-    for ts, fr in fr_rows:
-        if fr is None:
-            continue
-        d = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d")
-        fr_by_day[d].append(fr)
-    # Daily funding = sum of the 3 settlement rates per day (00/08/16 UTC).
-    # Binance /fapi/v1/fundingRate returns one row per settlement, so
-    # fr_by_day[d] has 3 rows in a complete day. Drop incomplete days from the
-    # head/tail to avoid partial-day bias.
-    today = clock.now_utc().strftime("%Y-%m-%d")
-    daily_funding_pct: dict[str, float] = {
-        d: sum(rates) * 100 for d, rates in fr_by_day.items()
-        if len(rates) >= 3 and d != today
-    }
-
     spot_by_day: dict[str, float] = {}
     for ts, c in spot_rows:
         if c:
@@ -106,16 +88,14 @@ def _load_recent_daily_funding(days: int = 30) -> list[dict]:
             d = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d")
             perp_by_day[d] = c
 
-    all_days = sorted(set(daily_funding_pct) & set(spot_by_day) & set(perp_by_day))
-    out = []
-    for d in all_days:
-        out.append({
-            "date": d,
-            "daily_funding_pct": daily_funding_pct[d],
-            "spot_close": spot_by_day[d],
-            "perp_close": perp_by_day[d],
-        })
-    return out
+    today = clock.now_utc().strftime("%Y-%m-%d")
+    all_days = sorted((set(funding_by_day) - {today})
+                      & set(spot_by_day) & set(perp_by_day))
+    return [
+        {"date": d, "daily_funding_pct": funding_by_day[d],
+         "spot_close": spot_by_day[d], "perp_close": perp_by_day[d]}
+        for d in all_days
+    ]
 
 
 def _rolling_avg(values: list[float], window: int) -> list[float | None]:
@@ -241,7 +221,7 @@ def _close_carry_shadow(trade_id: str, exit_price: float, reason: str) -> None:
     zero (delta-neutral long-spot + short-perp).
 
     Short-perp leg earns when funding rate > 0 — identical math to a SHORT
-    perp position, which is what funding_util.accrued_funding_pct returns
+    perp position, which is what services.funding.accrued_pct returns
     for direction='SHORT'.
     """
     now = clock.now_utc()
@@ -256,12 +236,12 @@ def _close_carry_shadow(trade_id: str, exit_price: float, reason: str) -> None:
     if row is None:
         con.close()
         return
-    from services.funding_util import accrued_funding_pct
+    from services import funding
     try:
         entry_dt = datetime.fromisoformat(row["actual_entry_time"])
         if entry_dt.tzinfo is None:
             entry_dt = entry_dt.replace(tzinfo=timezone.utc)
-        funding_pct = accrued_funding_pct("BTC", entry_dt, now, "SHORT")
+        funding_pct = funding.accrued_pct("BTC", entry_dt, now, "SHORT")
     except (TypeError, ValueError):
         funding_pct = 0.0
     net_pct = funding_pct - ENTRY_EXIT_COST_PCT

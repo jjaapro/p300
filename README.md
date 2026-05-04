@@ -143,7 +143,7 @@ p300/
 │   ├── clock.py                   # injectable clock for deterministic replay
 │   ├── trade_db.py                # trade log schema + runtime config
 │   ├── price_feed.py              # last-close reader with staleness guard
-│   ├── funding_util.py            # per-settlement funding accrual (BTC + ETH)
+│   ├── funding.py                 # funding accrual + daily sums/means (BTC + ETH)
 │   ├── risk_caps.py               # cross-sleeve BTC-long cap enforcement
 │   ├── risk_config.py             # SL semantic (price-move vs margin-loss)
 │   ├── adx_service.py             # S-003 ADX live dispatcher
@@ -162,8 +162,8 @@ p300/
 | `btc_1m`, `eth_1m` | Binance spot klines | `binance_feed.py` every 60s | pdo, cpr, price_feed (ETH) |
 | `cd_futures_ohlcv` | Binance BTCUSDT perp 1h | `binance_feed.py` every 60s | adx, carry, regime_classifier, price_feed (BTC) |
 | `cd_spot_binance` | Binance BTCUSDT spot 1h | `binance_feed.py` every 60s | carry |
-| `cd_funding_rate` | Binance BTC perp funding | `binance_feed.py` every 60s | carry, cpr, funding_util (BTC) |
-| `cd_funding_rate_eth` | Binance ETH perp funding | `binance_feed.py` every 60s | funding_util (ETH leg of THU_BEAR) |
+| `cd_funding_rate` | Binance BTC perp funding | `binance_feed.py` every 60s | services.funding (BTC: carry, cpr, adx exit, fomc exit) |
+| `cd_funding_rate_eth` | Binance ETH perp funding | `binance_feed.py` every 60s | services.funding (ETH: thu_bear, fomc exit) |
 | `ca_long_short_ratio` | Coinalyze (history) + Binance rolling 30d | `fetch_coinalyze.py` once + `binance_feed.py` every 60s | cpr, regime LS circuit breaker |
 | `scheduled_events` | computed by `fetch_events.py` (FOMC/CPI hardcoded, NFP/OPEX rules) | annual: bump FOMC/CPI lists, re-run | S-096 V4 filter, regime no-FOMC rule |
 

@@ -111,21 +111,17 @@ def _load_daily_closes(asset: str) -> tuple[list[str], np.ndarray, np.ndarray, n
 
 
 def _load_funding_daily() -> dict[str, float]:
-    """Daily mean funding rate (fr_close) from cd_funding_rate, bounded by clock.
-    Cached per UTC day."""
+    """Daily mean funding rate (decimal fraction) for BTC, bounded by clock.
+
+    Cached per UTC day. Delegates to ``services.funding.daily_means_rate``
+    which is the single source of truth for funding access.
+    """
     global _funding_map_cache
     day_key = clock.now_utc().strftime("%Y-%m-%d")
     if _funding_map_cache and _funding_map_cache[0] == day_key:
         return _funding_map_cache[1]
-    upper_ts = clock.now_ts()
-    con = sqlite3.connect(str(TRADER_DB))
-    rows = con.execute(
-        "SELECT date(timestamp,'unixepoch'), AVG(fr_close) FROM cd_funding_rate "
-        "WHERE timestamp <= ? GROUP BY 1 ORDER BY 1",
-        (upper_ts,),
-    ).fetchall()
-    con.close()
-    out = {r[0]: r[1] for r in rows}
+    from services import funding
+    out = funding.daily_means_rate("BTC", clock.now_ts())
     _funding_map_cache = (day_key, out)
     return out
 
