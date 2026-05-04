@@ -329,20 +329,18 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     # Even though the invariant is single-open, we sweep the full set so a
     # stray leaked trade from a prior-version run gets cleaned up instead of
     # ignored forever.
+    from services.sleeves import is_sl_hit
     current_price = _get_current_price("BTC") or sig["close"]
     still_open: list[dict] = []
     for tr in open_trades:
-        entry_price = float(tr["entry_price"])
-        if tr["direction"] == "LONG":
-            live_pnl_pct = (current_price - entry_price) / entry_price * 100
-        else:
-            live_pnl_pct = (entry_price - current_price) / entry_price * 100
-        if live_pnl_pct <= -sl_price_thresh:
+        hit, pnl_pct = is_sl_hit(tr["direction"], float(tr["entry_price"]),
+                                 current_price, sl_price_thresh)
+        if hit:
             _close_adx_shadow(tr["id"], current_price,
-                              f"stop_loss {live_pnl_pct:.2f}%")
+                              f"stop_loss {pnl_pct:.2f}%")
             log.info(f"[adx {variant['id']}] SL hit: closed {tr['id']} "
                      f"{tr['direction']} at {current_price:.2f} "
-                     f"({live_pnl_pct:.2f}% px, threshold={sl_price_thresh:.2f}%)")
+                     f"({pnl_pct:.2f}% px, threshold={sl_price_thresh:.2f}%)")
         else:
             still_open.append(tr)
     open_trades = still_open

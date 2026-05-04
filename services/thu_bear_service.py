@@ -250,6 +250,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     open_by_asset: dict[str, list[dict]] = {
         asset: _get_open_thu_bear_trades(variant["id"], asset) for asset in assets
     }
+    from services.sleeves import is_sl_hit
     for asset, opens in open_by_asset.items():
         if not opens:
             continue
@@ -258,14 +259,13 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             continue
         still_open: list[dict] = []
         for tr in opens:
-            entry = float(tr["entry_price"])
-            # SHORT: adverse when price goes up
-            live_pnl = (entry - current) / entry * 100
-            if live_pnl <= -sl_price_thresh:
+            hit, pnl = is_sl_hit(tr["direction"], float(tr["entry_price"]),
+                                 current, sl_price_thresh)
+            if hit:
                 _close_thu_bear_shadow(tr["id"], current,
-                                        f"stop_loss {live_pnl:.2f}%")
+                                        f"stop_loss {pnl:.2f}%")
                 actions.append({"status": "sl_closed", "asset": asset,
-                                 "trade_id": tr["id"], "pnl_pct": live_pnl})
+                                 "trade_id": tr["id"], "pnl_pct": pnl})
             else:
                 still_open.append(tr)
         open_by_asset[asset] = still_open
