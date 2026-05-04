@@ -26,7 +26,7 @@ import logging
 from datetime import datetime, timezone, timedelta
 from typing import Any
 
-from services import clock, trade_db, variant_registry
+from services import clock, db, trade_db, trades, variant_registry
 from services.price_feed import _get_current_price
 
 log = logging.getLogger("dashboard.variant_engine")
@@ -108,16 +108,16 @@ def _shadow_trade_exists(variant_id: str, strategy: str, entry_iso: str,
                          asset: str) -> bool:
     """Check if a shadow trade already exists for (variant_id, strategy, entry_time, asset)."""
     import sqlite3
-    from pathlib import Path
-    db = str(Path(__file__).resolve().parent.parent / "data" / "dashboard.db")
-    con = sqlite3.connect(db)
-    row = con.execute(
-        "SELECT 1 FROM trades WHERE strategy_variant = ? AND strategy = ? "
-        "AND asset = ? AND entry_time = ? LIMIT 1",
-        (variant_id, strategy, asset, entry_iso),
-    ).fetchone()
-    con.close()
-    return row is not None
+    con = sqlite3.connect(str(db.DASH_DB))
+    try:
+        row = con.execute(
+            "SELECT 1 FROM trades WHERE strategy_variant = ? AND strategy = ? "
+            "AND asset = ? AND entry_time = ? LIMIT 1",
+            (variant_id, strategy, asset, entry_iso),
+        ).fetchone()
+        return row is not None
+    finally:
+        con.close()
 
 
 def _create_shadow_trade(
@@ -130,39 +130,39 @@ def _create_shadow_trade(
     execution_service entirely — never touches exchange."""
     import json
     import sqlite3
-    from pathlib import Path
-    db = str(Path(__file__).resolve().parent.parent / "data" / "dashboard.db")
     capital = float(variant.get("capital_usdt") or
                     trade_db.get_config("paper_account_usdt") or "10000")
     size_usdt = capital * (allocation_pct / 100.0) * leverage
     qty = size_usdt / entry_price if entry_price > 0 else 0
     now_iso = clock.now_iso()
 
-    con = sqlite3.connect(db)
+    con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
-    row = con.execute(
-        "SELECT id FROM trades WHERE series='SJ' ORDER BY id DESC LIMIT 1"
-    ).fetchone()
-    if row is None:
-        tid = "SJ-0001"
-    else:
-        num = int(row["id"].split("-")[1]) + 1
-        tid = f"SJ-{num:04d}"
+    try:
+        row = con.execute(
+            "SELECT id FROM trades WHERE series='SJ' ORDER BY id DESC LIMIT 1"
+        ).fetchone()
+        if row is None:
+            tid = "SJ-0001"
+        else:
+            num = int(row["id"].split("-")[1]) + 1
+            tid = f"SJ-{num:04d}"
 
-    con.execute("""
-        INSERT INTO trades (id, series, asset, direction, strategy, regime,
-            allocation_pct, leverage, entry_time, exit_time, status,
-            execution_mode, strategy_variant, actual_entry_time,
-            entry_price, size_usdt, qty, order_ids, notes)
-        VALUES (?, 'SJ', ?, ?, ?, ?, ?, ?, ?, ?, 'open',
-                'SHADOW', ?, ?, ?, ?, ?, ?, ?)
-    """, (tid, asset, direction, strategy, reason.get("regime", "unknown"),
-          allocation_pct, leverage, entry_time_iso, exit_time_iso,
-          variant["id"], now_iso, entry_price, size_usdt, qty,
-          json.dumps([f"SHADOW-{tid}"]),
-          json.dumps(reason, default=str)))
-    con.commit()
-    con.close()
+        con.execute("""
+            INSERT INTO trades (id, series, asset, direction, strategy, regime,
+                allocation_pct, leverage, entry_time, exit_time, status,
+                execution_mode, strategy_variant, actual_entry_time,
+                entry_price, size_usdt, qty, order_ids, notes)
+            VALUES (?, 'SJ', ?, ?, ?, ?, ?, ?, ?, ?, 'open',
+                    'SHADOW', ?, ?, ?, ?, ?, ?, ?)
+        """, (tid, asset, direction, strategy, reason.get("regime", "unknown"),
+              allocation_pct, leverage, entry_time_iso, exit_time_iso,
+              variant["id"], now_iso, entry_price, size_usdt, qty,
+              json.dumps([f"SHADOW-{tid}"]),
+              json.dumps(reason, default=str)))
+        con.commit()
+    finally:
+        con.close()
     return tid
 
 
@@ -178,18 +178,18 @@ def _close_due_shadows(now_utc: datetime) -> None:
     is up. This is the root cause of the SJ-1169/1506/1557/1562 leaks.
     """
     import sqlite3
-    from pathlib import Path
-    db = str(Path(__file__).resolve().parent.parent / "data" / "dashboard.db")
-    con = sqlite3.connect(db)
+    con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
-    opens = con.execute(
-        "SELECT t.id, t.asset, t.strategy_variant, t.exit_time, t.entry_price, "
-        "       t.qty, t.size_usdt, t.direction "
-        "FROM trades t JOIN variants v ON t.strategy_variant = v.id "
-        "WHERE t.execution_mode = 'SHADOW' AND t.status = 'open' "
-        "  AND v.enabled = 1"
-    ).fetchall()
-    con.close()
+    try:
+        opens = con.execute(
+            "SELECT t.id, t.asset, t.strategy_variant, t.exit_time, t.entry_price, "
+            "       t.qty, t.size_usdt, t.direction, t.strategy "
+            "FROM trades t JOIN variants v ON t.strategy_variant = v.id "
+            "WHERE t.execution_mode = 'SHADOW' AND t.status = 'open' "
+            "  AND v.enabled = 1"
+        ).fetchall()
+    finally:
+        con.close()
 
     for t in opens:
         exit_time = t["exit_time"]
@@ -207,42 +207,8 @@ def _close_due_shadows(now_utc: datetime) -> None:
         if price is None:
             log.warning(f"[shadow] no exit price for {t['id']} {t['asset']} — skipping")
             continue
-        _close_shadow_trade(t["id"], price)
-        log.info(f"[shadow {t['strategy_variant']}] closed {t['id']} {t['asset']} "
-                 f"{t['direction']} entry={t['entry_price']:.2f} exit={price:.2f}")
-
-
-def _close_shadow_trade(trade_id: str, exit_price: float) -> None:
-    import sqlite3
-    from pathlib import Path
-    db = str(Path(__file__).resolve().parent.parent / "data" / "dashboard.db")
-    now_iso = clock.now_iso()
-    con = sqlite3.connect(db)
-    con.row_factory = sqlite3.Row
-    row = con.execute(
-        "SELECT entry_price, qty, size_usdt, direction FROM trades "
-        "WHERE id=? AND status='open'",
-        (trade_id,),
-    ).fetchone()
-    if row is None:
-        con.close()
-        return
-    entry_price = row["entry_price"]
-    qty = row["qty"]
-    size_usdt = row["size_usdt"]
-    direction = row["direction"]
-    if direction == "LONG":
-        pnl_usdt = (exit_price - entry_price) * qty
-    else:
-        pnl_usdt = (entry_price - exit_price) * qty
-    pnl_pct = (pnl_usdt / size_usdt * 100) if size_usdt > 0 else 0
-    con.execute("""
-        UPDATE trades SET status='closed', actual_exit_time=?, exit_price=?,
-            pnl_usdt=?, pnl_pct=?
-        WHERE id=? AND status='open'
-    """, (now_iso, exit_price, pnl_usdt, pnl_pct, trade_id))
-    con.commit()
-    con.close()
+        trades.close_perp_trade(t["id"], price, "scheduled_exit",
+                                sleeve_name=t["strategy"])
 
 
 def _maybe_open_r4_window(variant: dict, sleeve: str, asset: str,

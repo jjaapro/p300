@@ -344,36 +344,19 @@ def test_close_due_shadows_skips_disabled_variants(tmp_path, monkeypatch):
     con.commit()
     con.close()
 
-    # Patch the engine's DB path resolution
     import services.variant_engine as ve
-    real_close = ve._close_shadow_trade
-    closed_ids: list[str] = []
-    def fake_close(trade_id, exit_price):
-        closed_ids.append(trade_id)
-    monkeypatch.setattr(ve, "_close_shadow_trade", fake_close)
+    import services.db as svc_db
+    import services.trades as svc_trades
 
-    # Patch the Path lookup inside _close_due_shadows by monkeypatching
-    # the function — it computes `db` inline. Easiest: redefine it.
-    orig_fn = ve._close_due_shadows
-    src = orig_fn.__code__
-    # Simpler: monkeypatch sqlite3.connect to redirect to tmp DB
-    import sqlite3 as sq
-    real_connect = sq.connect
-    def fake_connect(path, *a, **kw):
-        # Redirect any dashboard.db connection to our tmp DB
-        if "dashboard.db" in str(path):
-            return real_connect(str(db), *a, **kw)
-        return real_connect(path, *a, **kw)
-    monkeypatch.setattr(sq, "connect", fake_connect)
-    # variant_engine imports `_get_current_price` directly, so we must
-    # patch that binding (not the canonical price_feed.get_current_price)
+    closed_ids: list[str] = []
+    def fake_close(trade_id, exit_price, reason, sleeve_name, **kwargs):
+        closed_ids.append(trade_id)
+    monkeypatch.setattr(svc_trades, "close_perp_trade", fake_close)
+    monkeypatch.setattr(svc_db, "DASH_DB", db)
     monkeypatch.setattr(ve, "_get_current_price", lambda _a: 51000.0)
 
-    # Set sim clock past both exit_times — but we want the LIVE bot path
-    # so leave clock unset (== wall clock now, which is past 2024-01-02)
     ve._close_due_shadows(datetime(2026, 4, 29, tzinfo=timezone.utc))
 
-    # Should have closed only the live variant's trade, not the replay one
     assert "SJ-LIVE" in closed_ids, "live variant trade should be closed"
     assert "SJ-REPLAY" not in closed_ids, \
         "replay variant trade must NOT be closed by live engine"
