@@ -395,6 +395,79 @@ def test_open_shadow_trade_zero_entry_price_yields_zero_qty(empty_trades_db, mon
     assert r[1] == pytest.approx(1000.0)  # 10000 × 10% × 1
 
 
+# ─── get_open_trades ─────────────────────────────────────────────────────────
+
+@pytest.fixture
+def multi_strategy_db(tmp_path, monkeypatch):
+    """Tmp dashboard.db with several open + closed trades across strategies
+    and assets. Used to exercise the get_open_trades filter combinations."""
+    fixture_db = tmp_path / "dashboard.db"
+    con = sqlite3.connect(str(fixture_db))
+    con.execute("""
+        CREATE TABLE trades (
+            id TEXT PRIMARY KEY, series TEXT, asset TEXT, direction TEXT,
+            strategy TEXT, regime TEXT, allocation_pct REAL, leverage REAL,
+            entry_time TEXT, exit_time TEXT, status TEXT, execution_mode TEXT,
+            strategy_variant TEXT, actual_entry_time TEXT,
+            actual_exit_time TEXT, entry_price REAL, exit_price REAL,
+            size_usdt REAL, qty REAL, pnl_usdt REAL, pnl_pct REAL,
+            resolution TEXT, order_ids TEXT, notes TEXT
+        )
+    """)
+    rows = [
+        # (id, asset, strategy, status, entry_time)
+        ("A1", "BTC", "ADX",       "open",   "2024-01-01T00:00:00+00:00"),
+        ("A2", "BTC", "ADX",       "closed", "2023-12-15T00:00:00+00:00"),
+        ("T1", "BTC", "THU_BEAR",  "open",   "2024-01-04T00:00:00+00:00"),
+        ("T2", "ETH", "THU_BEAR",  "open",   "2024-01-04T00:00:00+00:00"),
+        ("T3", "BTC", "THU_BEAR",  "open",   "2023-12-28T00:00:00+00:00"),
+        ("X1", "BTC", "ADX",       "open",   "2024-01-02T00:00:00+00:00"),  # different variant
+    ]
+    for tid, asset, strat, status, et in rows:
+        variant = "vA" if tid.startswith(("A", "T")) else "vB"
+        con.execute("""INSERT INTO trades (id, series, asset, direction, strategy,
+            allocation_pct, leverage, entry_time, exit_time, status, execution_mode,
+            strategy_variant, actual_entry_time, entry_price, size_usdt, qty)
+            VALUES (?, 'SJ', ?, 'LONG', ?, 5.0, 1.0, ?, '2099', ?, 'SHADOW', ?, ?,
+                    100.0, 1000.0, 10.0)""",
+            (tid, asset, strat, et, status, variant, et))
+    con.commit()
+    con.close()
+    from services import db as _db_mod
+    monkeypatch.setattr(_db_mod, "DASH_DB", fixture_db)
+    return fixture_db
+
+
+def test_get_open_trades_filters_by_variant_and_strategy(multi_strategy_db):
+    """No asset filter — returns all open ADX trades for vA, newest first."""
+    rows = trades.get_open_trades("vA", "ADX")
+    assert [r["id"] for r in rows] == ["A1"]  # A2 closed, X1 belongs to vB
+
+
+def test_get_open_trades_with_asset_filter(multi_strategy_db):
+    rows = trades.get_open_trades("vA", "THU_BEAR", asset="BTC")
+    # Two BTC opens (T1, T3), newest first.
+    assert [r["id"] for r in rows] == ["T1", "T3"]
+
+
+def test_get_open_trades_asset_filter_excludes_other_assets(multi_strategy_db):
+    btc = trades.get_open_trades("vA", "THU_BEAR", asset="BTC")
+    eth = trades.get_open_trades("vA", "THU_BEAR", asset="ETH")
+    assert {r["id"] for r in btc} == {"T1", "T3"}
+    assert {r["id"] for r in eth} == {"T2"}
+
+
+def test_get_open_trades_unknown_strategy_returns_empty(multi_strategy_db):
+    assert trades.get_open_trades("vA", "NONEXISTENT") == []
+
+
+def test_get_open_trades_excludes_closed_trades(multi_strategy_db):
+    """Closed trades must never appear in the open list."""
+    rows = trades.get_open_trades("vA", "ADX")
+    ids = {r["id"] for r in rows}
+    assert "A2" not in ids
+
+
 def test_open_shadow_trade_falls_back_to_paper_account_default(empty_trades_db, monkeypatch):
     """If variant has no capital_usdt, falls back to paper_account_usdt config."""
     _stub_paper_account_default(monkeypatch)

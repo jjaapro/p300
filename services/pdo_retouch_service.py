@@ -171,18 +171,9 @@ def _get_hourly_bar_for_today(asset: str) -> dict | None:
 # ─── DB helpers ──────────────────────────────────────────────────────────────
 
 def _get_open_pdo_trades(variant_id: str, asset: str) -> list[dict]:
-    """All open PDO_RETOUCH trades for (variant, asset), newest first.
-    Single-open invariant; close paths sweep all so stray legacy opens get
-    cleaned up rather than ignored."""
-    con = sqlite3.connect(str(db.DASH_DB))
-    con.row_factory = sqlite3.Row
-    rows = con.execute(
-        "SELECT * FROM trades WHERE strategy_variant=? AND strategy='PDO_RETOUCH' "
-        "AND asset=? AND status='open' ORDER BY actual_entry_time DESC",
-        (variant_id, asset),
-    ).fetchall()
-    con.close()
-    return [dict(r) for r in rows]
+    """PDO_RETOUCH is multi-asset; delegates to services.trades.get_open_trades."""
+    from services.trades import get_open_trades
+    return get_open_trades(variant_id, "PDO_RETOUCH", asset=asset)
 
 
 def _pdo_action_for_bar_day(variant_id: str, asset: str,

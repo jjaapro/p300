@@ -233,20 +233,9 @@ def _current_signal(candles: list[dict]) -> dict | None:
 # ─── DB helpers (variant-scoped) ─────────────────────────────────────────────
 
 def _get_open_adx_trades(variant_id: str) -> list[dict]:
-    """Return ALL open ADX trades for this variant (newest first). The
-    strategy's invariant is single-open; this returns a list so that if
-    prior-version code left multiple opens, every close path sweeps them
-    all rather than leaking trades."""
-    con = sqlite3.connect(str(db.DASH_DB))
-    con.row_factory = sqlite3.Row
-    rows = con.execute(
-        "SELECT * FROM trades WHERE strategy_variant = ? "
-        "AND strategy = 'ADX' AND status = 'open' "
-        "ORDER BY actual_entry_time DESC",
-        (variant_id,),
-    ).fetchall()
-    con.close()
-    return [dict(r) for r in rows]
+    """ADX is BTC-only; delegates to services.trades.get_open_trades."""
+    from services.trades import get_open_trades
+    return get_open_trades(variant_id, "ADX")
 
 
 def _adx_trade_exists_today(variant_id: str, today_utc: str) -> bool:

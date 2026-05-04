@@ -235,17 +235,9 @@ def _evaluate_today(asset: str) -> dict | None:
 # ─── DB helpers ──────────────────────────────────────────────────────────────
 
 def _get_open_cpr_trades(variant_id: str, asset: str) -> list[dict]:
-    """All open CPR trades for (variant, asset), newest first. Invariant is
-    single-open; sweep the full list on close paths."""
-    con = sqlite3.connect(str(db.DASH_DB))
-    con.row_factory = sqlite3.Row
-    rows = con.execute(
-        "SELECT * FROM trades WHERE strategy_variant=? AND strategy='CPR' "
-        "AND asset=? AND status='open' ORDER BY actual_entry_time DESC",
-        (variant_id, asset),
-    ).fetchall()
-    con.close()
-    return [dict(r) for r in rows]
+    """CPR is multi-asset; delegates to services.trades.get_open_trades."""
+    from services.trades import get_open_trades
+    return get_open_trades(variant_id, "CPR", asset=asset)
 
 
 def _cpr_action_today(variant_id: str, asset: str, today_utc: str) -> bool:

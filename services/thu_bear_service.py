@@ -169,18 +169,9 @@ def _thu_bear_trade_today(variant_id: str, today_utc: str, asset: str) -> dict |
 
 
 def _get_open_thu_bear_trades(variant_id: str, asset: str) -> list[dict]:
-    """Return ALL open THU_BEAR trades for (variant, asset), newest first.
-    Needed so SL/exit sweeps reach trades left open by previous Thursdays
-    rather than only the current Thursday's entry."""
-    con = sqlite3.connect(str(db.DASH_DB))
-    con.row_factory = sqlite3.Row
-    rows = con.execute(
-        "SELECT * FROM trades WHERE strategy_variant = ? AND strategy = 'THU_BEAR' "
-        "AND asset = ? AND status = 'open' ORDER BY actual_entry_time DESC",
-        (variant_id, asset),
-    ).fetchall()
-    con.close()
-    return [dict(r) for r in rows]
+    """THU_BEAR is multi-asset; delegates to services.trades.get_open_trades."""
+    from services.trades import get_open_trades
+    return get_open_trades(variant_id, "THU_BEAR", asset=asset)
 
 
 def _open_thu_bear_shadow(variant: dict, asset: str, entry_price: float,

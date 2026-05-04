@@ -60,6 +60,37 @@ def _next_sj_id(con: sqlite3.Connection) -> str:
     return f"SJ-{int(row[0].split('-')[1]) + 1:04d}"
 
 
+def get_open_trades(variant_id: str, strategy: str,
+                    asset: str | None = None) -> list[dict]:
+    """Return all open shadow trades for (variant_id, strategy[, asset]),
+    newest first.
+
+    The single-open invariant most sleeves observe doesn't change the contract
+    — callers always sweep the full list on close paths so stray legacy opens
+    (from prior-version code paths) get cleaned up instead of leaking.
+
+    Used by ADX, CARRY (asset=None), CPR, PDO, THU_BEAR (asset filter).
+    """
+    con = sqlite3.connect(str(db.DASH_DB))
+    con.row_factory = sqlite3.Row
+    try:
+        if asset is None:
+            rows = con.execute(
+                "SELECT * FROM trades WHERE strategy_variant=? AND strategy=? "
+                "AND status='open' ORDER BY actual_entry_time DESC",
+                (variant_id, strategy),
+            ).fetchall()
+        else:
+            rows = con.execute(
+                "SELECT * FROM trades WHERE strategy_variant=? AND strategy=? "
+                "AND asset=? AND status='open' ORDER BY actual_entry_time DESC",
+                (variant_id, strategy, asset),
+            ).fetchall()
+    finally:
+        con.close()
+    return [dict(r) for r in rows]
+
+
 def open_shadow_trade(*, variant: dict, sleeve_name: str,
                       asset: str, direction: str,
                       entry_price: float, allocation_pct: float,
