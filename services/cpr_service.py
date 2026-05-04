@@ -270,11 +270,10 @@ def _open_cpr_shadow(variant: dict, asset: str, entry_price: float,
 
 
 def _close_cpr_shadow(trade_id: str, exit_price: float, reason: str) -> None:
-    """Sleeve close — delegates to services.trades.close_perp_trade.
-    No funding modeling: CPR holds are intraday so the accrual is negligible."""
+    """Sleeve close — delegates to services.trades.close_perp_trade."""
     from services.trades import close_perp_trade
     close_perp_trade(trade_id, exit_price, reason, sleeve_name="CPR",
-                     cost_bp_rt=COST_BP_RT, apply_funding=False)
+                     cost_bp_rt=COST_BP_RT, apply_funding=True)
 
 
 # ─── Public tick ─────────────────────────────────────────────────────────────
