@@ -250,12 +250,11 @@ def _maybe_open_r4_window(variant: dict, sleeve: str, asset: str,
 
     entry_dt = _floor_to_hour(now_utc)
     if entry_weekday is not None and sleeve == "R4_ETH":
-        # Exit next day at exit_hour
         exit_dt = (entry_dt + timedelta(days=1)).replace(hour=int(exit_hour))
-    elif sleeve == "R4_BTC":
-        exit_dt = entry_dt.replace(hour=int(exit_hour))
     else:
         exit_dt = entry_dt.replace(hour=int(exit_hour))
+        if exit_dt <= entry_dt:
+            exit_dt += timedelta(days=1)
 
     strategy = "R4"
     entry_iso = entry_dt.isoformat()
