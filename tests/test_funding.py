@@ -78,15 +78,17 @@ def _build_hourly_db(tmp_path, monkeypatch, day_count: int,
 # ─── accrued_pct ─────────────────────────────────────────────────────────────
 
 def test_short_earns_positive_when_rates_positive(funding_db):
+    # Entry before first settlement → all 3 counted.
     # Jan 1: 0.0001 + 0.0002 - 0.0003 = 0.0000 → SHORT pct = 0.00%.
-    start = datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc)
+    start = datetime(2023, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
     end = datetime(2024, 1, 1, 23, 59, tzinfo=timezone.utc)
     pct = funding.accrued_pct("BTC", start, end, "SHORT")
     assert pct == pytest.approx(0.0)
 
 
 def test_long_sign_is_opposite_of_short(funding_db):
-    start = datetime(2024, 1, 2, 0, 0, tzinfo=timezone.utc)
+    # Entry before first settlement of Jan 2 → all 3 counted.
+    start = datetime(2024, 1, 1, 23, 59, 59, tzinfo=timezone.utc)
     end = datetime(2024, 1, 2, 23, 59, tzinfo=timezone.utc)
     short_pct = funding.accrued_pct("BTC", start, end, "SHORT")
     long_pct = funding.accrued_pct("BTC", start, end, "LONG")
@@ -97,7 +99,7 @@ def test_long_sign_is_opposite_of_short(funding_db):
 
 
 def test_sum_across_multiple_days(funding_db):
-    start = datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc)
+    start = datetime(2023, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
     end = datetime(2024, 1, 3, 23, 59, tzinfo=timezone.utc)
     pct = funding.accrued_pct("BTC", start, end, "SHORT")
     # All 9 settlements sum to 0.0003 → SHORT +0.03%.
@@ -143,12 +145,10 @@ def test_hourly_fixture_does_not_inflate_funding_8x(tmp_path, monkeypatch):
     function was reporting 8x funding for any window touching legacy rows)."""
     _build_hourly_db(tmp_path, monkeypatch, day_count=1,
                      settlement_rates_per_day=[(0.0001, 0.0002, -0.0003)])
-    start = datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc)
+    start = datetime(2023, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
     end = datetime(2024, 1, 1, 23, 59, tzinfo=timezone.utc)
     pct = funding.accrued_pct("BTC", start, end, "SHORT")
-    # 3 settlements sum to 0.0000 → 0.00%. (24-hour sum would also be ~0 here
-    # because the rates cancel — kept as a sanity check; the next test uses
-    # uneven sentinel rates and is the discriminating regression.)
+    # 3 settlements sum to 0.0000 → 0.00%.
     assert pct == pytest.approx(0.0, abs=1e-9)
 
 
@@ -159,7 +159,7 @@ def test_hourly_fixture_with_sentinel_non_boundaries(tmp_path, monkeypatch):
     _build_hourly_db(tmp_path, monkeypatch, day_count=1,
                      settlement_rates_per_day=[(0.0010, 0.0020, 0.0030)],
                      non_boundary_rate=999.0)
-    start = datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc)
+    start = datetime(2023, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
     end = datetime(2024, 1, 1, 23, 59, tzinfo=timezone.utc)
     pct = funding.accrued_pct("BTC", start, end, "SHORT")
     # Filtered: 0.0010 + 0.0020 + 0.0030 = 0.0060 → +0.60%.
@@ -253,3 +253,69 @@ def test_daily_means_rate_uses_only_8h_boundaries(tmp_path, monkeypatch):
 
 def test_daily_means_rate_unknown_asset_returns_empty(funding_db):
     assert funding.daily_means_rate("SOL", 9_999_999_999) == {}
+
+
+# ─── ETH-specific tests ─────────────────────────────────────────────────────
+
+@pytest.fixture
+def eth_funding_db(tmp_path, monkeypatch):
+    """trader.db with cd_funding_rate_eth populated (ETH table path)."""
+    db_path = tmp_path / "trader.db"
+    con = sqlite3.connect(str(db_path))
+    con.execute(
+        "CREATE TABLE cd_funding_rate_eth ("
+        "  timestamp INTEGER PRIMARY KEY, "
+        "  fr_open REAL, fr_high REAL, fr_low REAL, fr_close REAL)"
+    )
+    base = datetime(2024, 1, 1, 0, 0, tzinfo=timezone.utc)
+    rates = [
+        (0, 0.0003), (8, -0.0001), (16, 0.0002),    # Jan 1
+        (24, 0.0004), (32, 0.0006), (40, -0.0002),  # Jan 2
+    ]
+    for hours, r in rates:
+        ts = int(base.timestamp()) + hours * 3600
+        con.execute("INSERT INTO cd_funding_rate_eth VALUES (?,?,?,?,?)",
+                    (ts, r, r, r, r))
+    con.commit()
+    con.close()
+    from services import db as _db_mod
+    monkeypatch.setattr(_db_mod, "TRADER_DB", db_path)
+    return db_path
+
+
+def test_eth_accrued_pct_short(eth_funding_db):
+    """ETH SHORT earns positive funding when net rates are positive."""
+    start = datetime(2023, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
+    end = datetime(2024, 1, 1, 23, 59, tzinfo=timezone.utc)
+    pct = funding.accrued_pct("ETH", start, end, "SHORT")
+    # Jan 1 sum: 0.0003 - 0.0001 + 0.0002 = 0.0004 → +0.04%
+    assert pct == pytest.approx(0.04)
+
+
+def test_eth_accrued_pct_long_is_negative(eth_funding_db):
+    """ETH LONG pays funding (negative) when net rates are positive."""
+    start = datetime(2023, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
+    end = datetime(2024, 1, 1, 23, 59, tzinfo=timezone.utc)
+    pct = funding.accrued_pct("ETH", start, end, "LONG")
+    assert pct == pytest.approx(-0.04)
+
+
+def test_eth_daily_sums_pct(eth_funding_db):
+    """daily_sums_pct works for ETH table."""
+    since = int(datetime(2024, 1, 1, tzinfo=timezone.utc).timestamp())
+    until = since + 2 * 86400
+    sums = funding.daily_sums_pct("ETH", since, until)
+    assert sums == {
+        "2024-01-01": pytest.approx(0.04),  # 0.0004 * 100
+        "2024-01-02": pytest.approx(0.08),  # 0.0008 * 100
+    }
+
+
+def test_eth_daily_means_rate(eth_funding_db):
+    """daily_means_rate works for ETH table."""
+    until = int(datetime(2024, 1, 3, tzinfo=timezone.utc).timestamp())
+    means = funding.daily_means_rate("ETH", until)
+    # Jan 1 mean: (0.0003 - 0.0001 + 0.0002) / 3 ≈ 0.000133
+    # Jan 2 mean: (0.0004 + 0.0006 - 0.0002) / 3 ≈ 0.000267
+    assert means["2024-01-01"] == pytest.approx(0.0004 / 3, abs=1e-9)
+    assert means["2024-01-02"] == pytest.approx(0.0008 / 3, abs=1e-9)
