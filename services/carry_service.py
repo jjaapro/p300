@@ -223,8 +223,10 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
         return {"status": "closed", "trade_ids": closed_ids}
 
     # Entry: only open if ZERO open carry trades exist (single-open invariant)
-    # AND no action happened yet today AND the 7d avg funding is above threshold.
-    if not open_trades and sig["entry_ok"] and not already_acted_today:
+    # AND no action happened yet today AND the 7d avg funding is above threshold
+    # AND exit signal is not active (prevents same-day exit→re-entry cycle).
+    if (not open_trades and sig["entry_ok"]
+            and not sig["exit_trigger"] and not already_acted_today):
         entry_price = sig["spot_close"]
         reason = {
             "trigger": "S-078_carry_entry",
