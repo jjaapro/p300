@@ -132,6 +132,7 @@ def check_trader_tables() -> None:
     # table's timestamp unit; the unit conversion happens below.
     required = [
         ("cd_futures_ohlcv",    "timestamp", "BTC perp hourly OHLCV",    86_400),      # 24h
+        ("cd_spot_binance",     "timestamp", "BTC spot hourly OHLCV",    86_400),      # 24h
         ("btc_1m",              "open_time", "BTC spot 1m (ms)",         86_400),      # 24h
         ("eth_1m",              "open_time", "ETH spot 1m (ms)",         86_400),      # 24h
         ("cd_funding_rate",     "timestamp", "BTC funding settlements",  86_400),      # 24h
