@@ -120,7 +120,7 @@ p300/
 ├── fetch_coinalyze.py             # fetches ca_long_short_ratio history (Coinalyze)
 ├── register_p300.py               # registers the variant in dashboard.db
 ├── regime_classifier.py           # BTC regime gate (used by S-096 V3/V4)
-├── health.py                      # 7 invariant checks for live operation
+├── health.py                      # 8 invariant checks for live operation
 ├── backtest_runner.py             # clock-driven hourly replay over a date window
 ├── tools/
 │   ├── backtest_report.py          # per-variant deep metrics report
