@@ -1,20 +1,20 @@
 {
-  "fetched_at": "2026-05-04T09:48:30.735486+00:00",
+  "fetched_at": "2026-05-05T07:38:00.907619+00:00",
   "event_slug": "how-many-fed-rate-cuts-in-2026",
   "event_id": "51456",
   "event_title": "How many Fed rate cuts in 2026?",
-  "volume": 22906386.787673105,
+  "volume": 23210374.272215106,
   "outcomes": [
     {
       "question": "Will no Fed rate cuts happen in 2026?",
       "cut_count": 0,
-      "p_yes": 0.5385,
+      "p_yes": 0.5865,
       "market_id": "616902"
     },
     {
       "question": "Will 1 Fed rate cut happen in 2026?",
       "cut_count": 1,
-      "p_yes": 0.165,
+      "p_yes": 0.185,
       "market_id": "616903"
     },
     {
@@ -32,25 +32,25 @@
     {
       "question": "Will 4 Fed rate cuts happen in 2026?",
       "cut_count": 4,
-      "p_yes": 0.021,
+      "p_yes": 0.023,
       "market_id": "616906"
     },
     {
       "question": "Will 5 Fed rate cuts happen in 2026?",
       "cut_count": 5,
-      "p_yes": 0.011,
+      "p_yes": 0.0135,
       "market_id": "616907"
     },
     {
       "question": "Will 6 Fed rate cuts happen in 2026?",
       "cut_count": 6,
-      "p_yes": 0.005,
+      "p_yes": 0.0075,
       "market_id": "616908"
     },
     {
       "question": "Will 7 Fed rate cuts happen in 2026?",
       "cut_count": 7,
-      "p_yes": 0.005,
+      "p_yes": 0.0045,
       "market_id": "616909"
     },
     {
@@ -80,9 +80,9 @@
     {
       "question": "Will 12 or more Fed rate cuts happen in 2026?",
       "cut_count": null,
-      "p_yes": 0.006,
+      "p_yes": 0.0055,
       "market_id": "616914"
     }
   ],
-  "expected_cuts_2026": 0.9050000000000001
+  "expected_cuts_2026": 0.9456521739130435
 }

@@ -197,35 +197,34 @@ def test_self_sweep_closes_past_exit_trade(tmp_path, monkeypatch):
     from datetime import datetime, timezone
     from services import clock, fomc_service, price_feed
 
-    # Build minimal trades table at tmp path
+    # Build minimal trades table at tmp path via canonical init_db so
+    # schema additions (current_qty, trade_adjustments, etc.) are picked up
+    # automatically.
     db = tmp_path / "dashboard.db"
+    from services import trade_db, db as _db_mod
+    monkeypatch.setattr(trade_db, "DB_PATH", db)
+    monkeypatch.setattr(_db_mod, "DASH_DB", db)
+    trade_db.init_db()
     con = sqlite3.connect(str(db))
     con.execute("""
-        CREATE TABLE trades (
-            id TEXT PRIMARY KEY, series TEXT, asset TEXT, direction TEXT,
-            strategy TEXT, regime TEXT, allocation_pct REAL, leverage REAL,
-            entry_time TEXT, exit_time TEXT, status TEXT, execution_mode TEXT,
-            strategy_variant TEXT, actual_entry_time TEXT,
-            actual_exit_time TEXT, entry_price REAL, exit_price REAL,
-            size_usdt REAL, qty REAL, pnl_usdt REAL, pnl_pct REAL,
-            resolution TEXT, order_ids TEXT, notes TEXT
-        )
-    """)
-    con.execute("""
-        INSERT INTO trades VALUES
+        INSERT INTO trades
+        (id, series, asset, direction, strategy, regime, allocation_pct,
+         leverage, entry_time, exit_time, status, execution_mode,
+         strategy_variant, actual_entry_time, entry_price, size_usdt, qty,
+         order_ids, notes,
+         current_qty, current_leverage, current_size_usdt, realized_pnl_usdt)
+        VALUES
         ('SJ-T001','SJ','BTC','LONG','FOMC','peak_hold',5.0,5.0,
          '2024-01-31T09:00:00+00:00','2024-01-31T19:30:00+00:00','open','SHADOW',
-         'test_variant','2024-01-31T09:00:00+00:00',NULL,42000.0,NULL,
-         2500.0,0.0595,NULL,NULL,NULL,'[]','{}')
+         'test_variant','2024-01-31T09:00:00+00:00',42000.0,
+         2500.0,0.0595,'[]','{}',
+         0.0595, 5.0, 2500.0, 0)
     """)
     con.commit()
     con.close()
 
-    # Redirect DASH_DB to tmp; stub price + funding feeds. Single source of
-    # truth: services.db.DASH_DB is read via attribute lookup by every consumer
-    # (fomc_service, trades, etc.), so this single patch reaches everyone.
-    from services import db as _db_mod
-    monkeypatch.setattr(_db_mod, "DASH_DB", db)
+    # Stub price + funding feeds (DASH_DB already monkeypatched above).
+
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 43000.0)
     from services import funding
     monkeypatch.setattr(funding, "accrued_pct", lambda *a, **k: 0.0)
@@ -256,30 +255,28 @@ def test_self_sweep_no_op_before_exit_time(tmp_path, monkeypatch):
     from services import clock, fomc_service, price_feed
 
     db = tmp_path / "dashboard.db"
+    from services import trade_db, db as _db_mod
+    monkeypatch.setattr(trade_db, "DB_PATH", db)
+    monkeypatch.setattr(_db_mod, "DASH_DB", db)
+    trade_db.init_db()
     con = sqlite3.connect(str(db))
     con.execute("""
-        CREATE TABLE trades (
-            id TEXT PRIMARY KEY, series TEXT, asset TEXT, direction TEXT,
-            strategy TEXT, regime TEXT, allocation_pct REAL, leverage REAL,
-            entry_time TEXT, exit_time TEXT, status TEXT, execution_mode TEXT,
-            strategy_variant TEXT, actual_entry_time TEXT,
-            actual_exit_time TEXT, entry_price REAL, exit_price REAL,
-            size_usdt REAL, qty REAL, pnl_usdt REAL, pnl_pct REAL,
-            resolution TEXT, order_ids TEXT, notes TEXT
-        )
-    """)
-    con.execute("""
-        INSERT INTO trades VALUES
+        INSERT INTO trades
+        (id, series, asset, direction, strategy, regime, allocation_pct,
+         leverage, entry_time, exit_time, status, execution_mode,
+         strategy_variant, actual_entry_time, entry_price, size_usdt, qty,
+         order_ids, notes,
+         current_qty, current_leverage, current_size_usdt, realized_pnl_usdt)
+        VALUES
         ('SJ-T002','SJ','BTC','LONG','FOMC','peak_hold',5.0,5.0,
          '2024-01-31T09:00:00+00:00','2024-01-31T19:30:00+00:00','open','SHADOW',
-         'test_variant','2024-01-31T09:00:00+00:00',NULL,42000.0,NULL,
-         2500.0,0.0595,NULL,NULL,NULL,'[]','{}')
+         'test_variant','2024-01-31T09:00:00+00:00',42000.0,
+         2500.0,0.0595,'[]','{}',
+         0.0595, 5.0, 2500.0, 0)
     """)
     con.commit()
     con.close()
 
-    from services import db as _db_mod
-    monkeypatch.setattr(_db_mod, "DASH_DB", db)
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 43000.0)
 
     # Clock at 12:00 UTC — well before exit_time (19:30 UTC)
@@ -301,8 +298,14 @@ def test_close_due_shadows_skips_disabled_variants(tmp_path, monkeypatch):
     from datetime import datetime, timezone
     from services import clock, variant_engine, price_feed
 
-    # Build dashboard.db at tmp path with two variants and one trade each
+    # Build dashboard.db at tmp path with two variants and one trade each.
+    # trade_db.init_db creates the trades schema (and trade_adjustments);
+    # the variants table is hand-rolled because it lives in variant_registry.
     db = tmp_path / "dashboard.db"
+    from services import trade_db, db as _db_mod
+    monkeypatch.setattr(trade_db, "DB_PATH", db)
+    monkeypatch.setattr(_db_mod, "DASH_DB", db)
+    trade_db.init_db()
     con = sqlite3.connect(str(db))
     con.execute("""
         CREATE TABLE variants (
@@ -311,17 +314,6 @@ def test_close_due_shadows_skips_disabled_variants(tmp_path, monkeypatch):
             capital_usdt REAL, color TEXT, spec_json TEXT, notes TEXT,
             superseded_by TEXT, reconcile_against TEXT, enabled INT,
             created_at TEXT
-        )
-    """)
-    con.execute("""
-        CREATE TABLE trades (
-            id TEXT PRIMARY KEY, series TEXT, asset TEXT, direction TEXT,
-            strategy TEXT, regime TEXT, allocation_pct REAL, leverage REAL,
-            entry_time TEXT, exit_time TEXT, status TEXT, execution_mode TEXT,
-            strategy_variant TEXT, actual_entry_time TEXT,
-            actual_exit_time TEXT, entry_price REAL, exit_price REAL,
-            size_usdt REAL, qty REAL, pnl_usdt REAL, pnl_pct REAL,
-            resolution TEXT, order_ids TEXT, notes TEXT
         )
     """)
     # Live variant (enabled=1) + replay variant (enabled=0)
@@ -335,24 +327,24 @@ def test_close_due_shadows_skips_disabled_variants(tmp_path, monkeypatch):
             INSERT INTO trades (id, series, asset, direction, strategy,
                 allocation_pct, leverage, entry_time, exit_time, status,
                 execution_mode, strategy_variant, actual_entry_time,
-                entry_price, size_usdt, qty, order_ids, notes)
+                entry_price, size_usdt, qty, order_ids, notes,
+                current_qty, current_leverage, current_size_usdt,
+                realized_pnl_usdt)
             VALUES (?, 'SJ', 'BTC', 'LONG', 'TEST', 5.0, 1.0,
                     '2024-01-01T00:00:00+00:00', '2024-01-02T00:00:00+00:00',
                     'open', 'SHADOW', ?, '2024-01-01T00:00:00+00:00',
-                    50000.0, 500.0, 0.01, '[]', '{}')
+                    50000.0, 500.0, 0.01, '[]', '{}', 0.01, 1.0, 500.0, 0)
         """, (tid, vid))
     con.commit()
     con.close()
 
     import services.variant_engine as ve
-    import services.db as svc_db
     import services.trades as svc_trades
 
     closed_ids: list[str] = []
     def fake_close(trade_id, exit_price, reason, sleeve_name, **kwargs):
         closed_ids.append(trade_id)
     monkeypatch.setattr(svc_trades, "close_perp_trade", fake_close)
-    monkeypatch.setattr(svc_db, "DASH_DB", db)
     monkeypatch.setattr(ve, "_get_current_price", lambda _a: 51000.0)
 
     ve._close_due_shadows(datetime(2026, 4, 29, tzinfo=timezone.utc))

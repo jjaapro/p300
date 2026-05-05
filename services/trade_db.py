@@ -25,8 +25,13 @@ def _con() -> sqlite3.Connection:
     return con
 
 
+def _column_exists(con: sqlite3.Connection, table: str, col: str) -> bool:
+    rows = con.execute(f"PRAGMA table_info({table})").fetchall()
+    return any(r["name"] == col for r in rows)
+
+
 def init_db() -> None:
-    """Create trades + config tables. Idempotent."""
+    """Create trades + config + trade_adjustments tables. Idempotent."""
     con = _con()
     con.execute("""
         CREATE TABLE IF NOT EXISTS trades (
@@ -61,6 +66,53 @@ def init_db() -> None:
     con.execute(
         "CREATE INDEX IF NOT EXISTS idx_trades_variant_strategy "
         "ON trades(strategy_variant, strategy, status)"
+    )
+
+    # Mutable position-state columns added after the original schema. Each
+    # tracks the live state of a position that supports partial fills and
+    # leverage adjustments — null on legacy rows that pre-date the migration.
+    for col, ddl in [
+        ("parent_position_id",  "TEXT"),
+        ("current_qty",         "REAL"),
+        ("current_leverage",    "REAL"),
+        ("current_size_usdt",   "REAL"),
+        ("realized_pnl_usdt",   "REAL DEFAULT 0"),
+    ]:
+        if not _column_exists(con, "trades", col):
+            con.execute(f"ALTER TABLE trades ADD COLUMN {col} {ddl}")
+
+    # Adjustment-event ledger: one row per OPEN / SCALE_UP / SCALE_DOWN /
+    # LEVERAGE_ADJUST / FLIP / CLOSE event on a position. Idempotency via the
+    # UNIQUE(trade_id, event_date, event_type) key — re-running the emitter
+    # for the same date never duplicates events.
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS trade_adjustments (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            trade_id TEXT NOT NULL REFERENCES trades(id),
+            seq INTEGER NOT NULL,
+            event_type TEXT NOT NULL,
+            event_time TEXT NOT NULL,
+            event_date TEXT NOT NULL,
+            qty_delta REAL DEFAULT 0,
+            qty_after REAL,
+            leverage_before REAL,
+            leverage_after REAL,
+            margin_delta_usdt REAL DEFAULT 0,
+            size_usdt_after REAL,
+            price REAL,
+            fee_usdt REAL DEFAULT 0,
+            realized_pnl_delta_usdt REAL DEFAULT 0,
+            notes_json TEXT,
+            UNIQUE(trade_id, seq),
+            UNIQUE(trade_id, event_date, event_type)
+        )
+    """)
+    con.execute(
+        "CREATE INDEX IF NOT EXISTS idx_adj_trade ON trade_adjustments(trade_id, seq)"
+    )
+    con.execute(
+        "CREATE INDEX IF NOT EXISTS idx_adj_date "
+        "ON trade_adjustments(event_date, event_type)"
     )
     con.execute("""
         CREATE TABLE IF NOT EXISTS config (

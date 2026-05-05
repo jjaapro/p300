@@ -131,31 +131,30 @@ def test_compute_custom_cost_bp():
 def trades_db(tmp_path, monkeypatch):
     """Tmp dashboard.db with a single open trade. Patches services.db.DASH_DB
     to point at it (services.db owns the canonical path; services.trades reads
-    it via attribute lookup so this single patch reaches everyone)."""
+    it via attribute lookup so this single patch reaches everyone). Uses
+    services.trade_db.init_db so the fixture always matches production schema
+    (including trade_adjustments)."""
     db = tmp_path / "dashboard.db"
+    from services import trade_db, db as _db_mod
+    monkeypatch.setattr(trade_db, "DB_PATH", db)
+    monkeypatch.setattr(_db_mod, "DASH_DB", db)
+    trade_db.init_db()
     con = sqlite3.connect(str(db))
     con.execute("""
-        CREATE TABLE trades (
-            id TEXT PRIMARY KEY, series TEXT, asset TEXT, direction TEXT,
-            strategy TEXT, regime TEXT, allocation_pct REAL, leverage REAL,
-            entry_time TEXT, exit_time TEXT, status TEXT, execution_mode TEXT,
-            strategy_variant TEXT, actual_entry_time TEXT,
-            actual_exit_time TEXT, entry_price REAL, exit_price REAL,
-            size_usdt REAL, qty REAL, pnl_usdt REAL, pnl_pct REAL,
-            resolution TEXT, order_ids TEXT, notes TEXT
-        )
-    """)
-    con.execute("""
-        INSERT INTO trades VALUES
-        ('TX-1','SJ','BTC','LONG','TEST',NULL,5.0,1.0,
-         '2024-01-01T00:00:00+00:00',NULL,'open','SHADOW',
-         'test_variant','2024-01-01T00:00:00+00:00',NULL,
-         100.0,NULL,1000.0,10.0,NULL,NULL,NULL,NULL,'')
+        INSERT INTO trades
+        (id, series, asset, direction, strategy, allocation_pct, leverage,
+         entry_time, status, execution_mode, strategy_variant,
+         actual_entry_time, entry_price, size_usdt, qty, notes,
+         current_qty, current_leverage, current_size_usdt, realized_pnl_usdt)
+        VALUES
+        ('TX-1','SJ','BTC','LONG','TEST',5.0,1.0,
+         '2024-01-01T00:00:00+00:00','open','SHADOW',
+         'test_variant','2024-01-01T00:00:00+00:00',
+         100.0,1000.0,10.0,'',
+         10.0,1.0,1000.0,0)
     """)
     con.commit()
     con.close()
-    from services import db as _db_mod
-    monkeypatch.setattr(_db_mod, "DASH_DB", db)
     return db
 
 
@@ -270,22 +269,10 @@ def empty_trades_db(tmp_path, monkeypatch):
     """Tmp dashboard.db with the trades schema but no rows. For testing the
     open path."""
     db = tmp_path / "dashboard.db"
-    con = sqlite3.connect(str(db))
-    con.execute("""
-        CREATE TABLE trades (
-            id TEXT PRIMARY KEY, series TEXT, asset TEXT, direction TEXT,
-            strategy TEXT, regime TEXT, allocation_pct REAL, leverage REAL,
-            entry_time TEXT, exit_time TEXT, status TEXT, execution_mode TEXT,
-            strategy_variant TEXT, actual_entry_time TEXT,
-            actual_exit_time TEXT, entry_price REAL, exit_price REAL,
-            size_usdt REAL, qty REAL, pnl_usdt REAL, pnl_pct REAL,
-            resolution TEXT, order_ids TEXT, notes TEXT, created_at TEXT
-        )
-    """)
-    con.commit()
-    con.close()
-    from services import db as _db_mod
+    from services import trade_db, db as _db_mod
+    monkeypatch.setattr(trade_db, "DB_PATH", db)
     monkeypatch.setattr(_db_mod, "DASH_DB", db)
+    trade_db.init_db()
     return db
 
 
@@ -402,18 +389,11 @@ def multi_strategy_db(tmp_path, monkeypatch):
     """Tmp dashboard.db with several open + closed trades across strategies
     and assets. Used to exercise the get_open_trades filter combinations."""
     fixture_db = tmp_path / "dashboard.db"
+    from services import trade_db, db as _db_mod
+    monkeypatch.setattr(trade_db, "DB_PATH", fixture_db)
+    monkeypatch.setattr(_db_mod, "DASH_DB", fixture_db)
+    trade_db.init_db()
     con = sqlite3.connect(str(fixture_db))
-    con.execute("""
-        CREATE TABLE trades (
-            id TEXT PRIMARY KEY, series TEXT, asset TEXT, direction TEXT,
-            strategy TEXT, regime TEXT, allocation_pct REAL, leverage REAL,
-            entry_time TEXT, exit_time TEXT, status TEXT, execution_mode TEXT,
-            strategy_variant TEXT, actual_entry_time TEXT,
-            actual_exit_time TEXT, entry_price REAL, exit_price REAL,
-            size_usdt REAL, qty REAL, pnl_usdt REAL, pnl_pct REAL,
-            resolution TEXT, order_ids TEXT, notes TEXT
-        )
-    """)
     rows = [
         # (id, asset, strategy, status, entry_time)
         ("A1", "BTC", "ADX",       "open",   "2024-01-01T00:00:00+00:00"),
@@ -427,14 +407,13 @@ def multi_strategy_db(tmp_path, monkeypatch):
         variant = "vA" if tid.startswith(("A", "T")) else "vB"
         con.execute("""INSERT INTO trades (id, series, asset, direction, strategy,
             allocation_pct, leverage, entry_time, exit_time, status, execution_mode,
-            strategy_variant, actual_entry_time, entry_price, size_usdt, qty)
+            strategy_variant, actual_entry_time, entry_price, size_usdt, qty,
+            current_qty, current_leverage, current_size_usdt)
             VALUES (?, 'SJ', ?, 'LONG', ?, 5.0, 1.0, ?, '2099', ?, 'SHADOW', ?, ?,
-                    100.0, 1000.0, 10.0)""",
+                    100.0, 1000.0, 10.0, 10.0, 1.0, 1000.0)""",
             (tid, asset, strat, et, status, variant, et))
     con.commit()
     con.close()
-    from services import db as _db_mod
-    monkeypatch.setattr(_db_mod, "DASH_DB", fixture_db)
     return fixture_db
 
 
