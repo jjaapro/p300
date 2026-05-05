@@ -282,8 +282,8 @@ Leverage:
 In practice: when markets are calm (vol < 50%), you lever up toward the
 cap. When vol > 100%, you de-lever toward the 0.5× floor.
 
-This applies to the **whole strategy**, not per-sleeve. So the 6
-sleeves' weighted-sum daily return × LEV = today's portfolio return.
+This applies to the **whole strategy**, not per-sleeve. So the
+sub-sleeves' weighted-sum daily return × LEV = today's portfolio return.
 
 ### 6.4 R4 BTC (06:00 → 18:00 UTC, Mon+Wed wk1-2)
 
@@ -359,7 +359,7 @@ That's the **Core J+ daily return** = 50% of P-300.
 
 ### 6.8 Tactical sleeves
 
-The 5 tactical sleeves work alongside Core J+, not inside it. Each is
+The 6 tactical sleeves work alongside Core J+, not inside it. Each is
 its own discrete trade:
 
 #### S-003 ADX (15% weight, k=5×)
@@ -463,6 +463,32 @@ CPR fires rarely (~5x per year). Most days do nothing on this sleeve.
 The two percentile checks are the tedious part — your spreadsheet
 should compute them automatically.
 
+#### FOMC (5%, k=10×)
+
+```
+Conditions to fire:
+  1. Today is an FOMC announcement day (8 per year — look up the Fed calendar)
+  2. Filter passes:
+     - SKIP if expected action is a 25bp cut (Polymarket/Fed Funds futures)
+     - SKIP if Fear & Greed index is in "extreme greed" bucket
+     - TRADE if Fear & Greed is "extreme fear" AND phase ≠ mid_hold
+     - SKIP if Fed rate phase is "mid_hold"
+     - TRADE otherwise
+
+Execution:
+  • Enter LONG BTC at T-10h before announcement (~08:00 UTC for 14:00 ET meetings)
+  • Exit at T+0.5h after announcement (~14:30 ET / ~18:30 UTC)
+  • Stop loss: 5% adverse move
+
+Size: 5% × capital × 10× = 50% notional, BTC perp.
+```
+
+FOMC fires only 8 times per year. Check the Fed meeting calendar
+in January and mark all 8 dates. The filter requires checking
+Polymarket (or Fed Funds futures) for implied rate path AND the
+Fear & Greed index the morning of. If you can't check both,
+default to TRADE (the unfiltered backtest was still positive).
+
 ---
 
 ## 7. Position bookkeeping
@@ -483,15 +509,13 @@ Core J+ (50% × LEV) — daily-rebalanced notional sum across:
   • R4 BTC (if firing)       = $100K × 0.50 × r4b_weight × LEV × gate_factor
   • R4 ETH (if firing)       = $100K × 0.50 × r4e_weight × LEV × gate_factor
 
-Tactical (45%):
+Tactical (50%):
   • S-003 ADX                = $100K × 0.15 × 5  = $75K notional   (BTC long or short)
   • S-078 Carry              = $100K × 0.08 × 5  = $40K each leg   (BTC spot/perp delta-neutral)
   • S-096 V4 Thu Bear        = $100K × 0.06 × 5  = $30K split 50/50 (BTC+ETH SHORT)
   • PDO-L-RF                 = $100K × 0.11 × 1  = $11K split 50/50 (BTC+ETH LONG)
   • CPR                      = $100K × 0.05 × 1  = $5K split 50/50 (BTC+ETH LONG)
-
-Reserve (5%):
-  • $5K stablecoin yield (USDT earn / sUSDe / etc.)
+  • FOMC                     = $100K × 0.05 × 10 = $50K notional   (BTC LONG, 8 days/year)
 ```
 
 ### Cross-sleeve BTC long cap
@@ -523,7 +547,7 @@ that captures most of the strategy's character:
 
 ### Lite version: Core J+ only (50% capital)
 
-Drop the 5 tactical sleeves entirely. Keep:
+Drop the 6 tactical sleeves entirely. Keep:
 - EMA_BTC (weekly check, ~5 min on Sunday)
 - R4 BTC (Mon+Wed wk1-2 alarms — 06:00 / 18:00 UTC)
 - Regime classification (15 min daily updating spreadsheet)
@@ -531,7 +555,7 @@ Drop the 5 tactical sleeves entirely. Keep:
 - Vol-target leverage (one column)
 
 You'd skip: R4 ETH, ETH continuous (just don't include the 0.10/0.20
-ETH weight), THU_BEAR, ADX, CARRY, PDO, CPR.
+ETH weight), THU_BEAR, ADX, CARRY, PDO, CPR, FOMC.
 
 **Time:** ~15-20 min daily routine + 4 alarms per week (06/18 Mon, 06/18 Wed, weeks 1-2 only).
 
@@ -540,7 +564,7 @@ from tactical), maybe 1.0-1.4 vs combined's 1.7. MDD likely ~−25% vs combined'
 
 ### Lite-er: Tactical-only
 
-Drop Core J+ entirely. Run only S-003 ADX + S-078 Carry + S-096 V4 + PDO + CPR.
+Drop Core J+ entirely. Run only S-003 ADX + S-078 Carry + S-096 V4 + PDO + CPR + FOMC.
 
 **Time:** still ~30 min daily because there's a lot of bookkeeping. But
 no R4 alarms (R4 lives in Core).
