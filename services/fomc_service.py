@@ -456,11 +456,18 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                 "FROM fomc_observer WHERE fomc_date=?", (fomc_date,)).fetchone()
         finally:
             con.close()
-        eval_result = {
-            "decision": r["decision"], "phase": r["phase"],
-            "fear_greed_bucket": r["fear_greed_bucket"],
-            "expected_action": r["expected_action"],
-        }
+        # _has_observer_record returned True moments ago; if the row is
+        # gone now (concurrent delete or schema reset between the two
+        # calls), fall back to a fresh evaluation rather than crashing.
+        if r is None:
+            eval_result = evaluate(fomc_date)
+            _upsert_observer_decision(fomc_date, eval_result, announcement)
+        else:
+            eval_result = {
+                "decision": r["decision"], "phase": r["phase"],
+                "fear_greed_bucket": r["fear_greed_bucket"],
+                "expected_action": r["expected_action"],
+            }
 
     if eval_result["decision"] != "trade":
         return {"status": "skip", "fomc_date": fomc_date,
