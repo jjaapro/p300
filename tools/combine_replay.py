@@ -158,7 +158,7 @@ def run(tac_variant: str, tag_core: str, tag_combined: str,
     ensure_variant(
         combined_variant_id,
         "P-300 full replay (Core+Tactical, no GOLD)",
-        f"Daily returns combined as 0.50*Core + 0.45*Tactical + 0.05*0. "
+        f"Daily returns combined as 0.50*Core + 0.50*Tactical. "
         f"Core = {core_variant_id}. Tactical = {tac_variant}. This is the "
         "closest honest replay of P-300 we can produce with current data "
         "(GOLD dropped; rule-based gate instead of ML gate).",
