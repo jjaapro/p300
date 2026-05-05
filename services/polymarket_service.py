@@ -193,8 +193,10 @@ def expected_action_for_meeting(fomc_date: str,
     if year != "2026":
         # Historical fallback: use actual rate change at meeting as proxy
         bp = fed_funds_service.get_change_at(fomc_date)
-        if bp <= -50:
+        if bp < -50:
             label = "emergency_cut"
+        elif -50 <= bp <= -30:
+            label = "cut_50"
         elif -30 < bp <= -10:
             label = "cut_25"
         elif 10 <= bp < 30:
