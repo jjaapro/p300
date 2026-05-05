@@ -194,9 +194,12 @@ def run_strategy(candles: list[dict], start_date: str,
     trades: list[dict] = []
     pos: dict | None = None
     was_low_state = False  # for mode == "stateful"
+    closed_capital = 1.0
+    mtm_peak = 1.0
+    mtm_max_dd = 0.0
 
     def close_pos(exit_dt: str, exit_price: float, reason: str) -> None:
-        nonlocal pos
+        nonlocal pos, closed_capital
         ep = pos["entry_price"]
         if pos["dir"] == "long":
             gross_pct = (exit_price - ep) / ep * 100
@@ -208,6 +211,7 @@ def run_strategy(candles: list[dict], start_date: str,
             "entry_price": ep, "exit_dt": exit_dt, "exit_price": exit_price,
             "gross_pct": gross_pct, "net_pct": net_pct, "reason": reason,
         })
+        closed_capital *= (1.0 + net_pct / 100.0)
         pos = None
 
     for i, bar in enumerate(candles):
@@ -264,6 +268,21 @@ def run_strategy(candles: list[dict], start_date: str,
             if mode == "stateful":
                 was_low_state = False  # consume
 
+        # Mark-to-market drawdown tracking (captures intra-trade excursion)
+        if pos is not None:
+            ep = pos["entry_price"]
+            if pos["dir"] == "long":
+                unrealized = (bar["low"] - ep) / ep * 100
+            else:
+                unrealized = (ep - bar["high"]) / ep * 100
+            mtm_eq = closed_capital * (1.0 + unrealized / 100.0)
+        else:
+            mtm_eq = closed_capital
+        mtm_peak = max(mtm_peak, mtm_eq)
+        if mtm_peak > 0:
+            dd = (mtm_eq - mtm_peak) / mtm_peak * 100
+            mtm_max_dd = min(mtm_max_dd, dd)
+
     if pos is not None:
         last = candles[-1]
         ep = pos["entry_price"]
@@ -285,13 +304,14 @@ def run_strategy(candles: list[dict], start_date: str,
     bh_end = candles[-1]["close"] if candles else None
     bh_pct = ((bh_end - bh_start) / bh_start * 100) if bh_start and bh_end else 0.0
 
-    return trades, strat_ret_pct, bh_pct
+    return trades, strat_ret_pct, bh_pct, mtm_max_dd
 
 
 # ─── Reporting ───────────────────────────────────────────────────────────────
 
 def report(trades: list[dict], strat_pct: float, bh_pct: float,
-           symbol: str, start_date: str, end_date: str) -> None:
+           symbol: str, start_date: str, end_date: str,
+           mtm_max_dd: float = 0.0) -> None:
     n = len(trades)
     if n == 0:
         print("No trades.")
@@ -341,6 +361,7 @@ def report(trades: list[dict], strat_pct: float, bh_pct: float,
     print(f" B&H CAGR:         {cagr_bh:.2f}%")
     print(f" Edge over B&H:    {strat_pct - bh_pct:+.1f} pp")
     print(f" Max DD (closed):  {max_dd:.1f}%")
+    print(f" Max DD (MTM):     {mtm_max_dd:.1f}%")
     print(f" NOTE: spot-only (no perp funding). Live sleeve incurs funding costs.")
     print(f"       Use backtest_runner + combine_replay for funding-inclusive P&L.")
     print()
@@ -423,9 +444,10 @@ def main() -> None:
           f"C={candles[-1]['close']:.2f}")
     print(f"Mode: {args.mode}, SL: {args.sl_pct}%")
 
-    trades, strat_pct, bh_pct = run_strategy(candles, args.start, args.mode,
-                                              sl_pct=args.sl_pct)
-    report(trades, strat_pct, bh_pct, args.symbol, args.start, args.end)
+    trades, strat_pct, bh_pct, mtm_max_dd = run_strategy(
+        candles, args.start, args.mode, sl_pct=args.sl_pct)
+    report(trades, strat_pct, bh_pct, args.symbol, args.start, args.end,
+           mtm_max_dd=mtm_max_dd)
 
 
 if __name__ == "__main__":
