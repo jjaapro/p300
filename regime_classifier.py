@@ -52,6 +52,7 @@ def load_daily(symbol: str = "BTC") -> list[tuple[str, dict]]:
         raise NotImplementedError(f"regime_classifier only supports BTC, got {symbol}")
     from services import clock  # lazy — avoid import cycles at module init
     upper_ts = clock.now_ts()
+    today = datetime.fromtimestamp(upper_ts, tz=timezone.utc).date().isoformat()
     con = sqlite3.connect(str(db.TRADER_DB))
     rows = con.execute(
         "SELECT timestamp, open, close FROM cd_spot_binance "
@@ -67,6 +68,8 @@ def load_daily(symbol: str = "BTC") -> list[tuple[str, dict]]:
             continue
         dt = datetime.fromtimestamp(ts, tz=timezone.utc)
         d = dt.date().isoformat()
+        if d == today:
+            continue
         if d not in daily:
             daily[d] = {"open": o, "close": c, "dt": dt}
         else:
