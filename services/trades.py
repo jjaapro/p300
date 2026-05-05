@@ -97,7 +97,8 @@ def open_shadow_trade(*, variant: dict, sleeve_name: str,
                       leverage: float = 1.0,
                       reason: dict,
                       scheduled_exit_dt: datetime | None = None,
-                      regime_value: str | None = None) -> str:
+                      regime_value: str | None = None,
+                      entry_dt: datetime | None = None) -> str:
     """Insert a new shadow trade row and return its trade ID.
 
     Centralizes the per-sleeve open path: capital lookup, size_usdt math,
@@ -115,6 +116,10 @@ def open_shadow_trade(*, variant: dict, sleeve_name: str,
                          ``reason.get("phase", ...)`` so passes it explicitly.
       reason             arbitrary dict — serialized into trades.notes for
                          post-hoc inspection.
+      entry_dt           optional override for the open timestamp. Defaults
+                         to ``clock.now_utc()``. Used by the J+ trade-emitter
+                         to backdate an OPEN event to the historical entry
+                         moment (e.g. R4 BTC opens at 06:00 UTC, not "now").
 
     Sizing:
       capital = variant.capital_usdt or paper_account_usdt config or $10k
@@ -127,7 +132,7 @@ def open_shadow_trade(*, variant: dict, sleeve_name: str,
     size_usdt = capital * (allocation_pct / 100.0) * leverage
     qty = size_usdt / entry_price if entry_price > 0 else 0.0
 
-    now_iso = clock.now_iso()
+    now_iso = entry_dt.isoformat() if entry_dt is not None else clock.now_iso()
     exit_iso = (scheduled_exit_dt.isoformat() if scheduled_exit_dt is not None
                 else _NO_SCHEDULED_EXIT_ISO)
     if regime_value is None:
