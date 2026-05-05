@@ -113,13 +113,16 @@ def _btc_30d_return_pct() -> float | None:
     old_bar_open_ts = upper_ts - 722 * 3600
 
     con = sqlite3.connect(str(db.TRADER_DB))
+    # Use a ±1h window to tolerate timestamp jitter in cd_spot_binance
     prev_row = con.execute(
-        "SELECT close FROM cd_spot_binance WHERE timestamp = ?",
-        (prev_bar_open_ts,),
+        "SELECT close FROM cd_spot_binance "
+        "WHERE timestamp BETWEEN ? AND ? ORDER BY timestamp DESC LIMIT 1",
+        (prev_bar_open_ts - 3600, prev_bar_open_ts + 3600),
     ).fetchone()
     old_row = con.execute(
-        "SELECT close FROM cd_spot_binance WHERE timestamp = ?",
-        (old_bar_open_ts,),
+        "SELECT close FROM cd_spot_binance "
+        "WHERE timestamp BETWEEN ? AND ? ORDER BY timestamp DESC LIMIT 1",
+        (old_bar_open_ts - 3600, old_bar_open_ts + 3600),
     ).fetchone()
     con.close()
     if prev_row is None or old_row is None:
