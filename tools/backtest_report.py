@@ -94,7 +94,7 @@ def yearly_breakdown(nav: list[tuple[str, float, float]], capital: float) -> dic
     return out
 
 
-def longest_drawdown(nav: list[tuple[str, float, float]]) -> dict:
+def deepest_drawdown(nav: list[tuple[str, float, float]]) -> dict:
     """Return {'start', 'end', 'duration_days', 'depth_pct'} of the deepest DD."""
     if not nav:
         return {}
@@ -220,7 +220,7 @@ def print_report(variant_id: str) -> None:
               f"{d['end_eq']:>12,.2f} {d['return_pct']:>9,.2f} {d['mdd_pct']:>9,.2f}")
 
     print("\n  ── Deepest drawdown ──")
-    worst = longest_drawdown(nav)
+    worst = deepest_drawdown(nav)
     if worst:
         print(f"    start:    {worst['start']}")
         print(f"    bottom:   {worst['bottom']}  ({worst['depth_pct']:+.2f}%)")
