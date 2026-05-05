@@ -146,23 +146,28 @@ def invalidate_cache() -> None:
 
 
 def expected_cuts_2026(payload: dict | None = None) -> float | None:
-    """E[cuts in 2026] = sum_i (i * P(cuts=i)).
+    """E[cuts in 2026] = sum_i (i * P_normalized(cuts=i)).
     Pass `payload` to compute from a freshly-fetched dict (avoiding a
-    chicken-and-egg cache miss inside refresh)."""
+    chicken-and-egg cache miss inside refresh).
+    Probabilities are normalized before computing expectation (prediction
+    market prices typically sum to ~1.10 due to vig)."""
     pl = payload if payload is not None else _load()
     outcomes = pl.get("outcomes") or []
     if not outcomes:
         return None
-    ec = 0.0
-    saw_any = False
+    pairs: list[tuple[int, float]] = []
     for o in outcomes:
         c = o.get("cut_count")
         p = o.get("p_yes")
         if c is None or p is None:
             continue
-        ec += c * float(p)
-        saw_any = True
-    return ec if saw_any else None
+        pairs.append((int(c), float(p)))
+    if not pairs:
+        return None
+    total_p = sum(p for _, p in pairs)
+    if total_p <= 0:
+        return None
+    return sum(c * (p / total_p) for c, p in pairs)
 
 
 # ─── Per-meeting expected action ─────────────────────────────────────────────
