@@ -5,7 +5,11 @@ P-300 sleeves for the SHADOW variant:
 
   - JPLUS-CORE (50%) -- Core J+ daily-return engine. Computes yesterday's
     return via jplus.simulate() and persists to variant_daily_returns
-    (source='live_computed', idempotent per UTC day).
+    (source='live_computed', idempotent per UTC day). Also emits discrete
+    entry/exit/scale/leverage events into the `trades` and
+    `trade_adjustments` tables for each of the four sub-sleeves
+    (JPLUS_EMA_BTC, JPLUS_ETH_DAILY, JPLUS_R4_BTC, JPLUS_R4_ETH) so
+    "show all open trades" returns Core + tactical uniformly.
   - S-003 ADX (15%), S-078 Carry (8%), S-096 V4 Thu Bear (6%),
     PDO-L-RF (11%), CPR (5%), FOMC (5%) -- tactical sleeves. Open/close
     phantom trades in the `trades` table tagged execution_mode='SHADOW'

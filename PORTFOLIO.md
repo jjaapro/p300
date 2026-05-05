@@ -111,11 +111,33 @@ dispatched per-minute by [services/variant_engine.py](services/variant_engine.py
 
 ---
 
-## 3. Core J+ Engine — 50% of capital, daily-return accrual
+## 3. Core J+ Engine — 50% of capital
 
-The Core is a single composite strategy that emits **one number per day**: a
-combined daily return percentage. It does NOT write per-trade rows. Its
-machinery lives in the [jplus/](jplus/) package.
+The Core is a composite strategy whose machinery lives in the [jplus/](jplus/)
+package. Each tick of [services/jplus_service.py](services/jplus_service.py)
+writes two artifacts for the day:
+
+1. A daily-return row in `variant_daily_returns` (`source='live_computed'`).
+   The number stored is the **net** daily return — `simulator_gross −
+   trade_event_fees`. This keeps the stored series comparable to historical
+   rows (where fees were baked into the simulator).
+2. Discrete entry/exit/scale/leverage events on each of the four sub-sleeves,
+   landed on the same `trades` and `trade_adjustments` tables the tactical
+   stack uses. Strategy names: `JPLUS_EMA_BTC`, `JPLUS_ETH_DAILY`,
+   `JPLUS_R4_BTC`, `JPLUS_R4_ETH`. Conversion is handled by
+   [services/jplus_trade_emitter.py](services/jplus_trade_emitter.py).
+
+So `SELECT * FROM trades WHERE status='open'` returns Core + tactical
+positions uniformly, and the per-position adjustment ledger
+(`SELECT * FROM trade_adjustments WHERE trade_id='SJ-XXXX' ORDER BY seq`)
+shows every notional and leverage change for the trade's lifetime.
+
+Cost migration: as of the trade-emitter rollout, [jplus/r4.py](jplus/r4.py)
+emits gross window returns (`COST_BP_RT = 0.0`); the 10bp R4 round-trip is
+charged on the trade-event CLOSE. [jplus/ema_sleeve.py](jplus/ema_sleeve.py)'s
+`_COMMISSION` was already a phantom (defined but unused) and is now `0.0`
+explicitly. ETH_DAILY remains zero-fee in both the simulator and the emitter
+pending the spot fee model.
 
 ```
                  ┌──────────────────────────────────────┐
@@ -200,7 +222,7 @@ Four signal sources contribute to the daily 1× return. Each sub-sleeve's
 - **Edge thesis**: a known intraday window in BTC where US/Europe overlap drives directional pressure. Concentrated in early-month days when month-start flows hit. Empirically: ~96 fires over 973 days, mean +0.052%/day, +61.8% compounded if run alone.
 - **Active in**: every non-`bear` regime.
 
-#### S-099 3.1.4 R4 ETH — Tue → Wed 24h long, weeks 1–2 only
+#### 3.1.4 S-099 R4 ETH — Tue → Wed 24h long, weeks 1–2 only
 
 - **Signal**: pure calendar trigger. Fires on **Tuesdays whose next-day (Wed) is ≤ 14 of the month**.
 - **Entry**: `Tue 20:00 UTC` open price.
