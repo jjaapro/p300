@@ -1,24 +1,41 @@
 """Core J+ regime-gated — live dispatcher.
 
-Unlike the five tactical sleeves (which emit discrete phantom trades),
-the Core J+ portfolio contributes to NAV via DAILY RETURNS. Each daily
-return is the output of `jplus.simulate()` for that date (regime alloc
-× sleeve returns × vol-targeted leverage).
+Each tick computes the Core's daily return and emits one row of
+``variant_daily_returns`` per UTC day per variant.
 
-Service contract follows the same `try_fire_for_variant(variant, sleeve_cfg)`
-signature as other sleeves, but does NOT write to the `trades` table. It
-writes to `variant_daily_returns` with `source='live_computed'` so the NAV
-can be reconstructed without discrete-trade bookkeeping.
+As of the trade-emitter migration (plan: how-do-we-modular-curry.md),
+the Core also writes discrete trade rows to the same ``trades`` table
+the tactical sleeves use. Each sub-sleeve (EMA_BTC, ETH_DAILY, R4_BTC,
+R4_ETH) maps to a strategy named ``JPLUS_<sleeve>``; entries, exits,
+scales, and leverage adjustments land on ``trade_adjustments``. See
+``services.jplus_trade_emitter``.
+
+Daily-return derivation under the migration:
+  - The simulator (``jplus.simulate.simulate``) emits a GROSS daily
+    return — sub-sleeve fees were removed in Step 5/7 (r4.py
+    COST_BP_RT = 0.0; ema_sleeve.py _COMMISSION = 0.0).
+  - The trade-emitter records the same window of activity as discrete
+    events; CLOSE events on R4 trades carry the 10bp round-trip fee.
+  - This service computes the net daily return as ``sim_gross
+    − (sum of fee_usdt across today's JPLUS_* events) / capital × 100``
+    so that ``variant_daily_returns.return_1x_pct`` remains directly
+    comparable to historical rows where fees were baked into the sim.
+
+Service contract follows the same ``try_fire_for_variant(variant,
+sleeve_cfg)`` signature as the tactical sleeves. Emitter failures are
+logged but do not block the daily-return write — the simulator remains
+the fallback source of truth if the emitter raises.
 
 Idempotent per UTC day: a second tick on the same day is a no-op. When
 invoked before the current UTC day's Core return is computable (i.e.,
 the simulator won't emit a value for "today" — by design, see
-jplus/simulate.py), the service records nothing. Catches up at the next
-UTC day boundary.
+``jplus/simulate.py``), the service records nothing. Catches up at the
+next UTC day boundary.
 
-Backtest replay bypasses this service — backtest_runner.py drives
-jplus.simulate() directly for a chosen window and writes returns via
-combine_replay.py. This service is for the LIVE loop (run.py).
+Backtest replay bypasses this service — ``backtest_runner.py`` drives
+``jplus.simulate()`` directly for a chosen window and writes returns
+via ``combine_replay.py``. This service is for the LIVE loop
+(``run.py``).
 """
 from __future__ import annotations
 
@@ -92,11 +109,38 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                 "date": target_date}
 
     rec = series[target_date]
+
+    # Trade-emitter side. Failures here must NOT block the daily-return
+    # write below — the simulator stays the fallback source of truth.
+    try:
+        from services import jplus_trade_emitter as emitter
+        emitter.emit_for_date(variant, target_date, rec)
+    except Exception as e:
+        log.error(f"[jplus {variant['id']}] trade-emitter failed for "
+                  f"{target_date}: {e!r}", exc_info=True)
+
+    # Net daily return = simulator gross − trade-event fees for the day.
+    # Falls back to sim's gross if the fee aggregator raises (defensive).
+    sim_gross_pct = float(rec["return_pct"])
+    fees_pct = 0.0
+    try:
+        from services import trade_adjustments, trade_db
+        capital = float(variant.get("capital_usdt") or
+                         trade_db.get_config("paper_account_usdt") or 10000)
+        summary = trade_adjustments.daily_pnl_from_adjustments(
+            target_date, variant["id"], strategy_prefix="JPLUS_")
+        fees_pct = (float(summary["fees_usdt"]) / capital) * 100.0
+    except Exception as e:
+        log.warning(f"[jplus {variant['id']}] fee aggregation failed for "
+                    f"{target_date}: {e!r}; writing gross")
+    net_return_pct = sim_gross_pct - fees_pct
+
     _write_daily_return(variant["id"], target_date,
-                         float(rec["return_pct"]), str(rec.get("mode", "")))
+                         net_return_pct, str(rec.get("mode", "")))
     # Headline line — same shape as before so existing log filters work.
     log.info(f"[jplus {variant['id']}] recorded {target_date} "
-             f"return={rec['return_pct']:+.3f}% mode={rec['mode']} "
+             f"return={net_return_pct:+.3f}% (gross={sim_gross_pct:+.3f}%, "
+             f"fees={fees_pct:+.3f}%) mode={rec['mode']} "
              f"lev={rec['lev']:.2f} gate={rec['gated']} ema_p={rec['ema_p']:+d}")
     # Sub-sleeve attribution receipt. Each contribution is the 1x term;
     # multiply by `lev` to get the final daily-return share.
@@ -126,7 +170,9 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     return {
         "status": "recorded",
         "date": target_date,
-        "return_pct": rec["return_pct"],
+        "return_pct": net_return_pct,
+        "gross_return_pct": sim_gross_pct,
+        "fees_pct": fees_pct,
         "mode": rec["mode"],
         "lev": rec["lev"],
         "gated": rec["gated"],
