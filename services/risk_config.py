@@ -15,6 +15,15 @@ SL semantics:
     10% margin-loss stop triggers at a 2% price move. This caps the ROE
     drawdown per trade regardless of leverage.
 
+Why price_move is the default (deliberate, tracked decision — see
+AUDIT_2026_05_05.md):
+  All historical sleeve win-rates and DD numbers in PORTFOLIO.md were
+  produced with price_move semantics. Flipping the default would silently
+  change every variant's expected behaviour in live trading and invalidate
+  the calibration of stop_loss_pct values that were tuned per-sleeve in
+  upstream research. Operators who want leverage-adjusted ROE caps should
+  opt in via P300_STOP_SEMANTICS=margin and re-tune the per-sleeve pcts.
+
 Switch via env var at runtime (so a single code path supports both without
 rebuilding). Default unchanged from the original implementation.
 

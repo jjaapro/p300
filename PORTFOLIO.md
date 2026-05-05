@@ -39,6 +39,15 @@ dispatched per-minute by [services/variant_engine.py](services/variant_engine.py
 
 **Total: 50%** (matches Core's 50% so the portfolio is fully allocated.)
 
+> **Stop-loss semantics.** All `stop_loss_pct` values configured per sleeve
+> are interpreted as **price-move** percentages by default — i.e. a 10% stop
+> at k=5× triggers when price moves 10%, after which the trade has lost 50%
+> of margin. This matches the calibration used in the historical backtests
+> below. Set `P300_STOP_SEMANTICS=margin` to interpret the same numbers as
+> margin-loss caps (10% margin-loss → 2% price move at k=5×); if you do,
+> re-tune each sleeve's `stop_loss_pct` since the pcts were sized for the
+> price-move semantic. See [services/risk_config.py](services/risk_config.py).
+
 ### 2.1 S-003 ADX — Trend-flip on BTC
 
 - **Signal**: 14-period ADX crosses 25 from prior compression (<20 in last 20 bars). Direction: LONG when close > EMA(50), SHORT when close < EMA(50). LONG-only trend filter: LONG additionally requires close > EMA(150).
