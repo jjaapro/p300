@@ -41,7 +41,7 @@ dispatched per-minute by [services/variant_engine.py](services/variant_engine.py
 
 ### 2.1 S-003 ADX — Trend-flip on BTC
 
-- **Signal**: 14-period ADX crosses 25 with EMA(20) < or > EMA(50). LONG when EMA20 > EMA50 + ADX confirms; SHORT when reversed.
+- **Signal**: 14-period ADX crosses 25 from prior compression (<20 in last 20 bars). Direction: LONG when close > EMA(50), SHORT when close < EMA(50). LONG-only trend filter: LONG additionally requires close > EMA(150).
 - **Entry**: at the crossover bar. Stops out at -2% spot (10% of size after k=5×).
 - **Exit**: opposite ADX flip, OR stop loss, OR trend exhaustion.
 - **Edge thesis**: catches medium-term trends in BTC; takes the loss when trend reverses.
