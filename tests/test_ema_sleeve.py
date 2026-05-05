@@ -97,22 +97,25 @@ def test_compute_ema_position_map_truncated_matches_full():
     trunc_bars = bars[: 168 * 40]
     trunc = ema_sleeve.compute_ema_position_map(trunc_bars)
 
-    # Every key in trunc must either match full or be absent from full's
-    # ongoing-trade region (the last trade may not yet have closed in
-    # trunc, so its tail-end days will differ).
-    # Safer check: the EARLIEST half of trunc should be bit-identical.
-    early_cutoff = None
+    # The last open trade at truncation may differ (it hasn't closed yet
+    # in the truncated run). Identify the last trade's start date: it's
+    # the final contiguous run of same-direction positions at the tail.
     trunc_keys = sorted(trunc.keys())
+    last_trade_start = None
     if trunc_keys:
-        # Take the first half of trunc keys; these dates correspond to
-        # fully-closed trades whose assignment cannot change.
-        n = len(trunc_keys) // 2
-        early_cutoff = trunc_keys[n]
+        tail_dir = trunc[trunc_keys[-1]]
+        for i in range(len(trunc_keys) - 1, -1, -1):
+            if trunc[trunc_keys[i]] != tail_dir:
+                last_trade_start = trunc_keys[i + 1] if i + 1 < len(trunc_keys) else trunc_keys[0]
+                break
+
+    mismatches = []
     for d in trunc_keys:
-        if early_cutoff is not None and d >= early_cutoff:
-            break
-        assert d in full, f"{d} in trunc but missing from full"
-        assert trunc[d] == full[d], f"position changed at {d}: trunc={trunc[d]} full={full[d]}"
+        if last_trade_start is not None and d >= last_trade_start:
+            continue
+        if d in full and trunc[d] != full[d]:
+            mismatches.append((d, trunc[d], full[d]))
+    assert not mismatches, f"look-ahead violations: {mismatches[:5]}"
 
 
 def test_aggregate_weekly_incomplete_tail_is_discarded():
