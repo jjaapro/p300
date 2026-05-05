@@ -411,6 +411,140 @@ def _emit_eth_daily(variant: dict, date_iso: str, sim_record: dict,
             )
 
 
+# ─── EMA_BTC emit ───────────────────────────────────────────────────────────
+
+
+def _btc_day_open_price(date_iso: str) -> float | None:
+    """BTC price at 00:00 UTC of date_iso (= prior-day close in continuous
+    markets). Used as the daily rebalance / FLIP price for EMA_BTC, mirroring
+    the simulator's close-to-close ``br`` accounting."""
+    return _hourly_open("BTC", date_iso, 0)
+
+
+def _emit_ema_btc(variant: dict, date_iso: str, sim_record: dict,
+                  capital: float, prev_state: PositionState) -> None:
+    """EMA_BTC: continuous BTC position whose direction is governed by the
+    weekly EMA(5/21) cross signal (``sim_record['ema_p']``). Active in all
+    four regimes (every regime gives EMA_BTC a non-zero weight).
+
+    Per-day events for an open EMA_BTC trade:
+      - SCALE if regime weight × vol-target lev changes the desired notional.
+      - LEVERAGE_ADJUST if vol-target lev changes day-to-day.
+      - FLIP if ``ema_p`` sign flips — closes the current trade and opens
+        an opposite-direction trade at the same rebalance price.
+
+    Initial OPEN happens on the first day where ``ema_p != 0``. CLOSE
+    only fires defensively if ``ema_p`` returns to 0 (rare — only at the
+    extreme edge of warmup).
+    """
+    ema_p = int(sim_record.get("ema_p", 0) or 0)
+    mode = sim_record.get("mode", "uncertain")
+    weight = REGIME_WEIGHTS.get(mode, {}).get("ema_btc", 0.0)
+    vol_lev = float(sim_record.get("lev", 1.0))
+    open_pos = prev_state.ema_btc
+
+    rebalance_price = _btc_day_open_price(date_iso)
+    if rebalance_price is None or rebalance_price <= 0:
+        log.warning(f"[ema_btc] no BTC bar at {date_iso} 00:00 UTC; skipping")
+        return
+    rebalance_dt = datetime.fromisoformat(date_iso).replace(tzinfo=timezone.utc)
+
+    desired_active = ema_p != 0 and weight > 0.0
+    desired_direction = "LONG" if ema_p > 0 else ("SHORT" if ema_p < 0 else None)
+    desired_notional = (capital * weight * vol_lev) if desired_active else 0.0
+    desired_qty = (desired_notional / rebalance_price) if rebalance_price > 0 else 0.0
+
+    if not desired_active:
+        # Defensive close — only triggers if regime weight goes to 0 (never
+        # under current allocations) or ema_p returns to 0.
+        if open_pos is not None:
+            if _has_event(open_pos["id"], date_iso, "CLOSE"):
+                return
+            clock.set_simulated_now(rebalance_dt)
+            try:
+                trades.close_perp_trade(
+                    open_pos["id"], exit_price=rebalance_price,
+                    reason=f"ema_btc_inactive_{mode}_{date_iso}",
+                    sleeve_name=STRATEGY_EMA_BTC,
+                    cost_bp_rt=0.0, apply_funding=False,
+                )
+            finally:
+                clock.set_simulated_now(None)
+        return
+
+    # desired_active == True
+    if open_pos is None:
+        if _has_open_event(variant["id"], STRATEGY_EMA_BTC, date_iso):
+            return
+        trades.open_shadow_trade(
+            variant=variant, sleeve_name=STRATEGY_EMA_BTC,
+            asset="BTC", direction=desired_direction,
+            entry_price=rebalance_price,
+            allocation_pct=weight * 100.0,
+            leverage=vol_lev,
+            reason={"sleeve": STRATEGY_EMA_BTC, "mode": mode,
+                    "ema_p": ema_p, "vol_lev": vol_lev, "weight": weight},
+            scheduled_exit_dt=None,
+            regime_value=mode,
+            entry_dt=rebalance_dt,
+        )
+        return
+
+    cur_direction = (open_pos["direction"] or "").upper()
+    cur_qty = float(open_pos["current_qty"] if open_pos.get("current_qty")
+                    is not None else open_pos["qty"] or 0.0)
+    cur_lev = float(open_pos["current_leverage"] if open_pos.get("current_leverage")
+                    is not None else open_pos["leverage"] or 1.0)
+
+    # FLIP path: ema_p sign disagrees with current direction.
+    if cur_direction != desired_direction:
+        if _has_event(open_pos["id"], date_iso, "FLIP"):
+            return
+        trades.apply_flip(
+            open_pos["id"], new_direction=desired_direction,
+            price=rebalance_price, fee_usdt=0.0,
+            event_time=rebalance_dt.isoformat(),
+            event_date=date_iso,
+            notes={"reason": "ema_weekly_cross", "ema_p": ema_p,
+                   "mode": mode},
+        )
+        # The new trade was just minted by apply_flip with same notional/lev
+        # as the old one. If today's desired notional/lev differ, follow up
+        # with a SCALE / LEVERAGE_ADJUST below by re-fetching state.
+        new_pos = _first_or_none(trades.get_open_trades(
+            variant["id"], STRATEGY_EMA_BTC))
+        if new_pos is None:
+            return
+        cur_qty = float(new_pos["current_qty"] if new_pos.get("current_qty")
+                        is not None else new_pos["qty"] or 0.0)
+        cur_lev = float(new_pos["current_leverage"] if new_pos.get("current_leverage")
+                        is not None else new_pos["leverage"] or 1.0)
+        open_pos = new_pos
+
+    # Daily rebalance on same direction.
+    if abs(desired_qty - cur_qty) > max(1e-9, 1e-9 * abs(cur_qty)):
+        if not _has_event(open_pos["id"], date_iso, "SCALE_UP") and \
+           not _has_event(open_pos["id"], date_iso, "SCALE_DOWN"):
+            trades.apply_scale(
+                open_pos["id"], new_qty=desired_qty,
+                price=rebalance_price, fee_usdt=0.0,
+                event_time=rebalance_dt.isoformat(),
+                event_date=date_iso,
+                notes={"reason": "daily_rebalance", "mode": mode,
+                       "weight": weight, "vol_lev": vol_lev,
+                       "ema_p": ema_p},
+            )
+    if abs(vol_lev - cur_lev) > 1e-9:
+        if not _has_event(open_pos["id"], date_iso, "LEVERAGE_ADJUST"):
+            trades.apply_leverage_adjust(
+                open_pos["id"], new_leverage=vol_lev,
+                price=rebalance_price, fee_usdt=0.0,
+                event_time=rebalance_dt.isoformat(),
+                event_date=date_iso,
+                notes={"reason": "vol_target_update", "mode": mode},
+            )
+
+
 # ─── helpers ────────────────────────────────────────────────────────────────
 
 def _has_open_event(variant_id: str, strategy: str, event_date: str) -> bool:
@@ -465,7 +599,7 @@ def emit_for_date(variant: dict, date_iso: str, sim_record: dict,
     _emit_r4_btc(variant, date_iso, sim_record, capital)
     _emit_r4_eth(variant, date_iso, sim_record, capital)
     _emit_eth_daily(variant, date_iso, sim_record, capital, prev_state)
-    # EMA_BTC: implemented in Step 4.
+    _emit_ema_btc(variant, date_iso, sim_record, capital, prev_state)
 
     return get_position_state(variant["id"])
 

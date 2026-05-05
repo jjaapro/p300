@@ -390,3 +390,133 @@ def test_eth_daily_only_active_in_bull(emitter_env):
     for tid, ent, regime in rows:
         assert regime in ("strong_bull", "mild_bull"), \
             f"ETH_DAILY {tid} entered in non-bull regime {regime!r}"
+
+
+# ─── EMA_BTC parity ─────────────────────────────────────────────────────────
+
+@pytest.mark.slow
+def test_ema_btc_parity_with_simulator(emitter_env):
+    """EMA_BTC accounting parity: sum of all EMA_BTC trade pnl_usdt for the
+    window must equal sum of simulator's ema_contrib_1x_pct × lev × capital
+    over all dates in the window, within 5bp/capital. EMA_BTC is continuous
+    (open every day after warmup); we aggregate across all closed trades
+    plus any final open trade's unrealized."""
+    from jplus import simulate as core_sim
+    from services import jplus_trade_emitter as emitter
+
+    clock.set_simulated_now(datetime(2024, 5, 1, tzinfo=timezone.utc))
+    series = core_sim.simulate(start_date=PARITY_WINDOW_START,
+                                end_date=PARITY_WINDOW_END)
+    try:
+        for date_iso in sorted(series.keys()):
+            emitter.emit_for_date(_variant(), date_iso, series[date_iso])
+    finally:
+        clock.set_simulated_now(None)
+
+    # Sum simulator contributions for any date covered by an EMA_BTC trade.
+    sim_total_usdt = 0.0
+    con = sqlite3.connect(str(emitter_env))
+    try:
+        ema_trades = con.execute(
+            "SELECT id, actual_entry_time, actual_exit_time, status, "
+            "       pnl_usdt, current_qty, avg_entry_price, current_leverage, "
+            "       direction, realized_pnl_usdt "
+            "FROM trades WHERE strategy='JPLUS_EMA_BTC' "
+            "ORDER BY actual_entry_time"
+        ).fetchall()
+    finally:
+        con.close()
+
+    assert ema_trades, "no EMA_BTC trades emitted"
+
+    # Figure out total dates covered: from first OPEN to either last CLOSE
+    # (if all closed) or the last sim date (open trade still active).
+    first_entry = datetime.fromisoformat(ema_trades[0][1]).date()
+    from datetime import timedelta
+    last_sim = max(datetime.fromisoformat(d).date() for d in series.keys())
+    cur = first_entry
+    while cur <= last_sim:
+        rec = series.get(cur.isoformat())
+        if rec is not None:
+            sim_total_usdt += (float(rec.get("ema_contrib_1x_pct", 0.0))
+                               * float(rec.get("lev", 1.0))) / 100.0 * CAPITAL_USDT
+        cur = cur + timedelta(days=1)
+
+    # Trade-derived total = sum of closed pnl_usdt (cumulative on closed
+    # trades) + sum of (realized_pnl_usdt + final_unrealized) on open trades.
+    trade_total = 0.0
+    for (tid, ent, exit_iso, status, pnl, cur_qty, avg_e, cur_lev,
+         direction, realized) in ema_trades:
+        if status == "closed":
+            trade_total += float(pnl or 0.0)
+        else:
+            # Open: prior realized from SCALE_DOWN events + MTM at last sim close.
+            last_open = emitter._btc_day_open_price(
+                (last_sim + timedelta(days=1)).isoformat())
+            if last_open is None:
+                last_open = emitter._btc_day_open_price(last_sim.isoformat())
+            assert last_open is not None
+            qty = float(cur_qty or 0.0)
+            basis = float(avg_e or 0.0)
+            move = last_open - basis
+            if (direction or "").upper() == "SHORT":
+                move = -move
+            trade_total += float(realized or 0.0) + qty * move
+
+    diff = trade_total - sim_total_usdt
+    # 5bp on capital tolerance — small price-bar timing jitter at rebalance.
+    assert abs(diff) < 5.0, \
+        f"EMA_BTC parity off: trade={trade_total:.4f} sim={sim_total_usdt:.4f} diff={diff:.4f}"
+
+
+@pytest.mark.slow
+def test_ema_btc_flip_on_weekly_cross(emitter_env):
+    """When ema_p flips sign across consecutive days, the emitter must
+    produce a FLIP event (closing the old trade and opening an opposite-
+    direction one with parent_position_id linkage)."""
+    from jplus import simulate as core_sim
+    from services import jplus_trade_emitter as emitter
+
+    clock.set_simulated_now(datetime(2024, 5, 1, tzinfo=timezone.utc))
+    series = core_sim.simulate(start_date=PARITY_WINDOW_START,
+                                end_date=PARITY_WINDOW_END)
+    try:
+        for date_iso in sorted(series.keys()):
+            emitter.emit_for_date(_variant(), date_iso, series[date_iso])
+    finally:
+        clock.set_simulated_now(None)
+
+    # Find ema_p sign flips in the series
+    prev_sign = None
+    flip_dates: list[str] = []
+    for d in sorted(series.keys()):
+        ep = int(series[d].get("ema_p") or 0)
+        sign = 1 if ep > 0 else (-1 if ep < 0 else 0)
+        if prev_sign is not None and sign != 0 and prev_sign != 0 and sign != prev_sign:
+            flip_dates.append(d)
+        prev_sign = sign
+
+    con = sqlite3.connect(str(emitter_env))
+    try:
+        flip_events = con.execute(
+            "SELECT a.event_date, a.trade_id "
+            "FROM trade_adjustments a JOIN trades t ON a.trade_id=t.id "
+            "WHERE t.strategy='JPLUS_EMA_BTC' AND a.event_type='FLIP' "
+            "ORDER BY a.event_date"
+        ).fetchall()
+        # Number of trades with a parent (= opened via flip)
+        n_with_parent = con.execute(
+            "SELECT COUNT(*) FROM trades "
+            "WHERE strategy='JPLUS_EMA_BTC' AND parent_position_id IS NOT NULL"
+        ).fetchone()[0]
+    finally:
+        con.close()
+
+    if flip_dates:
+        # Each flip-date should have at most one FLIP event keyed to it.
+        flip_event_dates = {ev[0] for ev in flip_events}
+        for fd in flip_dates:
+            assert fd in flip_event_dates, \
+                f"expected FLIP event at {fd}; got dates {flip_event_dates}"
+        assert n_with_parent == len(flip_dates), \
+            f"expected {len(flip_dates)} flip-children, got {n_with_parent}"

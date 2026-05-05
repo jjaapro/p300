@@ -603,8 +603,10 @@ def apply_flip(trade_id: str, *, new_direction: str, price: float,
         row = con.execute(
             "SELECT asset, direction, strategy, regime, allocation_pct, "
             "  leverage, current_qty, current_size_usdt, current_leverage, "
-            "  qty, size_usdt, entry_price, strategy_variant, exit_time, "
-            "  actual_entry_time "
+            "  qty, size_usdt, entry_price, "
+            "  COALESCE(avg_entry_price, entry_price) AS basis_price, "
+            "  realized_pnl_usdt, "
+            "  strategy_variant, exit_time, actual_entry_time "
             "FROM trades WHERE id=? AND status='open'", (trade_id,),
         ).fetchone()
         if row is None:
@@ -616,24 +618,31 @@ def apply_flip(trade_id: str, *, new_direction: str, price: float,
                         else row["qty"] or 0.0)
         cur_lev = float(row["current_leverage"] if row["current_leverage"]
                         is not None else row["leverage"] or 1.0)
-        # Realized P&L on the closing leg.
-        entry_price = float(row["entry_price"] or 0.0)
-        move = price - entry_price
+        # Realized P&L on the closing leg, against the running weighted-avg
+        # basis (so daily-rebalanced trades book the correct slice realized
+        # on flip).
+        basis_price = float(row["basis_price"] or 0.0)
+        move = price - basis_price
         if old_direction == "SHORT":
             move = -move
         realized_close = cur_qty * move - fee_usdt / 2.0
+        # Cumulative P&L = prior SCALE_DOWN realizations + this flip's close.
+        prior_realized = float(row["realized_pnl_usdt"] or 0.0)
+        cumulative_pnl = prior_realized + realized_close
         # Mark old trade closed.
         now_iso = event_time or clock.now_iso()
+        ref_size = float(row["current_size_usdt"]
+                         if row["current_size_usdt"] is not None
+                         else row["size_usdt"] or 0.0)
         con.execute(
             "UPDATE trades SET status='closed', actual_exit_time=?, "
             "  exit_price=?, pnl_usdt=?, pnl_pct=?, "
             "  resolution='filled_flipped', current_qty=0, "
-            "  realized_pnl_usdt = COALESCE(realized_pnl_usdt, 0) + ? "
+            "  realized_pnl_usdt=? "
             "WHERE id=? AND status='open'",
-            (now_iso, price, realized_close,
-             (realized_close / float(row["size_usdt"]) * 100.0)
-             if row["size_usdt"] else 0.0,
-             realized_close, trade_id),
+            (now_iso, price, cumulative_pnl,
+             (cumulative_pnl / ref_size * 100.0) if ref_size else 0.0,
+             cumulative_pnl, trade_id),
         )
         record_adjustment(
             trade_id=trade_id, event_type=EV_FLIP,
@@ -658,9 +667,9 @@ def apply_flip(trade_id: str, *, new_direction: str, price: float,
                 status, execution_mode, strategy_variant, actual_entry_time,
                 entry_price, size_usdt, qty, order_ids, notes,
                 current_qty, current_leverage, current_size_usdt,
-                realized_pnl_usdt, parent_position_id)
+                realized_pnl_usdt, parent_position_id, avg_entry_price)
             VALUES (?, 'SJ', ?, ?, ?, ?, ?, ?, ?, ?, 'open',
-                    'SHADOW', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+                    'SHADOW', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
         """, (new_tid, row["asset"], new_direction, row["strategy"],
               row["regime"], row["allocation_pct"], cur_lev,
               now_iso, row["exit_time"] or _NO_SCHEDULED_EXIT_ISO,
@@ -668,7 +677,7 @@ def apply_flip(trade_id: str, *, new_direction: str, price: float,
               json.dumps([f"SHADOW-{new_tid}"]),
               json.dumps((notes or {}) | {"opened_via": "flip",
                                             "parent": trade_id}, default=str),
-              new_qty, cur_lev, new_size, trade_id))
+              new_qty, cur_lev, new_size, trade_id, price))
         record_adjustment(
             trade_id=new_tid, event_type=EV_OPEN,
             event_time=now_iso, event_date=event_date,
