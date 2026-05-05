@@ -454,10 +454,8 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
         eval_result = evaluate(fomc_date)
         _upsert_observer_decision(fomc_date, eval_result, announcement)
     else:
-        # cached on first call this meeting; cheap reread
         import sqlite3
-        from pathlib import Path
-        con = sqlite3.connect(str(REPO / "data" / "trader.db"))
+        con = sqlite3.connect(str(db.TRADER_DB))
         con.row_factory = sqlite3.Row
         try:
             r = con.execute(
