@@ -130,11 +130,13 @@ p300/
 │   ├── compare_with_fomc.py        # A/B comparison helper
 │   ├── fomc_backtest_drilldown.py  # FOMC trade-by-trade attribution
 │   ├── fomc_leverage_sensitivity.py# FOMC leverage sweep
+│   ├── p300_run.ps1                # PowerShell launcher script
 │   └── tools_statistical_validation.py # bootstrap Sharpe CI + rolling/year breakdown
 ├── requirements.txt               # numpy only
 ├── data/
 │   ├── trader.db                  # market data (built by bootstrap; live-refreshed)
-│   └── dashboard.db               # variant registry + trade log
+│   ├── dashboard.db               # variant registry + trade log
+│   └── known_unfillable.json      # gaps known to be unfillable (exchange downtime etc.)
 ├── jplus/                         # Core J+ daily-return engine (50% anchor)
 │   ├── data.py                    # clock-bounded loaders
 │   ├── regime.py                  # 4-state classifier + LS circuit breaker
@@ -147,6 +149,9 @@ p300/
 │   ├── variant_engine.py          # scheduler tick + dispatch
 │   ├── variant_registry.py        # variant CRUD + schema
 │   ├── clock.py                   # injectable clock for deterministic replay
+│   ├── db.py                      # DB path constants (TRADER_DB, DASHBOARD_DB)
+│   ├── sleeves.py                 # sleeve name constants + dispatch table
+│   ├── trades.py                  # trade open/close persistence
 │   ├── trade_db.py                # trade log schema + runtime config
 │   ├── price_feed.py              # last-close reader with staleness guard
 │   ├── funding.py                 # funding accrual + daily sums/means (BTC + ETH)
@@ -154,10 +159,17 @@ p300/
 │   ├── risk_caps.py               # cross-sleeve BTC-long cap enforcement
 │   ├── risk_config.py             # SL semantic (price-move vs margin-loss)
 │   ├── adx_service.py             # S-003 ADX live dispatcher
+│   ├── adx_service.pine           # Pine Script reference for S-003 ADX
 │   ├── carry_service.py           # S-078 carry live dispatcher
 │   ├── thu_bear_service.py        # S-096 V3/V4 Thu bear live dispatcher
+│   ├── thu_bear_service.pine      # Pine Script reference for S-096 Thu Bear
 │   ├── pdo_retouch_service.py     # PDO-L-RF live dispatcher
+│   ├── pdo_retouch_service.pine   # Pine Script reference for PDO
 │   ├── cpr_service.py             # CPR live dispatcher
+│   ├── fomc_service.py            # FOMC live dispatcher (regime + sentiment filtered)
+│   ├── fed_funds_service.py       # Fed rate-cycle phase classifier
+│   ├── sentiment_index_service.py # Fear & Greed index bucketing
+│   ├── polymarket_service.py      # Polymarket-implied rate expectations
 │   └── jplus_service.py           # JPLUS-CORE daily-return dispatcher
 └── tests/                         # 149 tests including look-ahead canary
 ```
