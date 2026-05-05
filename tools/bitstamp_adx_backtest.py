@@ -28,6 +28,13 @@ top up missing tail bars. Use --refresh to force full re-fetch.
 
 Cost model: 10bp RT taker (matches services/adx_service.COST_BP_RT). No
 funding — this is spot.
+
+CAVEAT: the live ADX sleeve trades perpetual futures and applies funding
+accrual (apply_funding=True in adx_service). Funding costs are not
+reflected here. During high-funding regimes (typically when BTC is
+rallying — exactly when ADX LONG trades fire), funding can erode 1-5%
+per month. Use backtest_runner.py / combine_replay.py for P&L estimates
+that include funding; this script is for signal-level Pine parity only.
 """
 from __future__ import annotations
 
@@ -334,6 +341,8 @@ def report(trades: list[dict], strat_pct: float, bh_pct: float,
     print(f" B&H CAGR:         {cagr_bh:.2f}%")
     print(f" Edge over B&H:    {strat_pct - bh_pct:+.1f} pp")
     print(f" Max DD (closed):  {max_dd:.1f}%")
+    print(f" NOTE: spot-only (no perp funding). Live sleeve incurs funding costs.")
+    print(f"       Use backtest_runner + combine_replay for funding-inclusive P&L.")
     print()
 
     by_year: dict[str, list[dict]] = defaultdict(list)
