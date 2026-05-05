@@ -147,16 +147,16 @@ def open_shadow_trade(*, variant: dict, sleeve_name: str,
                 execution_mode, strategy_variant, actual_entry_time,
                 entry_price, size_usdt, qty, order_ids, notes,
                 current_qty, current_leverage, current_size_usdt,
-                realized_pnl_usdt)
+                realized_pnl_usdt, avg_entry_price)
             VALUES (?, 'SJ', ?, ?, ?, ?, ?, ?, ?, ?, 'open',
-                    'SHADOW', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
+                    'SHADOW', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
         """, (tid, asset, direction.upper(), sleeve_name.upper(),
               regime_value, allocation_pct, leverage,
               now_iso, exit_iso, variant["id"], now_iso,
               entry_price, size_usdt, qty,
               json.dumps([f"SHADOW-{tid}"]),
               json.dumps(reason, default=str),
-              qty, leverage, size_usdt))
+              qty, leverage, size_usdt, entry_price))
         # Implicit OPEN event in the adjustment ledger. Idempotency-safe:
         # a duplicate INSERT (e.g. retry after partial commit) becomes a no-op.
         from services.trade_adjustments import record_adjustment, EV_OPEN
@@ -250,10 +250,18 @@ def persist_close(trade_id: str, exit_price: float, exit_time_iso: str,
     BEFORE the close (so callers can log entry-side details), or None if
     no row matched the trade_id.
 
-    Also writes a CLOSE event to the adjustment ledger, with the supplied
-    ``fee_usdt`` recorded as the close-side fee. ``realized_pnl_delta_usdt``
-    on the CLOSE event = ``pnl_usdt`` minus any P&L already booked on
-    earlier SCALE_DOWN events; we look that up from ``trades.realized_pnl_usdt``.
+    Semantics:
+      ``pnl_usdt``  — P&L realized on the CLOSE event itself (= price_pnl
+                      on remaining qty against the avg basis, minus the
+                      close-side fee). Computed by ``compute_perp_close``
+                      using the trade's current_qty / avg_entry_price.
+      Trade row's ``pnl_usdt``  is set to ``prior_realized + pnl_usdt`` —
+                      the cumulative realized across all SCALE_DOWN events
+                      plus this final close.
+      Trade row's ``pnl_pct``   uses the supplied pct as-is (caller's
+                      responsibility — typically pnl_usdt / size_usdt × 100).
+      ``realized_pnl_delta_usdt`` on the CLOSE adjustment row records
+                      just this event's realization (= pnl_usdt arg).
     """
     con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
@@ -269,15 +277,16 @@ def persist_close(trade_id: str, exit_price: float, exit_time_iso: str,
         prior_realized = float(row["realized_pnl_usdt"] or 0.0)
         remaining_qty = float(row["current_qty"] if row["current_qty"] is not None
                               else row["qty"] or 0.0)
-        close_realized_delta = pnl_usdt - prior_realized
+        close_realized_delta = pnl_usdt
+        cumulative_pnl = prior_realized + pnl_usdt
         con.execute("""
             UPDATE trades SET status='closed', actual_exit_time=?, exit_price=?,
                 pnl_usdt=?, pnl_pct=?, resolution='filled_closed',
                 notes = COALESCE(notes,'') || ?,
                 current_qty=0, realized_pnl_usdt=?
             WHERE id=? AND status='open'
-        """, (exit_time_iso, exit_price, pnl_usdt, pnl_pct, notes_suffix,
-              pnl_usdt, trade_id))
+        """, (exit_time_iso, exit_price, cumulative_pnl, pnl_pct, notes_suffix,
+              cumulative_pnl, trade_id))
         from services.trade_adjustments import record_adjustment, EV_CLOSE
         # Sign of qty_delta is the closing-trade direction: closing a LONG
         # sells (-qty), closing a SHORT buys (+qty).
@@ -324,6 +333,7 @@ def close_perp_trade(trade_id: str, exit_price: float, reason: str,
     try:
         row = con.execute(
             "SELECT asset, direction, entry_price, "
+            "       COALESCE(avg_entry_price, entry_price) AS basis_price, "
             "       COALESCE(current_qty, qty) AS qty, "
             "       COALESCE(current_size_usdt, size_usdt) AS size_usdt, "
             "       actual_entry_time FROM trades WHERE id=?",
@@ -339,9 +349,12 @@ def close_perp_trade(trade_id: str, exit_price: float, reason: str,
     if entry_dt.tzinfo is None:
         entry_dt = entry_dt.replace(tzinfo=timezone.utc)
 
+    # basis_price is the running weighted-average for trades that have
+    # scaled up; falls back to the immutable entry_price for the legacy
+    # tactical-sleeve path.
     components = compute_perp_close(
         direction=row["direction"],
-        entry_price=float(row["entry_price"]),
+        entry_price=float(row["basis_price"]),
         exit_price=float(exit_price),
         qty=float(row["qty"]),
         size_usdt=float(row["size_usdt"]),
@@ -431,11 +444,13 @@ def apply_scale(trade_id: str, *, new_qty: float, price: float,
     closed slice if scaling down (price PnL on the qty delta). Returns True
     if the event was recorded; False on idempotent retry.
 
-    Notional and margin are kept proportional to qty: ``size_usdt`` after =
-    ``new_qty × current_price × current_leverage_inverse_factor``. The
-    function recomputes ``current_size_usdt = new_qty × price`` (i.e. the
-    notional at the scaling-event price). Vol-target leverage is unchanged
-    by this event — use ``apply_leverage_adjust`` for that.
+    Maintains the running weighted-average ``avg_entry_price`` on SCALE_UP:
+    ``new_avg = (prev_qty × prev_avg + delta_qty × price) / new_qty``.
+    SCALE_DOWN keeps avg_entry_price unchanged — the remaining qty keeps
+    its prior basis; the closed slice realizes against that basis.
+
+    Vol-target leverage is unchanged by this event — use
+    ``apply_leverage_adjust`` for that.
     """
     from services.trade_adjustments import (record_adjustment,
                                               EV_SCALE_UP, EV_SCALE_DOWN)
@@ -444,7 +459,8 @@ def apply_scale(trade_id: str, *, new_qty: float, price: float,
     try:
         row = con.execute(
             "SELECT direction, current_qty, current_size_usdt, "
-            "       current_leverage, entry_price, qty, size_usdt, leverage "
+            "       current_leverage, entry_price, qty, size_usdt, leverage, "
+            "       avg_entry_price "
             "FROM trades WHERE id=? AND status='open'", (trade_id,),
         ).fetchone()
         if row is None:
@@ -455,16 +471,23 @@ def apply_scale(trade_id: str, *, new_qty: float, price: float,
         if abs(new_qty - prev_qty) < 1e-12:
             return False  # no-op
         qty_delta = new_qty - prev_qty
-        # On scale-down, book realized P&L on the closed slice using
-        # |qty_delta| × (price − entry_price), direction-adjusted.
+        # Basis: running avg if set, otherwise immutable entry_price.
+        prev_avg = float(row["avg_entry_price"] if row["avg_entry_price"]
+                         is not None else row["entry_price"] or 0.0)
+        # On scale-down, book realized P&L on the closed slice against the
+        # current avg-entry. Direction-adjusted.
         realized_delta = 0.0
-        entry_price = float(row["entry_price"] or 0.0)
-        if qty_delta < 0 and entry_price > 0:
+        new_avg = prev_avg
+        if qty_delta < 0 and prev_avg > 0:
             slice_qty = -qty_delta  # positive
-            move = price - entry_price
+            move = price - prev_avg
             if direction == "SHORT":
                 move = -move
             realized_delta = slice_qty * move - fee_usdt
+            # avg_entry stays the same on scale-down.
+        elif qty_delta > 0 and new_qty > 0:
+            # Weighted-average update on scale-up.
+            new_avg = (prev_qty * prev_avg + qty_delta * price) / new_qty
         new_size = new_qty * price
         prev_size = float(row["current_size_usdt"] if row["current_size_usdt"]
                           is not None else row["size_usdt"] or 0.0)
@@ -472,10 +495,11 @@ def apply_scale(trade_id: str, *, new_qty: float, price: float,
         # Update mutable position state.
         con.execute(
             "UPDATE trades SET current_qty=?, current_size_usdt=?, "
-            "    realized_pnl_usdt = COALESCE(realized_pnl_usdt, 0) + ? "
+            "    realized_pnl_usdt = COALESCE(realized_pnl_usdt, 0) + ?, "
+            "    avg_entry_price = ? "
             "WHERE id=? AND status='open'",
             (new_qty, new_size, realized_delta if qty_delta < 0 else 0.0,
-             trade_id),
+             new_avg, trade_id),
         )
         ev_type = EV_SCALE_UP if qty_delta > 0 else EV_SCALE_DOWN
         # qty_delta sign for the ledger reflects long/short conventions: a

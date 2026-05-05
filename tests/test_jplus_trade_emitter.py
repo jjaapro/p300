@@ -283,3 +283,110 @@ def test_r4_eth_only_fires_on_tue_with_wed_in_weeks_1_2(emitter_env):
         wed = dt + timedelta(days=1)
         assert 1 <= wed.day <= 14, \
             f"R4_ETH {tid} Wed-day {wed.day} not in 1-14"
+
+
+# ─── ETH_DAILY parity ───────────────────────────────────────────────────────
+
+@pytest.mark.slow
+def test_eth_daily_parity_with_simulator(emitter_env):
+    """For each closed ETH_DAILY trade, the trade's pnl_usdt must equal the
+    sum of the simulator's eth_daily_contrib_1x_pct × lev × capital across
+    the trade's open dates, within 5bp tolerance.
+
+    The math: position notional N[d] = capital × weight[d] × lev[d] is
+    daily-rebalanced. Total realized + final close P&L on the trade =
+    sum_d N[d] × er[d] = sum_d sim's daily contribution. (See plan §
+    'cumulative parity'.)"""
+    from jplus import simulate as core_sim
+    from services import jplus_trade_emitter as emitter
+
+    clock.set_simulated_now(datetime(2024, 5, 1, tzinfo=timezone.utc))
+    series = core_sim.simulate(start_date=PARITY_WINDOW_START,
+                                end_date=PARITY_WINDOW_END)
+    try:
+        for date_iso in sorted(series.keys()):
+            emitter.emit_for_date(_variant(), date_iso, series[date_iso])
+    finally:
+        clock.set_simulated_now(None)
+
+    con = sqlite3.connect(str(emitter_env))
+    try:
+        trades_rows = con.execute(
+            "SELECT id, actual_entry_time, actual_exit_time, pnl_usdt "
+            "FROM trades WHERE strategy='JPLUS_ETH_DAILY' AND status='closed' "
+            "ORDER BY actual_entry_time"
+        ).fetchall()
+    finally:
+        con.close()
+
+    assert trades_rows, "no ETH_DAILY trades closed during the window"
+
+    diffs: list[tuple] = []
+    for tid, ent, exit_iso, trade_pnl in trades_rows:
+        # The trade was open from ent (start of date_open) to exit (start
+        # of date_close). Simulator's contribution accrues on dates in
+        # [date_open, date_close - 1] inclusive — i.e. all dates the
+        # position was held overnight at least once. The first day's
+        # contribution is from open_price → date_open close.
+        date_open = datetime.fromisoformat(ent).date()
+        date_close = datetime.fromisoformat(exit_iso).date()
+        cum_sim_pct = 0.0
+        cur = date_open
+        while cur < date_close:
+            d_iso = cur.isoformat()
+            rec = series.get(d_iso)
+            if rec is not None:
+                cum_sim_pct += float(rec.get("eth_daily_contrib_1x_pct", 0.0)) \
+                                * float(rec.get("lev", 1.0))
+            cur = cur + (date_close - cur)  # advance — simpler one-shot below
+            break
+        # Linear iteration (clearer):
+        cum_sim_pct = 0.0
+        from datetime import timedelta
+        cur = date_open
+        while cur < date_close:
+            d_iso = cur.isoformat()
+            rec = series.get(d_iso)
+            if rec is not None:
+                cum_sim_pct += float(rec.get("eth_daily_contrib_1x_pct", 0.0)) \
+                                * float(rec.get("lev", 1.0))
+            cur = cur + timedelta(days=1)
+        cum_sim_usdt = cum_sim_pct / 100.0 * CAPITAL_USDT
+        # Tolerance: 5bp of capital ($5 on $10k). Daily-rebalanced
+        # close-to-close model has small price-bar timing jitter at
+        # rebalance moments because we read prior-day close from eth_1m
+        # which can be up to a minute off the reference.
+        if abs(float(trade_pnl) - cum_sim_usdt) > 5.0:
+            diffs.append((tid, ent, exit_iso, trade_pnl, cum_sim_usdt))
+
+    assert not diffs, f"ETH_DAILY cumulative parity mismatches (first 3): {diffs[:3]}"
+
+
+@pytest.mark.slow
+def test_eth_daily_only_active_in_bull(emitter_env):
+    """ETH_DAILY trades must only have entry days in {strong_bull, mild_bull}
+    regimes."""
+    from jplus import simulate as core_sim
+    from services import jplus_trade_emitter as emitter
+
+    clock.set_simulated_now(datetime(2024, 5, 1, tzinfo=timezone.utc))
+    series = core_sim.simulate(start_date=PARITY_WINDOW_START,
+                                end_date=PARITY_WINDOW_END)
+    try:
+        for date_iso in sorted(series.keys()):
+            emitter.emit_for_date(_variant(), date_iso, series[date_iso])
+    finally:
+        clock.set_simulated_now(None)
+
+    con = sqlite3.connect(str(emitter_env))
+    try:
+        rows = con.execute(
+            "SELECT id, actual_entry_time, regime FROM trades "
+            "WHERE strategy='JPLUS_ETH_DAILY'"
+        ).fetchall()
+    finally:
+        con.close()
+    assert rows, "no ETH_DAILY trades emitted"
+    for tid, ent, regime in rows:
+        assert regime in ("strong_bull", "mild_bull"), \
+            f"ETH_DAILY {tid} entered in non-bull regime {regime!r}"

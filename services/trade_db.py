@@ -71,12 +71,18 @@ def init_db() -> None:
     # Mutable position-state columns added after the original schema. Each
     # tracks the live state of a position that supports partial fills and
     # leverage adjustments — null on legacy rows that pre-date the migration.
+    #
+    # avg_entry_price tracks the running weighted-average basis as a
+    # position grows via SCALE_UP. SCALE_DOWN doesn't move it (remaining
+    # qty keeps its basis). On legacy rows it stays NULL, so the close
+    # path falls back to the immutable entry_price.
     for col, ddl in [
         ("parent_position_id",  "TEXT"),
         ("current_qty",         "REAL"),
         ("current_leverage",    "REAL"),
         ("current_size_usdt",   "REAL"),
         ("realized_pnl_usdt",   "REAL DEFAULT 0"),
+        ("avg_entry_price",     "REAL"),
     ]:
         if not _column_exists(con, "trades", col):
             con.execute(f"ALTER TABLE trades ADD COLUMN {col} {ddl}")

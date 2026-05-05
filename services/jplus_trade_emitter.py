@@ -287,6 +287,130 @@ def _emit_r4_eth(variant: dict, date_iso: str, sim_record: dict,
         clock.set_simulated_now(None)
 
 
+# ─── ETH_DAILY emit ─────────────────────────────────────────────────────────
+
+
+def _eth_daily_close(date_iso: str) -> float | None:
+    """ETH spot close at end of date_iso UTC (= last eth_1m bar of the day's
+    close, equivalently the first bar's open of date+1 — small jitter
+    possible). Used both as the previous-day-close basis when sizing today's
+    notional and as the close price for daily MTM."""
+    day_start_ms = int(datetime.fromisoformat(date_iso).replace(
+        tzinfo=timezone.utc).timestamp() * 1000)
+    day_end_ms = day_start_ms + 86_400_000
+    upper = clock.now_ts_ms()
+    if day_start_ms > upper:
+        return None
+    con = sqlite3.connect(str(db.TRADER_DB))
+    try:
+        row = con.execute(
+            "SELECT close FROM eth_1m "
+            "WHERE open_time >= ? AND open_time < ? AND open_time <= ? "
+            "ORDER BY open_time DESC LIMIT 1",
+            (day_start_ms, day_end_ms, upper),
+        ).fetchone()
+    finally:
+        con.close()
+    if row is None or row[0] is None:
+        return None
+    return float(row[0])
+
+
+def _emit_eth_daily(variant: dict, date_iso: str, sim_record: dict,
+                    capital: float, prev_state: PositionState) -> None:
+    """ETH_DAILY: continuous long ETH while regime is in {strong_bull,
+    mild_bull}; idle otherwise.
+
+    Each day in bull regime, the position is rebalanced so that current
+    notional equals ``capital × eth_daily_weight × vol_target_lev``. The
+    rebalance is timestamped at date_iso 00:00 UTC, priced at the prior
+    UTC day's ETH close (= today's open in continuous markets). Two events
+    can fire per day: a SCALE (qty change to match new notional) and a
+    LEVERAGE_ADJUST (margin change for vol-target update).
+
+    On the first day the regime exits bull, the position is closed at the
+    same price (prior-day close).
+    """
+    mode = sim_record.get("mode", "uncertain")
+    weight = REGIME_WEIGHTS.get(mode, {}).get("eth_daily", 0.0)
+    vol_lev = float(sim_record.get("lev", 1.0))
+    desired_open = weight > 0.0
+    open_pos = prev_state.eth_daily
+
+    cur_dt = datetime.fromisoformat(date_iso).replace(tzinfo=timezone.utc)
+    prev_day_iso = (cur_dt - timedelta(days=1)).date().isoformat()
+    rebalance_price = _eth_daily_close(prev_day_iso)
+    if rebalance_price is None or rebalance_price <= 0:
+        log.warning(f"[eth_daily] no ETH close at {prev_day_iso}; skipping {date_iso}")
+        return
+
+    rebalance_dt = cur_dt  # 00:00 UTC of date_iso
+
+    if not desired_open:
+        # If we have an open ETH_DAILY trade, close it at prior-day close.
+        if open_pos is not None:
+            if _has_event(open_pos["id"], date_iso, "CLOSE"):
+                return
+            clock.set_simulated_now(rebalance_dt)
+            try:
+                trades.close_perp_trade(
+                    open_pos["id"], exit_price=rebalance_price,
+                    reason=f"eth_daily_regime_exit_{mode}_{date_iso}",
+                    sleeve_name=STRATEGY_ETH_DAILY,
+                    cost_bp_rt=0.0, apply_funding=False,
+                )
+            finally:
+                clock.set_simulated_now(None)
+        return
+
+    # desired_open == True
+    desired_notional = capital * weight * vol_lev
+    desired_qty = desired_notional / rebalance_price
+
+    if open_pos is None:
+        if _has_open_event(variant["id"], STRATEGY_ETH_DAILY, date_iso):
+            return
+        trades.open_shadow_trade(
+            variant=variant, sleeve_name=STRATEGY_ETH_DAILY,
+            asset="ETH", direction="LONG",
+            entry_price=rebalance_price,
+            allocation_pct=weight * 100.0,
+            leverage=vol_lev,
+            reason={"sleeve": STRATEGY_ETH_DAILY, "mode": mode,
+                    "vol_lev": vol_lev, "weight": weight},
+            scheduled_exit_dt=None,
+            regime_value=mode,
+            entry_dt=rebalance_dt,
+        )
+        return
+
+    # Already open: rebalance qty and leverage to today's targets.
+    cur_qty = float(open_pos["current_qty"] if open_pos.get("current_qty")
+                    is not None else open_pos["qty"] or 0.0)
+    cur_lev = float(open_pos["current_leverage"] if open_pos.get("current_leverage")
+                    is not None else open_pos["leverage"] or 1.0)
+    if abs(desired_qty - cur_qty) > max(1e-9, 1e-9 * abs(cur_qty)):
+        if not _has_event(open_pos["id"], date_iso, "SCALE_UP") and \
+           not _has_event(open_pos["id"], date_iso, "SCALE_DOWN"):
+            trades.apply_scale(
+                open_pos["id"], new_qty=desired_qty,
+                price=rebalance_price, fee_usdt=0.0,
+                event_time=rebalance_dt.isoformat(),
+                event_date=date_iso,
+                notes={"reason": "daily_rebalance", "mode": mode,
+                       "weight": weight, "vol_lev": vol_lev},
+            )
+    if abs(vol_lev - cur_lev) > 1e-9:
+        if not _has_event(open_pos["id"], date_iso, "LEVERAGE_ADJUST"):
+            trades.apply_leverage_adjust(
+                open_pos["id"], new_leverage=vol_lev,
+                price=rebalance_price, fee_usdt=0.0,
+                event_time=rebalance_dt.isoformat(),
+                event_date=date_iso,
+                notes={"reason": "vol_target_update", "mode": mode},
+            )
+
+
 # ─── helpers ────────────────────────────────────────────────────────────────
 
 def _has_open_event(variant_id: str, strategy: str, event_date: str) -> bool:
@@ -300,6 +424,22 @@ def _has_open_event(variant_id: str, strategy: str, event_date: str) -> bool:
             "WHERE t.strategy=? AND t.strategy_variant=? "
             "  AND a.event_type='OPEN' AND a.event_date=? LIMIT 1",
             (strategy, variant_id, event_date),
+        ).fetchone()
+    finally:
+        con.close()
+    return row is not None
+
+
+def _has_event(trade_id: str, event_date: str, event_type: str) -> bool:
+    """True if this trade already has an event of (event_date, event_type).
+    Used to short-circuit before calling apply_scale / apply_leverage_adjust /
+    close_perp_trade on the same day."""
+    con = sqlite3.connect(str(db.DASH_DB))
+    try:
+        row = con.execute(
+            "SELECT 1 FROM trade_adjustments "
+            "WHERE trade_id=? AND event_date=? AND event_type=? LIMIT 1",
+            (trade_id, event_date, event_type),
         ).fetchone()
     finally:
         con.close()
@@ -324,7 +464,8 @@ def emit_for_date(variant: dict, date_iso: str, sim_record: dict,
 
     _emit_r4_btc(variant, date_iso, sim_record, capital)
     _emit_r4_eth(variant, date_iso, sim_record, capital)
-    # EMA_BTC, ETH_DAILY: implemented in Steps 3 & 4.
+    _emit_eth_daily(variant, date_iso, sim_record, capital, prev_state)
+    # EMA_BTC: implemented in Step 4.
 
     return get_position_state(variant["id"])
 
