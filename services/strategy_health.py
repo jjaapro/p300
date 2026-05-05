@@ -137,6 +137,73 @@ def _load_daily_returns(variant_id: str, start: str, end: str,
     return [float(r[0]) for r in rows if r[0] is not None]
 
 
+# Default Core/tactical split for the P-300 portfolio (matches
+# tools/combine_replay.py:W_CORE/W_TACTICAL and PORTFOLIO.md §1).
+W_CORE = 0.50
+W_TACTICAL = 0.50
+
+
+def _combined_daily_returns(variant_id: str, start: str, end: str,
+                             capital_usdt: float,
+                             w_core: float = W_CORE) -> list[float]:
+    """Combined live-portfolio daily returns (percent), oldest-first.
+
+    The live variant's ``variant_daily_returns`` rows hold Core J+'s
+    STANDALONE return (jplus_service writes ``sim_gross − JPLUS fees``
+    with no portfolio scaling). The tactical sleeves' P&L is recorded
+    only in the ``trades`` table. Neither source alone tells the
+    operator how the actual variant is doing, so the health banner has
+    to combine them at read time:
+
+        combined[d] = w_core × core_return[d]
+                    + (sum of non-JPLUS closed-trade pnl_usdt with
+                       exit_date == d) / capital × 100
+
+    JPLUS_* trades are excluded to avoid double-counting — Core's per-
+    sub-sleeve P&L is already inside the VDR row via the gross-minus-
+    fees derivation.
+
+    Days present in only one source are still emitted with the missing
+    side as 0 (e.g. a day with a tactical fill but no VDR row yet
+    contributes only the tactical slice)."""
+    # Core side: VDR live_computed rows
+    con = sqlite3.connect(str(db.DASH_DB))
+    try:
+        core_rows = con.execute(
+            "SELECT date, return_1x_pct FROM variant_daily_returns "
+            "WHERE variant_id=? AND source='live_computed' "
+            "  AND date >= ? AND date <= ?",
+            (variant_id, start, end),
+        ).fetchall()
+        # Tactical side: aggregate closed-trade pnl by exit date, excluding
+        # the JPLUS_* prefix (those are Core's sub-sleeves, already in VDR).
+        tactical_rows = con.execute(
+            "SELECT date(actual_exit_time) AS d, "
+            "       COALESCE(SUM(pnl_usdt), 0.0) AS pnl "
+            "FROM trades "
+            "WHERE strategy_variant=? AND status='closed' "
+            "  AND strategy NOT LIKE 'JPLUS_%' "
+            "  AND date(actual_exit_time) >= ? "
+            "  AND date(actual_exit_time) <= ? "
+            "GROUP BY d",
+            (variant_id, start, end),
+        ).fetchall()
+    finally:
+        con.close()
+
+    core_map = {r[0]: float(r[1]) for r in core_rows if r[1] is not None}
+    tac_map = {r[0]: float(r[1]) for r in tactical_rows
+                if r[0] is not None and r[1] is not None}
+    dates = sorted(set(core_map) | set(tac_map))
+    out: list[float] = []
+    for d in dates:
+        core_pct = core_map.get(d, 0.0)
+        tac_pnl = tac_map.get(d, 0.0)
+        tac_pct = (tac_pnl / capital_usdt * 100.0) if capital_usdt > 0 else 0.0
+        out.append(w_core * core_pct + tac_pct)
+    return out
+
+
 @dataclass(frozen=True)
 class PortfolioMetrics:
     """Read-only snapshot of portfolio metrics for a single window."""
@@ -149,8 +216,27 @@ class PortfolioMetrics:
 
 
 def portfolio_metrics(variant_id: str, window: Window,
-                      source: str = "live_computed") -> PortfolioMetrics:
-    rets = _load_daily_returns(variant_id, window.start, window.end, source)
+                      source: str = "live_computed",
+                      capital_usdt: float | None = None,
+                      w_core: float = W_CORE) -> PortfolioMetrics:
+    """Portfolio metrics for one window.
+
+    For ``source='live_computed'`` with ``capital_usdt`` supplied, returns
+    are computed as the COMBINED daily series (Core VDR × w_core +
+    tactical trade P&L / capital × 100). This is what an operator
+    actually wants — the variant's true daily return — because the
+    live-variant VDR row alone is just Core standalone.
+
+    For ``source='replay'`` (or live without capital), reads VDR rows
+    directly and treats them as already-final returns (matches
+    combine_replay's convention: ``__core_*`` variants store standalone
+    Core, ``__combined_*`` variants store the 50/50 mix). Caller picks
+    the right variant id."""
+    if source == "live_computed" and capital_usdt is not None:
+        rets = _combined_daily_returns(variant_id, window.start, window.end,
+                                         capital_usdt, w_core=w_core)
+    else:
+        rets = _load_daily_returns(variant_id, window.start, window.end, source)
     n = len(rets)
     if n == 0:
         return PortfolioMetrics(window.name, 0, 0.0, None, None, None)
@@ -309,7 +395,9 @@ def build_report(variant_id: str, capital_usdt: float | None = None,
         from services import trade_db
         capital_usdt = float(trade_db.get_config("paper_account_usdt") or 10000)
     windows = resolve_windows(end_date=end_date)
-    portfolio = [portfolio_metrics(variant_id, w, source=source) for w in windows]
+    portfolio = [portfolio_metrics(variant_id, w, source=source,
+                                     capital_usdt=capital_usdt)
+                  for w in windows]
     sleeves: dict[str, list[SleeveMetrics]] = {}
     for s in _all_strategies_for_variant(variant_id):
         sleeves[s] = [sleeve_metrics(variant_id, s, w, capital_usdt)
@@ -347,9 +435,11 @@ def format_report(report: HealthReport) -> str:
     lines.append("=" * 78)
     lines.append("")
 
-    # Portfolio block
+    # Portfolio block — for the live variant this is the COMBINED view
+    # (Core × W_CORE + tactical P&L). For replay it's whatever the VDR
+    # rows hold.
     win_names = [w.name for w in report.windows]
-    lines.append("  Portfolio")
+    lines.append(f"  Portfolio  (Core x{W_CORE:.2f}  +  Tactical pnl)")
     header = f"  {'metric':<22} | " + " | ".join(f"{n:>10}" for n in win_names)
     lines.append(header)
     lines.append("  " + "-" * (len(header) - 2))
