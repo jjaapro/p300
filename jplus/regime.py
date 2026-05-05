@@ -111,7 +111,7 @@ def classify_series(
     e20 = ema_calc(bc, 20)
     e50 = ema_calc(bc, 50)
     out: dict[str, str] = {}
-    spot_peak = bc[50] if len(bc) > 50 else bc[0] if bc else 0.0
+    spot_peak = max(bc[:51]) if len(bc) > 50 else (max(bc) if bc else 0.0)
     cb_until = ""
     for i in range(1, len(dates)):
         det_i = max(1, i - 1)

@@ -65,7 +65,7 @@ def simulate(start_date: str | None = None, end_date: str | None = None) -> dict
 
     out: dict[str, dict] = {}
     recent_1x: list[float] = []
-    spot_peak = bc[50] if len(bc) > 50 else (bc[0] if bc else 0.0)
+    spot_peak = max(bc[:51]) if len(bc) > 50 else (max(bc) if bc else 0.0)
     cb_until = ""
 
     for i in range(1, len(dates)):
