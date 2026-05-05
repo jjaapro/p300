@@ -123,6 +123,12 @@ def run(tac_variant: str, tag_core: str, tag_combined: str,
     print(f"Tactical: {len(tac)} days from {min(tac)} to {max(tac)}")
 
     core_map = core_sim.simulate(start_date=start, end_date=end)
+    # Step 5/7 of the trade-emitter migration moved R4 fees out of the
+    # simulator and into trade-event accounting. Backtest replay needs
+    # them re-applied to stay comparable to historical replays. The live
+    # path (services/jplus_service) skips this — it derives fees from
+    # trade-adjustment events.
+    core_sim.apply_r4_fees(core_map)
     print(f"Core J+:  {len(core_map)} days from "
           f"{min(core_map) if core_map else '-'} to "
           f"{max(core_map) if core_map else '-'}")

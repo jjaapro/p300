@@ -181,3 +181,51 @@ def simulate(start_date: str | None = None, end_date: str | None = None) -> dict
             keys = [k for k in keys if k <= end_date]
         out = {k: out[k] for k in keys}
     return out
+
+
+# Per-regime sub-sleeve weights — kept here for the fee helper. Mirrors the
+# inline allocation in the loop above (lines 108-131); single source of truth
+# would be nicer but the loop's hot-path doesn't want a dict lookup. The
+# parity test in tests/test_jplus_trade_emitter.py catches drift if these
+# get out of sync with the actual loop logic.
+_REGIME_R4_WEIGHTS = {
+    "strong_bull": (0.15, 0.15),  # (r4_btc, r4_eth)
+    "mild_bull":   (0.20, 0.30),
+    "uncertain":   (0.30, 0.40),
+    "bear":        (0.00, 0.00),
+}
+
+
+def apply_r4_fees(series: dict[str, dict], fee_bp_rt: float = 10.0) -> None:
+    """Subtract R4 round-trip fees from each day's ``return_pct``, in place.
+
+    Pre-Step-5 of the trade-emitter migration, ``jplus/r4.py`` deducted a
+    10bp round-trip fee from R4 window returns BEFORE the simulator
+    weighted them into the daily contribution. Step 5 zeroed that
+    deduction so live trades own fee accounting via trade-adjustment
+    events. Backtest-replay paths that consume ``return_pct`` directly
+    (notably ``tools/combine_replay.py``) need to re-apply the same fee
+    model to remain comparable to historical backtests.
+
+    The fee in % of capital terms for one R4 fire =
+        regime_weight × r4_inner_lev × vol_target_lev × (fee_bp/10000) × 100
+
+    where ``r4_inner_lev`` is 1.0 if the gate fired today, else 2.5.
+
+    The live path (``services/jplus_service.py``) does NOT call this —
+    it derives fees from the trade-event ledger, which is the canonical
+    P&L source under Path B.
+    """
+    fee_frac = fee_bp_rt / 10000.0
+    for rec in series.values():
+        weights = _REGIME_R4_WEIGHTS.get(rec.get("mode", ""), (0.0, 0.0))
+        gated = bool(rec.get("gated", False))
+        r4_lev = 1.0 if gated else 2.5
+        lev = float(rec.get("lev", 1.0))
+        fee_pct = 0.0
+        if rec.get("r4_btc_fired"):
+            fee_pct += weights[0] * r4_lev * lev * fee_frac * 100.0
+        if rec.get("r4_eth_fired"):
+            fee_pct += weights[1] * r4_lev * lev * fee_frac * 100.0
+        rec["return_pct"] = float(rec["return_pct"]) - fee_pct
+        rec["r4_fees_pct"] = fee_pct
