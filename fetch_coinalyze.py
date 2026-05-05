@@ -85,7 +85,10 @@ def _api_key() -> str:
     return key
 
 
-def _api_get(endpoint: str, params: dict) -> list:
+_MAX_RETRIES = 5
+
+
+def _api_get(endpoint: str, params: dict, _attempt: int = 0) -> list:
     params = {**params, "api_key": _api_key()}
     qs = "&".join(f"{k}={v}" for k, v in params.items())
     url = f"{API_BASE}/{endpoint}?{qs}"
@@ -96,11 +99,14 @@ def _api_get(endpoint: str, params: dict) -> list:
             return json.loads(resp.read())
     except HTTPError as e:
         if e.code == 429:
+            if _attempt >= _MAX_RETRIES:
+                print(f"  rate limited {_MAX_RETRIES} times, giving up", file=sys.stderr)
+                return []
             retry = int(e.headers.get("Retry-After", 10))
-            print(f"  rate limited, sleeping {retry}s...", file=sys.stderr)
+            print(f"  rate limited, sleeping {retry}s (attempt {_attempt + 1}/{_MAX_RETRIES})...", file=sys.stderr)
             time.sleep(retry)
             return _api_get(endpoint, {k: v for k, v in params.items()
-                                        if k != "api_key"})
+                                        if k != "api_key"}, _attempt + 1)
         print(f"  HTTP {e.code}: {url[:120]}", file=sys.stderr)
         return []
 
