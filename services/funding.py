@@ -83,7 +83,7 @@ def _connect_or_warn(asset: str, table: str) -> sqlite3.Connection | None:
 
 def accrued_pct(asset: str, start_dt: datetime, end_dt: datetime,
                 direction: str) -> float:
-    """Cumulative funding P&L over [start_dt, end_dt] as PERCENT of notional,
+    """Cumulative funding P&L over (start_dt, end_dt] as PERCENT of notional,
     signed for direction.
 
     Use to add funding cost/income to per-trade P&L on close::
@@ -111,7 +111,7 @@ def accrued_pct(asset: str, start_dt: datetime, end_dt: datetime,
             return 0.0
         rows = con.execute(
             f"SELECT fr_close FROM {table} "
-            f"WHERE timestamp >= ? AND timestamp <= ? "
+            f"WHERE timestamp > ? AND timestamp <= ? "
             f"  AND fr_close IS NOT NULL "
             f"  AND timestamp % ? = 0",
             (start_s, end_s, SETTLEMENT_PERIOD_SECONDS),
