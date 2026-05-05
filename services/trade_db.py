@@ -84,19 +84,24 @@ def init_db() -> None:
 
 def get_config(key: str) -> str | None:
     con = _con()
-    row = con.execute("SELECT value FROM config WHERE key=?", (key,)).fetchone()
-    con.close()
-    return row["value"] if row else None
+    try:
+        row = con.execute("SELECT value FROM config WHERE key=?", (key,)).fetchone()
+        return row["value"] if row else None
+    finally:
+        con.close()
 
 
 def set_config(key: str, value: str) -> None:
     con = _con()
-    con.execute(
-        "INSERT INTO config (key, value, updated_at) VALUES (?, ?, datetime('now')) "
-        "ON CONFLICT(key) DO UPDATE SET value=?, updated_at=datetime('now')",
-        (key, value, value),
-    )
-    con.commit()
+    try:
+        con.execute(
+            "INSERT INTO config (key, value, updated_at) VALUES (?, ?, datetime('now')) "
+            "ON CONFLICT(key) DO UPDATE SET value=?, updated_at=datetime('now')",
+            (key, value, value),
+        )
+        con.commit()
+    finally:
+        con.close()
 
 
 # ─── Per-trade close-log formatter (shared by every sleeve) ─────────────────

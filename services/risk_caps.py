@@ -38,15 +38,17 @@ def _open_btc_long_alloc_pct(variant_id: str) -> float:
     BTC-capped sleeves (PDO_RETOUCH, CPR). Pre-leverage percentage of capital.
     """
     con = sqlite3.connect(str(db.DASH_DB))
-    row = con.execute(
-        "SELECT COALESCE(SUM(allocation_pct), 0) FROM trades "
-        "WHERE strategy_variant = ? AND status = 'open' "
-        "AND asset = 'BTC' AND direction = 'LONG' "
-        "AND strategy IN ('PDO_RETOUCH', 'CPR')",
-        (variant_id,),
-    ).fetchone()
-    con.close()
-    return float(row[0] or 0.0)
+    try:
+        row = con.execute(
+            "SELECT COALESCE(SUM(allocation_pct), 0) FROM trades "
+            "WHERE strategy_variant = ? AND status = 'open' "
+            "AND asset = 'BTC' AND direction = 'LONG' "
+            "AND strategy IN ('PDO_RETOUCH', 'CPR')",
+            (variant_id,),
+        ).fetchone()
+        return float(row[0] or 0.0)
+    finally:
+        con.close()
 
 
 def btc_long_cap_allows(variant: dict, candidate_alloc_pct: float) -> bool:
