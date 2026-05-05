@@ -121,9 +121,33 @@ def pearson(x: list[float], y: list[float]) -> float:
 
 # ─── Validators ──────────────────────────────────────────────────────────────
 
+def _norm_cdf(z: float) -> float:
+    return 0.5 * (1.0 + math.erf(z / math.sqrt(2.0)))
+
+
+def _norm_ppf(p: float) -> float:
+    """Rational-approximation inverse normal CDF (Abramowitz & Stegun 26.2.23)."""
+    if p <= 0:
+        return -math.inf
+    if p >= 1:
+        return math.inf
+    if p < 0.5:
+        return -_norm_ppf(1 - p)
+    t = math.sqrt(-2.0 * math.log(1 - p))
+    c0, c1, c2 = 2.515517, 0.802853, 0.010328
+    d1, d2, d3 = 1.432788, 0.189269, 0.001308
+    return t - (c0 + c1 * t + c2 * t * t) / (1.0 + d1 * t + d2 * t * t + d3 * t * t * t)
+
+
 def bootstrap_sharpe(rets: list[float], n_trials: int = 1000,
                      seed: int = 42) -> tuple[float, float, float, float]:
-    """Return (point_sharpe, lower_95, upper_95, median_boot)."""
+    """Return (point_sharpe, lower_95, upper_95, median_boot).
+
+    Uses BCa (bias-corrected and accelerated) bootstrap for the confidence
+    interval, which corrects for skewness in the bootstrap distribution —
+    important for fat-tailed crypto returns where the basic percentile
+    method produces intervals that are too narrow on the downside.
+    """
     point = daily_ann_sharpe(rets)
     rng = random.Random(seed)
     n = len(rets)
@@ -136,10 +160,36 @@ def bootstrap_sharpe(rets: list[float], n_trials: int = 1000,
     sharpes.sort()
     if not sharpes:
         return point, float("nan"), float("nan"), float("nan")
-    lo = sharpes[int(0.025 * len(sharpes))]
-    hi = sharpes[int(0.975 * len(sharpes))]
     med = sharpes[len(sharpes) // 2]
-    return point, lo, hi, med
+
+    # BCa bias-correction factor z0
+    below = sum(1 for s in sharpes if s < point)
+    z0 = _norm_ppf(below / len(sharpes)) if len(sharpes) > 0 else 0.0
+
+    # BCa acceleration factor a (jackknife)
+    jk = []
+    for i in range(n):
+        leave_one = rets[:i] + rets[i + 1:]
+        s = daily_ann_sharpe(leave_one)
+        if not math.isnan(s):
+            jk.append(s)
+    if len(jk) >= 2:
+        jk_mean = sum(jk) / len(jk)
+        num = sum((jk_mean - v) ** 3 for v in jk)
+        den = sum((jk_mean - v) ** 2 for v in jk)
+        a = num / (6.0 * den ** 1.5) if den > 0 else 0.0
+    else:
+        a = 0.0
+
+    alpha_lo, alpha_hi = 0.025, 0.975
+    z_lo = _norm_ppf(alpha_lo)
+    z_hi = _norm_ppf(alpha_hi)
+    adj_lo = _norm_cdf(z0 + (z0 + z_lo) / (1 - a * (z0 + z_lo)))
+    adj_hi = _norm_cdf(z0 + (z0 + z_hi) / (1 - a * (z0 + z_hi)))
+    idx_lo = max(0, min(len(sharpes) - 1, int(adj_lo * len(sharpes))))
+    idx_hi = max(0, min(len(sharpes) - 1, int(adj_hi * len(sharpes))))
+
+    return point, sharpes[idx_lo], sharpes[idx_hi], med
 
 
 def rolling_sharpe(rets: list[float], window: int = 180) -> list[float]:
