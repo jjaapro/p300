@@ -403,11 +403,28 @@ contribution per our backtest. That's significant; consider keeping it.
 
 #### S-096 V4 Thu Bear (6%, k=5×)
 
+**NOTE:** Thu Bear uses a DIFFERENT regime classifier than Core J+ (§6.1).
+The J+ classifier produces `strong_bull/mild_bull/uncertain/bear`. Thu Bear
+uses `regime_classifier.py` which produces `bull_trend/bear_trend/chop/sell_off`
+based on 50d SMA slope and volatility (not EMAs/momentum). You need a
+second classification in your spreadsheet for this sleeve:
+
+```
+Thu Bear regime (separate from §6.1 J+ regime):
+  SMA50_slope = (SMA50_today − SMA50_10d_ago) / close, normalized to %
+  RV_rank     = 30d realized vol percentile vs trailing 365d
+
+  IF |SMA50_slope| <= 0.5%:       → chop
+  ELIF RV_rank >= 0.75 AND close < SMA50 AND slope < 0: → sell_off
+  ELIF SMA50_slope > +0.5%:       → bull_trend
+  ELIF SMA50_slope < -0.5%:       → bear_trend
+```
+
 ```
 Conditions to fire:
   1. Today is Thursday
-  2. Yesterday's regime ∈ {bear_trend, sell_off, chop} per the
-     classifier (or — your spreadsheet's "regime" column)
+  2. Yesterday's Thu Bear regime ∈ {bear_trend, sell_off, chop}
+     (NOT the J+ regime from §6.1 — see classification above)
   3. Today is within ±1 day of a CPI or NFP release
      (look up at https://www.forexfactory.com/calendar)
   4. Today is NOT within ±1 day of an OPEX expiry (3rd Friday of month)
