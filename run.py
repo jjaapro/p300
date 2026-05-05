@@ -1,16 +1,15 @@
 """P-300 Aggressive 2.0 1.0 -- standalone paper-trading bot.
 
-Runs the variant engine on a 60-second loop. Each tick dispatches all 6
+Runs the variant engine on a 60-second loop. Each tick dispatches all 7
 P-300 sleeves for the SHADOW variant:
 
   - JPLUS-CORE (50%) -- Core J+ daily-return engine. Computes yesterday's
     return via jplus.simulate() and persists to variant_daily_returns
     (source='live_computed', idempotent per UTC day).
   - S-003 ADX (15%), S-078 Carry (8%), S-096 V4 Thu Bear (6%),
-    PDO-L-RF (11%), CPR (5%) -- tactical sleeves. Open/close phantom
-    trades in the `trades` table tagged execution_mode='SHADOW' and
-    strategy_variant='p300_aggressive_v2_v1_0'. The remaining 5% is
-    treated as uninvested cash reserve.
+    PDO-L-RF (11%), CPR (5%), FOMC (5%) -- tactical sleeves. Open/close
+    phantom trades in the `trades` table tagged execution_mode='SHADOW'
+    and strategy_variant='p300_aggressive_v2_v1_0'.
 
 No real orders are placed on any exchange.
 
@@ -31,7 +30,7 @@ Daily operation:
                                 # skip the startup gap pass (fast restart)
 
 Inspect state:
-  python health.py              # all 9 invariants, exit code reflects state
+  python health.py              # all 8 invariants, exit code reflects state
   sqlite3 data/dashboard.db "SELECT id, asset, strategy, direction, status, \\
     pnl_pct FROM trades WHERE strategy_variant='p300_aggressive_v2_v1_0' \\
     ORDER BY id DESC LIMIT 20"
