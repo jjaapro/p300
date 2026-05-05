@@ -226,7 +226,7 @@ def _close_pdo_shadow(trade_id: str, exit_price: float, reason: str) -> None:
     """Sleeve close — delegates to services.trades.close_perp_trade.
     No funding modeling: PDO holds are intraday so the accrual is negligible."""
     from services.trades import close_perp_trade
-    close_perp_trade(trade_id, exit_price, reason, sleeve_name="PDO",
+    close_perp_trade(trade_id, exit_price, reason, sleeve_name="PDO_RETOUCH",
                      cost_bp_rt=10.0, apply_funding=False)
 
 
