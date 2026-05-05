@@ -163,6 +163,7 @@ def register_variant(
 
 def _record_event(variant_id: str, event_type: str, actor: str,
                   summary: str = "", details: dict | None = None) -> None:
+    con = None
     try:
         con = _con()
         con.execute(
@@ -172,10 +173,12 @@ def _record_event(variant_id: str, event_type: str, actor: str,
              json.dumps(details, default=str) if details else None, summary),
         )
         con.commit()
-        con.close()
     except Exception as e:
         import sys
         print(f"[variant_registry] failed to record event: {e}", file=sys.stderr)
+    finally:
+        if con is not None:
+            con.close()
 
 
 def _row_to_dict(row: sqlite3.Row | None) -> dict | None:
