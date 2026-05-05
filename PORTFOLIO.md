@@ -48,7 +48,7 @@ dispatched per-minute by [services/variant_engine.py](services/variant_engine.py
 
 ### 2.2 S-078 Carry — Delta-neutral funding harvest
 
-- **Signal**: 7-day average BTC perp funding > +0.01%. Entry opens spot-long + perp-short of equal notional → market-neutral.
+- **Signal**: 7-day average BTC perp funding > 0%. Entry opens spot-long + perp-short of equal notional → market-neutral.
 - **Income**: collects funding payments every 8h while the perp side is short.
 - **Exit**: 3 consecutive negative funding days, or scheduled time-stop.
 - **Edge thesis**: structurally positive funding in bullish regimes is paid for free if you can hedge cheaply. P&L is dominated by funding accrual, not price moves.
