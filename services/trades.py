@@ -229,7 +229,7 @@ def persist_close(trade_id: str, exit_price: float, exit_time_iso: str,
     try:
         row = con.execute(
             "SELECT asset, direction, entry_price, qty, size_usdt, "
-            "       actual_entry_time FROM trades WHERE id=?",
+            "       actual_entry_time FROM trades WHERE id=? AND status='open'",
             (trade_id,),
         ).fetchone()
         if row is None:
@@ -238,7 +238,7 @@ def persist_close(trade_id: str, exit_price: float, exit_time_iso: str,
             UPDATE trades SET status='closed', actual_exit_time=?, exit_price=?,
                 pnl_usdt=?, pnl_pct=?, resolution='filled_closed',
                 notes = COALESCE(notes,'') || ?
-            WHERE id=?
+            WHERE id=? AND status='open'
         """, (exit_time_iso, exit_price, pnl_usdt, pnl_pct, notes_suffix, trade_id))
         con.commit()
         return row
