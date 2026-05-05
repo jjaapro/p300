@@ -98,6 +98,8 @@ def simulate(start_date: str | None = None, end_date: str | None = None) -> dict
         r4e_r = r4e_map.get(d, 0.0) if is_r4_e else 0.0
 
         # Rule-based R4 gate (T-1 vol-percentile rule).
+        # NOTE: R4 leverage stacks with vol-target: max effective on R4 sub-sleeve
+        # is R4_EXTRA_LEV_UNGATED × H_CAPS["strong_bull"] = 2.5 × 3.0 = 7.5x.
         gate_fired = gate_map.get(d, False)
         r4_lev = R4_EXTRA_LEV_GATED if gate_fired else R4_EXTRA_LEV_UNGATED
         r4b_r *= r4_lev
