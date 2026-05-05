@@ -49,15 +49,15 @@ _NO_SCHEDULED_EXIT_ISO = "2099-12-31T00:00:00+00:00"
 
 
 def _next_sj_id(con: sqlite3.Connection) -> str:
-    """Mint the next sequential SJ-NNNN trade ID. Looks at MAX(id)+1 in the
-    SJ series. Race-safe under SQLite's single-writer semantics; caller is
-    expected to hold the connection through the subsequent INSERT."""
+    """Mint the next sequential SJ-NNNN trade ID. Uses numeric MAX to avoid
+    text-ordering overflow at SJ-10000+. Race-safe under SQLite's
+    single-writer semantics; caller holds the connection through INSERT."""
     row = con.execute(
-        "SELECT id FROM trades WHERE series='SJ' ORDER BY id DESC LIMIT 1"
+        "SELECT MAX(CAST(SUBSTR(id, 4) AS INTEGER)) FROM trades WHERE series='SJ'"
     ).fetchone()
-    if row is None:
+    if row is None or row[0] is None:
         return "SJ-0001"
-    return f"SJ-{int(row[0].split('-')[1]) + 1:04d}"
+    return f"SJ-{row[0] + 1:04d}"
 
 
 def get_open_trades(variant_id: str, strategy: str,
