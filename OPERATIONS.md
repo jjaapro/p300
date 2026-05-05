@@ -12,8 +12,8 @@
 | Single tick (test) | `python run.py --once` |
 | Health check | `python health.py` |
 | Run replay | `python backtest_runner.py --start 2021-07-01 --end 2026-04-15 --reset --tag YOUR_TAG` |
-| Full-P-300 combined replay | After tactical replay: `python combine_replay.py --tac-variant <tac_id>` |
-| Deep metrics report | `python backtest_report.py --variant <variant_id>` |
+| Full-P-300 combined replay | After tactical replay: `python tools/combine_replay.py --tac-variant <tac_id>` |
+| Deep metrics report | `python tools/backtest_report.py --variant <variant_id>` |
 | Unit + integration tests | `python -m pytest tests/` |
 
 ---
@@ -184,11 +184,11 @@ DB. Results live under `p300_aggressive_v2_v1_0__replay_A`.
 python backtest_runner.py --start 2021-07-01 --end 2026-04-15 --reset --tag A2
 
 # 2. Combine with Core (computed on the fly from jplus.simulate)
-python combine_replay.py --tac-variant p300_aggressive_v2_v1_0__replay_A2 \
+python tools/combine_replay.py --tac-variant p300_aggressive_v2_v1_0__replay_A2 \
     --tag-combined C --start 2021-07-01 --end 2026-04-15
 
 # 3. Deep report
-python backtest_report.py --variant p300_aggressive_v2_v1_0__C
+python tools/backtest_report.py --variant p300_aggressive_v2_v1_0__C
 ```
 
 ### Switch SL semantic to margin-loss
@@ -248,4 +248,4 @@ Everything we know is in-repo:
 - Core J+ port details: [jplus/__init__.py](jplus/__init__.py)
 - Variant spec rationale: [register_p300.py](register_p300.py) header
 - Look-ahead audit + fix history: [tests/test_jplus_lookahead.py](tests/test_jplus_lookahead.py)
-- Backtest results: run `backtest_report.py` against any replay variant
+- Backtest results: run `tools/backtest_report.py` against any replay variant
