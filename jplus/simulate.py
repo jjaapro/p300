@@ -103,11 +103,12 @@ def simulate(start_date: str | None = None, end_date: str | None = None) -> dict
         r4b_r *= r4_lev
         r4e_r *= r4_lev
 
-        # Per-regime allocation (same weights as upstream simulate_full_jplus,
-        # but with GOLD dropped — the crypto side now stands alone at 1.0).
-        # Also track per-sub-sleeve contribution to the daily 1x return for
-        # downstream attribution logging. Each `_c_*` term is the contribution
-        # of that sleeve to `rl` at this regime's weights.
+        # Per-regime allocation. Weights intentionally sum < 1.0 in risk-off
+        # regimes (remainder is idle cash):
+        #   strong_bull: 1.00 (fully invested)
+        #   mild_bull:   0.90 (10% cash buffer)
+        #   uncertain:   1.00 (fully invested in mean-reversion sleeves)
+        #   bear:        0.30 (70% cash — defensive posture)
         c_ema = c_eth = c_r4b = c_r4e = 0.0
         if mode == "strong_bull":
             c_ema = 0.50 * ema_p * br
