@@ -45,7 +45,7 @@ python register_p300.py
 # 4. Sanity
 python health.py
 python run.py --once          # single tick; should complete in <30s
-python -m pytest tests/ -q    # 149 tests should pass
+python -m pytest tests/ -q    # 172 tests should pass
 ```
 
 ## 2. Live operation
@@ -238,7 +238,7 @@ DELETE FROM trades WHERE strategy_variant = '<variant_id>';
    row per UTC day per variant, checked at ingest. Multiple rows for
    the same day mean `_already_computed_today` is broken.
 
-5. **Test suite green.** `python -m pytest tests/` = 149 passing. If this
+5. **Test suite green.** `python -m pytest tests/` = 172 passing. If this
    drops, don't deploy.
 
 ## 8. Contacts / knowledge

@@ -171,7 +171,7 @@ p300/
 │   ├── sentiment_index_service.py # Fear & Greed index bucketing
 │   ├── polymarket_service.py      # Polymarket-implied rate expectations
 │   └── jplus_service.py           # JPLUS-CORE daily-return dispatcher
-└── tests/                         # 149 tests including look-ahead canary
+└── tests/                         # 172 tests including look-ahead canary
 ```
 
 ## Data the services need
