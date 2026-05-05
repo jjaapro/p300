@@ -138,70 +138,54 @@ def _load_daily_returns(variant_id: str, start: str, end: str,
 
 
 # Default Core/tactical split for the P-300 portfolio (matches
-# tools/combine_replay.py:W_CORE/W_TACTICAL and PORTFOLIO.md §1).
+# tools/combine_replay.py:W_CORE/W_TACTICAL and PORTFOLIO.md §1). Kept
+# for documentation; the trades-only computation below doesn't apply
+# any weighting because per-sleeve trade sizes already reflect their
+# allocation × leverage at open time.
 W_CORE = 0.50
 W_TACTICAL = 0.50
 
 
-def _combined_daily_returns(variant_id: str, start: str, end: str,
-                             capital_usdt: float,
-                             w_core: float = W_CORE) -> list[float]:
-    """Combined live-portfolio daily returns (percent), oldest-first.
+def _trades_daily_returns(variant_id: str, start: str, end: str,
+                           capital_usdt: float) -> list[float]:
+    """Daily realized portfolio returns (percent), oldest-first, computed
+    purely from closed-trade P&L in the trades table.
 
-    The live variant's ``variant_daily_returns`` rows hold Core J+'s
-    STANDALONE return (jplus_service writes ``sim_gross − JPLUS fees``
-    with no portfolio scaling). The tactical sleeves' P&L is recorded
-    only in the ``trades`` table. Neither source alone tells the
-    operator how the actual variant is doing, so the health banner has
-    to combine them at read time:
+    Why trades-only: per the trade-emitter migration (Path B), trades are
+    the canonical P&L ledger. Core sub-sleeves emit JPLUS_* rows; tactical
+    sleeves emit their named rows. Each row's pnl_usdt already reflects
+    that trade's fee-net P&L on its actual size_usdt at open time —
+    nothing in the daily computation needs further scaling, because the
+    per-sleeve allocation × leverage is already baked into size_usdt.
 
-        combined[d] = w_core × core_return[d]
-                    + (sum of non-JPLUS closed-trade pnl_usdt with
-                       exit_date == d) / capital × 100
+        daily[d] = (sum closed-trade pnl_usdt where exit_date == d)
+                   / capital × 100
 
-    JPLUS_* trades are excluded to avoid double-counting — Core's per-
-    sub-sleeve P&L is already inside the VDR row via the gross-minus-
-    fees derivation.
+    Open positions are NOT included here — this function reports
+    REALIZED returns only. For unrealized MTM the caller would need to
+    walk open trades and mark to current price (deferred).
 
-    Days present in only one source are still emitted with the missing
-    side as 0 (e.g. a day with a tactical fill but no VDR row yet
-    contributes only the tactical slice)."""
-    # Core side: VDR live_computed rows
+    Note: dates with no closing trades simply don't appear. If you need a
+    zero-filled series for Sharpe-on-flat-days computation, post-process
+    the result against a calendar."""
     con = sqlite3.connect(str(db.DASH_DB))
     try:
-        core_rows = con.execute(
-            "SELECT date, return_1x_pct FROM variant_daily_returns "
-            "WHERE variant_id=? AND source='live_computed' "
-            "  AND date >= ? AND date <= ?",
-            (variant_id, start, end),
-        ).fetchall()
-        # Tactical side: aggregate closed-trade pnl by exit date, excluding
-        # the JPLUS_* prefix (those are Core's sub-sleeves, already in VDR).
-        tactical_rows = con.execute(
+        rows = con.execute(
             "SELECT date(actual_exit_time) AS d, "
             "       COALESCE(SUM(pnl_usdt), 0.0) AS pnl "
             "FROM trades "
             "WHERE strategy_variant=? AND status='closed' "
-            "  AND strategy NOT LIKE 'JPLUS_%' "
             "  AND date(actual_exit_time) >= ? "
             "  AND date(actual_exit_time) <= ? "
-            "GROUP BY d",
+            "GROUP BY d ORDER BY d",
             (variant_id, start, end),
         ).fetchall()
     finally:
         con.close()
-
-    core_map = {r[0]: float(r[1]) for r in core_rows if r[1] is not None}
-    tac_map = {r[0]: float(r[1]) for r in tactical_rows
-                if r[0] is not None and r[1] is not None}
-    dates = sorted(set(core_map) | set(tac_map))
-    out: list[float] = []
-    for d in dates:
-        core_pct = core_map.get(d, 0.0)
-        tac_pnl = tac_map.get(d, 0.0)
-        tac_pct = (tac_pnl / capital_usdt * 100.0) if capital_usdt > 0 else 0.0
-        out.append(w_core * core_pct + tac_pct)
-    return out
+    if capital_usdt <= 0:
+        return []
+    return [float(r[1]) / capital_usdt * 100.0 for r in rows
+            if r[0] is not None and r[1] is not None]
 
 
 @dataclass(frozen=True)
@@ -231,10 +215,17 @@ def portfolio_metrics(variant_id: str, window: Window,
     directly and treats them as already-final returns (matches
     combine_replay's convention: ``__core_*`` variants store standalone
     Core, ``__combined_*`` variants store the 50/50 mix). Caller picks
-    the right variant id."""
+    the right variant id.
+
+    NOTE: as of the trade-emitter migration, ``source='live_computed'``
+    routes through ``_trades_daily_returns`` (closed-trade pnl_usdt
+    summed by exit date / capital × 100). The previous combined-with-VDR
+    path is gone — VDR rows for the live variant are now just an audit
+    log of the simulator's gross output, while the trades table is the
+    canonical realized-P&L ledger."""
     if source == "live_computed" and capital_usdt is not None:
-        rets = _combined_daily_returns(variant_id, window.start, window.end,
-                                         capital_usdt, w_core=w_core)
+        rets = _trades_daily_returns(variant_id, window.start, window.end,
+                                       capital_usdt)
     else:
         rets = _load_daily_returns(variant_id, window.start, window.end, source)
     n = len(rets)
@@ -435,11 +426,13 @@ def format_report(report: HealthReport) -> str:
     lines.append("=" * 78)
     lines.append("")
 
-    # Portfolio block — for the live variant this is the COMBINED view
-    # (Core × W_CORE + tactical P&L). For replay it's whatever the VDR
-    # rows hold.
+    # Portfolio block — for the live variant this is REALIZED P&L from
+    # closed trades (sum pnl_usdt grouped by exit date, all sleeves
+    # included since their per-trade size_usdt already reflects sleeve
+    # weight × leverage). Open positions are not marked-to-market here.
+    # For replay variants, reads VDR rows as-is (no scaling).
     win_names = [w.name for w in report.windows]
-    lines.append(f"  Portfolio  (Core x{W_CORE:.2f}  +  Tactical pnl)")
+    lines.append("  Portfolio  (realized P&L from closed trades only)")
     header = f"  {'metric':<22} | " + " | ".join(f"{n:>10}" for n in win_names)
     lines.append(header)
     lines.append("  " + "-" * (len(header) - 2))

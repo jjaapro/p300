@@ -54,7 +54,7 @@ import signal
 import sys
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent
@@ -146,6 +146,39 @@ def _print_open_trades() -> None:
                  f"k={lev:.1f}x  entered={entry}  exit_due={exit_due}")
 
 
+def _catchup_core_trade_emit() -> None:
+    """Backfill JPLUS_* trade events for any date that has a Core J+
+    variant_daily_returns row but no corresponding emitter activity.
+
+    Why: between the trade-emitter migration's Step 6 wiring (which made
+    jplus_service emit on each tick) and a bot restart, historical VDR
+    rows can pile up while the live trades table has no JPLUS_* events
+    for those dates. The per-tick path emits only for yesterday, so it
+    never catches up older dates on its own. This startup pass walks
+    the full simulator window for the live variant and lets idempotency
+    on (trade_id, event_date, event_type) skip dates that are already
+    represented.
+    """
+    try:
+        from services import variant_registry
+        from services.jplus_trade_emitter import emit_catchup
+        from services import clock
+        v = variant_registry.get_variant(VARIANT_ID)
+        if v is None or not v.get("enabled"):
+            return
+        end_date = (clock.now_utc() - timedelta(days=1)).date().isoformat()
+        result = emit_catchup({"id": VARIANT_ID,
+                                "capital_usdt": v.get("capital_usdt") or 10000},
+                                end_date)
+        if result.get("processed"):
+            log.info(f"=== Core trade-emit catchup: "
+                     f"{result['processed']} dates processed "
+                     f"({result.get('first')} -> {result.get('last')}), "
+                     f"{result['skipped']} skipped ===")
+    except Exception as e:
+        log.warning(f"Core trade-emit catchup skipped: {e!r}")
+
+
 def _print_health_report() -> None:
     """Print a one-shot strategy-health snapshot for the live variant on
     startup. Pulls portfolio metrics (Sharpe / WR / MDD / total return)
@@ -186,6 +219,7 @@ def main(argv: list[str] | None = None) -> int:
     trade_db.init_db()
     variant_registry.init_schema()
     _ensure_variant_registered()
+    _catchup_core_trade_emit()
     _print_open_trades()
     _print_health_report()
 

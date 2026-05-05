@@ -256,122 +256,72 @@ def test_portfolio_metrics_raw_mode_no_capital(synthetic_db):
     assert p.total_return_pct > 0
 
 
-def test_portfolio_metrics_combined_mode_scales_core_and_adds_tactical(
-    synthetic_db,
-):
+def test_portfolio_metrics_trades_only_realized(synthetic_db):
     """With capital_usdt and source='live_computed', portfolio_metrics
-    combines Core (× W_CORE) with tactical trade P&L for the day. For
-    the synthetic fixture: 6 Core days + 3 tactical close days (2024-06-01..03)
-    that overlap. Expected combined returns each day are:
-        d1: 0.5 * 0.50 + 50/10000*100  = +0.75%
-        d2: -0.3 * 0.50 + (-20)/10000*100 = -0.35%
-        d3: 0.4 * 0.50 + 30/10000*100  = +0.50%
-        d4-6: 0.5 * core only.
-    """
+    aggregates closed-trade pnl_usdt by exit date and divides by capital.
+    The synthetic fixture has 3 ADX trades on 2024-06-01..03 with
+    pnl [+50, -20, +30] → daily returns [+0.5%, -0.2%, +0.3%].
+
+    The 6 daily-returns rows in variant_daily_returns are NOT consulted
+    in the live path (Path B: trades are source of truth)."""
     window = sh.Window("ALL", "2024-01-01", "2024-12-31")
     p = sh.portfolio_metrics("syn_v", window, source="live_computed",
                               capital_usdt=10000.0)
-    # 6 days of returns (date-union of VDR days + tactical exit days; in
-    # this fixture they coincide on the first 3 days).
-    assert p.n_days == 6
-    # Manually compounded:
-    # 1.0075 * 0.9965 * 1.0050 * 1.001 * 0.99950 * 1.003 = ~1.0123
-    expected_total = (1.0075 * 0.9965 * 1.005 * 1.001 * 0.9995 * 1.003 - 1) * 100
-    assert p.total_return_pct == pytest.approx(expected_total, rel=1e-3)
+    assert p.n_days == 3  # only days with closed trades, not the 6 VDR rows
+    # Compounded: (1.005)(0.998)(1.003) - 1 = ~+0.6014%
+    expected = (1.005 * 0.998 * 1.003 - 1) * 100
+    assert p.total_return_pct == pytest.approx(expected, rel=1e-4)
+    # Win rate: 2 of 3 days were up.
+    assert p.win_rate_pct == pytest.approx(200.0 / 3.0)
 
 
-def test_combined_returns_excludes_jplus_strategies(tmp_path, monkeypatch):
-    """Trades with strategy starting 'JPLUS_' must NOT contribute to the
-    tactical aggregation — Core's P&L on those is already inside the VDR
-    row via the gross-minus-fees derivation. Counting them again would
-    double-count."""
+def test_trades_daily_returns_includes_jplus_strategies(tmp_path, monkeypatch):
+    """All closed trades — Core (JPLUS_*) AND tactical — contribute to
+    the realized-P&L daily series. There's no double-counting concern in
+    the trades-only model because each trade's pnl_usdt is its own
+    fee-net realized P&L."""
     fixture_db = tmp_path / "dashboard.db"
     from services import trade_db, db as _db_mod
     monkeypatch.setattr(trade_db, "DB_PATH", fixture_db)
     monkeypatch.setattr(_db_mod, "DASH_DB", fixture_db)
     trade_db.init_db()
     con = sqlite3.connect(str(fixture_db))
-    con.execute("""
-        CREATE TABLE IF NOT EXISTS variant_daily_returns (
-            variant_id TEXT NOT NULL, date TEXT NOT NULL,
-            return_1x_pct REAL NOT NULL, source TEXT NOT NULL,
-            regime TEXT, created_at TEXT,
-            PRIMARY KEY (variant_id, date)
-        )
-    """)
-    # One Core VDR row of +1.0% on 2024-06-01.
-    con.execute(
-        "INSERT INTO variant_daily_returns "
-        "(variant_id, date, return_1x_pct, source, created_at) "
-        "VALUES ('vx', '2024-06-01', 1.0, 'live_computed', '')"
-    )
-    # One JPLUS_R4_BTC closed trade with +$500 on the same day. If it
-    # leaks into the combined sum, total return would be wrong.
-    con.execute("""
-        INSERT INTO trades
-        (id, series, asset, direction, strategy, allocation_pct, leverage,
-         entry_time, exit_time, status, execution_mode, strategy_variant,
-         actual_entry_time, actual_exit_time,
-         entry_price, exit_price, size_usdt, qty, pnl_usdt, pnl_pct,
-         current_qty, current_leverage, current_size_usdt, realized_pnl_usdt)
-        VALUES ('SJ-X1', 'SJ', 'BTC', 'LONG', 'JPLUS_R4_BTC', 30.0, 5.0,
-                '2024-06-01T06:00:00+00:00', '2024-06-01T18:00:00+00:00',
-                'closed', 'SHADOW', 'vx',
-                '2024-06-01T06:00:00+00:00', '2024-06-01T18:00:00+00:00',
-                100.0, 110.0, 1500.0, 15.0, 500.0, 33.33,
-                0, 5.0, 0, 500.0)
-    """)
+    # JPLUS_R4_BTC +$500 + tactical ADX +$100 on 2024-06-01.
+    for tid, strategy, pnl in [
+        ("SJ-J1", "JPLUS_R4_BTC", 500.0),
+        ("SJ-A1", "ADX",          100.0),
+    ]:
+        con.execute("""
+            INSERT INTO trades
+            (id, series, asset, direction, strategy, allocation_pct, leverage,
+             entry_time, exit_time, status, execution_mode, strategy_variant,
+             actual_entry_time, actual_exit_time,
+             entry_price, exit_price, size_usdt, qty, pnl_usdt, pnl_pct,
+             current_qty, current_leverage, current_size_usdt, realized_pnl_usdt)
+            VALUES (?, 'SJ', 'BTC', 'LONG', ?, 15.0, 5.0,
+                    '2024-06-01T06:00:00+00:00', '2024-06-01T18:00:00+00:00',
+                    'closed', 'SHADOW', 'vz',
+                    '2024-06-01T06:00:00+00:00', '2024-06-01T18:00:00+00:00',
+                    100.0, 110.0, 1500.0, 15.0, ?, 0,
+                    0, 5.0, 0, ?)
+        """, (tid, strategy, pnl, pnl))
     con.commit()
     con.close()
-    rets = sh._combined_daily_returns("vx", "2024-01-01", "2024-12-31",
-                                        capital_usdt=10000.0)
-    # Only Core × 0.50 = 0.5%. JPLUS trade would add +5% if double-counted.
-    assert rets == pytest.approx([0.5], abs=1e-6)
+    rets = sh._trades_daily_returns("vz", "2024-01-01", "2024-12-31",
+                                      capital_usdt=10000.0)
+    # +500 + 100 = +600 / 10000 * 100 = +6.0%
+    assert rets == pytest.approx([6.0], abs=1e-6)
 
 
-def test_combined_returns_includes_tactical_strategies(tmp_path, monkeypatch):
-    """Mirror of the JPLUS exclusion test — tactical strategies (no JPLUS_
-    prefix) DO contribute. Verifies the LIKE filter direction."""
+def test_trades_daily_returns_returns_empty_when_no_trades(tmp_path, monkeypatch):
     fixture_db = tmp_path / "dashboard.db"
     from services import trade_db, db as _db_mod
     monkeypatch.setattr(trade_db, "DB_PATH", fixture_db)
     monkeypatch.setattr(_db_mod, "DASH_DB", fixture_db)
     trade_db.init_db()
-    con = sqlite3.connect(str(fixture_db))
-    con.execute("""
-        CREATE TABLE IF NOT EXISTS variant_daily_returns (
-            variant_id TEXT NOT NULL, date TEXT NOT NULL,
-            return_1x_pct REAL NOT NULL, source TEXT NOT NULL,
-            regime TEXT, created_at TEXT,
-            PRIMARY KEY (variant_id, date)
-        )
-    """)
-    con.execute(
-        "INSERT INTO variant_daily_returns "
-        "(variant_id, date, return_1x_pct, source, created_at) "
-        "VALUES ('vy', '2024-06-01', 1.0, 'live_computed', '')"
-    )
-    con.execute("""
-        INSERT INTO trades
-        (id, series, asset, direction, strategy, allocation_pct, leverage,
-         entry_time, exit_time, status, execution_mode, strategy_variant,
-         actual_entry_time, actual_exit_time,
-         entry_price, exit_price, size_usdt, qty, pnl_usdt, pnl_pct,
-         current_qty, current_leverage, current_size_usdt, realized_pnl_usdt)
-        VALUES ('SJ-Y1', 'SJ', 'BTC', 'LONG', 'ADX', 15.0, 5.0,
-                '2024-06-01T08:00:00+00:00', '2024-06-01T16:00:00+00:00',
-                'closed', 'SHADOW', 'vy',
-                '2024-06-01T08:00:00+00:00', '2024-06-01T16:00:00+00:00',
-                100.0, 105.0, 750.0, 7.5, 100.0, 13.33,
-                0, 5.0, 0, 100.0)
-    """)
-    con.commit()
-    con.close()
-    rets = sh._combined_daily_returns("vy", "2024-01-01", "2024-12-31",
-                                        capital_usdt=10000.0)
-    # Core 1.0% × 0.50 = 0.5%, plus tactical +$100 / $10k × 100 = +1.0%.
-    # Combined = 1.5%.
-    assert rets == pytest.approx([1.5], abs=1e-6)
+    rets = sh._trades_daily_returns("nobody", "2024-01-01", "2024-12-31",
+                                      capital_usdt=10000.0)
+    assert rets == []
 
 
 def test_build_report_includes_known_sleeves_even_with_zero_trades(synthetic_db):
