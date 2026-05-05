@@ -244,8 +244,8 @@ def correlation_vs_btc(rows: list[tuple[str, float]], btc: dict[str, float]) -> 
     paired = [(r, btc[d]) for d, r in rows if d in btc]
     if len(paired) < 30:
         return float("nan")
-    strat = [p[0] / 100.0 for p in paired]  # percent → fraction
-    btc_r = [p[1] for p in paired]           # already log-fraction
+    strat = [p[0] / 100.0 for p in paired]              # percent → simple fraction
+    btc_r = [math.exp(p[1]) - 1.0 for p in paired]     # log → simple fraction
     return pearson(strat, btc_r)
 
 
