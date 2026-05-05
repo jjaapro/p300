@@ -11,6 +11,10 @@ P-300 sleeves for the SHADOW variant:
     phantom trades in the `trades` table tagged execution_mode='SHADOW'
     and strategy_variant='p300_aggressive_v2_v1_0'.
 
+Sleeve weights sum to 100% -- there is no idle cash reserve at the
+portfolio level (any cash drag is internal to a sleeve's regime mode,
+e.g. J+ mild_bull/bear).
+
 No real orders are placed on any exchange.
 
 Prerequisites (one-shot bootstrap):
