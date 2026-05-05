@@ -140,8 +140,10 @@ def run(tac_variant: str, tag_core: str, tag_combined: str,
     write_daily_returns(core_variant_id, core_rows)
     print(f"Wrote {len(core_rows)} rows to {core_variant_id}")
 
-    # Combined P-300 = 0.50 * core + 0.45 * tactical (cash contributes 0)
-    all_dates = sorted(set(core_map.keys()) | set(tac.keys()))
+    # Combined P-300 = 0.50 * core + 0.50 * tactical
+    # Use intersection: only dates where both sources have data. Union would
+    # default the missing source to 0%, halving that sleeve's contribution.
+    all_dates = sorted(set(core_map.keys()) & set(tac.keys()))
     if start:
         all_dates = [d for d in all_dates if d >= start]
     if end:
