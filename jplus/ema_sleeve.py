@@ -32,8 +32,13 @@ from datetime import datetime, timedelta, timezone
 
 from jplus.regime import ema_calc
 
-# Match upstream backtest_ema: 0.1% round-trip (0.05% per side)
-_COMMISSION = 0.001
+# Historically 0.001 (0.1% round-trip), but never actually applied —
+# the simulator's c_ema computation in jplus/simulate.py uses raw
+# ema_p × br with no commission deduction. Kept at 0.0 explicitly as
+# of the trade-emitter migration; if/when EMA flips need a fee in
+# live trading, the emitter is the place to charge it (FLIP event's
+# fee_usdt). See plan how-do-we-modular-curry.md, Step 5/7.
+_COMMISSION = 0.0
 
 
 def aggregate_weekly(hourly: list[tuple[int, float, float, float, float, float]]

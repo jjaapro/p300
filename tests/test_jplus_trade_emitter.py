@@ -49,22 +49,31 @@ def _variant() -> dict:
     return {"id": "test_emit_v1", "capital_usdt": CAPITAL_USDT}
 
 
-def _trade_pnl_pct(con: sqlite3.Connection, strategy: str,
-                   trigger_date: str) -> float | None:
-    """Return the realized PnL of the most-recent closed trade for
-    (strategy, trigger_date) as a percentage of capital. The trigger_date
-    is the date the simulator attributes the contribution to (R4_BTC's
-    same-day; R4_ETH's the Wed). For R4_ETH the entry calendar day is
-    Tue but we look up by the trade's reason payload."""
-    row = con.execute(
+def _trade_gross_pct(con: sqlite3.Connection, strategy: str,
+                     trigger_date: str) -> float | None:
+    """Return the GROSS realized PnL (= trade.pnl_usdt + sum of fees from
+    the trade's adjustment events) for the most-recent closed trade matching
+    (strategy, trigger_date), as a percentage of capital.
+
+    Why gross: as of Step 5/7 the simulator emits gross window returns and
+    fees are recorded on trade-event rows. The parity contract is therefore
+    ``trade_gross == sim_gross`` rather than the older ``trade_net ==
+    sim_net``. The trigger_date is the date the simulator attributes the
+    contribution to (R4_BTC's same-day; R4_ETH's the Wed)."""
+    rows = con.execute(
         "SELECT id, pnl_usdt, notes FROM trades "
         "WHERE strategy=? AND status='closed' "
         "ORDER BY actual_entry_time DESC",
         (strategy,),
     ).fetchall()
-    for tid, pnl, notes in row:
+    for tid, pnl, notes in rows:
         if trigger_date in (notes or ""):
-            return (float(pnl or 0.0) / CAPITAL_USDT) * 100.0
+            fee_total = con.execute(
+                "SELECT COALESCE(SUM(fee_usdt), 0) FROM trade_adjustments "
+                "WHERE trade_id=?", (tid,),
+            ).fetchone()[0]
+            gross = float(pnl or 0.0) + float(fee_total or 0.0)
+            return (gross / CAPITAL_USDT) * 100.0
     return None
 
 
@@ -99,7 +108,7 @@ def test_r4_btc_parity_with_simulator(emitter_env):
                 continue
             sim_contrib_pct = (float(rec["r4_btc_contrib_1x_pct"])
                                * float(rec["lev"]))
-            trade_pct = _trade_pnl_pct(con, "JPLUS_R4_BTC", date_iso)
+            trade_pct = _trade_gross_pct(con, "JPLUS_R4_BTC", date_iso)
             if trade_pct is None:
                 # Acceptable in bear regime where weight = 0 and emitter
                 # short-circuits; skip those days.
@@ -144,7 +153,7 @@ def test_r4_eth_parity_with_simulator(emitter_env):
                 continue
             sim_contrib_pct = (float(rec["r4_eth_contrib_1x_pct"])
                                * float(rec["lev"]))
-            trade_pct = _trade_pnl_pct(con, "JPLUS_R4_ETH", date_iso)
+            trade_pct = _trade_gross_pct(con, "JPLUS_R4_ETH", date_iso)
             if trade_pct is None:
                 if rec.get("mode") == "bear":
                     continue

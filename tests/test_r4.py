@@ -23,8 +23,9 @@ def test_r4_btc_fires_on_monday_week_one():
     }
     out = r4.r4_btc_returns(by_hour)
     assert "2024-01-01" in out
-    # 2% gross - 10bp fee = 1.9%
-    assert out["2024-01-01"] == pytest.approx(0.02 - 0.001)
+    # 2% gross. Fees moved out of r4.py into the trade-emitter as of
+    # the Core J+ migration Step 5; r4.py now emits gross window returns.
+    assert out["2024-01-01"] == pytest.approx(0.02)
 
 
 def test_r4_btc_fires_on_wednesday_week_two():
@@ -35,7 +36,8 @@ def test_r4_btc_fires_on_wednesday_week_two():
     }
     out = r4.r4_btc_returns(by_hour)
     assert "2024-01-10" in out
-    assert out["2024-01-10"] == pytest.approx(-0.02 - 0.001)
+    # Gross only — fees applied at trade-event close, not in r4.py.
+    assert out["2024-01-10"] == pytest.approx(-0.02)
 
 
 def test_r4_btc_skips_day_over_14():
@@ -84,8 +86,8 @@ def test_r4_btc_uses_exit_bar_open_not_close():
         ("2024-01-01", 18): (52_000.0, 60_000.0),  # huge spread within hour
     }
     out = r4.r4_btc_returns(by_hour)
-    # Uses exit_open (52_000), not exit_close (60_000).
-    assert out["2024-01-01"] == pytest.approx((52_000 - 50_000) / 50_000 - 0.001)
+    # Uses exit_open (52_000), not exit_close (60_000). Gross only.
+    assert out["2024-01-01"] == pytest.approx((52_000 - 50_000) / 50_000)
 
 
 # ─── R4 ETH ─────────────────────────────────────────────────────────────────
@@ -99,7 +101,7 @@ def test_r4_eth_fires_tue_to_wed_week_two():
     out = r4.r4_eth_returns(eth_by_hour)
     # Keyed by Wed date
     assert "2024-01-10" in out
-    assert out["2024-01-10"] == pytest.approx((3_100 - 3_000) / 3_000 - 0.001)
+    assert out["2024-01-10"] == pytest.approx((3_100 - 3_000) / 3_000)
 
 
 def test_r4_eth_keyed_by_wed_not_tue():
