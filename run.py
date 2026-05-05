@@ -146,6 +146,23 @@ def _print_open_trades() -> None:
                  f"k={lev:.1f}x  entered={entry}  exit_due={exit_due}")
 
 
+def _print_health_report() -> None:
+    """Print a one-shot strategy-health snapshot for the live variant on
+    startup. Pulls portfolio metrics (Sharpe / WR / MDD / total return)
+    across YTD/90D/30D plus per-sleeve breakdown (N / WR / total $ /
+    expectancy / profit factor / avg hold / Sharpe / MDD).
+
+    Wrapped in try/except so any metric-side bug can't block the bot's
+    main loop from coming up. The report prints once at startup only."""
+    try:
+        from services.strategy_health import build_report, format_report
+        report = build_report(VARIANT_ID)
+        for line in format_report(report).splitlines():
+            log.info(line)
+    except Exception as e:
+        log.warning(f"health report skipped: {e!r}")
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="P-300 headless paper-trading bot")
     ap.add_argument("--interval", type=int, default=60,
@@ -170,6 +187,7 @@ def main(argv: list[str] | None = None) -> int:
     variant_registry.init_schema()
     _ensure_variant_registered()
     _print_open_trades()
+    _print_health_report()
 
     signal.signal(signal.SIGINT, _signal_handler)
     signal.signal(signal.SIGTERM, _signal_handler)
