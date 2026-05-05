@@ -159,7 +159,7 @@ p300/
 │   ├── pdo_retouch_service.py     # PDO-L-RF live dispatcher
 │   ├── cpr_service.py             # CPR live dispatcher
 │   └── jplus_service.py           # JPLUS-CORE daily-return dispatcher
-└── tests/                         # 109 tests including look-ahead canary
+└── tests/                         # 149 tests including look-ahead canary
 ```
 
 ## Data the services need
