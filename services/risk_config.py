@@ -6,6 +6,10 @@ SL semantics:
     by which point the trade has already lost 10% of notional = 50% of the
     margin committed = 7.5% of total capital. This is the historical behaviour.
 
+    WARNING: for leveraged strategies this means effective margin-loss at SL
+    trigger = stop_loss_pct × leverage. Set P300_STOP_SEMANTICS=margin to
+    cap per-trade ROE drawdown instead.
+
   - "margin": stop_loss_pct is compared against the trade's PnL as a
     percentage of committed margin (pre-leverage allocation). At k=5x, a
     10% margin-loss stop triggers at a 2% price move. This caps the ROE
@@ -22,14 +26,24 @@ Usage in a SL branch:
 """
 from __future__ import annotations
 
+import logging
 import os
+
+log = logging.getLogger("dashboard.risk_config")
+
+_WARNED_PRICE_MOVE = False
 
 
 def sl_semantic() -> str:
     """Return 'price_move' (default) or 'margin'."""
+    global _WARNED_PRICE_MOVE
     val = (os.environ.get("P300_STOP_SEMANTICS", "price_move") or "price_move").strip().lower()
     if val in ("margin", "margin_loss", "notional", "notional_loss"):
         return "margin"
+    if not _WARNED_PRICE_MOVE:
+        log.warning("SL semantic is 'price_move' (leverage-unaware). "
+                    "Set P300_STOP_SEMANTICS=margin for leverage-adjusted stops.")
+        _WARNED_PRICE_MOVE = True
     return "price_move"
 
 
