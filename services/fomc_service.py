@@ -29,16 +29,9 @@ Composite rule:
   SKIP if phase == 'mid_hold' (default for current 2025-2026 environment)
   TRADE otherwise
 
-Mode: OBSERVER ONLY for v1 — decisions and would-be P&L are logged to the
-fomc_observer table, no shadow trades are opened. After 4-6 live FOMCs,
-review the decision log and decide whether to promote to a real sleeve.
-
-Promote path:
-  1. Confirm observer's would-be returns match the conditional backtest.
-  2. Reallocate the variant's 5% cash reserve into a 'FOMC' composition
-     entry with strategy_id='FOMC'.
-  3. Replace `record_observer_decision()` calls in tick() with the standard
-     _create_shadow_trade flow.
+Mode: FULLY DISPATCHED tactical sleeve (promoted from observer 2026-04-30).
+Opens shadow trades via the standard variant_engine dispatch path. The
+fomc_observer table still records every decision for audit purposes.
 """
 from __future__ import annotations
 
