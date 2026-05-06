@@ -94,13 +94,16 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     now = clock.now_utc()
     target_date = (now - timedelta(days=1)).date().isoformat()
 
-    # Run the simulator unconditionally so the emitter has data to work
-    # with even when yesterday's VDR row already exists. The bug this
-    # fixes: previously the function returned early on _already_computed
-    # _today, which meant trade-emit never ran for historical dates that
-    # had VDR rows from the pre-Step-6 dispatcher. After this change the
-    # emitter runs every tick (idempotent via UNIQUE event-keys) so the
-    # JPLUS_* trade ledger stays in sync regardless of VDR state.
+    # As of the live-execution refactor, the four live handlers in
+    # services/jplus_live.py own real-time trade emission. This service
+    # is now a thin DAILY-AGGREGATOR: it computes yesterday's variant_
+    # daily_returns row (gross sim return − trade-event fees) for
+    # backtest/dashboard consumers and otherwise no-ops. The
+    # _catchup_core_trade_emit hook in run.py still runs at startup as
+    # the offline-period gap-filler.
+    if _already_computed_today(variant["id"], target_date):
+        return {"status": "already_recorded", "date": target_date}
+
     start = (now - timedelta(days=60)).date().isoformat()
     series = core_sim.simulate(start_date=start, end_date=target_date)
     if target_date not in series:
@@ -109,19 +112,6 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                 "date": target_date}
 
     rec = series[target_date]
-
-    # Trade-emitter side — runs every tick, idempotent by design. Failures
-    # must NOT block the daily-return write below.
-    try:
-        from services import jplus_trade_emitter as emitter
-        emitter.emit_for_date(variant, target_date, rec)
-    except Exception as e:
-        log.error(f"[jplus {variant['id']}] trade-emitter failed for "
-                  f"{target_date}: {e!r}", exc_info=True)
-
-    if _already_computed_today(variant["id"], target_date):
-        return {"status": "already_recorded_emit_refreshed",
-                "date": target_date}
 
     # Net daily return = simulator gross − trade-event fees for the day.
     # Falls back to sim's gross if the fee aggregator raises (defensive).

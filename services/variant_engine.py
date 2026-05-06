@@ -305,15 +305,22 @@ def _load_dispatch():
         return
     from services import (adx_service, thu_bear_service, carry_service,
                                      pdo_retouch_service, cpr_service,
-                                     jplus_service, fomc_service)
+                                     jplus_service, jplus_live, fomc_service)
     STRATEGY_DISPATCH = {
-        "S-003":      adx_service.try_fire_for_variant,
-        "S-096":      thu_bear_service.try_fire_for_variant,
-        "S-078":      carry_service.try_fire_for_variant,
-        "PDO-L-RF":   pdo_retouch_service.try_fire_for_variant,
-        "CPR":        cpr_service.try_fire_for_variant,
-        "JPLUS-CORE": jplus_service.try_fire_for_variant,
-        "FOMC":       fomc_service.try_fire_for_variant,
+        "S-003":           adx_service.try_fire_for_variant,
+        "S-096":           thu_bear_service.try_fire_for_variant,
+        "S-078":           carry_service.try_fire_for_variant,
+        "PDO-L-RF":        pdo_retouch_service.try_fire_for_variant,
+        "CPR":             cpr_service.try_fire_for_variant,
+        "JPLUS-CORE":      jplus_service.try_fire_for_variant,
+        "FOMC":            fomc_service.try_fire_for_variant,
+        # Core J+ sub-sleeves — live entry handlers (Phases 1-3 of the
+        # live-execution refactor). Each opens its own discrete trades
+        # at the calendar/signal moment with the live price.
+        "JPLUS_R4_BTC":    jplus_live.r4_btc_try_fire,
+        "JPLUS_R4_ETH":    jplus_live.r4_eth_try_fire,
+        "JPLUS_EMA_BTC":   jplus_live.ema_btc_try_fire,
+        "JPLUS_ETH_DAILY": jplus_live.eth_daily_try_fire,
     }
 
 
@@ -321,7 +328,11 @@ _warned_missing: set[tuple[str, str]] = set()
 
 
 _SLEEVE_KEY_FOR_STRATEGY = {"S-003": "s003", "S-096": "s096", "S-078": "s078",
-                             "PDO-L-RF": "pdo", "CPR": "cpr", "FOMC": "fomc"}
+                             "PDO-L-RF": "pdo", "CPR": "cpr", "FOMC": "fomc",
+                             "JPLUS_R4_BTC": "r4_btc",
+                             "JPLUS_R4_ETH": "r4_eth",
+                             "JPLUS_EMA_BTC": "ema_btc",
+                             "JPLUS_ETH_DAILY": "eth_daily"}
 
 
 def _resolve_sleeve_leverage(spec: dict, sleeve: dict) -> float:

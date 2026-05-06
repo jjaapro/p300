@@ -87,15 +87,40 @@ def build_spec() -> dict:
              "note": "FOMC long T-10h to T+0.5h at k=10x — regime+sentiment "
                      "filtered. Time-disjoint from THU_BEAR (FOMC always Tue/Wed) "
                      "so concurrent notional remains within the 2.25x gross target."},
+            # Core J+ sub-sleeves dispatched as live tactical-style entries.
+            # weight_pct=0 here is a placeholder — actual sizing comes from
+            # jplus.simulate.today_inputs() at trade-open time (regime
+            # weight × inner R4 lev × vol-target lev). The four entries
+            # exist purely so variant_engine dispatches them per tick.
+            {"strategy_id": "JPLUS_R4_BTC", "weight_pct": 0.0,
+             "params": {"asset": "BTC"},
+             "note": "Core J+ R4 BTC: Mon/Wed wk1-2 06:00→18:00 UTC. Sized "
+                     "live from today_inputs(). Replaces retrospective emit."},
+            {"strategy_id": "JPLUS_R4_ETH", "weight_pct": 0.0,
+             "params": {"asset": "ETH"},
+             "note": "Core J+ R4 ETH: Tue 20:00 → Wed 20:00 UTC (Wed day≤14)."},
+            {"strategy_id": "JPLUS_EMA_BTC", "weight_pct": 0.0,
+             "params": {"asset": "BTC"},
+             "note": "Core J+ EMA(BTC) continuous; daily SCALE/LEV_ADJ + FLIP "
+                     "on weekly EMA cross."},
+            {"strategy_id": "JPLUS_ETH_DAILY", "weight_pct": 0.0,
+             "params": {"asset": "ETH"},
+             "note": "Core J+ ETH daily continuous in bull regimes only."},
         ],
         "sleeve_leverages": {
             "core": 2.5,
             "s003": 5.0, "s078": 5.0, "s096": 5.0,
             "pdo": 1.0, "cpr": 1.0,
             "fomc": 10.0,
+            # Core sub-sleeves: live handlers compute stacked leverage
+            # internally from today_inputs(). 1.0 placeholder.
+            "r4_btc": 1.0, "r4_eth": 1.0,
+            "ema_btc": 1.0, "eth_daily": 1.0,
         },
         "sleeves_live": ["JPLUS-CORE", "S-003", "S-078", "S-096", "PDO-L-RF",
-                          "CPR", "FOMC"],
+                          "CPR", "FOMC",
+                          "JPLUS_R4_BTC", "JPLUS_R4_ETH",
+                          "JPLUS_EMA_BTC", "JPLUS_ETH_DAILY"],
         "missing_sleeves": [
             {"intended_id": "gold_overlay",
              "intended_weight_pct": "dynamic (15-55%)",
