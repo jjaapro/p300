@@ -1,41 +1,38 @@
-"""Core J+ regime-gated — live dispatcher.
+"""Core J+ daily-return aggregator (slim role post live-execution refactor).
 
-Each tick computes the Core's daily return and emits one row of
-``variant_daily_returns`` per UTC day per variant.
+Originally this service was the SOLE Core dispatcher — it ran the
+simulator, emitted retrospective trade events, and wrote a daily-return
+row. As of the live-execution refactor (plan: how-do-we-modular-curry.md
+Phases 1-4), the four live handlers in ``services/jplus_live.py`` own
+real-time trade emission for the Core sub-sleeves. This service shrinks
+to a once-per-UTC-day daily-aggregator that just writes the
+``variant_daily_returns`` row from the simulator's gross output, so
+backtest / dashboard consumers continue to see the Core's daily return
+series.
 
-As of the trade-emitter migration (plan: how-do-we-modular-curry.md),
-the Core also writes discrete trade rows to the same ``trades`` table
-the tactical sleeves use. Each sub-sleeve (EMA_BTC, ETH_DAILY, R4_BTC,
-R4_ETH) maps to a strategy named ``JPLUS_<sleeve>``; entries, exits,
-scales, and leverage adjustments land on ``trade_adjustments``. See
-``services.jplus_trade_emitter``.
-
-Daily-return derivation under the migration:
+Daily-return derivation:
   - The simulator (``jplus.simulate.simulate``) emits a GROSS daily
-    return — sub-sleeve fees were removed in Step 5/7 (r4.py
-    COST_BP_RT = 0.0; ema_sleeve.py _COMMISSION = 0.0).
-  - The trade-emitter records the same window of activity as discrete
-    events; CLOSE events on R4 trades carry the 10bp round-trip fee.
-  - This service computes the net daily return as ``sim_gross
-    − (sum of fee_usdt across today's JPLUS_* events) / capital × 100``
-    so that ``variant_daily_returns.return_1x_pct`` remains directly
-    comparable to historical rows where fees were baked into the sim.
+    return (R4 fees stripped; ema_sleeve commission was a phantom).
+  - This service writes that gross value directly to
+    ``variant_daily_returns.return_1x_pct`` for the live variant. The
+    P&L users actually care about — net of fees — is derivable from
+    the trade-event ledger (see ``services.strategy_health``).
 
 Service contract follows the same ``try_fire_for_variant(variant,
-sleeve_cfg)`` signature as the tactical sleeves. Emitter failures are
-logged but do not block the daily-return write — the simulator remains
-the fallback source of truth if the emitter raises.
+sleeve_cfg)`` signature as the tactical sleeves. Returns ``already_
+recorded`` on a re-tick within the same UTC day. When invoked before
+yesterday's Core return is computable (e.g. cold DB), returns
+``not_ready`` and logs nothing.
 
-Idempotent per UTC day: a second tick on the same day is a no-op. When
-invoked before the current UTC day's Core return is computable (i.e.,
-the simulator won't emit a value for "today" — by design, see
-``jplus/simulate.py``), the service records nothing. Catches up at the
-next UTC day boundary.
+Live trade emission is NOT the responsibility of this service — see
+``services/jplus_live.py`` for the per-tick handlers and
+``services/jplus_trade_emitter.py`` for the offline-period gap-filler
+``emit_catchup`` (called from ``run.py:_catchup_core_trade_emit`` at
+bot startup).
 
 Backtest replay bypasses this service — ``backtest_runner.py`` drives
 ``jplus.simulate()`` directly for a chosen window and writes returns
-via ``combine_replay.py``. This service is for the LIVE loop
-(``run.py``).
+via ``combine_replay.py``.
 """
 from __future__ import annotations
 

@@ -114,30 +114,56 @@ dispatched per-minute by [services/variant_engine.py](services/variant_engine.py
 ## 3. Core J+ Engine — 50% of capital
 
 The Core is a composite strategy whose machinery lives in the [jplus/](jplus/)
-package. Each tick of [services/jplus_service.py](services/jplus_service.py)
-writes two artifacts for the day:
+package. Each of its four sub-sleeves is dispatched as a tactical-style
+top-level entry in `STRATEGY_DISPATCH` and runs its own per-tick handler in
+[services/jplus_live.py](services/jplus_live.py):
 
-1. A daily-return row in `variant_daily_returns` (`source='live_computed'`).
-   The number stored is the **net** daily return — `simulator_gross −
-   trade_event_fees`. This keeps the stored series comparable to historical
-   rows (where fees were baked into the simulator).
-2. Discrete entry/exit/scale/leverage events on each of the four sub-sleeves,
-   landed on the same `trades` and `trade_adjustments` tables the tactical
-   stack uses. Strategy names: `JPLUS_EMA_BTC`, `JPLUS_ETH_DAILY`,
-   `JPLUS_R4_BTC`, `JPLUS_R4_ETH`. Conversion is handled by
-   [services/jplus_trade_emitter.py](services/jplus_trade_emitter.py).
+| Strategy ID | Asset | Live entry condition | Live exit condition |
+|---|---|---|---|
+| `JPLUS_R4_BTC` | BTC perp | Mon/Wed wk1-2, 06:00 UTC | scheduled 18:00 UTC same day |
+| `JPLUS_R4_ETH` | ETH perp | Tue 20:00 UTC where next-day Wed.day ≤ 14 | scheduled Wed 20:00 UTC |
+| `JPLUS_EMA_BTC` | BTC perp | first tick with `today_inputs.ema_p ≠ 0` | open-ended; FLIP on weekly cross |
+| `JPLUS_ETH_DAILY` | ETH perp | first tick after regime enters strong_bull / mild_bull | first tick after regime exits bull |
 
-So `SELECT * FROM trades WHERE status='open'` returns Core + tactical
-positions uniformly, and the per-position adjustment ledger
-(`SELECT * FROM trade_adjustments WHERE trade_id='SJ-XXXX' ORDER BY seq`)
-shows every notional and leverage change for the trade's lifetime.
+Each handler:
+- pulls today's regime mode, vol-target leverage, R4 gate, EMA position,
+  and sub-sleeve weights from [`jplus.simulate.today_inputs()`](jplus/simulate.py)
+  — which derives them strictly from data through yesterday's close;
+- prices the entry from [`services.price_feed.get_current_price`](services/price_feed.py)
+  (latest closed 1m bar — ~30s lag);
+- writes the trade via [`services.trades.open_shadow_trade`](services/trades.py),
+  with `scheduled_exit_dt` set for the discrete-window sleeves and `None` for
+  continuous positions;
+- is idempotent per UTC day via the `trades` table and the
+  `UNIQUE(trade_id, event_date, event_type)` constraint on the adjustment
+  ledger, so re-ticks within the same day no-op.
 
-Cost migration: as of the trade-emitter rollout, [jplus/r4.py](jplus/r4.py)
-emits gross window returns (`COST_BP_RT = 0.0`); the 10bp R4 round-trip is
-charged on the trade-event CLOSE. [jplus/ema_sleeve.py](jplus/ema_sleeve.py)'s
-`_COMMISSION` was already a phantom (defined but unused) and is now `0.0`
-explicitly. ETH_DAILY remains zero-fee in both the simulator and the emitter
-pending the spot fee model.
+For continuous sleeves (EMA_BTC, ETH_DAILY), the handler also emits SCALE
+and LEVERAGE_ADJUST events on the first tick of each UTC day to bring the
+position size to today's `weight × lev × capital` notional. EMA_BTC emits
+a FLIP event when the weekly EMA cross changes the sign of `ema_p`.
+
+Two writers per day:
+1. **Trades + adjustments** — emitted live by the four handlers above. The
+   primary ledger; `SELECT * FROM trades WHERE status='open'` returns Core +
+   tactical positions uniformly.
+2. **Daily-return row** — written by the slim
+   [services/jplus_service.py](services/jplus_service.py) once per UTC day:
+   yesterday's gross return from the simulator goes into
+   `variant_daily_returns` (`source='live_computed'`) for backtest /
+   dashboard consumers.
+
+The retroactive [services/jplus_trade_emitter.py](services/jplus_trade_emitter.py)
+remains as the **offline-period gap-filler**: `_catchup_core_trade_emit` runs
+at startup to fill any historical dates whose live handlers were never
+called (e.g. bot was offline). It uses the same `UNIQUE` constraint, so
+emitter and live-handler outputs are consistent without coordination.
+
+Cost migration: [jplus/r4.py](jplus/r4.py) emits gross window returns
+(`COST_BP_RT = 0.0`); the 10bp R4 round-trip is charged at trade close.
+[jplus/ema_sleeve.py](jplus/ema_sleeve.py)'s `_COMMISSION` is `0.0`
+explicitly (was a phantom constant pre-migration). ETH_DAILY remains
+zero-fee in the simulator and live handler pending a spot-fee model.
 
 ```
                  ┌──────────────────────────────────────┐

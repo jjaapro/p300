@@ -1,12 +1,18 @@
-"""Convert per-day Core J+ simulator output into discrete trade events.
+"""Retrospective Core J+ trade-emitter — offline-period gap-filler.
 
-The simulator (``jplus.simulate.simulate``) decides each day what regime
-weights, what R4 inner leverage, and what vol-target outer leverage apply
-to each of the four sub-sleeves. Historically that math collapsed into
-ONE daily-return number per variant. This module unwinds the math back
-into discrete OPEN / SCALE / LEVERAGE_ADJUST / FLIP / CLOSE events keyed
-to actual market timestamps, written to the same ``trades`` and
-``trade_adjustments`` tables the tactical stack uses.
+ROLE POST LIVE-EXECUTION REFACTOR: this module is no longer the primary
+trade-emit path. The four live handlers in ``services/jplus_live.py``
+own real-time entry / exit / scale / leverage-adjust / flip emission for
+the Core sub-sleeves at the actual calendar/signal moment. This module
+remains as the offline-period BACKFILL: ``emit_catchup`` runs at bot
+startup (via ``run.py:_catchup_core_trade_emit``) to fill any historical
+dates whose live handlers were never called because the bot was offline.
+
+Both paths land in the same ``trades`` and ``trade_adjustments`` tables;
+idempotency via the ``UNIQUE(trade_id, event_date, event_type)``
+constraint on the adjustment ledger makes the two paths safe to coexist
+— if a live handler already wrote today's events, ``emit_for_date(today)``
+is a no-op when called by the catchup.
 
 Public API:
   emit_for_date(variant, date_iso, sim_record, prev_state=None,
@@ -14,17 +20,14 @@ Public API:
   get_position_state(variant_id) -> PositionState
   emit_catchup(variant, end_date_iso) -> dict
 
-Per-sub-sleeve coverage (Step 2 of the migration plan):
-  - R4_BTC: implemented. OPEN at d 06:00 UTC + CLOSE at d 18:00 UTC on
-    Mon/Wed wk1-2. Single-day round-trip; fees split 5bp/5bp.
-  - R4_ETH: implemented. OPEN at d-1 (Tue) 20:00 UTC + CLOSE at d (Wed)
-    20:00 UTC on Tue→Wed wk1-2. The OPEN event is written when emit is
-    called for the Wed (its event_date = the Tue), so the trade is keyed
-    in the DB as soon as Wed's emit runs. (See plan §"R4 ETH calendar
-    boundary" — Step 2 uses the simulator's accounting convention of
-    sizing R4_ETH with Wed's params; a future refinement could backdate
-    sizing to Tue's params and emit a midnight LEVERAGE_ADJUST.)
-  - EMA_BTC, ETH_DAILY: TODO Steps 3 & 4. Stubs that no-op for now.
+Per-sub-sleeve coverage:
+  - R4_BTC: OPEN at d 06:00 UTC + CLOSE at d 18:00 UTC on Mon/Wed wk1-2.
+  - R4_ETH: OPEN at d-1 (Tue) 20:00 UTC + CLOSE at d (Wed) 20:00 UTC on
+    Tue→Wed wk1-2. The OPEN event is written when emit is called for the
+    Wed (its event_date = the Tue), so the trade is keyed in the DB as
+    soon as Wed's emit runs.
+  - EMA_BTC, ETH_DAILY: continuous positions with daily SCALE /
+    LEVERAGE_ADJUST / FLIP events.
 
 Idempotency: every event lands via ``record_adjustment`` whose
 UNIQUE(trade_id, event_date, event_type) constraint makes
