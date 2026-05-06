@@ -337,3 +337,230 @@ def test_r4_eth_bear_regime_skips(live_env, monkeypatch):
     finally:
         clock.set_simulated_now(None)
     assert result["status"] == "regime_zero_weight"
+
+
+# ─── EMA_BTC ────────────────────────────────────────────────────────────────
+
+
+def test_ema_btc_opens_when_no_position(live_env, monkeypatch):
+    """No open EMA_BTC + ema_p=+1 → OPEN LONG. Sized at
+    capital × weight × lev / price."""
+    from services import jplus_live, price_feed
+    from jplus import simulate as core_sim
+    monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="uncertain", lev=2.0,
+                                                     ema_p=+1))
+    clock.set_simulated_now(datetime(2026, 5, 6, 0, 1, tzinfo=timezone.utc))
+    try:
+        result = jplus_live.ema_btc_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert result["status"] == "opened"
+
+    con = sqlite3.connect(str(live_env))
+    con.row_factory = sqlite3.Row
+    row = con.execute(
+        "SELECT * FROM trades WHERE strategy='JPLUS_EMA_BTC' AND status='open'"
+    ).fetchone()
+    con.close()
+    assert row is not None
+    assert row["asset"] == "BTC"
+    assert row["direction"] == "LONG"
+    # Notional = 10_000 × 0.30 × 2.0 = 6_000 (uncertain weight 0.30, lev 2)
+    assert row["size_usdt"] == pytest.approx(6_000.0)
+    assert row["leverage"] == pytest.approx(2.0)
+
+
+def test_ema_btc_opens_short_when_ema_p_negative(live_env, monkeypatch):
+    """ema_p=-1 → SHORT direction."""
+    from services import jplus_live, price_feed
+    from jplus import simulate as core_sim
+    monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="uncertain", lev=2.0,
+                                                     ema_p=-1))
+    clock.set_simulated_now(datetime(2026, 5, 6, 0, 1, tzinfo=timezone.utc))
+    try:
+        result = jplus_live.ema_btc_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert result["status"] == "opened"
+    con = sqlite3.connect(str(live_env))
+    direction = con.execute(
+        "SELECT direction FROM trades WHERE strategy='JPLUS_EMA_BTC'"
+    ).fetchone()[0]
+    con.close()
+    assert direction == "SHORT"
+
+
+def test_ema_btc_no_position_when_ema_p_zero(live_env, monkeypatch):
+    """ema_p=0 (warmup edge) → no_position_needed; nothing opened."""
+    from services import jplus_live, price_feed
+    from jplus import simulate as core_sim
+    monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="uncertain", lev=2.0,
+                                                     ema_p=0))
+    clock.set_simulated_now(datetime(2026, 5, 6, 0, 1, tzinfo=timezone.utc))
+    try:
+        result = jplus_live.ema_btc_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert result["status"] == "no_position_needed"
+
+
+def test_ema_btc_flips_on_direction_change(live_env, monkeypatch):
+    """Existing LONG + ema_p flips to -1 → FLIP event; new trade opens
+    with parent_position_id linkage."""
+    from services import jplus_live, price_feed
+    from jplus import simulate as core_sim
+    monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
+    # Day 1: open LONG.
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="uncertain", lev=2.0,
+                                                     ema_p=+1))
+    clock.set_simulated_now(datetime(2026, 5, 4, 0, 1, tzinfo=timezone.utc))
+    try:
+        first = jplus_live.ema_btc_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert first["status"] == "opened"
+
+    # Day 2: ema_p flipped to -1 — FLIP.
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="uncertain", lev=2.0,
+                                                     ema_p=-1))
+    clock.set_simulated_now(datetime(2026, 5, 5, 0, 1, tzinfo=timezone.utc))
+    try:
+        second = jplus_live.ema_btc_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert second["status"] == "flipped"
+
+    con = sqlite3.connect(str(live_env))
+    con.row_factory = sqlite3.Row
+    open_row = con.execute(
+        "SELECT * FROM trades WHERE strategy='JPLUS_EMA_BTC' AND status='open'"
+    ).fetchone()
+    closed_row = con.execute(
+        "SELECT * FROM trades WHERE strategy='JPLUS_EMA_BTC' "
+        "AND status='closed' ORDER BY actual_exit_time DESC LIMIT 1"
+    ).fetchone()
+    con.close()
+    assert open_row is not None
+    assert open_row["direction"] == "SHORT"
+    assert open_row["parent_position_id"] is not None
+    assert closed_row is not None
+    assert closed_row["resolution"] == "filled_flipped"
+
+
+def test_ema_btc_idempotent_within_same_day(live_env, monkeypatch):
+    """Second tick on the same UTC day after the first SCALE/LEV_ADJ
+    triggers no-op — UNIQUE constraint on adjustment events."""
+    from services import jplus_live, price_feed
+    from jplus import simulate as core_sim
+    # Pre-stage an open EMA_BTC trade with non-matching qty/lev so the
+    # first call would emit SCALE+LEVERAGE_ADJUST.
+    monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="strong_bull", lev=3.0,
+                                                     ema_p=+1))
+    clock.set_simulated_now(datetime(2026, 5, 1, 0, 1, tzinfo=timezone.utc))
+    try:
+        # Open initial position (uncertain regime).
+        monkeypatch.setattr(core_sim, "today_inputs",
+                             lambda: _today_inputs_stub(mode="uncertain",
+                                                         lev=2.0, ema_p=+1))
+        opened = jplus_live.ema_btc_try_fire(_variant(), {})
+        assert opened["status"] == "opened"
+        # Simulate next day with regime change + lev change.
+        clock.set_simulated_now(datetime(2026, 5, 2, 0, 1, tzinfo=timezone.utc))
+        monkeypatch.setattr(core_sim, "today_inputs",
+                             lambda: _today_inputs_stub(mode="strong_bull",
+                                                         lev=3.0, ema_p=+1))
+        first_call = jplus_live.ema_btc_try_fire(_variant(), {})
+        assert first_call["status"] == "rebalanced"
+        # Second call same day: idempotent no-op.
+        clock.set_simulated_now(datetime(2026, 5, 2, 0, 5, tzinfo=timezone.utc))
+        second_call = jplus_live.ema_btc_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert second_call["status"] == "in_sync"
+
+
+# ─── ETH_DAILY ──────────────────────────────────────────────────────────────
+
+
+def test_eth_daily_no_action_in_uncertain(live_env, monkeypatch):
+    """Uncertain regime weight=0 + nothing open → no_position_needed."""
+    from services import jplus_live, price_feed
+    from jplus import simulate as core_sim
+    monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="uncertain", lev=2.0))
+    clock.set_simulated_now(datetime(2026, 5, 6, 0, 1, tzinfo=timezone.utc))
+    try:
+        result = jplus_live.eth_daily_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert result["status"] == "no_position_needed"
+
+
+def test_eth_daily_opens_in_strong_bull(live_env, monkeypatch):
+    """Strong_bull → eth_daily weight=0.20, lev=3 (cap), opens LONG."""
+    from services import jplus_live, price_feed
+    from jplus import simulate as core_sim
+    monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="strong_bull",
+                                                     lev=3.0))
+    clock.set_simulated_now(datetime(2026, 5, 6, 0, 1, tzinfo=timezone.utc))
+    try:
+        result = jplus_live.eth_daily_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert result["status"] == "opened"
+    con = sqlite3.connect(str(live_env))
+    con.row_factory = sqlite3.Row
+    row = con.execute(
+        "SELECT * FROM trades WHERE strategy='JPLUS_ETH_DAILY' AND status='open'"
+    ).fetchone()
+    con.close()
+    assert row is not None
+    assert row["direction"] == "LONG"
+    # Notional = 10_000 × 0.20 × 3.0 = 6_000
+    assert row["size_usdt"] == pytest.approx(6_000.0)
+
+
+def test_eth_daily_closes_when_regime_exits_bull(live_env, monkeypatch):
+    """Open in mild_bull → regime flips to uncertain → CLOSE."""
+    from services import jplus_live, price_feed
+    from jplus import simulate as core_sim
+    monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="mild_bull", lev=2.5))
+    clock.set_simulated_now(datetime(2026, 5, 1, 0, 1, tzinfo=timezone.utc))
+    try:
+        opened = jplus_live.eth_daily_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert opened["status"] == "opened"
+
+    # Regime exits bull next day.
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="uncertain", lev=2.0))
+    clock.set_simulated_now(datetime(2026, 5, 2, 0, 1, tzinfo=timezone.utc))
+    try:
+        closed = jplus_live.eth_daily_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert closed["status"] == "closed"
+
+    con = sqlite3.connect(str(live_env))
+    n_open = con.execute(
+        "SELECT COUNT(*) FROM trades WHERE strategy='JPLUS_ETH_DAILY' "
+        "AND status='open'"
+    ).fetchone()[0]
+    con.close()
+    assert n_open == 0
