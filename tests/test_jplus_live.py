@@ -20,19 +20,35 @@ from services import clock
 CAPITAL_USDT = 10_000.0
 
 
-def _today_inputs_stub(mode="uncertain", lev=2.0, gated=False, ema_p=-1):
+def _today_inputs_stub(mode="uncertain", lev=2.0, gated=False, ema_p=-1,
+                        ema_p_prev=None, mode_prev=None):
     """Build a stub ``today_inputs()`` result with deterministic values.
     Caller passes regime mode; weights are looked up from
     ``simulate.REGIME_WEIGHTS_FULL`` so they always match what the live
-    handlers expect."""
+    handlers expect.
+
+    The ``ema_p_prev`` / ``mode_prev`` fields default to *fresh-transition*
+    sentinels (yesterday differs from today): yesterday's ema_p is the
+    sign-opposite of today's, yesterday's mode is the opposite kind. This
+    means stubs that don't pass them explicitly behave like "today is a
+    fresh cross / regime entry" — which is what most existing tests want.
+    Tests for the cold-start guard pass them explicitly."""
     from jplus import simulate
+    if ema_p_prev is None:
+        ema_p_prev = -ema_p if ema_p != 0 else 0
+    if mode_prev is None:
+        mode_prev = ("bear" if mode in ("strong_bull", "mild_bull")
+                     else "strong_bull")
     return {
         "date": clock.now_utc().date().isoformat(),
         "mode": mode,
+        "mode_prev": mode_prev,
         "lev": lev,
         "gated": gated,
         "ema_p": ema_p,
+        "ema_p_prev": ema_p_prev,
         "weights": dict(simulate.REGIME_WEIGHTS_FULL[mode]),
+        "weights_prev": dict(simulate.REGIME_WEIGHTS_FULL[mode_prev]),
     }
 
 
@@ -564,3 +580,143 @@ def test_eth_daily_closes_when_regime_exits_bull(live_env, monkeypatch):
     ).fetchone()[0]
     con.close()
     assert n_open == 0
+
+
+# ─── Cold-start guards ──────────────────────────────────────────────────────
+
+def test_ema_btc_cold_start_skips_when_yesterday_matches_today(live_env, monkeypatch):
+    """Variant has no open EMA position AND yesterday's ema_p already
+    matched today's: the cross fired before this variant was emitting,
+    so the handler must wait for the next cross instead of cold-opening
+    at today's price (the SJ-3140 phantom-entry bug)."""
+    from services import jplus_live, price_feed
+    from jplus import simulate as core_sim
+    monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="uncertain", lev=2.0,
+                                                     ema_p=-1, ema_p_prev=-1))
+    clock.set_simulated_now(datetime(2026, 5, 6, 0, 1, tzinfo=timezone.utc))
+    try:
+        result = jplus_live.ema_btc_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert result["status"] == "awaiting_fresh_cross"
+    con = sqlite3.connect(str(live_env))
+    n = con.execute(
+        "SELECT COUNT(*) FROM trades WHERE strategy='JPLUS_EMA_BTC'"
+    ).fetchone()[0]
+    con.close()
+    assert n == 0
+
+
+def test_ema_btc_opens_on_fresh_cross_after_cold_start(live_env, monkeypatch):
+    """Day 1 mid-signal (yesterday matches today) — no open. Day 2 the
+    weekly EMA flips — handler opens. Confirms the guard releases on
+    the next genuine cross, not just on any later tick."""
+    from services import jplus_live, price_feed
+    from jplus import simulate as core_sim
+    monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
+
+    # Day 1: mid-signal cold start — no open.
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="uncertain", lev=2.0,
+                                                     ema_p=-1, ema_p_prev=-1))
+    clock.set_simulated_now(datetime(2026, 5, 5, 0, 1, tzinfo=timezone.utc))
+    try:
+        first = jplus_live.ema_btc_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert first["status"] == "awaiting_fresh_cross"
+
+    # Day 2: ema_p flips +1 (yesterday was -1) — fresh cross, open LONG.
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="uncertain", lev=2.0,
+                                                     ema_p=+1, ema_p_prev=-1))
+    clock.set_simulated_now(datetime(2026, 5, 6, 0, 1, tzinfo=timezone.utc))
+    try:
+        second = jplus_live.ema_btc_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert second["status"] == "opened"
+
+    con = sqlite3.connect(str(live_env))
+    direction = con.execute(
+        "SELECT direction FROM trades WHERE strategy='JPLUS_EMA_BTC' "
+        "AND status='open'"
+    ).fetchone()[0]
+    con.close()
+    assert direction == "LONG"
+
+
+def test_eth_daily_cold_start_skips_when_yesterday_already_bull(live_env, monkeypatch):
+    """Variant cold-starts mid-bull-regime — handler must wait for the
+    next regime exit + reentry rather than chasing into a trend."""
+    from services import jplus_live, price_feed
+    from jplus import simulate as core_sim
+    monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="strong_bull", lev=3.0,
+                                                     mode_prev="mild_bull"))
+    clock.set_simulated_now(datetime(2026, 5, 6, 0, 1, tzinfo=timezone.utc))
+    try:
+        result = jplus_live.eth_daily_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert result["status"] == "awaiting_fresh_bull_entry"
+    con = sqlite3.connect(str(live_env))
+    n = con.execute(
+        "SELECT COUNT(*) FROM trades WHERE strategy='JPLUS_ETH_DAILY'"
+    ).fetchone()[0]
+    con.close()
+    assert n == 0
+
+
+def test_eth_daily_opens_on_fresh_bull_entry_after_cold_start(live_env, monkeypatch):
+    """Day 1 mid-bull cold start — no open. Day 2 still bull, still
+    no open (yesterday is now bull too). Day 3 regime exits → still no
+    open (not bull). Day 4 regime re-enters bull from non-bull — handler
+    opens."""
+    from services import jplus_live, price_feed
+    from jplus import simulate as core_sim
+    monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
+
+    # Day 1: cold-start mid-bull — guard trips.
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="strong_bull", lev=3.0,
+                                                     mode_prev="strong_bull"))
+    clock.set_simulated_now(datetime(2026, 5, 1, 0, 1, tzinfo=timezone.utc))
+    try:
+        d1 = jplus_live.eth_daily_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert d1["status"] == "awaiting_fresh_bull_entry"
+
+    # Day 2: regime exits to uncertain — also no open, no position needed.
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="uncertain", lev=2.0,
+                                                     mode_prev="strong_bull"))
+    clock.set_simulated_now(datetime(2026, 5, 2, 0, 1, tzinfo=timezone.utc))
+    try:
+        d2 = jplus_live.eth_daily_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert d2["status"] == "no_position_needed"
+
+    # Day 3: regime re-enters bull — fresh entry, OPEN.
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="mild_bull", lev=2.5,
+                                                     mode_prev="uncertain"))
+    clock.set_simulated_now(datetime(2026, 5, 3, 0, 1, tzinfo=timezone.utc))
+    try:
+        d3 = jplus_live.eth_daily_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert d3["status"] == "opened"
+
+    con = sqlite3.connect(str(live_env))
+    n_open = con.execute(
+        "SELECT COUNT(*) FROM trades WHERE strategy='JPLUS_ETH_DAILY' "
+        "AND status='open'"
+    ).fetchone()[0]
+    con.close()
+    assert n_open == 1

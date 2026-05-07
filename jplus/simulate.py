@@ -17,7 +17,7 @@ EMA position) are derived from data available strictly through T-1.
 """
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from services import clock
 from jplus import data, ema_sleeve, gate, r4, regime, voltarget
@@ -261,16 +261,22 @@ def today_inputs() -> dict | None:
     Returns ``None`` if there isn't enough warmup data to classify regime
     or compute vol-target — defensive guard for a bot booting on a cold DB.
 
+    The ``ema_p_prev`` / ``weights_prev`` / ``mode_prev`` fields carry
+    yesterday's signal so callers can detect *fresh transitions* (EMA
+    crosses, regime entries) and avoid cold-start fills mid-signal — see
+    the cold-start guards in ``services/jplus_trade_emitter.py``.
+
     Look-ahead safety: every input here is derived strictly from data
     available at yesterday's UTC close (regime/EMA cross/gate/vol-target
     all use T-1 windows by construction). Calling at any time today
     returns the same answer until midnight UTC tomorrow."""
-    _out, state = _run_decision_loop()
+    out, state = _run_decision_loop()
     dates = state["dates"]
     if len(dates) < 60:  # need warmup for regime + vol-target
         return None
 
     today_iso = clock.now_utc().date().isoformat()
+    yesterday_iso = (clock.now_utc().date() - timedelta(days=1)).isoformat()
 
     # det_i = index of yesterday in `dates` = len(dates) - 1. The simulator
     # uses ``max(1, i - 1)`` for in-loop iterations; for "today" we project
@@ -285,6 +291,7 @@ def today_inputs() -> dict | None:
     # builder spreads through the last hourly bar's calendar date, which
     # includes today if any 1m bar has been observed today.
     ema_p = int(state["ema_pos"].get(today_iso, 0))
+    ema_p_prev = int(state["ema_pos"].get(yesterday_iso, 0))
 
     # R4 gate: today's gate uses bc through yesterday (= state["bc"]).
     gated = _gate_for_today(state["bc"])
@@ -293,17 +300,27 @@ def today_inputs() -> dict | None:
     # which is exactly what voltarget.leverage_for_day expects.
     lev = voltarget.leverage_for_day(state["recent_1x"], mode)
 
-    # Sub-sleeve weights from regime.
+    # Sub-sleeve weights from regime, both today's and yesterday's. Yesterday's
+    # mode is read from the per-day decision loop output ``out``; if yesterday
+    # is before warmup or otherwise missing, mode_prev is None and weights_prev
+    # is all-zero (treated by callers as "no signal yet" — same as no entry).
     weights = dict(REGIME_WEIGHTS_FULL.get(
         mode, {"ema_btc": 0.0, "eth_daily": 0.0, "r4_btc": 0.0, "r4_eth": 0.0}))
+    yest_rec = out.get(yesterday_iso) or {}
+    mode_prev = yest_rec.get("mode")
+    weights_prev = dict(REGIME_WEIGHTS_FULL.get(
+        mode_prev, {"ema_btc": 0.0, "eth_daily": 0.0, "r4_btc": 0.0, "r4_eth": 0.0}))
 
     return {
         "date": today_iso,
         "mode": mode,
+        "mode_prev": mode_prev,
         "lev": lev,
         "gated": gated,
         "ema_p": ema_p,
+        "ema_p_prev": ema_p_prev,
         "weights": weights,
+        "weights_prev": weights_prev,
     }
 
 

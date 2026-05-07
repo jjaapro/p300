@@ -30,6 +30,14 @@ PARITY_TOLERANCE_PCT = 0.01  # 1bp = 0.01%
 PARITY_WINDOW_START = "2024-01-01"
 PARITY_WINDOW_END = "2024-04-30"
 
+# EMA-specific parity window: must contain at least one weekly EMA(5/21)
+# cross so the cold-start guard releases and a position opens. The 2024-Q1
+# window is a single uninterrupted LONG signal — fine for ETH_DAILY and R4
+# parity, but the EMA emitter would never open. The Aug-Nov 2024 window
+# captures two flips (2024-09-01 LONG→SHORT, 2024-09-29 SHORT→LONG).
+EMA_PARITY_WINDOW_START = "2024-08-01"
+EMA_PARITY_WINDOW_END = "2024-11-30"
+
 
 @pytest.fixture
 def emitter_env(tmp_path, monkeypatch):
@@ -47,6 +55,24 @@ def emitter_env(tmp_path, monkeypatch):
 
 def _variant() -> dict:
     return {"id": "test_emit_v1", "capital_usdt": CAPITAL_USDT}
+
+
+def _replay_series(emitter, variant: dict, series: dict[str, dict]) -> None:
+    """Walk ``series`` in date order and call ``emit_for_date`` with
+    yesterday's record threaded in. Mirrors the live ``emit_catchup``
+    loop and is what continuous-sleeve cold-start guards expect."""
+    from datetime import timedelta as _td
+    sorted_dates = sorted(series.keys())
+    prev_iso = None
+    for date_iso in sorted_dates:
+        # Walk-back yesterday by one calendar day, not just "previous key" —
+        # series can have gaps and the cold-start guard compares actual
+        # consecutive days.
+        d = datetime.fromisoformat(date_iso).date()
+        prev_iso = (d - _td(days=1)).isoformat()
+        prev_rec = series.get(prev_iso)
+        emitter.emit_for_date(variant, date_iso, series[date_iso],
+                              sim_record_yesterday=prev_rec)
 
 
 def _trade_gross_pct(con: sqlite3.Connection, strategy: str,
@@ -91,9 +117,7 @@ def test_r4_btc_parity_with_simulator(emitter_env):
     series = core_sim.simulate(start_date=PARITY_WINDOW_START,
                                 end_date=PARITY_WINDOW_END)
     try:
-        for date_iso in sorted(series.keys()):
-            rec = series[date_iso]
-            emitter.emit_for_date(_variant(), date_iso, rec)
+        _replay_series(emitter, _variant(), series)
     finally:
         clock.set_simulated_now(None)
 
@@ -137,9 +161,7 @@ def test_r4_eth_parity_with_simulator(emitter_env):
     series = core_sim.simulate(start_date=PARITY_WINDOW_START,
                                 end_date=PARITY_WINDOW_END)
     try:
-        for date_iso in sorted(series.keys()):
-            rec = series[date_iso]
-            emitter.emit_for_date(_variant(), date_iso, rec)
+        _replay_series(emitter, _variant(), series)
     finally:
         clock.set_simulated_now(None)
 
@@ -231,8 +253,7 @@ def test_r4_btc_only_fires_on_mon_wed_weeks_1_2(emitter_env):
     series = core_sim.simulate(start_date=PARITY_WINDOW_START,
                                 end_date=PARITY_WINDOW_END)
     try:
-        for date_iso in sorted(series.keys()):
-            emitter.emit_for_date(_variant(), date_iso, series[date_iso])
+        _replay_series(emitter, _variant(), series)
     finally:
         clock.set_simulated_now(None)
 
@@ -268,8 +289,7 @@ def test_r4_eth_only_fires_on_tue_with_wed_in_weeks_1_2(emitter_env):
     series = core_sim.simulate(start_date=PARITY_WINDOW_START,
                                 end_date=PARITY_WINDOW_END)
     try:
-        for date_iso in sorted(series.keys()):
-            emitter.emit_for_date(_variant(), date_iso, series[date_iso])
+        _replay_series(emitter, _variant(), series)
     finally:
         clock.set_simulated_now(None)
 
@@ -313,8 +333,7 @@ def test_eth_daily_parity_with_simulator(emitter_env):
     series = core_sim.simulate(start_date=PARITY_WINDOW_START,
                                 end_date=PARITY_WINDOW_END)
     try:
-        for date_iso in sorted(series.keys()):
-            emitter.emit_for_date(_variant(), date_iso, series[date_iso])
+        _replay_series(emitter, _variant(), series)
     finally:
         clock.set_simulated_now(None)
 
@@ -382,8 +401,7 @@ def test_eth_daily_only_active_in_bull(emitter_env):
     series = core_sim.simulate(start_date=PARITY_WINDOW_START,
                                 end_date=PARITY_WINDOW_END)
     try:
-        for date_iso in sorted(series.keys()):
-            emitter.emit_for_date(_variant(), date_iso, series[date_iso])
+        _replay_series(emitter, _variant(), series)
     finally:
         clock.set_simulated_now(None)
 
@@ -406,19 +424,19 @@ def test_eth_daily_only_active_in_bull(emitter_env):
 @pytest.mark.slow
 def test_ema_btc_parity_with_simulator(emitter_env):
     """EMA_BTC accounting parity: sum of all EMA_BTC trade pnl_usdt for the
-    window must equal sum of simulator's ema_contrib_1x_pct × lev × capital
-    over all dates in the window, within 5bp/capital. EMA_BTC is continuous
-    (open every day after warmup); we aggregate across all closed trades
-    plus any final open trade's unrealized."""
+    window (post-first-flip) must equal sum of simulator's
+    ema_contrib_1x_pct × lev × capital over the same range, within
+    5bp/capital. After the cold-start fix, EMA_BTC opens only on the
+    first weekly-EMA flip in the window — parity is checked from that
+    date onwards."""
     from jplus import simulate as core_sim
     from services import jplus_trade_emitter as emitter
 
-    clock.set_simulated_now(datetime(2024, 5, 1, tzinfo=timezone.utc))
-    series = core_sim.simulate(start_date=PARITY_WINDOW_START,
-                                end_date=PARITY_WINDOW_END)
+    clock.set_simulated_now(datetime(2024, 12, 1, tzinfo=timezone.utc))
+    series = core_sim.simulate(start_date=EMA_PARITY_WINDOW_START,
+                                end_date=EMA_PARITY_WINDOW_END)
     try:
-        for date_iso in sorted(series.keys()):
-            emitter.emit_for_date(_variant(), date_iso, series[date_iso])
+        _replay_series(emitter, _variant(), series)
     finally:
         clock.set_simulated_now(None)
 
@@ -482,16 +500,20 @@ def test_ema_btc_parity_with_simulator(emitter_env):
 def test_ema_btc_flip_on_weekly_cross(emitter_env):
     """When ema_p flips sign across consecutive days, the emitter must
     produce a FLIP event (closing the old trade and opening an opposite-
-    direction one with parent_position_id linkage)."""
+    direction one with parent_position_id linkage).
+
+    Note: post-cold-start-fix, the FIRST flip in a window is an OPEN
+    (no prior position to flip), and only subsequent flips become FLIP
+    events. The expected FLIP event count is therefore len(flip_dates) - 1.
+    """
     from jplus import simulate as core_sim
     from services import jplus_trade_emitter as emitter
 
-    clock.set_simulated_now(datetime(2024, 5, 1, tzinfo=timezone.utc))
-    series = core_sim.simulate(start_date=PARITY_WINDOW_START,
-                                end_date=PARITY_WINDOW_END)
+    clock.set_simulated_now(datetime(2024, 12, 1, tzinfo=timezone.utc))
+    series = core_sim.simulate(start_date=EMA_PARITY_WINDOW_START,
+                                end_date=EMA_PARITY_WINDOW_END)
     try:
-        for date_iso in sorted(series.keys()):
-            emitter.emit_for_date(_variant(), date_iso, series[date_iso])
+        _replay_series(emitter, _variant(), series)
     finally:
         clock.set_simulated_now(None)
 
@@ -521,11 +543,221 @@ def test_ema_btc_flip_on_weekly_cross(emitter_env):
     finally:
         con.close()
 
-    if flip_dates:
-        # Each flip-date should have at most one FLIP event keyed to it.
-        flip_event_dates = {ev[0] for ev in flip_events}
-        for fd in flip_dates:
-            assert fd in flip_event_dates, \
-                f"expected FLIP event at {fd}; got dates {flip_event_dates}"
-        assert n_with_parent == len(flip_dates), \
-            f"expected {len(flip_dates)} flip-children, got {n_with_parent}"
+    assert len(flip_dates) >= 2, \
+        f"EMA parity window needs >= 2 flips to test FLIP events, got {flip_dates}"
+    # First flip becomes an OPEN; subsequent flips produce FLIP events.
+    expected_flip_dates = flip_dates[1:]
+    flip_event_dates = {ev[0] for ev in flip_events}
+    for fd in expected_flip_dates:
+        assert fd in flip_event_dates, \
+            f"expected FLIP event at {fd}; got dates {flip_event_dates}"
+    assert n_with_parent == len(expected_flip_dates), \
+        f"expected {len(expected_flip_dates)} flip-children, got {n_with_parent}"
+
+
+# ─── Cold-start guard ───────────────────────────────────────────────────────
+
+@pytest.mark.slow
+def test_ema_btc_cold_start_skips_mid_signal_open(emitter_env):
+    """When a variant cold-starts on a date whose ema_p already matches
+    yesterday's, no trade is opened — we wait for the next fresh cross.
+    This is the defining "missed entry is missed entry" rule.
+
+    Strategy: pick a window starting on a date where ema_p is non-zero
+    AND has been unchanged for the prior day. Replay one day. Assert no
+    EMA_BTC trade was opened."""
+    from jplus import simulate as core_sim
+    from services import jplus_trade_emitter as emitter
+
+    clock.set_simulated_now(datetime(2024, 5, 1, tzinfo=timezone.utc))
+    series = core_sim.simulate(start_date=PARITY_WINDOW_START,
+                                end_date=PARITY_WINDOW_END)
+    # Find the first date where today's and yesterday's ema_p are both
+    # non-zero AND equal — the canonical mid-signal cold-start case.
+    sorted_dates = sorted(series.keys())
+    target = None
+    for i in range(1, len(sorted_dates)):
+        prev = sorted_dates[i - 1]
+        cur = sorted_dates[i]
+        if (series[cur].get("ema_p") and series[prev].get("ema_p")
+                and series[cur]["ema_p"] == series[prev]["ema_p"]):
+            target = cur
+            break
+    assert target is not None, "need a mid-signal date in the parity window"
+
+    try:
+        # Replay a single day mid-signal — no yesterday context = no open
+        # is the conservative default — we explicitly thread yesterday
+        # in so the guard sees the matching signal and skips.
+        prev_iso = sorted_dates[sorted_dates.index(target) - 1]
+        emitter.emit_for_date(_variant(), target, series[target],
+                              sim_record_yesterday=series[prev_iso])
+    finally:
+        clock.set_simulated_now(None)
+
+    con = sqlite3.connect(str(emitter_env))
+    try:
+        n_ema_trades = con.execute(
+            "SELECT COUNT(*) FROM trades WHERE strategy='JPLUS_EMA_BTC'"
+        ).fetchone()[0]
+    finally:
+        con.close()
+    assert n_ema_trades == 0, \
+        f"expected zero EMA trades on mid-signal cold-start, got {n_ema_trades}"
+
+
+@pytest.mark.slow
+def test_ema_btc_cold_start_opens_on_fresh_cross(emitter_env):
+    """A variant that emits its first day on a date where ema_p flips
+    from yesterday MUST open the new trade — that's the legitimate
+    "fresh cross" entry the cold-start guard is designed to permit."""
+    from jplus import simulate as core_sim
+    from services import jplus_trade_emitter as emitter
+
+    clock.set_simulated_now(datetime(2024, 12, 1, tzinfo=timezone.utc))
+    series = core_sim.simulate(start_date=EMA_PARITY_WINDOW_START,
+                                end_date=EMA_PARITY_WINDOW_END)
+    sorted_dates = sorted(series.keys())
+    cross_date = None
+    for i in range(1, len(sorted_dates)):
+        prev = sorted_dates[i - 1]
+        cur = sorted_dates[i]
+        ep_cur = int(series[cur].get("ema_p") or 0)
+        ep_prev = int(series[prev].get("ema_p") or 0)
+        if ep_cur != 0 and ep_prev != 0 and ep_cur != ep_prev:
+            cross_date = cur
+            prev_date = prev
+            break
+    assert cross_date is not None, "need a flip in the EMA parity window"
+
+    try:
+        emitter.emit_for_date(_variant(), cross_date, series[cross_date],
+                              sim_record_yesterday=series[prev_date])
+    finally:
+        clock.set_simulated_now(None)
+
+    con = sqlite3.connect(str(emitter_env))
+    try:
+        rows = con.execute(
+            "SELECT id, direction, entry_price FROM trades "
+            "WHERE strategy='JPLUS_EMA_BTC'"
+        ).fetchall()
+    finally:
+        con.close()
+    assert len(rows) == 1, f"expected exactly 1 EMA trade, got {len(rows)}"
+    expected_dir = "LONG" if series[cross_date]["ema_p"] > 0 else "SHORT"
+    assert rows[0][1] == expected_dir
+
+
+@pytest.mark.slow
+def test_ema_btc_cold_start_skips_when_yesterday_unknown(emitter_env):
+    """If the caller doesn't pass ``sim_record_yesterday`` (e.g. very first
+    day of the simulator series, or a bad backfill window), the emitter
+    must conservatively skip rather than guess. Yesterday-known opens
+    are the only path to a new EMA position."""
+    from jplus import simulate as core_sim
+    from services import jplus_trade_emitter as emitter
+
+    clock.set_simulated_now(datetime(2024, 5, 1, tzinfo=timezone.utc))
+    series = core_sim.simulate(start_date=PARITY_WINDOW_START,
+                                end_date=PARITY_WINDOW_END)
+    target = next(d for d in sorted(series.keys())
+                  if int(series[d].get("ema_p") or 0) != 0)
+    try:
+        # Note: sim_record_yesterday omitted entirely.
+        emitter.emit_for_date(_variant(), target, series[target])
+    finally:
+        clock.set_simulated_now(None)
+
+    con = sqlite3.connect(str(emitter_env))
+    try:
+        n_ema_trades = con.execute(
+            "SELECT COUNT(*) FROM trades WHERE strategy='JPLUS_EMA_BTC'"
+        ).fetchone()[0]
+    finally:
+        con.close()
+    assert n_ema_trades == 0
+
+
+@pytest.mark.slow
+def test_eth_daily_cold_start_skips_mid_bull_open(emitter_env):
+    """When a variant cold-starts on a day already in bull regime
+    (yesterday was also bull), the ETH_DAILY emitter must skip the open
+    and wait for the next regime exit + reentry."""
+    from jplus import simulate as core_sim
+    from services import jplus_trade_emitter as emitter
+
+    clock.set_simulated_now(datetime(2024, 5, 1, tzinfo=timezone.utc))
+    series = core_sim.simulate(start_date=PARITY_WINDOW_START,
+                                end_date=PARITY_WINDOW_END)
+    sorted_dates = sorted(series.keys())
+    target = None
+    for i in range(1, len(sorted_dates)):
+        prev = sorted_dates[i - 1]
+        cur = sorted_dates[i]
+        if (series[cur].get("mode") in ("strong_bull", "mild_bull")
+                and series[prev].get("mode") in ("strong_bull", "mild_bull")):
+            target = cur
+            prev_date = prev
+            break
+    if target is None:
+        pytest.skip("no consecutive bull days in parity window")
+
+    try:
+        emitter.emit_for_date(_variant(), target, series[target],
+                              sim_record_yesterday=series[prev_date])
+    finally:
+        clock.set_simulated_now(None)
+
+    con = sqlite3.connect(str(emitter_env))
+    try:
+        n_eth_trades = con.execute(
+            "SELECT COUNT(*) FROM trades WHERE strategy='JPLUS_ETH_DAILY'"
+        ).fetchone()[0]
+    finally:
+        con.close()
+    assert n_eth_trades == 0, \
+        f"expected zero ETH_DAILY trades on mid-bull cold-start, got {n_eth_trades}"
+
+
+@pytest.mark.slow
+def test_eth_daily_cold_start_opens_on_regime_entry(emitter_env):
+    """A bull-regime entry (yesterday non-bull, today bull) MUST open
+    a fresh ETH_DAILY trade. This is the legitimate path the guard
+    permits."""
+    from jplus import simulate as core_sim
+    from services import jplus_trade_emitter as emitter
+
+    clock.set_simulated_now(datetime(2024, 5, 1, tzinfo=timezone.utc))
+    series = core_sim.simulate(start_date=PARITY_WINDOW_START,
+                                end_date=PARITY_WINDOW_END)
+    sorted_dates = sorted(series.keys())
+    entry_date = None
+    for i in range(1, len(sorted_dates)):
+        prev = sorted_dates[i - 1]
+        cur = sorted_dates[i]
+        if (series[cur].get("mode") in ("strong_bull", "mild_bull")
+                and series[prev].get("mode") not in ("strong_bull", "mild_bull")):
+            entry_date = cur
+            prev_date = prev
+            break
+    if entry_date is None:
+        pytest.skip("no bull-regime entry in parity window")
+
+    try:
+        emitter.emit_for_date(_variant(), entry_date, series[entry_date],
+                              sim_record_yesterday=series[prev_date])
+    finally:
+        clock.set_simulated_now(None)
+
+    con = sqlite3.connect(str(emitter_env))
+    try:
+        rows = con.execute(
+            "SELECT id, direction FROM trades "
+            "WHERE strategy='JPLUS_ETH_DAILY'"
+        ).fetchall()
+    finally:
+        con.close()
+    assert len(rows) == 1, \
+        f"expected exactly 1 ETH_DAILY trade on fresh bull entry, got {len(rows)}"
+    assert rows[0][1] == "LONG"

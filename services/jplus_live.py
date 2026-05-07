@@ -295,6 +295,7 @@ def ema_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
         return {"status": "no_inputs"}
 
     desired_ema_p = int(ti["ema_p"])
+    prev_ema_p = int(ti.get("ema_p_prev", 0))
     desired_weight = float(ti["weights"]["ema_btc"])
     desired_lev = float(ti["lev"])
 
@@ -311,6 +312,13 @@ def ema_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     if open_pos is None:
         if desired_ema_p == 0 or desired_weight <= 0:
             return {"status": "no_position_needed"}
+        # Cold-start guard: only open at a fresh weekly EMA cross. If
+        # yesterday's ema_p already had today's value, the cross fired
+        # before this variant was emitting trades — wait for the next
+        # cross rather than entering offside at today's price.
+        if prev_ema_p == desired_ema_p:
+            return {"status": "awaiting_fresh_cross",
+                    "ema_p": desired_ema_p, "ema_p_prev": prev_ema_p}
         direction = "LONG" if desired_ema_p > 0 else "SHORT"
         tid = _open_continuous_btc_or_eth(
             variant, STRATEGY_EMA_BTC, "BTC", direction,
@@ -319,7 +327,8 @@ def ema_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
         )
         log.info(f"[jplus_live EMA_BTC {variant['id']}] OPENED {tid} BTC "
                  f"{direction} @ ${price:,.2f}  k={desired_lev:.2f}x  "
-                 f"weight={desired_weight}  ema_p={desired_ema_p}")
+                 f"weight={desired_weight}  ema_p={desired_ema_p} "
+                 f"(fresh cross from {prev_ema_p:+d})")
         return {"status": "opened", "trade_id": tid}
 
     # CASE 2: position open but ema_p went to 0 — defensive close.
@@ -409,8 +418,10 @@ def eth_daily_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
         return {"status": "no_inputs"}
 
     desired_weight = float(ti["weights"]["eth_daily"])
+    prev_weight = float(ti.get("weights_prev", {}).get("eth_daily", 0.0))
     desired_lev = float(ti["lev"])
     desired_open = desired_weight > 0.0
+    prev_open = prev_weight > 0.0
 
     open_trades = trades.get_open_trades(variant["id"], STRATEGY_ETH_DAILY)
     open_pos = open_trades[0] if open_trades else None
@@ -427,6 +438,13 @@ def eth_daily_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
 
     # CASE 2: nothing open + want open (regime entered bull).
     if open_pos is None and desired_open:
+        # Cold-start guard: only open on a *fresh* entry to bull. If
+        # yesterday was already bull, the regime entry happened before
+        # this variant was emitting trades — wait for the next bull
+        # entry rather than chasing into mid-trend.
+        if prev_open:
+            return {"status": "awaiting_fresh_bull_entry",
+                    "mode": ti["mode"], "mode_prev": ti.get("mode_prev")}
         tid = _open_continuous_btc_or_eth(
             variant, STRATEGY_ETH_DAILY, "ETH", "LONG",
             desired_weight, desired_lev, price, ti["mode"],
@@ -434,7 +452,8 @@ def eth_daily_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
         )
         log.info(f"[jplus_live ETH_DAILY {variant['id']}] OPENED {tid} "
                  f"ETH LONG @ ${price:,.2f}  k={desired_lev:.2f}x  "
-                 f"weight={desired_weight}  mode={ti['mode']}")
+                 f"weight={desired_weight}  mode={ti['mode']} "
+                 f"(fresh entry from {ti.get('mode_prev')})")
         return {"status": "opened", "trade_id": tid}
 
     # CASE 3: open + regime exited bull — close.

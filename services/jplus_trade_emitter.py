@@ -320,7 +320,8 @@ def _eth_daily_close(date_iso: str) -> float | None:
 
 
 def _emit_eth_daily(variant: dict, date_iso: str, sim_record: dict,
-                    capital: float, prev_state: PositionState) -> None:
+                    capital: float, prev_state: PositionState,
+                    sim_record_yesterday: dict | None = None) -> None:
     """ETH_DAILY: continuous long ETH while regime is in {strong_bull,
     mild_bull}; idle otherwise.
 
@@ -330,6 +331,13 @@ def _emit_eth_daily(variant: dict, date_iso: str, sim_record: dict,
     UTC day's ETH close (= today's open in continuous markets). Two events
     can fire per day: a SCALE (qty change to match new notional) and a
     LEVERAGE_ADJUST (margin change for vol-target update).
+
+    Initial OPEN happens only on the first day the regime *transitions
+    into* bull (yesterday's eth_daily weight was 0, today's > 0). This
+    "fresh-entry" guard prevents the emitter from cold-starting mid-bull
+    and booking a phantom entry at a price the strategy never actually
+    entered at. If yesterday's record is unavailable, the open is treated
+    as mid-signal and skipped.
 
     On the first day the regime exits bull, the position is closed at the
     same price (prior-day close).
@@ -371,6 +379,17 @@ def _emit_eth_daily(variant: dict, date_iso: str, sim_record: dict,
     desired_qty = desired_notional / rebalance_price
 
     if open_pos is None:
+        # Cold-start guard: only open on a fresh entry to bull regime —
+        # i.e., yesterday's eth_daily weight was 0 (regime was uncertain or
+        # bear) and today's is > 0. If we're already mid-bull on the
+        # variant's first emit day, this leg is a missed entry — wait for
+        # the next regime exit + reentry rather than chasing.
+        prev_weight = None
+        if sim_record_yesterday is not None:
+            prev_mode = sim_record_yesterday.get("mode", "uncertain")
+            prev_weight = REGIME_WEIGHTS.get(prev_mode, {}).get("eth_daily", 0.0)
+        if prev_weight is None or prev_weight > 0.0:
+            return
         if _has_open_event(variant["id"], STRATEGY_ETH_DAILY, date_iso):
             return
         trades.open_shadow_trade(
@@ -380,7 +399,8 @@ def _emit_eth_daily(variant: dict, date_iso: str, sim_record: dict,
             allocation_pct=weight * 100.0,
             leverage=vol_lev,
             reason={"sleeve": STRATEGY_ETH_DAILY, "mode": mode,
-                    "vol_lev": vol_lev, "weight": weight},
+                    "vol_lev": vol_lev, "weight": weight,
+                    "trigger": "fresh_bull_entry"},
             scheduled_exit_dt=None,
             regime_value=mode,
             entry_dt=rebalance_dt,
@@ -425,7 +445,8 @@ def _btc_day_open_price(date_iso: str) -> float | None:
 
 
 def _emit_ema_btc(variant: dict, date_iso: str, sim_record: dict,
-                  capital: float, prev_state: PositionState) -> None:
+                  capital: float, prev_state: PositionState,
+                  sim_record_yesterday: dict | None = None) -> None:
     """EMA_BTC: continuous BTC position whose direction is governed by the
     weekly EMA(5/21) cross signal (``sim_record['ema_p']``). Active in all
     four regimes (every regime gives EMA_BTC a non-zero weight).
@@ -436,9 +457,16 @@ def _emit_ema_btc(variant: dict, date_iso: str, sim_record: dict,
       - FLIP if ``ema_p`` sign flips — closes the current trade and opens
         an opposite-direction trade at the same rebalance price.
 
-    Initial OPEN happens on the first day where ``ema_p != 0``. CLOSE
-    only fires defensively if ``ema_p`` returns to 0 (rare — only at the
-    extreme edge of warmup).
+    Initial OPEN happens on the first day where ``ema_p`` flips from
+    yesterday's value, NOT on the first day where ``ema_p != 0``. This
+    "fresh-cross" guard prevents the emitter from cold-starting mid-signal
+    and booking a phantom entry at a price the strategy never actually
+    crossed at. If yesterday's record is unavailable (``sim_record_yesterday
+    is None``), a non-zero ``ema_p`` is treated as mid-signal and skipped —
+    callers backfilling history must thread yesterday's record through.
+
+    CLOSE only fires defensively if ``ema_p`` returns to 0 (rare — only at
+    the extreme edge of warmup).
     """
     ema_p = int(sim_record.get("ema_p", 0) or 0)
     mode = sim_record.get("mode", "uncertain")
@@ -477,6 +505,15 @@ def _emit_ema_btc(variant: dict, date_iso: str, sim_record: dict,
 
     # desired_active == True
     if open_pos is None:
+        # Cold-start guard: only open at a fresh weekly EMA cross. If
+        # yesterday's ema_p matches today's, we're mid-signal — the cross
+        # already happened before this variant was emitting trades, so we
+        # wait for the next cross rather than entering offside at today's
+        # price.
+        prev_ema_p = (int(sim_record_yesterday.get("ema_p", 0))
+                      if sim_record_yesterday is not None else None)
+        if prev_ema_p is None or prev_ema_p == ema_p:
+            return
         if _has_open_event(variant["id"], STRATEGY_EMA_BTC, date_iso):
             return
         trades.open_shadow_trade(
@@ -486,7 +523,9 @@ def _emit_ema_btc(variant: dict, date_iso: str, sim_record: dict,
             allocation_pct=weight * 100.0,
             leverage=vol_lev,
             reason={"sleeve": STRATEGY_EMA_BTC, "mode": mode,
-                    "ema_p": ema_p, "vol_lev": vol_lev, "weight": weight},
+                    "ema_p": ema_p, "ema_p_prev": prev_ema_p,
+                    "vol_lev": vol_lev, "weight": weight,
+                    "trigger": "fresh_weekly_cross"},
             scheduled_exit_dt=None,
             regime_value=mode,
             entry_dt=rebalance_dt,
@@ -601,8 +640,10 @@ def emit_for_date(variant: dict, date_iso: str, sim_record: dict,
 
     _emit_r4_btc(variant, date_iso, sim_record, capital)
     _emit_r4_eth(variant, date_iso, sim_record, capital)
-    _emit_eth_daily(variant, date_iso, sim_record, capital, prev_state)
-    _emit_ema_btc(variant, date_iso, sim_record, capital, prev_state)
+    _emit_eth_daily(variant, date_iso, sim_record, capital, prev_state,
+                    sim_record_yesterday=sim_record_yesterday)
+    _emit_ema_btc(variant, date_iso, sim_record, capital, prev_state,
+                  sim_record_yesterday=sim_record_yesterday)
 
     return get_position_state(variant["id"])
 
@@ -637,8 +678,12 @@ def emit_catchup(variant: dict, end_date_iso: str,
             start_date_iso = (datetime.fromisoformat(end_date_iso)
                               - timedelta(days=30)).date().isoformat()
 
-    series = core_sim.simulate(start_date=start_date_iso,
-                                 end_date=end_date_iso)
+    # Pull a slightly earlier window so we have yesterday's record on
+    # day 1 of [start_date, end_date]. Without this the cold-start guard
+    # in EMA_BTC/ETH_DAILY would drop every variant's first day.
+    sim_start = (datetime.fromisoformat(start_date_iso)
+                 - timedelta(days=1)).date().isoformat()
+    series = core_sim.simulate(start_date=sim_start, end_date=end_date_iso)
     processed: list[str] = []
     skipped: list[str] = []
     cur = datetime.fromisoformat(start_date_iso).date()
@@ -649,7 +694,9 @@ def emit_catchup(variant: dict, end_date_iso: str,
         if rec is None:
             skipped.append(d)
         else:
-            emit_for_date(variant, d, rec)
+            prev_iso = (cur - timedelta(days=1)).isoformat()
+            prev_rec = series.get(prev_iso)
+            emit_for_date(variant, d, rec, sim_record_yesterday=prev_rec)
             processed.append(d)
         cur = cur + timedelta(days=1)
     return {"processed": len(processed), "skipped": len(skipped),
