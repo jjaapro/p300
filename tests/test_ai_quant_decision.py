@@ -444,3 +444,126 @@ def test_dataclass_is_json_serializable():
     j = json.dumps(res.to_dict())
     assert "LONG" in j
     assert "claude-opus-4-7" in j
+
+
+# ─── Extended thinking (reasoning-effort) budget ──────────────────────────
+
+def test_thinking_budget_passed_to_api_when_default(monkeypatch):
+    """Default AI_QUANT_THINKING_BUDGET is non-zero, so every API call
+    must include a `thinking` parameter."""
+    monkeypatch.delenv("AI_QUANT_THINKING_BUDGET", raising=False)
+    client = MockClient([
+        MockResponse(
+            content=[tool_use_block("submit_decision", _typical_decision_input())],
+            stop_reason="tool_use",
+        ),
+    ])
+    decision.run_decision(
+        variant_id="p300_test", client=client, include_server_tools=False,
+        context_bundle=_DUMMY_CONTEXT, baseline_chart_png=_DUMMY_PNG,
+    )
+    call_kwargs = client.messages.calls[0]
+    assert "thinking" in call_kwargs
+    assert call_kwargs["thinking"]["type"] == "enabled"
+    assert call_kwargs["thinking"]["budget_tokens"] == decision.DEFAULT_THINKING_BUDGET
+    # max_tokens must accommodate budget + headroom
+    assert call_kwargs["max_tokens"] >= (
+        decision.DEFAULT_THINKING_BUDGET + decision.MIN_RESPONSE_HEADROOM
+    )
+
+
+def test_thinking_budget_respected_from_env(monkeypatch):
+    monkeypatch.setenv("AI_QUANT_THINKING_BUDGET", "16000")
+    client = MockClient([
+        MockResponse(
+            content=[tool_use_block("submit_decision", _typical_decision_input())],
+            stop_reason="tool_use",
+        ),
+    ])
+    decision.run_decision(
+        variant_id="p300_test", client=client, include_server_tools=False,
+        context_bundle=_DUMMY_CONTEXT, baseline_chart_png=_DUMMY_PNG,
+    )
+    call_kwargs = client.messages.calls[0]
+    assert call_kwargs["thinking"]["budget_tokens"] == 16000
+    assert call_kwargs["max_tokens"] >= 16000 + decision.MIN_RESPONSE_HEADROOM
+
+
+def test_thinking_disabled_when_budget_zero(monkeypatch):
+    """AI_QUANT_THINKING_BUDGET=0 omits the thinking parameter entirely
+    and reverts to the caller's max_tokens."""
+    monkeypatch.setenv("AI_QUANT_THINKING_BUDGET", "0")
+    client = MockClient([
+        MockResponse(
+            content=[tool_use_block("submit_decision", _typical_decision_input())],
+            stop_reason="tool_use",
+        ),
+    ])
+    decision.run_decision(
+        variant_id="p300_test", client=client, include_server_tools=False,
+        context_bundle=_DUMMY_CONTEXT, baseline_chart_png=_DUMMY_PNG,
+        max_tokens=4096,
+    )
+    call_kwargs = client.messages.calls[0]
+    assert "thinking" not in call_kwargs
+    assert call_kwargs["max_tokens"] == 4096
+
+
+def test_thinking_budget_invalid_env_falls_back_to_default(monkeypatch):
+    monkeypatch.setenv("AI_QUANT_THINKING_BUDGET", "not-an-int")
+    assert decision._thinking_budget() == decision.DEFAULT_THINKING_BUDGET
+
+
+def test_thinking_budget_negative_clamped_to_zero(monkeypatch):
+    monkeypatch.setenv("AI_QUANT_THINKING_BUDGET", "-100")
+    assert decision._thinking_budget() == 0
+
+
+def test_thinking_budget_persists_across_multi_turn(monkeypatch):
+    """When thinking is enabled, every API call in the loop must carry
+    the same parameter — not just the first one."""
+    monkeypatch.setenv("AI_QUANT_THINKING_BUDGET", "8000")
+    client = MockClient([
+        MockResponse(
+            content=[tool_use_block("render_chart",
+                                     {"timeframe": "4h", "lookback_bars": 60},
+                                     id_="t1")],
+            stop_reason="tool_use",
+        ),
+        MockResponse(
+            content=[tool_use_block("submit_decision",
+                                     _typical_decision_input(), id_="t2")],
+            stop_reason="tool_use",
+        ),
+    ])
+    import services.ai_quant.tools as t
+    orig = t._handle_render_chart
+    t._handle_render_chart = lambda inp, **k: [{"type": "text", "text": "stub"}]
+    try:
+        decision.run_decision(
+            variant_id="p300_test", client=client, include_server_tools=False,
+            context_bundle=_DUMMY_CONTEXT, baseline_chart_png=_DUMMY_PNG,
+        )
+    finally:
+        t._handle_render_chart = orig
+    assert len(client.messages.calls) == 2
+    for call in client.messages.calls:
+        assert call.get("thinking", {}).get("budget_tokens") == 8000
+
+
+# ─── Fact-check protocol in system prompt ─────────────────────────────────
+
+def test_system_prompt_contains_fact_check_protocol():
+    """The fact-check section must be in the system prompt verbatim so
+    the LLM sees it on every turn (and a regression doesn't quietly
+    drop it)."""
+    from services.ai_quant import prompt as prompt_mod
+    sys_text = prompt_mod.SYSTEM_PROMPT
+    assert "FACT-CHECK PROTOCOL" in sys_text
+    # Anchored-claim language present
+    assert "trace" in sys_text.lower()
+    assert "anchored" in sys_text.lower() or "anchor" in sys_text.lower()
+    # The "internal inconsistency" check is the specific lesson from the
+    # first real run's "EMA50/150 bullish cross confirmed" + caveat
+    # contradiction; pin it so a future prompt rewrite can't quietly drop it.
+    assert "inconsisten" in sys_text.lower()

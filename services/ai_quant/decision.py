@@ -47,6 +47,22 @@ DEFAULT_MODEL = "claude-opus-4-7"
 DEFAULT_MAX_TURNS = 10
 DEFAULT_MAX_TOKENS = 4096
 
+# Extended-thinking budget. Opus 4.7's reasoning is *adaptive* — when no
+# `thinking` parameter is set the model decides whether to think at all,
+# and on routine prompts it often won't. For a daily money-on-the-line
+# decision we want deliberate step-by-step verification, so we set an
+# explicit budget. The model still chooses how much of the budget to
+# actually use; the value here is the upper bound. 0 disables thinking.
+#
+# Cost impact (Opus 4.7 output rate $75/M):
+#   8_000  → up to +$0.60/call (default; "high effort")
+#   16_000 → up to +$1.20/call ("very high effort")
+#   32_000 → up to +$2.40/call (max for Opus 4.7)
+# Override via AI_QUANT_THINKING_BUDGET env var.
+DEFAULT_THINKING_BUDGET = 8000
+MIN_RESPONSE_HEADROOM = 4096  # tokens reserved for the actual response
+                               # after thinking; max_tokens = budget + this
+
 # Per-million-token rates in USD (input, output, cache_write_5min, cache_read).
 # Approximate — verify against your latest Anthropic pricing page when
 # reviewing this sleeve's cost. Used for in-process tracking only.
@@ -76,6 +92,20 @@ class DecisionResult:
 
 def _model_id() -> str:
     return os.environ.get("AI_QUANT_MODEL") or DEFAULT_MODEL
+
+
+def _thinking_budget() -> int:
+    """Read AI_QUANT_THINKING_BUDGET; default DEFAULT_THINKING_BUDGET; 0
+    disables extended thinking entirely."""
+    raw = os.environ.get("AI_QUANT_THINKING_BUDGET", "").strip()
+    if not raw:
+        return DEFAULT_THINKING_BUDGET
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        log.warning(f"AI_QUANT_THINKING_BUDGET={raw!r} is not an integer; "
+                     f"falling back to default {DEFAULT_THINKING_BUDGET}")
+        return DEFAULT_THINKING_BUDGET
 
 
 def _compute_cost(model: str, usage: dict) -> float:
@@ -220,15 +250,33 @@ def run_decision(
     error_str: str | None = None
     turn_index = 0
 
+    thinking_budget = _thinking_budget()
+    # Extended thinking requires max_tokens > budget_tokens with
+    # MIN_RESPONSE_HEADROOM left for the actual response. When disabled,
+    # use the caller's max_tokens directly.
+    effective_max_tokens = (
+        thinking_budget + MIN_RESPONSE_HEADROOM
+        if thinking_budget > 0 else max_tokens
+    )
+
     for turn_index in range(max_turns):
+        api_kwargs: dict[str, Any] = {
+            "model": model,
+            "max_tokens": effective_max_tokens,
+            "system": system_blocks,
+            "tools": tools_list,
+            "messages": messages,
+        }
+        if thinking_budget > 0:
+            # type="enabled" + budget_tokens engages step-by-step reasoning.
+            # The model still chooses how much of the budget to use; this
+            # is the ceiling, not a floor.
+            api_kwargs["thinking"] = {
+                "type": "enabled",
+                "budget_tokens": thinking_budget,
+            }
         try:
-            resp = client.messages.create(
-                model=model,
-                max_tokens=max_tokens,
-                system=system_blocks,
-                tools=tools_list,
-                messages=messages,
-            )
+            resp = client.messages.create(**api_kwargs)
         except Exception as e:  # noqa: BLE001
             error_str = f"{type(e).__name__}: {e}"
             log.warning(f"AI_QUANT API call failed on turn {turn_index}: {error_str}")
