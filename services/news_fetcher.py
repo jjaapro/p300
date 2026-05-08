@@ -1,64 +1,110 @@
-"""Crypto news headlines — CryptoPanic free-tier ingest.
+"""Crypto + macro news headlines — direct RSS aggregator.
 
-Pulls BTC/ETH-tagged news from https://cryptopanic.com/api/v1/posts/ and
-persists deduped headlines to trader.db.news_headlines. Used by the
-AI_QUANT sleeve as part of its daily decision context — a simple,
-queryable, replay-safe alternative to the LLM doing live web searches
-for routine market headlines.
+Pulls headlines straight from a hand-picked list of reputable outlets
+via their RSS feeds. No third-party aggregator, no auth tokens, no
+vendor dependency. The feeds are static XML — there are no rate limits
+because we're just downloading public files. If a source goes down,
+the rest still work; we just log the failure for that source.
+
+Editorial choice (defaults): three crypto-native outlets and three
+TradFi business outlets. Crypto-native picks have a track record of
+breaking real news (CoinDesk + FTX, The Block + Tether, Decrypt's
+news-vs-opinion separation, Bitcoin Magazine's longevity). TradFi
+picks (BBC Business, CNBC, The Guardian Business) cover macro context
+the crypto outlets miss. Notably excluded: outlets with a sensationalist-
+headline reputation (Cointelegraph) or low editorial bar (republisher
+sites). Operators can edit `SOURCES` to add/drop outlets without any
+schema or interface change.
 
 Cadence: refresh() rate-limits itself to once per hour, so binance_feed's
-60-second loop calls it cheaply most of the time. CryptoPanic's free tier
-is 200 requests/day; hourly refresh = 24/day, well under cap.
+60-second loop calls it cheaply most of the time. Each refresh fetches
+all six feeds in sequence and dedupes by sha256(url) before insert.
 
-Token: free registration at https://cryptopanic.com/developers/api/.
-Without CRYPTOPANIC_TOKEN set, refresh() logs and is a no-op — the rest
-of the system continues to work, the LLM just sees an empty news section.
-
-Schema (idempotent CREATE on first refresh):
+Schema (unchanged from the previous CryptoPanic-backed implementation,
+so existing query() consumers continue to work):
 
     news_headlines(
         url_hash       TEXT PRIMARY KEY,    -- sha256(url) for dedupe
-        source         TEXT NOT NULL,       -- "cryptopanic:coindesk.com"
-        published_utc  INTEGER NOT NULL,    -- epoch seconds
+        source         TEXT NOT NULL,       -- "rss:coindesk" etc.
+        published_utc  INTEGER NOT NULL,    -- epoch seconds, UTC
         fetched_utc    INTEGER NOT NULL,
         title          TEXT NOT NULL,
         url            TEXT NOT NULL,
-        asset_tag      TEXT,                -- "BTC", "ETH", or NULL
-        importance     INTEGER NOT NULL DEFAULT 0  -- 0 normal, 1 hot
+        asset_tag      TEXT,                -- "BTC", "ETH", or NULL (macro)
+        importance     INTEGER NOT NULL DEFAULT 0  -- always 0 from RSS
     )
 
-Retention: refresh() deletes rows older than 30 UTC days on each successful
-call so the table stays bounded.
+asset_tag is derived client-side via a word-boundary regex on the title:
+"Bitcoin"/"BTC" → BTC, "Ethereum"/"ETH" → ETH, otherwise NULL (macro).
+Headlines without a crypto tag are visible to the AI_QUANT context
+bundle's macro-untagged section, so genuine macro coverage (CPI, FOMC,
+geopolitical) reaches the LLM.
+
+importance is always 0 — RSS has no "hot" flag and we're not running
+sentiment analysis on titles. The LLM forms its own importance judgement.
+
+Retention: refresh() deletes rows older than 30 UTC days on each
+successful call so the table stays bounded.
 """
 from __future__ import annotations
 
 import argparse
+import calendar
 import hashlib
-import json
 import logging
 import os
+import re
 import sqlite3
 import time
 from typing import Callable
-from urllib.error import URLError
-from urllib.request import Request, urlopen
+
+import feedparser
 
 from services import db
 
 log = logging.getLogger("p300.news_fetcher")
 
-API_URL = "https://cryptopanic.com/api/v1/posts/"
-RATE_LIMIT_SECONDS = 60 * 60  # once per hour
+RATE_LIMIT_SECONDS = 60 * 60       # once per hour across the whole aggregator
 RETENTION_DAYS = 30
-CURRENCIES = ("BTC", "ETH")  # tags we ask the API to filter on
+PER_FEED_CAP = 50                   # max entries we ingest per feed per refresh
+HTTP_TIMEOUT_SECONDS = 15
 
-# In-process throttle. Persists across calls but not across processes —
-# acceptable since binance_feed runs continuously; on restart we may double-
-# fetch once which is harmless (INSERT OR IGNORE deduplicates).
+# Hand-picked sources. Each entry is (name, url). Operators can edit this
+# list directly to add or drop a feed; no other code or schema changes
+# needed. The `name` becomes the per-row source field as "rss:<name>", so
+# downstream queries can filter or group on it.
+SOURCES: tuple[dict, ...] = (
+    # ── Crypto-native ──
+    {"name": "coindesk",
+     "url":  "https://www.coindesk.com/arc/outboundfeeds/rss/"},
+    {"name": "theblock",
+     "url":  "https://www.theblock.co/rss.xml"},
+    {"name": "decrypt",
+     "url":  "https://decrypt.co/feed"},
+    {"name": "bitcoin_magazine",
+     "url":  "https://bitcoinmagazine.com/feed"},
+    # ── TradFi macro (relevant to crypto via FOMC / risk-on flows) ──
+    {"name": "bbc_business",
+     "url":  "https://feeds.bbci.co.uk/news/business/rss.xml"},
+    {"name": "cnbc_top_news",
+     "url":  "https://www.cnbc.com/id/100003114/device/rss/rss.html"},
+)
+
+# Asset-tag derivation. Word-boundary regex avoids false matches like
+# "ETH-" inside an unrelated ticker or "btc" buried in a hash.
+_BTC_RE = re.compile(r"\b(bitcoin|btc)\b", re.IGNORECASE)
+_ETH_RE = re.compile(r"\b(ethereum|ether|eth)\b", re.IGNORECASE)
+
+# In-process throttle — same pattern as the previous implementation.
 _last_refresh_ts: float = 0.0
 
 
+# ─── Schema ─────────────────────────────────────────────────────────────────
+
 def _ensure_schema(con: sqlite3.Connection) -> None:
+    """Create news_headlines if missing. Idempotent. Schema unchanged from
+    the previous CryptoPanic implementation so existing query() consumers
+    keep working."""
     con.execute("""
         CREATE TABLE IF NOT EXISTS news_headlines (
             url_hash       TEXT PRIMARY KEY,
@@ -78,89 +124,84 @@ def _ensure_schema(con: sqlite3.Connection) -> None:
     con.commit()
 
 
-def _fetch_raw(token: str, currencies: tuple[str, ...] = CURRENCIES) -> dict:
-    """HTTP GET to CryptoPanic. Returns parsed JSON dict. Raises on HTTP/JSON error."""
-    url = f"{API_URL}?auth_token={token}&currencies={','.join(currencies)}&public=true"
-    req = Request(url, headers={"User-Agent": "p300/1.0"})
-    with urlopen(req, timeout=30) as resp:
-        return json.loads(resp.read())
-
+# ─── Pure helpers ───────────────────────────────────────────────────────────
 
 def _hash_url(url: str) -> str:
     return hashlib.sha256(url.encode("utf-8")).hexdigest()
 
 
-def _parse_iso8601_utc(s: str) -> int | None:
-    """CryptoPanic returns published_at like '2026-05-08T10:30:00Z'. Returns
-    epoch seconds, or None if unparseable."""
-    if not s:
-        return None
-    s = s.replace("Z", "+00:00")
-    try:
-        from datetime import datetime
-        return int(datetime.fromisoformat(s).timestamp())
-    except ValueError:
-        return None
+def _derive_asset_tag(title: str) -> str | None:
+    """Word-boundary keyword match on the headline. Returns "BTC", "ETH",
+    or None for macro headlines. If both BTC and ETH appear, BTC wins —
+    larger market, the LLM is more interested in BTC's reaction.
 
-
-def _derive_importance(votes: dict | None) -> int:
-    """1 (hot) if community-flagged important or aggregate engagement is high.
-    0 otherwise. Simple heuristic — refine when we have signal data."""
-    if not isinstance(votes, dict):
-        return 0
-    if int(votes.get("important", 0) or 0) > 0:
-        return 1
-    pos = int(votes.get("positive", 0) or 0)
-    neg = int(votes.get("negative", 0) or 0)
-    if pos + neg >= 5:
-        return 1
-    return 0
-
-
-def _derive_asset_tag(currencies: list | None) -> str | None:
-    """Pick the first matching crypto asset from the post's currencies list."""
-    if not isinstance(currencies, list):
-        return None
-    for c in currencies:
-        if not isinstance(c, dict):
-            continue
-        code = str(c.get("code", "")).upper()
-        if code in CURRENCIES:
-            return code
+    Naive on purpose: false negatives (e.g. "BlackRock files spot ETF"
+    without spelling out "Bitcoin") are tolerated because the LLM still
+    sees the headline in the macro-untagged section."""
+    if _BTC_RE.search(title):
+        return "BTC"
+    if _ETH_RE.search(title):
+        return "ETH"
     return None
 
 
-def _parse_response(payload: dict) -> list[dict]:
-    """CryptoPanic JSON → list of normalized rows ready for insert.
+def _struct_time_to_utc_epoch(t) -> int | None:
+    """feedparser's published_parsed is a struct_time in UTC by spec.
+    `time.mktime` would interpret it as local time — wrong. Use
+    `calendar.timegm` to read it as UTC."""
+    if t is None:
+        return None
+    try:
+        return calendar.timegm(t)
+    except (TypeError, ValueError):
+        return None
 
-    Skips items missing url or title; treats published_at as required so
-    we don't store undated news. Column-aligned with the SQL schema."""
+
+# ─── Fetch one feed ────────────────────────────────────────────────────────
+
+def _fetch_one_feed(source: dict) -> list[dict]:
+    """Pull one RSS feed and return normalized rows ready for insert.
+    Skips entries missing url, title, or a parseable timestamp.
+
+    feedparser.parse handles HTTP, gzip, etag/modified caching, and the
+    RSS 0.9-2.0 / Atom variations transparently. We pass a User-Agent
+    because some outlets reject the default."""
+    parsed = feedparser.parse(
+        source["url"],
+        request_headers={"User-Agent": "p300/1.0 RSS aggregator"},
+    )
+    # feedparser sets `bozo` to 1 on parse failure but still returns a
+    # (possibly empty) entries list. We log the bozo state once per
+    # source for visibility but still ingest whatever we got.
+    if getattr(parsed, "bozo", 0) and not parsed.entries:
+        bozo_msg = getattr(parsed, "bozo_exception", "unknown")
+        log.warning(f"news_fetcher: source {source['name']} parse error: {bozo_msg}")
+        return []
     out: list[dict] = []
-    results = payload.get("results")
-    if not isinstance(results, list):
-        return out
-    for r in results:
-        if not isinstance(r, dict):
+    for entry in parsed.entries[:PER_FEED_CAP]:
+        title = (entry.get("title") or "").strip()
+        url = (entry.get("link") or "").strip()
+        if not title or not url:
             continue
-        url = (r.get("original_url") or r.get("url") or "").strip()
-        title = (r.get("title") or "").strip()
-        if not url or not title:
+        # Try published_parsed first, fall back to updated_parsed.
+        ts = _struct_time_to_utc_epoch(entry.get("published_parsed"))
+        if ts is None:
+            ts = _struct_time_to_utc_epoch(entry.get("updated_parsed"))
+        if ts is None:
             continue
-        published = _parse_iso8601_utc(r.get("published_at") or r.get("created_at"))
-        if published is None:
-            continue
-        domain = ((r.get("source") or {}).get("domain")) or r.get("domain") or "unknown"
         out.append({
             "url_hash": _hash_url(url),
-            "source": f"cryptopanic:{domain}",
-            "published_utc": published,
+            "source": f"rss:{source['name']}",
+            "published_utc": ts,
             "title": title[:500],
             "url": url[:500],
-            "asset_tag": _derive_asset_tag(r.get("currencies")),
-            "importance": _derive_importance(r.get("votes")),
+            "asset_tag": _derive_asset_tag(title),
+            "importance": 0,
         })
     return out
 
+
+# ─── Persist + prune ───────────────────────────────────────────────────────
 
 def _persist(con: sqlite3.Connection, rows: list[dict], fetched_utc: int) -> int:
     """INSERT OR IGNORE rows. Returns count of newly-inserted rows."""
@@ -182,62 +223,63 @@ def _persist(con: sqlite3.Connection, rows: list[dict], fetched_utc: int) -> int
 
 
 def _prune(con: sqlite3.Connection, retention_days: int = RETENTION_DAYS) -> int:
-    """Delete rows whose published_utc is older than retention_days. Returns
-    count of deleted rows."""
     cutoff = int(time.time()) - retention_days * 86400
     cur = con.execute("DELETE FROM news_headlines WHERE published_utc < ?", (cutoff,))
     con.commit()
     return cur.rowcount
 
 
+# ─── Top-level refresh ─────────────────────────────────────────────────────
+
 def refresh(
     *,
     force: bool = False,
-    http_fetch: Callable[[str], dict] = _fetch_raw,
-    token: str | None = None,
+    fetcher: Callable[[dict], list[dict]] = _fetch_one_feed,
+    sources: tuple[dict, ...] | None = None,
 ) -> int:
-    """Fetch latest CryptoPanic headlines and upsert into trader.db.
+    """Fetch every configured RSS source and upsert new headlines.
 
-    Returns count of newly-inserted rows. Rate-limited to one network call
-    per hour unless force=True. Returns 0 (no-op) when CRYPTOPANIC_TOKEN
-    is unset, when rate-limited, or when the upstream is unreachable —
-    callers should treat 0 as "no new headlines this tick".
+    Returns count of newly-inserted rows across all sources. Rate-limited
+    to one fetch per hour unless force=True. Failures on individual
+    sources are logged but don't stop the rest.
 
     Args:
-        force: bypass the once-per-hour throttle.
-        http_fetch: injectable HTTP function (token) → dict. Tests pass a
-            stub; production uses _fetch_raw. Bypassing this argument when
-            no token is set returns 0 without calling the function.
-        token: explicit token override; defaults to env CRYPTOPANIC_TOKEN.
+        force: bypass the once-per-hour throttle (CLI/manual use).
+        fetcher: injectable per-source fetch function — tests pass a
+            stub returning canned rows.
+        sources: override SOURCES (testing or A/B).
     """
     global _last_refresh_ts
     now = time.time()
     if not force and (now - _last_refresh_ts) < RATE_LIMIT_SECONDS:
         return 0
-    tok = token if token is not None else os.environ.get("CRYPTOPANIC_TOKEN", "")
-    if not tok:
-        log.info("CRYPTOPANIC_TOKEN unset — news_fetcher skipping (set the "
-                 "env var to enable; free tier at cryptopanic.com).")
-        return 0
-    try:
-        payload = http_fetch(tok)
-    except (URLError, OSError, json.JSONDecodeError, ValueError) as e:
-        log.warning(f"news_fetcher: upstream error: {e}")
-        return 0
-    rows = _parse_response(payload if isinstance(payload, dict) else {})
+    src_list = sources if sources is not None else SOURCES
+    all_rows: list[dict] = []
+    successful_sources = 0
+    for src in src_list:
+        try:
+            rows = fetcher(src)
+        except Exception as e:  # noqa: BLE001 — one outlet's outage shouldn't sink the rest
+            log.warning(f"news_fetcher: source {src['name']} failed: {e}")
+            continue
+        if rows:
+            successful_sources += 1
+            all_rows.extend(rows)
     con = sqlite3.connect(str(db.TRADER_DB))
     try:
         _ensure_schema(con)
-        inserted = _persist(con, rows, fetched_utc=int(now))
+        inserted = _persist(con, all_rows, fetched_utc=int(now))
         _prune(con)
     finally:
         con.close()
     _last_refresh_ts = now
     if inserted:
-        log.info(f"news_fetcher: +{inserted} new headlines "
-                 f"(of {len(rows)} returned).")
+        log.info(f"news_fetcher: +{inserted} new headlines from "
+                  f"{successful_sources}/{len(src_list)} feeds")
     return inserted
 
+
+# ─── Read API (unchanged shape) ────────────────────────────────────────────
 
 def query(
     asset: str | None = None,
@@ -245,13 +287,15 @@ def query(
     min_importance: int = 0,
     limit: int = 100,
 ) -> list[dict]:
-    """Read recent headlines, newest first.
+    """Read recent headlines, newest first. Same shape as the previous
+    implementation so the AI_QUANT context bundle and tools.query_news
+    handler keep working unchanged.
 
     Args:
-        asset: filter to a specific asset_tag (e.g. "BTC"). None returns all
-            including untagged macro headlines.
+        asset: filter to "BTC" / "ETH" only. None returns all incl. macro.
         hours: only return headlines published within the last N hours.
-        min_importance: 0 or 1; 1 returns only hot headlines.
+        min_importance: 0 or 1. Always pass 0 — RSS rows are all
+            importance=0; passing 1 would return nothing.
         limit: max rows.
     """
     cutoff = int(time.time()) - hours * 3600
@@ -283,24 +327,41 @@ def reset_throttle() -> None:
     _last_refresh_ts = 0.0
 
 
+# ─── CLI ────────────────────────────────────────────────────────────────────
+
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description="Fetch CryptoPanic headlines into trader.db.")
+    p = argparse.ArgumentParser(
+        description="Fetch RSS news headlines into trader.db.")
     p.add_argument("--once", action="store_true",
-                   help="One-shot fetch (default). Always bypasses the rate-limit.")
+                   help="(default) one-shot fetch; bypasses the rate-limit.")
     p.add_argument("--show", type=int, default=0, metavar="N",
                    help="After fetching, print the N most recent headlines.")
-    p.add_argument("--asset", default=None, help="Filter --show output by asset (BTC/ETH).")
+    p.add_argument("--asset", default=None,
+                   help="Filter --show output by asset (BTC/ETH). Omit for all.")
+    p.add_argument("--source", default=None,
+                   help="Restrict to a single named source (e.g. 'coindesk') "
+                        "for testing one feed in isolation.")
     args = p.parse_args(argv)
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    n = refresh(force=True)
+    logging.basicConfig(level=logging.INFO,
+                        format="%(asctime)s %(levelname)s %(message)s")
+    src_filter = (
+        tuple(s for s in SOURCES if s["name"] == args.source)
+        if args.source else None
+    )
+    if args.source and not src_filter:
+        names = ", ".join(s["name"] for s in SOURCES)
+        print(f"Unknown source {args.source!r}. Known: {names}")
+        return 2
+    n = refresh(force=True, sources=src_filter)
     print(f"new rows: {n}")
     if args.show > 0:
         for h in query(asset=args.asset, hours=72, limit=args.show):
             from datetime import datetime, timezone
-            ts = datetime.fromtimestamp(h["published_utc"], tz=timezone.utc).strftime("%Y-%m-%d %H:%M")
-            tag = h["asset_tag"] or "—"
-            hot = "🔥 " if h["importance"] else "  "
-            print(f"{hot}{ts}  [{tag}]  {h['title'][:100]}")
+            ts = datetime.fromtimestamp(h["published_utc"],
+                                          tz=timezone.utc).strftime("%Y-%m-%d %H:%M")
+            tag = h["asset_tag"] or "macro"
+            src = h["source"].replace("rss:", "")
+            print(f"  {ts}  [{tag:<5}]  ({src:<18})  {h['title'][:90]}")
     return 0
 
 
