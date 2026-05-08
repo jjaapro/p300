@@ -255,6 +255,13 @@ def tick_replay_variant(variant: dict) -> None:
             continue
         if strategy_id in SKIP_STRATEGIES:
             continue
+        # Skip non-deterministic sleeves on historical replay. The
+        # AI_QUANT sleeve carries params.deterministic=False because the
+        # LLM produces different decisions each run; including it in a
+        # backtest would make the replay irreproducible. Forward paper
+        # is the only honest evaluation for those sleeves.
+        if (sleeve.get("params") or {}).get("deterministic") is False:
+            continue
         dispatcher = variant_engine.STRATEGY_DISPATCH.get(strategy_id)
         if dispatcher is None:
             continue

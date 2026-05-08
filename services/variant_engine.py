@@ -305,7 +305,8 @@ def _load_dispatch():
         return
     from services import (adx_service, thu_bear_service, carry_service,
                                      pdo_retouch_service, cpr_service,
-                                     jplus_service, jplus_live, fomc_service)
+                                     jplus_service, jplus_live, fomc_service,
+                                     ai_quant_service)
     STRATEGY_DISPATCH = {
         "S-003":           adx_service.try_fire_for_variant,
         "S-096":           thu_bear_service.try_fire_for_variant,
@@ -323,6 +324,10 @@ def _load_dispatch():
         "JPLUS_R4_ETH_V2": jplus_live.r4_eth_v2_try_fire,
         "JPLUS_EMA_BTC":   jplus_live.ema_btc_try_fire,
         "JPLUS_ETH_DAILY": jplus_live.eth_daily_try_fire,
+        # AI_QUANT — discretionary LLM trader. Default-off via
+        # AI_QUANT_ENABLED env so the dispatch is wired but no API
+        # cost is incurred until the user explicitly opts in.
+        "AI_QUANT":        ai_quant_service.try_fire_for_variant,
     }
 
 

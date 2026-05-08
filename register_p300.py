@@ -106,6 +106,21 @@ def build_spec() -> dict:
             {"strategy_id": "JPLUS_ETH_DAILY", "weight_pct": 0.0,
              "params": {"asset": "ETH"},
              "note": "Core J+ ETH daily continuous in bull regimes only."},
+            # AI_QUANT — discretionary LLM trader. Off-by-default via the
+            # AI_QUANT_ENABLED env var (services/ai_quant_service.py
+            # checks it and short-circuits to status='disabled' otherwise).
+            # Set to 2.0% as a phase-1 experiment cap; raise to 5.0% only
+            # after 60+ days of forward shadow PnL net of API cost. The
+            # `deterministic: False` flag is consumed by backtest_runner
+            # to skip this sleeve on historical replay (the LLM is non-
+            # deterministic — replay would produce different decisions
+            # each run).
+            {"strategy_id": "AI_QUANT", "weight_pct": 2.0,
+             "params": {"asset": "BTC", "leverage": 3.0,
+                        "stop_loss_pct": 10.0, "deterministic": False},
+             "note": "AI quant trader (Anthropic Opus 4.7) — daily LLM "
+                     "decision at 00:05–00:15 UTC. Default-disabled via "
+                     "AI_QUANT_ENABLED env. Phase-1 experiment weight 2%."},
         ],
         "sleeve_leverages": {
             "core": 2.5,
@@ -116,11 +131,13 @@ def build_spec() -> dict:
             # internally from today_inputs(). 1.0 placeholder.
             "r4_btc": 1.0, "r4_eth": 1.0,
             "ema_btc": 1.0, "eth_daily": 1.0,
+            "ai_quant": 3.0,
         },
         "sleeves_live": ["JPLUS-CORE", "S-003", "S-078", "S-096", "PDO-L-RF",
                           "CPR", "FOMC",
                           "JPLUS_R4_BTC", "JPLUS_R4_ETH",
-                          "JPLUS_EMA_BTC", "JPLUS_ETH_DAILY"],
+                          "JPLUS_EMA_BTC", "JPLUS_ETH_DAILY",
+                          "AI_QUANT"],
         "missing_sleeves": [
             {"intended_id": "gold_overlay",
              "intended_weight_pct": "dynamic (15-55%)",
