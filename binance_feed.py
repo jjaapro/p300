@@ -545,6 +545,16 @@ def refresh_all() -> dict[str, int]:
     except Exception as e:
         log.warning(f"polymarket_fed refresh failed: {e}")
         results["polymarket_fed"] = -1
+    # AI_QUANT news headlines — hourly cadence, throttled inside the fetcher
+    # itself (not the daily-external helper). Silent no-op if CRYPTOPANIC_TOKEN
+    # is unset, so this is safe to leave wired even on installs that don't use
+    # the AI_QUANT sleeve.
+    try:
+        results["news_headlines"] = __import__(
+            "services.news_fetcher", fromlist=["refresh"]).refresh()
+    except Exception as e:
+        log.warning(f"news_fetcher refresh failed: {e}")
+        results["news_headlines"] = -1
     return results
 
 
