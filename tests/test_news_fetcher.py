@@ -386,6 +386,53 @@ def test_query_returns_newest_first_and_respects_limit(fixture_db):
     assert rows[1]["title"] == "B"
 
 
+def test_query_filters_by_source(fixture_db):
+    """Regression: --source coindesk on the CLI used to limit the fetch
+    but not the read-back, leaving the operator looking at the entire
+    cache. query() must accept and apply a source filter."""
+    now = datetime.now(timezone.utc)
+    canned = {
+        "coindesk": [_entry(title="CoinDesk one", url="https://cd/1", published=now),
+                      _entry(title="CoinDesk two", url="https://cd/2", published=now)],
+        "decrypt":   [_entry(title="Decrypt one",  url="https://dc/1", published=now)],
+        "bbc_business": [_entry(title="BBC one", url="https://bbc/1", published=now)],
+    }
+    sources = tuple({"name": k, "url": "x"} for k in canned)
+    news_fetcher.refresh(force=True, fetcher=_canned_fetcher(canned),
+                            sources=sources)
+    cd_only = news_fetcher.query(hours=24, limit=100, source="coindesk")
+    assert len(cd_only) == 2
+    assert all(r["source"] == "rss:coindesk" for r in cd_only)
+    bbc_only = news_fetcher.query(hours=24, limit=100, source="bbc_business")
+    assert len(bbc_only) == 1
+    # Unknown source name → empty list (not all rows)
+    assert news_fetcher.query(hours=24, source="nonesuch") == []
+    # No source filter still returns everything
+    assert len(news_fetcher.query(hours=24, limit=100)) == 4
+
+
+def test_query_combines_asset_and_source_filters(fixture_db):
+    """Both filters AND together: asset=BTC + source=coindesk should
+    return only CoinDesk's BTC headlines, none of CoinDesk's macro
+    headlines, and none of other sources' BTC headlines."""
+    now = datetime.now(timezone.utc)
+    canned = {
+        "coindesk": [
+            _entry(title="Bitcoin reclaims 90k", url="https://cd/1", published=now),
+            _entry(title="CPI release recap",   url="https://cd/2", published=now),
+        ],
+        "decrypt": [
+            _entry(title="Bitcoin ETF flows surge", url="https://dc/1", published=now),
+        ],
+    }
+    sources = tuple({"name": k, "url": "x"} for k in canned)
+    news_fetcher.refresh(force=True, fetcher=_canned_fetcher(canned),
+                            sources=sources)
+    btc_cd = news_fetcher.query(asset="BTC", source="coindesk", hours=24)
+    assert len(btc_cd) == 1
+    assert btc_cd[0]["title"] == "Bitcoin reclaims 90k"
+
+
 def test_query_window_excludes_older_rows(fixture_db):
     now_ts = int(time.time())
     con = sqlite3.connect(str(fixture_db))

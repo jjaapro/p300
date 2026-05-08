@@ -286,6 +286,7 @@ def query(
     hours: int = 24,
     min_importance: int = 0,
     limit: int = 100,
+    source: str | None = None,
 ) -> list[dict]:
     """Read recent headlines, newest first. Same shape as the previous
     implementation so the AI_QUANT context bundle and tools.query_news
@@ -297,6 +298,9 @@ def query(
         min_importance: 0 or 1. Always pass 0 — RSS rows are all
             importance=0; passing 1 would return nothing.
         limit: max rows.
+        source: filter to one feed by its short name (e.g. "coindesk").
+            The stored value is "rss:<name>", so we match on suffix
+            equality. None returns all sources.
     """
     cutoff = int(time.time()) - hours * 3600
     sql = (
@@ -308,6 +312,9 @@ def query(
     if asset is not None:
         sql += " AND asset_tag = ?"
         args.append(asset.upper())
+    if source is not None:
+        sql += " AND source = ?"
+        args.append(f"rss:{source}")
     sql += " ORDER BY published_utc DESC LIMIT ?"
     args.append(int(limit))
     con = sqlite3.connect(str(db.TRADER_DB))
@@ -355,7 +362,8 @@ def main(argv: list[str] | None = None) -> int:
     n = refresh(force=True, sources=src_filter)
     print(f"new rows: {n}")
     if args.show > 0:
-        for h in query(asset=args.asset, hours=72, limit=args.show):
+        for h in query(asset=args.asset, hours=72, limit=args.show,
+                       source=args.source):
             from datetime import datetime, timezone
             ts = datetime.fromtimestamp(h["published_utc"],
                                           tz=timezone.utc).strftime("%Y-%m-%d %H:%M")
