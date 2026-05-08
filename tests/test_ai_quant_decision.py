@@ -567,3 +567,61 @@ def test_system_prompt_contains_fact_check_protocol():
     # first real run's "EMA50/150 bullish cross confirmed" + caveat
     # contradiction; pin it so a future prompt rewrite can't quietly drop it.
     assert "inconsisten" in sys_text.lower()
+
+
+def test_system_prompt_enumerates_three_anchor_sources():
+    """A claim is valid when anchored to one of three sources: a bundle
+    field, a bundle news headline, or a web_search/web_fetch URL.
+    All three must be explicit in the prompt so the model doesn't
+    downweight news-anchored claims (the failure mode that prompted
+    the protocol revision)."""
+    from services.ai_quant import prompt as prompt_mod
+    sys_text = prompt_mod.SYSTEM_PROMPT.lower()
+    # Bundle field anchoring
+    assert "bundle field" in sys_text or "bundle." in sys_text
+    # News-section anchoring — explicit so claims like "10-year record"
+    # cited to a CoinDesk headline are recognized as valid.
+    assert "news section" in sys_text or "news headline" in sys_text
+    # Web-search anchoring
+    assert "web_search" in sys_text or "web search" in sys_text
+
+
+def test_system_prompt_calls_out_ema_ordering_check_specifically():
+    """The first live run produced 'EMA50/150 bullish cross confirmed'
+    when EMA50 was $5,696 below EMA150 — a directly self-contradicting
+    claim. The prompt must call out the EMA-ordering check by name so
+    future runs verify it explicitly before claiming a cross."""
+    from services.ai_quant import prompt as prompt_mod
+    sys_text = prompt_mod.SYSTEM_PROMPT
+    # The literal section header
+    assert "EMA-ORDERING CHECK" in sys_text
+    # Both sides of the comparison referenced
+    assert "ema50" in sys_text.lower()
+    assert "ema150" in sys_text.lower()
+
+
+def test_system_prompt_lists_bundle_quantitative_window_limits():
+    """When the model wants to make a historical claim ('longest streak
+    in N years'), it needs to know which windows the bundle's quant
+    fields actually cover so it doesn't invent reach beyond them.
+    Pin the four window declarations explicitly."""
+    from services.ai_quant import prompt as prompt_mod
+    sys_text = prompt_mod.SYSTEM_PROMPT.lower()
+    # All four windows the context bundle actually carries
+    assert "funding 7d" in sys_text
+    assert "oi 7d" in sys_text
+    assert "dvol 30d" in sys_text
+    assert "returns 30d" in sys_text
+
+
+def test_system_prompt_includes_concrete_examples_block():
+    """The prompt teaches by example: anchored vs unanchored. The
+    examples block is the single highest-leverage few lines for
+    calibrating the model's claim-anchoring style."""
+    from services.ai_quant import prompt as prompt_mod
+    sys_text = prompt_mod.SYSTEM_PROMPT
+    # Examples block uses ✓ / ✗ markers
+    assert "✓" in sys_text
+    assert "✗" in sys_text
+    # The specific EMA failure mode appears as a ✗ example
+    assert "bullish cross confirmed" in sys_text.lower()
