@@ -94,15 +94,21 @@ def _load_funding(lookback_seconds: int) -> pd.DataFrame:
     since_ts = upper_ts - lookback_seconds
     con = sqlite3.connect(str(db.TRADER_DB))
     try:
-        rows = con.execute(
-            "SELECT timestamp, fr_close FROM cd_funding_rate "
-            "WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp",
-            (since_ts, upper_ts),
-        ).fetchall()
+        try:
+            rows = con.execute(
+                "SELECT timestamp, fr_close FROM cd_funding_rate "
+                "WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp",
+                (since_ts, upper_ts),
+            ).fetchall()
+        except sqlite3.OperationalError:
+            # Table missing (e.g. test fixture without funding seeded) →
+            # render the chart without the funding panel rather than crash.
+            rows = []
     finally:
         con.close()
     if not rows:
-        return pd.DataFrame(columns=["funding"])
+        return pd.DataFrame(columns=["funding"],
+                            index=pd.DatetimeIndex([], tz="UTC"))
     df = pd.DataFrame(rows, columns=["ts", "funding"])
     df["dt"] = pd.to_datetime(df["ts"], unit="s", utc=True)
     return df.set_index("dt")[["funding"]]
@@ -113,16 +119,20 @@ def _load_lsr(asset: str, lookback_seconds: int) -> pd.DataFrame:
     since_ts = upper_ts - lookback_seconds
     con = sqlite3.connect(str(db.TRADER_DB))
     try:
-        rows = con.execute(
-            "SELECT timestamp, ratio FROM ca_long_short_ratio "
-            "WHERE asset = ? AND timestamp >= ? AND timestamp <= ? "
-            "ORDER BY timestamp",
-            (asset.upper(), since_ts, upper_ts),
-        ).fetchall()
+        try:
+            rows = con.execute(
+                "SELECT timestamp, ratio FROM ca_long_short_ratio "
+                "WHERE asset = ? AND timestamp >= ? AND timestamp <= ? "
+                "ORDER BY timestamp",
+                (asset.upper(), since_ts, upper_ts),
+            ).fetchall()
+        except sqlite3.OperationalError:
+            rows = []
     finally:
         con.close()
     if not rows:
-        return pd.DataFrame(columns=["lsr"])
+        return pd.DataFrame(columns=["lsr"],
+                            index=pd.DatetimeIndex([], tz="UTC"))
     df = pd.DataFrame(rows, columns=["ts", "lsr"])
     df["dt"] = pd.to_datetime(df["ts"], unit="s", utc=True)
     return df.set_index("dt")[["lsr"]]
