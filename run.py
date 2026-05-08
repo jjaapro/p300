@@ -215,6 +215,12 @@ def main(argv: list[str] | None = None) -> int:
         format="%(asctime)s [%(name)s] %(levelname)s %(message)s",
     )
 
+    # Load .env so ANTHROPIC_API_KEY, COINALYZE_API_KEY etc. are available
+    # to sleeves and fetchers without requiring a shell export. Existing env
+    # values are preserved (an explicit `export` still wins).
+    from services.env import load_env_file
+    load_env_file()
+
     # init schemas (idempotent)
     trade_db.init_db()
     variant_registry.init_schema()

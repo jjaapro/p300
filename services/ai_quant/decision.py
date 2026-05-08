@@ -312,6 +312,10 @@ def main(argv: list[str] | None = None) -> int:
     args = p.parse_args(argv)
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(levelname)s %(name)s %(message)s")
+    # Load .env so ANTHROPIC_API_KEY / AI_QUANT_MODEL / etc. are picked up
+    # without requiring an explicit shell export. Existing env values win.
+    from services.env import load_env_file
+    load_env_file()
 
     if args.print_context:
         ctx = ctx_mod.build_context(args.variant, args.asset)
