@@ -555,6 +555,17 @@ def refresh_all() -> dict[str, int]:
     except Exception as e:
         log.warning(f"news_fetcher refresh failed: {e}")
         results["news_headlines"] = -1
+    # AI_QUANT derivatives data — CoinDesk Data API: OI, liquidations, DVOL.
+    # Throttled to once per hour inside the fetcher. Free public endpoints,
+    # no auth, so safe to leave wired even on installs that don't use AI_QUANT.
+    try:
+        cd = __import__("services.coindesk_fetcher",
+                          fromlist=["refresh"]).refresh()
+        for k, v in cd.items():
+            results[f"cd_{k}"] = v
+    except Exception as e:
+        log.warning(f"coindesk_fetcher refresh failed: {e}")
+        results["cd_open_interest"] = -1
     return results
 
 
