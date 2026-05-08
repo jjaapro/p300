@@ -275,6 +275,7 @@ KNOWN_SLEEVES = (
     "JPLUS_EMA_BTC", "JPLUS_ETH_DAILY",
     "JPLUS_R4_BTC", "JPLUS_R4_ETH",
     "JPLUS_R4_BTC_V2", "JPLUS_R4_ETH_V2",
+    "AI_QUANT",  # discretionary LLM trader; decision-side stats below
 )
 
 
@@ -361,6 +362,67 @@ def sleeve_metrics(variant_id: str, strategy: str, window: Window,
     )
 
 
+# ─── AI_QUANT decision-side stats ──────────────────────────────────────────
+
+
+@dataclass(frozen=True)
+class AIQuantWindowStats:
+    """Per-window decision/cost stats for the AI_QUANT sleeve.
+
+    Trade-side PnL is already covered by SleeveMetrics; this captures what
+    the trade ledger doesn't see: how many decisions the LLM made, how
+    they distributed across directions and errors, what the API cost was,
+    and the average conviction. The formatter renders this as an indented
+    sub-line beneath the AI_QUANT row in the per-sleeve table.
+
+    api_cost_usd is the value the operator wants to compare against
+    SleeveMetrics.total_pnl_usdt: if cost > pnl, the sleeve is paying
+    Anthropic to lose money.
+    """
+    window: str
+    n_decisions: int
+    n_long: int
+    n_short: int
+    n_flat: int
+    n_errors: int
+    api_cost_usd: float
+    avg_conviction: float | None
+
+
+def ai_quant_window_stats(variant_id: str, window: Window) -> AIQuantWindowStats:
+    """Aggregate ai_quant_decisions rows for the variant in [window]. The
+    table is created on demand by services.ai_quant.journal._ensure_schema,
+    so we tolerate a missing table (returns all-zeros) for environments
+    that have never run the AI_QUANT sleeve."""
+    con = sqlite3.connect(str(db.DASH_DB))
+    try:
+        try:
+            rows = con.execute(
+                "SELECT decided, conviction, cost_usd "
+                "FROM ai_quant_decisions "
+                "WHERE variant_id = ? "
+                "  AND decision_date >= ? AND decision_date <= ?",
+                (variant_id, window.start, window.end),
+            ).fetchall()
+        except sqlite3.OperationalError:
+            return AIQuantWindowStats(window.name, 0, 0, 0, 0, 0, 0.0, None)
+    finally:
+        con.close()
+    n_long = sum(1 for r in rows if r[0] == "LONG")
+    n_short = sum(1 for r in rows if r[0] == "SHORT")
+    n_flat = sum(1 for r in rows if r[0] == "FLAT")
+    n_err = sum(1 for r in rows if r[0] == "ERROR")
+    cost = sum(float(r[2] or 0.0) for r in rows)
+    convictions = [int(r[1]) for r in rows
+                   if r[1] is not None and r[0] in ("LONG", "SHORT", "FLAT")]
+    avg = sum(convictions) / len(convictions) if convictions else None
+    return AIQuantWindowStats(
+        window=window.name, n_decisions=len(rows),
+        n_long=n_long, n_short=n_short, n_flat=n_flat, n_errors=n_err,
+        api_cost_usd=cost, avg_conviction=avg,
+    )
+
+
 # ─── Top-level report ───────────────────────────────────────────────────────
 
 
@@ -373,6 +435,8 @@ class HealthReport:
     windows: list[Window]
     portfolio: list[PortfolioMetrics]              # one per window, same order
     sleeves: dict[str, list[SleeveMetrics]]        # {strategy: [per-window]}
+    ai_quant: list[AIQuantWindowStats]             # one per window; all-zero rows
+                                                    # when the sleeve hasn't fired
 
 
 def build_report(variant_id: str, capital_usdt: float | None = None,
@@ -395,10 +459,11 @@ def build_report(variant_id: str, capital_usdt: float | None = None,
     for s in _all_strategies_for_variant(variant_id):
         sleeves[s] = [sleeve_metrics(variant_id, s, w, capital_usdt)
                        for w in windows]
+    ai_quant = [ai_quant_window_stats(variant_id, w) for w in windows]
     return HealthReport(
         variant_id=variant_id, capital_usdt=capital_usdt,
         as_of=clock.now_iso(), windows=windows,
-        portfolio=portfolio, sleeves=sleeves,
+        portfolio=portfolio, sleeves=sleeves, ai_quant=ai_quant,
     )
 
 
@@ -498,6 +563,27 @@ def format_report(report: HealthReport) -> str:
                         f"{_fmt_pct(metrics.max_drawdown_pct):>8}",
                     ]
                 lines.append("  " + " | ".join(cells))
+                # AI_QUANT-specific footnote: show decision counts +
+                # API cost + PnL net of cost beneath the AI_QUANT row.
+                if sleeve == "AI_QUANT":
+                    aq_stats = next(
+                        (s for s in report.ai_quant if s.window == window.name),
+                        None,
+                    )
+                    if aq_stats and aq_stats.n_decisions > 0:
+                        net_pnl = metrics.total_pnl_usdt - aq_stats.api_cost_usd
+                        avg_conv = (
+                            f"{aq_stats.avg_conviction:.0f}"
+                            if aq_stats.avg_conviction is not None else "n/a"
+                        )
+                        lines.append(
+                            f"    └─ {aq_stats.n_decisions} decisions "
+                            f"({aq_stats.n_long}L / {aq_stats.n_short}S / "
+                            f"{aq_stats.n_flat}F / {aq_stats.n_errors}E)  "
+                            f"avg conv {avg_conv}  "
+                            f"API ${aq_stats.api_cost_usd:.2f}  "
+                            f"net P&L ${net_pnl:+.2f}"
+                        )
     lines.append("")
     lines.append("=" * 78)
     return "\n".join(lines)
