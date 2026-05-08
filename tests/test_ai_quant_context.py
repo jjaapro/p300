@@ -154,12 +154,46 @@ def fixture_dbs(tmp_path, monkeypatch):
     yield {"trader": trader, "dash": dash}
 
 
+# ─── Helpers: seed CoinDesk-derived tables ─────────────────────────────────
+
+def _seed_coindesk_tables(p: Path) -> None:
+    """Add cd_open_interest / cd_liquidations / cd_dvol to an existing
+    trader.db. Caller decides what rows to insert; this just creates the
+    schema mirroring what coindesk_fetcher._ensure_schema does."""
+    con = sqlite3.connect(str(p))
+    try:
+        con.executescript("""
+            CREATE TABLE IF NOT EXISTS cd_open_interest (
+                timestamp INTEGER PRIMARY KEY,
+                oi_open REAL, oi_high REAL, oi_low REAL, oi_close REAL,
+                oi_value_open REAL, oi_value_high REAL, oi_value_low REAL,
+                oi_value_close REAL
+            );
+            CREATE TABLE IF NOT EXISTS cd_liquidations (
+                timestamp INTEGER PRIMARY KEY,
+                long_quantity REAL, short_quantity REAL,
+                long_quote_quantity REAL, short_quote_quantity REAL,
+                long_count INTEGER, short_count INTEGER,
+                vwap_long_price REAL, vwap_short_price REAL
+            );
+            CREATE TABLE IF NOT EXISTS cd_dvol (
+                asset TEXT, timestamp INTEGER,
+                open REAL, high REAL, low REAL, close REAL,
+                PRIMARY KEY (asset, timestamp)
+            );
+        """)
+        con.commit()
+    finally:
+        con.close()
+
+
 # ─── Top-level build_context ────────────────────────────────────────────────
 
 def test_build_context_returns_all_expected_sections(fixture_dbs):
     bundle = ctx_mod.build_context("p300_test", "BTC")
     expected_sections = {
         "as_of_utc", "variant_id", "asset", "market", "funding", "lsr",
+        "open_interest", "liquidations", "dvol",
         "calendar", "sentiment", "macro", "news", "portfolio", "data_freshness",
     }
     assert set(bundle) == expected_sections
@@ -329,6 +363,202 @@ def test_safe_returns_dict_on_exception():
     assert isinstance(out, dict)
     assert "error" in out
     assert "ValueError" in out["error"]
+
+
+# ─── Open Interest section ─────────────────────────────────────────────────
+
+def test_open_interest_section_returns_error_when_table_missing(fixture_dbs):
+    """Pristine fixture has no cd_open_interest table — section reports
+    error rather than crashing."""
+    section = ctx_mod._open_interest_section("BTC")
+    assert "error" in section
+
+
+def test_open_interest_section_rejects_non_btc_asset(fixture_dbs):
+    """ETH OI requires a parallel table we don't yet populate."""
+    section = ctx_mod._open_interest_section("ETH")
+    assert "error" in section
+    assert "BTC" in section["error"]
+
+
+def test_open_interest_section_computes_change_and_peak(fixture_dbs):
+    """Seeded with 8d of hourly OI; section reports latest + 24h/7d
+    delta + 7d peak distance."""
+    _seed_coindesk_tables(fixture_dbs["trader"])
+    now_ts = clock.now_ts()
+    rows = []
+    # 8 days × 24 hours of synthetic OI rising linearly with a recent dip
+    for hours_ago in range(8 * 24, 0, -1):
+        ts = now_ts - hours_ago * 3600
+        # Linearly grow then dip in the last 12h
+        if hours_ago > 12:
+            value = 8e9 + (8 * 24 - hours_ago) * 1e7
+        else:
+            value = 8.5e9 - (12 - hours_ago) * 5e7  # dip
+        rows.append((ts, 100, 100, 100, 100, value, value, value, value))
+    con = sqlite3.connect(str(fixture_dbs["trader"]))
+    con.executemany("INSERT INTO cd_open_interest VALUES (?,?,?,?,?,?,?,?,?)", rows)
+    con.commit()
+    con.close()
+    section = ctx_mod._open_interest_section("BTC")
+    assert "error" not in section
+    assert section["latest_btc_perp_usd"] > 0
+    assert section["pct_change_24h"] is not None
+    assert section["pct_change_7d"] is not None
+    assert section["peak_7d_usd"] >= section["latest_btc_perp_usd"]
+    assert section["distance_from_7d_peak_pct"] <= 0
+    assert "as_of_utc" in section
+
+
+# ─── Liquidations section ──────────────────────────────────────────────────
+
+def test_liquidations_section_aggregates_24h_and_7d(fixture_dbs):
+    _seed_coindesk_tables(fixture_dbs["trader"])
+    now_ts = clock.now_ts()
+    # 30h of rows; 24h ones with longs/shorts and the older ones zero
+    rows = []
+    for hours_ago in range(30, 0, -1):
+        ts = now_ts - hours_ago * 3600
+        if hours_ago <= 24:
+            longs = 10_000_000.0
+            shorts = 2_000_000.0
+        else:
+            longs = 0.0
+            shorts = 0.0
+        rows.append((ts, 0, 0, longs, shorts, 5, 1, 80_000, 60_000))
+    con = sqlite3.connect(str(fixture_dbs["trader"]))
+    con.executemany("INSERT INTO cd_liquidations VALUES (?,?,?,?,?,?,?,?,?)", rows)
+    con.commit()
+    con.close()
+    section = ctx_mod._liquidations_section("BTC")
+    assert "error" not in section
+    # 24h × 10M longs = 240M
+    assert section["longs_24h_usd"] == pytest.approx(240_000_000.0, abs=1e-3)
+    assert section["shorts_24h_usd"] == pytest.approx(48_000_000.0, abs=1e-3)
+    assert section["ratio_long_short_24h"] == 5.0
+    assert section["n_hours_with_data_24h"] == 24
+    assert section["biggest_hour_24h"] is not None
+
+
+def test_liquidations_section_flags_all_zero_data_quality(fixture_dbs):
+    """When upstream returns all zeros (CoinDesk's known sparse history
+    period), surface a data_quality_warning instead of letting the LLM
+    read it as 'no liquidations'."""
+    _seed_coindesk_tables(fixture_dbs["trader"])
+    now_ts = clock.now_ts()
+    rows = [
+        (now_ts - h * 3600, 0, 0, 0.0, 0.0, 0, 0, 0, 0)
+        for h in range(1, 49)
+    ]
+    con = sqlite3.connect(str(fixture_dbs["trader"]))
+    con.executemany("INSERT INTO cd_liquidations VALUES (?,?,?,?,?,?,?,?,?)", rows)
+    con.commit()
+    con.close()
+    section = ctx_mod._liquidations_section("BTC")
+    assert "data_quality_warning" in section
+    assert "missing data" in section["data_quality_warning"].lower()
+
+
+def test_liquidations_section_returns_error_when_table_missing(fixture_dbs):
+    section = ctx_mod._liquidations_section("BTC")
+    assert "error" in section
+
+
+def test_liquidations_section_rejects_non_btc(fixture_dbs):
+    section = ctx_mod._liquidations_section("ETH")
+    assert "error" in section
+
+
+# ─── DVOL section ──────────────────────────────────────────────────────────
+
+def test_dvol_section_reports_30d_range_and_percentile(fixture_dbs):
+    _seed_coindesk_tables(fixture_dbs["trader"])
+    now_ts = clock.now_ts()
+    # 20 days of synthetic DVOL: 30 → 50 monotone
+    rows = []
+    for d_ago in range(20, 0, -1):
+        ts = now_ts - d_ago * 86400
+        close = 30 + (20 - d_ago)
+        rows.append(("BTC", ts, close, close, close, close))
+    con = sqlite3.connect(str(fixture_dbs["trader"]))
+    con.executemany("INSERT INTO cd_dvol VALUES (?,?,?,?,?,?)", rows)
+    con.commit()
+    con.close()
+    section = ctx_mod._dvol_section("BTC")
+    assert "error" not in section
+    # Latest is 49 (20-1 = 19, plus 30 = 49)
+    assert section["latest"] == 49.0
+    assert section["min_30d"] == 30.0
+    assert section["max_30d"] == 49.0
+    # Latest is the maximum → 100th percentile
+    assert section["percentile_30d"] == 100
+    assert section["delta_7d_pct"] is not None
+
+
+def test_dvol_section_isolates_assets(fixture_dbs):
+    """ETH DVOL must not return BTC DVOL rows."""
+    _seed_coindesk_tables(fixture_dbs["trader"])
+    now_ts = clock.now_ts()
+    rows = []
+    for d in range(5):
+        ts = now_ts - (5 - d) * 86400
+        rows.append(("BTC", ts, 30, 30, 30, 30))
+        rows.append(("ETH", ts, 60, 60, 60, 60))
+    con = sqlite3.connect(str(fixture_dbs["trader"]))
+    con.executemany("INSERT INTO cd_dvol VALUES (?,?,?,?,?,?)", rows)
+    con.commit()
+    con.close()
+    btc = ctx_mod._dvol_section("BTC")
+    eth = ctx_mod._dvol_section("ETH")
+    assert btc["latest"] == 30.0
+    assert eth["latest"] == 60.0
+
+
+def test_dvol_section_rejects_unsupported_asset(fixture_dbs):
+    section = ctx_mod._dvol_section("DOGE")
+    assert "error" in section
+    assert "DOGE" in section["error"]
+
+
+def test_dvol_section_returns_error_when_no_rows(fixture_dbs):
+    """Schema present but empty → section reports the gap."""
+    _seed_coindesk_tables(fixture_dbs["trader"])
+    section = ctx_mod._dvol_section("BTC")
+    assert "error" in section
+
+
+# ─── Freshness section gains derivatives entries ──────────────────────────
+
+def test_freshness_section_includes_derivatives_when_tables_present(fixture_dbs):
+    _seed_coindesk_tables(fixture_dbs["trader"])
+    now_ts = clock.now_ts()
+    con = sqlite3.connect(str(fixture_dbs["trader"]))
+    con.execute("INSERT INTO cd_open_interest VALUES (?,?,?,?,?,?,?,?,?)",
+                (now_ts - 7200, 100, 100, 100, 100, 8e9, 8e9, 8e9, 8e9))
+    con.execute("INSERT INTO cd_liquidations VALUES (?,?,?,?,?,?,?,?,?)",
+                (now_ts - 3600, 0, 0, 1000, 500, 1, 1, 80_000, 60_000))
+    con.execute("INSERT INTO cd_dvol VALUES (?,?,?,?,?,?)",
+                ("BTC", now_ts - 86400, 30, 30, 30, 30))
+    con.commit()
+    con.close()
+    section = ctx_mod._freshness_section()
+    assert "open_interest_latest" in section
+    assert "liquidations_latest" in section
+    assert "dvol_btc_latest" in section
+    assert section["open_interest_latest"]["age_hours"] == pytest.approx(2.0, abs=0.1)
+    assert section["liquidations_latest"]["age_hours"] == pytest.approx(1.0, abs=0.1)
+    assert section["dvol_btc_latest"]["age_hours"] == pytest.approx(24.0, abs=0.1)
+
+
+def test_freshness_section_tolerates_missing_derivatives_tables(fixture_dbs):
+    """Pristine fixture without any cd_* derivatives tables — freshness
+    still works for the tables that do exist."""
+    section = ctx_mod._freshness_section()
+    assert section["open_interest_latest"] is None
+    assert section["liquidations_latest"] is None
+    assert section["dvol_btc_latest"] is None
+    # And the existing tables still report
+    assert section["btc_1h_spot"] is not None
 
 
 def test_safe_passes_dict_through_on_success():

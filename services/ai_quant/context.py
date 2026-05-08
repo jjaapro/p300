@@ -23,6 +23,7 @@ from typing import Callable
 
 from services import (
     clock,
+    coindesk_fetcher,
     db,
     fed_funds_service,
     news_fetcher,
@@ -336,6 +337,142 @@ def _news_section(asset: str) -> dict:
     }
 
 
+# ─── Section: open interest ─────────────────────────────────────────────────
+
+def _open_interest_section(asset: str) -> dict:
+    """Aggregated OI for the BTC perp from CoinDesk Data (Binance feed).
+    Returns latest USD-quote OI plus 24h/7d % change and recent peak.
+    Currently BTC-only; ETH would require a parallel cd_open_interest_eth
+    table which we don't yet populate."""
+    if asset.upper() != "BTC":
+        return {"error": f"OI section: only BTC supported (got {asset})"}
+    rows = coindesk_fetcher.latest_oi(hours_back=8 * 24)  # need 7d for delta
+    if len(rows) < 2:
+        return {"error": "no recent open-interest rows in cd_open_interest"}
+    latest = rows[-1]
+    latest_value = float(latest["oi_value_close"] or 0.0)
+
+    def _pct_change(hours_ago: int) -> float | None:
+        target_ts = latest["ts"] - hours_ago * 3600
+        # Pick the row closest to target_ts
+        prev = min(rows, key=lambda r: abs(r["ts"] - target_ts))
+        prev_value = float(prev["oi_value_close"] or 0.0)
+        if prev_value <= 0:
+            return None
+        return round((latest_value / prev_value - 1) * 100.0, 2)
+
+    peak_7d = max((r["oi_value_close"] or 0.0) for r in rows)
+    return {
+        "latest_btc_perp_usd": round(latest_value, 0),
+        "latest_oi_contracts": round(float(latest["oi_close"] or 0.0), 1),
+        "as_of_utc": datetime.fromtimestamp(
+            latest["ts"], tz=timezone.utc).isoformat(),
+        "pct_change_24h": _pct_change(24),
+        "pct_change_7d": _pct_change(24 * 7),
+        "peak_7d_usd": round(peak_7d, 0),
+        "distance_from_7d_peak_pct": round(
+            (latest_value / peak_7d - 1) * 100.0, 2) if peak_7d > 0 else None,
+    }
+
+
+# ─── Section: liquidations ──────────────────────────────────────────────────
+
+def _liquidations_section(asset: str) -> dict:
+    """Aggregated liquidations for the BTC perp from CoinDesk Data (Binance).
+    Returns 24h totals (long vs short USD), 7d totals, ratio, and a
+    spike flag computed against the 7d hourly median.
+    Currently BTC-only."""
+    if asset.upper() != "BTC":
+        return {"error": f"liquidations section: only BTC supported (got {asset})"}
+    rows = coindesk_fetcher.latest_liquidations(hours_back=8 * 24)  # 8d for trend
+    if not rows:
+        return {"error": "no recent liquidation rows in cd_liquidations"}
+    now_ts = clock.now_ts()
+    rows_24h = [r for r in rows if r["ts"] >= now_ts - 24 * 3600]
+    rows_7d = [r for r in rows if r["ts"] >= now_ts - 7 * 24 * 3600]
+    longs_24h = sum(r["long_quote_quantity"] for r in rows_24h)
+    shorts_24h = sum(r["short_quote_quantity"] for r in rows_24h)
+    longs_7d = sum(r["long_quote_quantity"] for r in rows_7d)
+    shorts_7d = sum(r["short_quote_quantity"] for r in rows_7d)
+    # Data-quality flag: CoinDesk's Binance liquidation feed sometimes
+    # returns zero rows even when liquidations occurred (the upstream is
+    # still gathering history). When every value in the 7d window is
+    # zero, surface a flag so the LLM doesn't read "$0 in 24h" as
+    # "absolute calm" when it actually means "data not yet flowing".
+    all_zero_7d = (longs_7d == 0 and shorts_7d == 0 and rows_7d)
+    # Spike flag: was the 24h total > 2× the trailing-7d hourly median × 24?
+    if rows_7d:
+        sorted_hourly = sorted(r["long_quote_quantity"] + r["short_quote_quantity"]
+                                 for r in rows_7d)
+        median_hourly = sorted_hourly[len(sorted_hourly) // 2]
+        spike = (longs_24h + shorts_24h) > (2 * median_hourly * 24)
+    else:
+        spike = False
+    # Biggest single-hour cluster in last 24h
+    biggest_hour = (max(rows_24h,
+                          key=lambda r: r["long_quote_quantity"] + r["short_quote_quantity"])
+                     if rows_24h else None)
+    out = {
+        "longs_24h_usd": round(longs_24h, 0),
+        "shorts_24h_usd": round(shorts_24h, 0),
+        "ratio_long_short_24h": round(longs_24h / shorts_24h, 2)
+            if shorts_24h > 0 else None,
+        "longs_7d_usd": round(longs_7d, 0),
+        "shorts_7d_usd": round(shorts_7d, 0),
+        "spike_24h": bool(spike),
+        "biggest_hour_24h": (
+            {"ts_utc": datetime.fromtimestamp(biggest_hour["ts"],
+                                                tz=timezone.utc).isoformat(),
+             "long_usd": round(biggest_hour["long_quote_quantity"], 0),
+             "short_usd": round(biggest_hour["short_quote_quantity"], 0)}
+            if biggest_hour else None),
+        "n_hours_with_data_24h": len(rows_24h),
+    }
+    if all_zero_7d:
+        out["data_quality_warning"] = (
+            "All values are zero across the 7d window. CoinDesk's Binance "
+            "liquidation feed is sparse for newer data; treat this as "
+            "missing data rather than 'no liquidations'."
+        )
+    return out
+
+
+# ─── Section: DVOL (Deribit implied vol) ────────────────────────────────────
+
+def _dvol_section(asset: str) -> dict:
+    """Implied-volatility index for `asset` (BTC or ETH) from Deribit DVOL
+    via CoinDesk Data. Daily resolution. Returns latest value + 7d delta
+    + 30d range so the LLM can place today's IV in regime context.
+    """
+    asset_u = asset.upper()
+    if asset_u not in ("BTC", "ETH"):
+        return {"error": f"DVOL section: only BTC/ETH supported (got {asset})"}
+    rows = coindesk_fetcher.latest_dvol(asset_u, days_back=30)
+    if len(rows) < 2:
+        return {"error": f"no recent DVOL rows for {asset_u} in cd_dvol"}
+    latest = rows[-1]
+    latest_close = float(latest["close"])
+    closes = [float(r["close"]) for r in rows]
+    # 7d-ago: try to find a row ~7 days back, else use the oldest in window
+    target_ts = latest["ts"] - 7 * 86400
+    seven_d_ago_row = min(rows, key=lambda r: abs(r["ts"] - target_ts))
+    seven_d_close = float(seven_d_ago_row["close"])
+    delta_7d = round(((latest_close / seven_d_close) - 1) * 100.0, 2) \
+        if seven_d_close > 0 else None
+    return {
+        "latest": round(latest_close, 2),
+        "latest_date_utc": datetime.fromtimestamp(
+            latest["ts"], tz=timezone.utc).strftime("%Y-%m-%d"),
+        "delta_7d_pct": delta_7d,
+        "min_30d": round(min(closes), 2),
+        "max_30d": round(max(closes), 2),
+        "percentile_30d": (
+            round(sum(1 for c in closes if c <= latest_close) / len(closes) * 100.0)
+            if closes else None
+        ),
+    }
+
+
 # ─── Section: portfolio ─────────────────────────────────────────────────────
 
 def _portfolio_section(variant_id: str, asset: str) -> dict:
@@ -436,11 +573,26 @@ def _freshness_section() -> dict:
             "btc_funding_8h": _staleness(latest("cd_funding_rate")),
             "lsr_btc": _staleness(latest("ca_long_short_ratio")),
         }
-        # news_headlines may not exist yet on installs without the AI sleeve
-        try:
-            out["news_latest"] = _staleness(latest("news_headlines", "fetched_utc"))
-        except sqlite3.OperationalError:
-            out["news_latest"] = None
+        # The cd_open_interest / cd_liquidations / cd_dvol / news_headlines
+        # tables may not exist yet on legacy installs without the AI sleeve.
+        # Each lookup is wrapped so a missing table doesn't sink the whole
+        # freshness section.
+        for label, table, col in [
+            ("news_latest",          "news_headlines",   "fetched_utc"),
+            ("open_interest_latest", "cd_open_interest", "timestamp"),
+            ("liquidations_latest",  "cd_liquidations",  "timestamp"),
+            ("dvol_btc_latest",      "cd_dvol",          "timestamp"),
+        ]:
+            try:
+                if table == "cd_dvol":
+                    ts = con.execute(
+                        "SELECT MAX(timestamp) FROM cd_dvol WHERE asset='BTC'"
+                    ).fetchone()[0]
+                else:
+                    ts = latest(table, col)
+                out[label] = _staleness(ts)
+            except sqlite3.OperationalError:
+                out[label] = None
     finally:
         con.close()
     return out
@@ -464,6 +616,14 @@ def build_context(variant_id: str, asset: str = "BTC") -> dict:
         "market": _safe("market", lambda: _market_section(asset)),
         "funding": _safe("funding", lambda: _funding_section(asset)),
         "lsr": _safe("lsr", lambda: _lsr_section(asset)),
+        "open_interest": _safe("open_interest",
+                                 lambda: _open_interest_section(asset)),
+        "liquidations": _safe("liquidations",
+                                lambda: _liquidations_section(asset)),
+        "dvol": _safe("dvol", lambda: {
+            "btc": _dvol_section("BTC"),
+            "eth": _dvol_section("ETH"),
+        }),
         "calendar": _safe("calendar", _calendar_section),
         "sentiment": _safe("sentiment", _sentiment_section),
         "macro": _safe("macro", _macro_section),
