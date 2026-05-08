@@ -4,3 +4,10 @@ numpy>=1.24
 # tzdata PyPI package. Required by services/fomc_service.py for DST-aware
 # FOMC announcement timing (14:00 ET -> UTC).
 tzdata; sys_platform == "win32"
+
+# AI_QUANT sleeve: matplotlib renders the per-decision chart that the
+# multimodal LLM looks at; mplfinance draws the OHLC candles. anthropic is
+# the SDK used by services.ai_quant.decision to call Claude.
+matplotlib>=3.8
+mplfinance>=0.12.10b0
+anthropic>=0.40
