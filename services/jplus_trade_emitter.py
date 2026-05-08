@@ -54,10 +54,14 @@ log = logging.getLogger("dashboard.jplus_trade_emitter")
 # the strategy column values queryable as a single SQL pattern.
 STRATEGY_R4_BTC = "JPLUS_R4_BTC"
 STRATEGY_R4_ETH = "JPLUS_R4_ETH"
+STRATEGY_R4_BTC_V2 = "JPLUS_R4_BTC_V2"
+STRATEGY_R4_ETH_V2 = "JPLUS_R4_ETH_V2"
 STRATEGY_EMA_BTC = "JPLUS_EMA_BTC"
 STRATEGY_ETH_DAILY = "JPLUS_ETH_DAILY"
 ALL_CORE_STRATEGIES = (
-    STRATEGY_R4_BTC, STRATEGY_R4_ETH, STRATEGY_EMA_BTC, STRATEGY_ETH_DAILY,
+    STRATEGY_R4_BTC, STRATEGY_R4_ETH,
+    STRATEGY_R4_BTC_V2, STRATEGY_R4_ETH_V2,
+    STRATEGY_EMA_BTC, STRATEGY_ETH_DAILY,
 )
 
 # Per-regime allocation weights — copied verbatim from jplus/simulate.py:108-131.
@@ -66,12 +70,16 @@ ALL_CORE_STRATEGIES = (
 # the parity test will catch the drift.
 REGIME_WEIGHTS = {
     "strong_bull": {"r4_btc": 0.15, "r4_eth": 0.15,
+                     "r4_btc_v2": 0.075, "r4_eth_v2": 0.075,
                      "ema_btc": 0.50, "eth_daily": 0.20},
     "mild_bull":   {"r4_btc": 0.20, "r4_eth": 0.30,
+                     "r4_btc_v2": 0.10, "r4_eth_v2": 0.15,
                      "ema_btc": 0.30, "eth_daily": 0.10},
     "uncertain":   {"r4_btc": 0.30, "r4_eth": 0.40,
+                     "r4_btc_v2": 0.15, "r4_eth_v2": 0.20,
                      "ema_btc": 0.30, "eth_daily": 0.00},
     "bear":        {"r4_btc": 0.00, "r4_eth": 0.00,
+                     "r4_btc_v2": 0.00, "r4_eth_v2": 0.00,
                      "ema_btc": 0.30, "eth_daily": 0.00},
 }
 
@@ -84,6 +92,10 @@ R4_BTC_EXIT_HOUR = 18
 R4_ETH_ENTRY_HOUR = 20  # Tue 20:00 UTC
 R4_ETH_EXIT_HOUR = 20   # Wed 20:00 UTC
 
+# V2 sleeves: shared 04→14 UTC window for Wed+Fri wk1-2.
+R4_V2_ENTRY_HOUR = 4
+R4_V2_EXIT_HOUR = 14
+
 
 @dataclass
 class PositionState:
@@ -94,6 +106,8 @@ class PositionState:
     eth_daily: dict | None = None
     r4_btc: dict | None = None
     r4_eth: dict | None = None
+    r4_btc_v2: dict | None = None
+    r4_eth_v2: dict | None = None
 
 
 def _first_or_none(rows: list[dict]) -> dict | None:
@@ -107,6 +121,8 @@ def get_position_state(variant_id: str) -> PositionState:
         eth_daily=_first_or_none(trades.get_open_trades(variant_id, STRATEGY_ETH_DAILY)),
         r4_btc=_first_or_none(trades.get_open_trades(variant_id, STRATEGY_R4_BTC)),
         r4_eth=_first_or_none(trades.get_open_trades(variant_id, STRATEGY_R4_ETH)),
+        r4_btc_v2=_first_or_none(trades.get_open_trades(variant_id, STRATEGY_R4_BTC_V2)),
+        r4_eth_v2=_first_or_none(trades.get_open_trades(variant_id, STRATEGY_R4_ETH_V2)),
     )
 
 
@@ -288,6 +304,89 @@ def _emit_r4_eth(variant: dict, date_iso: str, sim_record: dict,
         )
     finally:
         clock.set_simulated_now(None)
+
+
+# ─── R4 V2 emit (BTC + ETH share the Wed+Fri 04→14 window) ──────────────────
+
+def _emit_r4_v2(variant: dict, date_iso: str, sim_record: dict,
+                asset: str, strategy: str, fired_field: str,
+                weight_key: str) -> None:
+    """Shared emit path for R4_BTC_V2 and R4_ETH_V2. Both fire on the
+    same calendar (Wed+Fri wk1-2) and share the 04→14 UTC window — only
+    the asset and pricing source differ.
+    """
+    if not sim_record.get(fired_field):
+        return
+    mode = sim_record.get("mode", "uncertain")
+    weight = REGIME_WEIGHTS.get(mode, {}).get(weight_key, 0.0)
+    if weight <= 0.0:
+        return  # bear regime: V2 idle (same as V1)
+
+    gated = bool(sim_record.get("gated", False))
+    inner_lev = R4_INNER_LEV_GATED if gated else R4_INNER_LEV_UNGATED
+    vol_lev = float(sim_record.get("lev", 1.0))
+    stacked_lev = inner_lev * vol_lev
+
+    entry_price = _hourly_open(asset, date_iso, R4_V2_ENTRY_HOUR)
+    exit_price = _hourly_open(asset, date_iso, R4_V2_EXIT_HOUR)
+    if entry_price is None or exit_price is None:
+        log.warning(f"[{strategy}] no hourly bars for {date_iso}; skipping emit")
+        return
+
+    entry_dt = datetime.fromisoformat(date_iso).replace(
+        tzinfo=timezone.utc, hour=R4_V2_ENTRY_HOUR)
+    exit_dt = datetime.fromisoformat(date_iso).replace(
+        tzinfo=timezone.utc, hour=R4_V2_EXIT_HOUR)
+
+    if _has_open_event(variant["id"], strategy, date_iso):
+        return  # already emitted this date
+
+    tid = trades.open_shadow_trade(
+        variant=variant, sleeve_name=strategy,
+        asset=asset, direction="LONG",
+        entry_price=entry_price,
+        allocation_pct=weight * 100.0,
+        leverage=stacked_lev,
+        reason={"sleeve": strategy, "mode": mode,
+                "stacked_lev": stacked_lev, "gated": gated,
+                "fired": True, "trigger_date": date_iso,
+                "window": "wed_fri_wk1-2_04-14_v2"},
+        scheduled_exit_dt=exit_dt,
+        regime_value=mode,
+        entry_dt=entry_dt,
+    )
+    clock.set_simulated_now(exit_dt)
+    try:
+        trades.close_perp_trade(
+            tid, exit_price=exit_price,
+            reason=f"{strategy.lower()}_window_close_{date_iso}",
+            sleeve_name=strategy,
+            cost_bp_rt=R4_FEE_BP_RT,
+            apply_funding=False,
+        )
+    finally:
+        clock.set_simulated_now(None)
+
+
+def _emit_r4_btc_v2(variant: dict, date_iso: str, sim_record: dict,
+                     capital: float) -> None:
+    """R4_BTC_V2 — Wed+Fri wk1-2 04:00→14:00 UTC. Era-stable BTC alpha
+    cell; see tools/r4_study/findings.md."""
+    _emit_r4_v2(variant, date_iso, sim_record,
+                 asset="BTC", strategy=STRATEGY_R4_BTC_V2,
+                 fired_field="r4_btc_v2_fired",
+                 weight_key="r4_btc_v2")
+
+
+def _emit_r4_eth_v2(variant: dict, date_iso: str, sim_record: dict,
+                     capital: float) -> None:
+    """R4_ETH_V2 — Wed+Fri wk1-2 04:00→14:00 UTC on ETH. Cross-asset
+    application of the BTC V2 cell; the same window extracts comparable
+    signal on ETH (see tools/r4_study/era_split.py)."""
+    _emit_r4_v2(variant, date_iso, sim_record,
+                 asset="ETH", strategy=STRATEGY_R4_ETH_V2,
+                 fired_field="r4_eth_v2_fired",
+                 weight_key="r4_eth_v2")
 
 
 # ─── ETH_DAILY emit ─────────────────────────────────────────────────────────
@@ -640,6 +739,8 @@ def emit_for_date(variant: dict, date_iso: str, sim_record: dict,
 
     _emit_r4_btc(variant, date_iso, sim_record, capital)
     _emit_r4_eth(variant, date_iso, sim_record, capital)
+    _emit_r4_btc_v2(variant, date_iso, sim_record, capital)
+    _emit_r4_eth_v2(variant, date_iso, sim_record, capital)
     _emit_eth_daily(variant, date_iso, sim_record, capital, prev_state,
                     sim_record_yesterday=sim_record_yesterday)
     _emit_ema_btc(variant, date_iso, sim_record, capital, prev_state,

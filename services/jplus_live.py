@@ -13,8 +13,11 @@ yesterday's trades at midnight UTC and was a fatal blocker for real-money
 execution (no exchange order ever placed at the entry moment).
 
 Handlers (this file, Phase 2):
-  - r4_btc_try_fire: Mon/Wed wk1-2 06:00 → 18:00 UTC discrete trade.
+  - r4_btc_try_fire: Mon wk1-2 06:00 → 18:00 UTC discrete trade
+    (Mon-only since 2026-05-08; was Mon+Wed before R4_V2 split).
   - r4_eth_try_fire: Tue 20:00 → Wed 20:00 UTC where Wed.day ≤ 14.
+  - r4_btc_v2_try_fire: Wed/Fri wk1-2 04:00 → 14:00 UTC (added 2026-05-08).
+  - r4_eth_v2_try_fire: Wed/Fri wk1-2 04:00 → 14:00 UTC on ETH (added 2026-05-08).
 
 Handlers (this file, Phase 3 — pending):
   - ema_btc_try_fire: continuous; 00:00 UTC daily SCALE/LEV_ADJ/FLIP.
@@ -47,6 +50,8 @@ log = logging.getLogger("dashboard.jplus_live")
 # rows (idempotency relies on this alignment).
 STRATEGY_R4_BTC = "JPLUS_R4_BTC"
 STRATEGY_R4_ETH = "JPLUS_R4_ETH"
+STRATEGY_R4_BTC_V2 = "JPLUS_R4_BTC_V2"
+STRATEGY_R4_ETH_V2 = "JPLUS_R4_ETH_V2"
 STRATEGY_EMA_BTC = "JPLUS_EMA_BTC"
 STRATEGY_ETH_DAILY = "JPLUS_ETH_DAILY"
 
@@ -57,6 +62,8 @@ R4_BTC_ENTRY_HOUR = 6
 R4_BTC_EXIT_HOUR = 18
 R4_ETH_ENTRY_HOUR = 20
 R4_ETH_EXIT_HOUR = 20
+R4_V2_ENTRY_HOUR = 4
+R4_V2_EXIT_HOUR = 14
 
 
 # ─── Idempotency helper ─────────────────────────────────────────────────────
@@ -84,9 +91,12 @@ def _has_trade_for_day(variant_id: str, strategy: str, day_iso: str) -> bool:
 
 
 def r4_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
-    """Open R4_BTC LONG at 06:00 UTC on Mon/Wed wk1-2, scheduled to close
-    at 18:00 UTC same day. ``variant_engine._close_due_shadows`` handles
-    the close via ``scheduled_exit_dt``.
+    """Open R4_BTC LONG at 06:00 UTC on Mon wk1-2, scheduled to close at
+    18:00 UTC same day. ``variant_engine._close_due_shadows`` handles the
+    close via ``scheduled_exit_dt``.
+
+    Mon-only since 2026-05-08 — Wednesdays moved to ``r4_btc_v2_try_fire``
+    at the era-stable 04:00→14:00 window. See tools/r4_study/findings.md.
 
     Sizing: ``capital × weights['r4_btc'] × inner_lev × vol_lev`` where
     inner_lev is 2.5× (or 1.0× if the gate fired) and vol_lev is the
@@ -97,8 +107,8 @@ def r4_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     now = clock.now_utc()
     today_iso = now.date().isoformat()
 
-    # Calendar gate: Mon (weekday=0) or Wed (weekday=2), day-of-month ≤ 14.
-    if now.weekday() not in (0, 2):
+    # Calendar gate: Mon (weekday=0), day-of-month ≤ 14.
+    if now.weekday() != 0:
         return {"status": "not_calendar_day"}
     if now.day > 14:
         return {"status": "not_wk_1_2"}
@@ -222,6 +232,84 @@ def r4_eth_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
              f"k={stacked_lev:.2f}x  exit_due={exit_dt.isoformat()}")
     return {"status": "opened", "trade_id": tid, "entry_price": price,
             "stacked_lev": stacked_lev, "weight": weight}
+
+
+# ─── R4 V2 (Wed/Fri wk1-2 04:00 → 14:00 UTC, BTC + ETH) ────────────────────
+
+
+def _r4_v2_try_fire(variant: dict, asset: str, strategy: str,
+                    weight_key: str) -> dict:
+    """Shared live entry path for R4_BTC_V2 / R4_ETH_V2. Wed+Fri wk1-2,
+    04:00 UTC entry, 14:00 UTC scheduled exit. See tools/r4_study/."""
+    now = clock.now_utc()
+    today_iso = now.date().isoformat()
+
+    if now.weekday() not in (2, 4):  # Wed or Fri
+        return {"status": "not_calendar_day"}
+    if now.day > 14:
+        return {"status": "not_wk_1_2"}
+
+    if now.hour < R4_V2_ENTRY_HOUR:
+        return {"status": "before_open_window"}
+    if now.hour >= R4_V2_EXIT_HOUR:
+        return {"status": "after_close_window"}
+
+    if _has_trade_for_day(variant["id"], strategy, today_iso):
+        return {"status": "already_open"}
+
+    from jplus import simulate as core_sim
+    ti = core_sim.today_inputs()
+    if ti is None:
+        return {"status": "no_inputs"}
+
+    weight = ti["weights"].get(weight_key, 0.0)
+    if weight <= 0:
+        return {"status": "regime_zero_weight", "mode": ti["mode"]}
+
+    inner_lev = R4_INNER_LEV_GATED if ti["gated"] else R4_INNER_LEV_UNGATED
+    stacked_lev = inner_lev * float(ti["lev"])
+
+    price = price_feed.get_current_price(asset)
+    if price is None or price <= 0:
+        return {"status": "no_price"}
+
+    exit_dt = now.replace(hour=R4_V2_EXIT_HOUR, minute=0,
+                           second=0, microsecond=0)
+    capital = float(variant.get("capital_usdt") or 10000)
+    tid = trades.open_shadow_trade(
+        variant=variant, sleeve_name=strategy,
+        asset=asset, direction="LONG",
+        entry_price=price,
+        allocation_pct=weight * 100.0,
+        leverage=stacked_lev,
+        reason={"sleeve": strategy, "mode": ti["mode"],
+                "vol_lev": ti["lev"], "inner_lev": inner_lev,
+                "gated": ti["gated"], "trigger": "calendar_open",
+                "window": "wed_fri_wk1-2_04-14_v2"},
+        scheduled_exit_dt=exit_dt,
+        regime_value=ti["mode"],
+        entry_dt=now,
+    )
+    log.info(f"[jplus_live {strategy} {variant['id']}] OPENED {tid} "
+             f"{asset} LONG @ ${price:,.2f}  "
+             f"notional=${capital * weight * stacked_lev:,.2f}  "
+             f"k={stacked_lev:.2f}x  exit_due={exit_dt.isoformat()}")
+    return {"status": "opened", "trade_id": tid, "entry_price": price,
+            "stacked_lev": stacked_lev, "weight": weight}
+
+
+def r4_btc_v2_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
+    """R4_BTC_V2 — Wed+Fri wk1-2 04:00→14:00 UTC."""
+    return _r4_v2_try_fire(variant, asset="BTC",
+                            strategy=STRATEGY_R4_BTC_V2,
+                            weight_key="r4_btc_v2")
+
+
+def r4_eth_v2_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
+    """R4_ETH_V2 — Wed+Fri wk1-2 04:00→14:00 UTC on ETH."""
+    return _r4_v2_try_fire(variant, asset="ETH",
+                            strategy=STRATEGY_R4_ETH_V2,
+                            weight_key="r4_eth_v2")
 
 
 # ─── Continuous-position helpers (EMA_BTC, ETH_DAILY) ───────────────────────

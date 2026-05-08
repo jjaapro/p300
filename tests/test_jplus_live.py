@@ -720,3 +720,200 @@ def test_eth_daily_opens_on_fresh_bull_entry_after_cold_start(live_env, monkeypa
     ).fetchone()[0]
     con.close()
     assert n_open == 1
+
+
+# ─── R4_BTC Mon-only (regression for 2026-05-08 V1/V2 split) ───────────────
+
+
+def test_r4_btc_v1_skips_on_wednesday(live_env, monkeypatch):
+    """Post-2026-05-08, R4_BTC fires Mondays only — Wednesdays are
+    R4_BTC_V2's territory. Verify the V1 handler skips Wed."""
+    from services import jplus_live
+    clock.set_simulated_now(datetime(2026, 5, 6, 6, 1, tzinfo=timezone.utc))  # Wed
+    try:
+        result = jplus_live.r4_btc_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert result["status"] == "not_calendar_day"
+    con = sqlite3.connect(str(live_env))
+    n = con.execute(
+        "SELECT COUNT(*) FROM trades WHERE strategy='JPLUS_R4_BTC'"
+    ).fetchone()[0]
+    con.close()
+    assert n == 0
+
+
+# ─── R4_BTC_V2 (Wed+Fri wk1-2 04→14 UTC) ───────────────────────────────────
+
+
+def test_r4_btc_v2_skips_on_monday(live_env, monkeypatch):
+    """V2 fires Wed+Fri only. Monday is V1's day."""
+    from services import jplus_live
+    clock.set_simulated_now(datetime(2026, 5, 4, 4, 1, tzinfo=timezone.utc))  # Mon
+    try:
+        result = jplus_live.r4_btc_v2_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert result["status"] == "not_calendar_day"
+
+
+def test_r4_btc_v2_skips_on_thursday(live_env, monkeypatch):
+    from services import jplus_live
+    clock.set_simulated_now(datetime(2026, 5, 7, 4, 1, tzinfo=timezone.utc))  # Thu
+    try:
+        result = jplus_live.r4_btc_v2_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert result["status"] == "not_calendar_day"
+
+
+def test_r4_btc_v2_skips_when_day_over_14(live_env, monkeypatch):
+    """wk1-2 filter: day > 14 returns ``not_wk_1_2``."""
+    from services import jplus_live
+    # 2026-05-15 is a Friday but day=15 (out of wk1-2)
+    clock.set_simulated_now(datetime(2026, 5, 15, 4, 1, tzinfo=timezone.utc))
+    try:
+        result = jplus_live.r4_btc_v2_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert result["status"] == "not_wk_1_2"
+
+
+def test_r4_btc_v2_skips_before_04_00(live_env, monkeypatch):
+    from services import jplus_live
+    clock.set_simulated_now(datetime(2026, 5, 6, 3, 30, tzinfo=timezone.utc))  # Wed 03:30
+    try:
+        result = jplus_live.r4_btc_v2_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert result["status"] == "before_open_window"
+
+
+def test_r4_btc_v2_skips_after_14_00(live_env, monkeypatch):
+    from services import jplus_live
+    clock.set_simulated_now(datetime(2026, 5, 6, 14, 1, tzinfo=timezone.utc))  # Wed 14:01
+    try:
+        result = jplus_live.r4_btc_v2_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert result["status"] == "after_close_window"
+
+
+def test_r4_btc_v2_opens_on_wednesday_within_window(live_env, monkeypatch):
+    """Wed wk1-2, 04:00-14:00 UTC, valid inputs → opens BTC LONG.
+    Sizing: capital × weights['r4_btc_v2'] × inner_lev × vol_lev."""
+    from services import jplus_live, price_feed
+    from jplus import simulate as core_sim
+    monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 80_000.0)
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="uncertain", lev=2.0,
+                                                     gated=False))
+    clock.set_simulated_now(datetime(2026, 5, 6, 4, 1, tzinfo=timezone.utc))  # Wed, day=6
+    try:
+        result = jplus_live.r4_btc_v2_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert result["status"] == "opened"
+    assert result["entry_price"] == 80_000.0
+    # uncertain regime: r4_btc_v2 weight = 0.15 (half of v1's 0.30)
+    assert result["weight"] == pytest.approx(0.15)
+    # inner_lev 2.5 × vol_lev 2.0
+    assert result["stacked_lev"] == pytest.approx(5.0)
+
+    con = sqlite3.connect(str(live_env))
+    con.row_factory = sqlite3.Row
+    row = con.execute(
+        "SELECT * FROM trades WHERE strategy='JPLUS_R4_BTC_V2' AND status='open'"
+    ).fetchone()
+    con.close()
+    assert row is not None
+    assert row["asset"] == "BTC"
+    assert row["direction"] == "LONG"
+    # Notional = 10_000 × 0.15 × 5.0 = 7_500
+    assert row["size_usdt"] == pytest.approx(7_500.0)
+
+
+def test_r4_btc_v2_opens_on_friday_within_window(live_env, monkeypatch):
+    """Friday is the second V2 firing day."""
+    from services import jplus_live, price_feed
+    from jplus import simulate as core_sim
+    monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 80_000.0)
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="uncertain", lev=2.0))
+    clock.set_simulated_now(datetime(2026, 5, 8, 4, 1, tzinfo=timezone.utc))  # Fri, day=8
+    try:
+        result = jplus_live.r4_btc_v2_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert result["status"] == "opened"
+
+
+def test_r4_btc_v2_idempotent_within_window(live_env, monkeypatch):
+    """Two ticks in the same window must not double-open."""
+    from services import jplus_live, price_feed
+    from jplus import simulate as core_sim
+    monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 80_000.0)
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="uncertain", lev=2.0))
+    clock.set_simulated_now(datetime(2026, 5, 6, 4, 1, tzinfo=timezone.utc))
+    try:
+        a = jplus_live.r4_btc_v2_try_fire(_variant(), {})
+        clock.set_simulated_now(datetime(2026, 5, 6, 4, 6, tzinfo=timezone.utc))
+        b = jplus_live.r4_btc_v2_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert a["status"] == "opened"
+    assert b["status"] == "already_open"
+
+
+def test_r4_btc_v2_skips_in_bear_regime(live_env, monkeypatch):
+    """bear regime weight = 0 → no open."""
+    from services import jplus_live, price_feed
+    from jplus import simulate as core_sim
+    monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 80_000.0)
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="bear", lev=1.5))
+    clock.set_simulated_now(datetime(2026, 5, 6, 4, 1, tzinfo=timezone.utc))
+    try:
+        result = jplus_live.r4_btc_v2_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert result["status"] == "regime_zero_weight"
+
+
+# ─── R4_ETH_V2 (smoke test — same calendar/window machinery as BTC V2) ─────
+
+
+def test_r4_eth_v2_opens_on_wednesday_within_window(live_env, monkeypatch):
+    """Confirm the ETH V2 sleeve fires on Wed and writes an ETH trade."""
+    from services import jplus_live, price_feed
+    from jplus import simulate as core_sim
+    monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
+    monkeypatch.setattr(core_sim, "today_inputs",
+                         lambda: _today_inputs_stub(mode="uncertain", lev=2.0))
+    clock.set_simulated_now(datetime(2026, 5, 6, 4, 1, tzinfo=timezone.utc))  # Wed
+    try:
+        result = jplus_live.r4_eth_v2_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert result["status"] == "opened"
+    # uncertain regime: r4_eth_v2 weight = 0.20
+    assert result["weight"] == pytest.approx(0.20)
+
+    con = sqlite3.connect(str(live_env))
+    direction = con.execute(
+        "SELECT direction, asset FROM trades WHERE strategy='JPLUS_R4_ETH_V2'"
+    ).fetchone()
+    con.close()
+    assert direction[1] == "ETH"
+    assert direction[0] == "LONG"
+
+
+def test_r4_eth_v2_skips_on_thursday(live_env, monkeypatch):
+    from services import jplus_live
+    clock.set_simulated_now(datetime(2026, 5, 7, 4, 1, tzinfo=timezone.utc))  # Thu
+    try:
+        result = jplus_live.r4_eth_v2_try_fire(_variant(), {})
+    finally:
+        clock.set_simulated_now(None)
+    assert result["status"] == "not_calendar_day"

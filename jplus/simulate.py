@@ -33,13 +33,17 @@ R4_EXTRA_LEV_GATED = 1.0
 # tests in tests/test_jplus_trade_emitter.py catch any drift.
 REGIME_WEIGHTS_FULL = {
     "strong_bull": {"ema_btc": 0.50, "eth_daily": 0.20,
-                     "r4_btc": 0.15, "r4_eth": 0.15},
+                     "r4_btc": 0.15, "r4_eth": 0.15,
+                     "r4_btc_v2": 0.075, "r4_eth_v2": 0.075},
     "mild_bull":   {"ema_btc": 0.30, "eth_daily": 0.10,
-                     "r4_btc": 0.20, "r4_eth": 0.30},
+                     "r4_btc": 0.20, "r4_eth": 0.30,
+                     "r4_btc_v2": 0.10, "r4_eth_v2": 0.15},
     "uncertain":   {"ema_btc": 0.30, "eth_daily": 0.00,
-                     "r4_btc": 0.30, "r4_eth": 0.40},
+                     "r4_btc": 0.30, "r4_eth": 0.40,
+                     "r4_btc_v2": 0.15, "r4_eth_v2": 0.20},
     "bear":        {"ema_btc": 0.30, "eth_daily": 0.00,
-                     "r4_btc": 0.00, "r4_eth": 0.00},
+                     "r4_btc": 0.00, "r4_eth": 0.00,
+                     "r4_btc_v2": 0.00, "r4_eth_v2": 0.00},
 }
 
 
@@ -100,6 +104,8 @@ def _run_decision_loop() -> tuple[dict[str, dict], dict]:
 
     r4b_map = r4.r4_btc_returns(btc_h)
     r4e_map = r4.r4_eth_returns(eth_h)
+    r4b_v2_map = r4.r4_btc_v2_returns(btc_h)
+    r4e_v2_map = r4.r4_eth_v2_returns(eth_h)
     ema_pos = ema_sleeve.compute_ema_position_map(hourly)
 
     dates = sorted(set(btc_d.keys()))  # BTC-daily is the primary calendar
@@ -137,19 +143,29 @@ def _run_decision_loop() -> tuple[dict[str, dict], dict]:
         ema_p = ema_pos.get(d, 0)
 
         # R4 flags and per-trade returns (intraday windows).
+        # V1 R4_BTC: Mon-only since 2026-05-08 (was Mon+Wed). V2 captures
+        # Wed+Fri at 04→14 — see jplus/r4.py and tools/r4_study/.
         dt = btc_d[d]["dt"]
-        is_r4_b = dt.weekday() in (0, 2) and dt.day <= 14
+        is_r4_b = dt.weekday() == 0 and dt.day <= 14
         is_r4_e = dt.weekday() == 2 and dt.day <= 14
+        is_r4_b_v2 = dt.weekday() in (2, 4) and dt.day <= 14
+        is_r4_e_v2 = dt.weekday() in (2, 4) and dt.day <= 14
         r4b_r = r4b_map.get(d, 0.0) if is_r4_b else 0.0
         r4e_r = r4e_map.get(d, 0.0) if is_r4_e else 0.0
+        r4b_v2_r = r4b_v2_map.get(d, 0.0) if is_r4_b_v2 else 0.0
+        r4e_v2_r = r4e_v2_map.get(d, 0.0) if is_r4_e_v2 else 0.0
 
         # Rule-based R4 gate (T-1 vol-percentile rule).
         # NOTE: R4 leverage stacks with vol-target: max effective on R4 sub-sleeve
         # is R4_EXTRA_LEV_UNGATED × H_CAPS["strong_bull"] = 2.5 × 3.0 = 7.5x.
+        # V2 sleeves use the same gate / inner-leverage as V1 — the gate
+        # rule is volatility-regime-based, not sleeve-specific.
         gate_fired = gate_map.get(d, False)
         r4_lev = R4_EXTRA_LEV_GATED if gate_fired else R4_EXTRA_LEV_UNGATED
         r4b_r *= r4_lev
         r4e_r *= r4_lev
+        r4b_v2_r *= r4_lev
+        r4e_v2_r *= r4_lev
 
         # Per-regime allocation. Weights intentionally sum < 1.0 in risk-off
         # regimes (remainder is idle cash):
@@ -157,13 +173,18 @@ def _run_decision_loop() -> tuple[dict[str, dict], dict]:
         #   mild_bull:   0.90 (10% cash buffer)
         #   uncertain:   1.00 (fully invested in mean-reversion sleeves)
         #   bear:        0.30 (70% cash — defensive posture)
-        weights = REGIME_WEIGHTS_FULL.get(mode, {"ema_btc": 0.0, "eth_daily": 0.0,
-                                                  "r4_btc": 0.0, "r4_eth": 0.0})
+        weights = REGIME_WEIGHTS_FULL.get(mode, {
+            "ema_btc": 0.0, "eth_daily": 0.0,
+            "r4_btc": 0.0, "r4_eth": 0.0,
+            "r4_btc_v2": 0.0, "r4_eth_v2": 0.0,
+        })
         c_ema = weights["ema_btc"] * ema_p * br
         c_eth = weights["eth_daily"] * er
         c_r4e = weights["r4_eth"] * r4e_r
         c_r4b = weights["r4_btc"] * r4b_r
-        rl = c_ema + c_eth + c_r4e + c_r4b
+        c_r4b_v2 = weights.get("r4_btc_v2", 0.0) * r4b_v2_r
+        c_r4e_v2 = weights.get("r4_eth_v2", 0.0) * r4e_v2_r
+        rl = c_ema + c_eth + c_r4e + c_r4b + c_r4b_v2 + c_r4e_v2
 
         # Vol-target cap using prior-day recent_1x history.
         lev = voltarget.leverage_for_day(recent_1x, mode)
@@ -188,14 +209,20 @@ def _run_decision_loop() -> tuple[dict[str, dict], dict]:
             "eth_daily_contrib_1x_pct": c_eth * 100,
             "r4_btc_contrib_1x_pct": c_r4b * 100,
             "r4_eth_contrib_1x_pct": c_r4e * 100,
+            "r4_btc_v2_contrib_1x_pct": c_r4b_v2 * 100,
+            "r4_eth_v2_contrib_1x_pct": c_r4e_v2 * 100,
             # Whether each calendar-driven sleeve actually fired today.
             "r4_btc_fired": is_r4_b,
             "r4_eth_fired": is_r4_e,
+            "r4_btc_v2_fired": is_r4_b_v2,
+            "r4_eth_v2_fired": is_r4_e_v2,
             # Underlying 1x daily returns of the asset legs (for sanity-check).
             "btc_daily_pct": br * 100,
             "eth_daily_pct": er * 100,
             "r4_btc_pct": r4b_r * 100,
             "r4_eth_pct": r4e_r * 100,
+            "r4_btc_v2_pct": r4b_v2_r * 100,
+            "r4_eth_v2_pct": r4e_v2_r * 100,
         }
 
     final_state = {
@@ -305,11 +332,13 @@ def today_inputs() -> dict | None:
     # is before warmup or otherwise missing, mode_prev is None and weights_prev
     # is all-zero (treated by callers as "no signal yet" — same as no entry).
     weights = dict(REGIME_WEIGHTS_FULL.get(
-        mode, {"ema_btc": 0.0, "eth_daily": 0.0, "r4_btc": 0.0, "r4_eth": 0.0}))
+        mode, {"ema_btc": 0.0, "eth_daily": 0.0, "r4_btc": 0.0, "r4_eth": 0.0,
+                "r4_btc_v2": 0.0, "r4_eth_v2": 0.0}))
     yest_rec = out.get(yesterday_iso) or {}
     mode_prev = yest_rec.get("mode")
     weights_prev = dict(REGIME_WEIGHTS_FULL.get(
-        mode_prev, {"ema_btc": 0.0, "eth_daily": 0.0, "r4_btc": 0.0, "r4_eth": 0.0}))
+        mode_prev, {"ema_btc": 0.0, "eth_daily": 0.0, "r4_btc": 0.0, "r4_eth": 0.0,
+                     "r4_btc_v2": 0.0, "r4_eth_v2": 0.0}))
 
     return {
         "date": today_iso,
@@ -330,10 +359,11 @@ def today_inputs() -> dict | None:
 # parity test in tests/test_jplus_trade_emitter.py catches drift if these
 # get out of sync with the actual loop logic.
 _REGIME_R4_WEIGHTS = {
-    "strong_bull": (0.15, 0.15),  # (r4_btc, r4_eth)
-    "mild_bull":   (0.20, 0.30),
-    "uncertain":   (0.30, 0.40),
-    "bear":        (0.00, 0.00),
+    # (r4_btc, r4_eth, r4_btc_v2, r4_eth_v2)
+    "strong_bull": (0.15, 0.15, 0.075, 0.075),
+    "mild_bull":   (0.20, 0.30, 0.10,  0.15),
+    "uncertain":   (0.30, 0.40, 0.15,  0.20),
+    "bear":        (0.00, 0.00, 0.00,  0.00),
 }
 
 
@@ -353,13 +383,17 @@ def apply_r4_fees(series: dict[str, dict], fee_bp_rt: float = 10.0) -> None:
 
     where ``r4_inner_lev`` is 1.0 if the gate fired today, else 2.5.
 
+    V2 sleeves are charged the same fee model with their own per-regime
+    weights — see ``_REGIME_R4_WEIGHTS`` above.
+
     The live path (``services/jplus_service.py``) does NOT call this —
     it derives fees from the trade-event ledger, which is the canonical
     P&L source under Path B.
     """
     fee_frac = fee_bp_rt / 10000.0
     for rec in series.values():
-        weights = _REGIME_R4_WEIGHTS.get(rec.get("mode", ""), (0.0, 0.0))
+        weights = _REGIME_R4_WEIGHTS.get(rec.get("mode", ""),
+                                          (0.0, 0.0, 0.0, 0.0))
         gated = bool(rec.get("gated", False))
         r4_lev = 1.0 if gated else 2.5
         lev = float(rec.get("lev", 1.0))
@@ -368,5 +402,9 @@ def apply_r4_fees(series: dict[str, dict], fee_bp_rt: float = 10.0) -> None:
             fee_pct += weights[0] * r4_lev * lev * fee_frac * 100.0
         if rec.get("r4_eth_fired"):
             fee_pct += weights[1] * r4_lev * lev * fee_frac * 100.0
+        if rec.get("r4_btc_v2_fired"):
+            fee_pct += weights[2] * r4_lev * lev * fee_frac * 100.0
+        if rec.get("r4_eth_v2_fired"):
+            fee_pct += weights[3] * r4_lev * lev * fee_frac * 100.0
         rec["return_pct"] = float(rec["return_pct"]) - fee_pct
         rec["r4_fees_pct"] = fee_pct

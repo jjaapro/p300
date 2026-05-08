@@ -319,6 +319,8 @@ def _load_dispatch():
         # at the calendar/signal moment with the live price.
         "JPLUS_R4_BTC":    jplus_live.r4_btc_try_fire,
         "JPLUS_R4_ETH":    jplus_live.r4_eth_try_fire,
+        "JPLUS_R4_BTC_V2": jplus_live.r4_btc_v2_try_fire,
+        "JPLUS_R4_ETH_V2": jplus_live.r4_eth_v2_try_fire,
         "JPLUS_EMA_BTC":   jplus_live.ema_btc_try_fire,
         "JPLUS_ETH_DAILY": jplus_live.eth_daily_try_fire,
     }

@@ -114,16 +114,25 @@ dispatched per-minute by [services/variant_engine.py](services/variant_engine.py
 ## 3. Core J+ Engine — 50% of capital
 
 The Core is a composite strategy whose machinery lives in the [jplus/](jplus/)
-package. Each of its four sub-sleeves is dispatched as a tactical-style
+package. Each of its six sub-sleeves is dispatched as a tactical-style
 top-level entry in `STRATEGY_DISPATCH` and runs its own per-tick handler in
 [services/jplus_live.py](services/jplus_live.py):
 
 | Strategy ID | Asset | Live entry condition | Live exit condition |
 |---|---|---|---|
-| `JPLUS_R4_BTC` | BTC perp | Mon/Wed wk1-2, 06:00 UTC | scheduled 18:00 UTC same day |
+| `JPLUS_R4_BTC` | BTC perp | **Mon** wk1-2, 06:00 UTC | scheduled 18:00 UTC same day |
 | `JPLUS_R4_ETH` | ETH perp | Tue 20:00 UTC where next-day Wed.day ≤ 14 | scheduled Wed 20:00 UTC |
+| `JPLUS_R4_BTC_V2` | BTC perp | **Wed/Fri** wk1-2, 04:00 UTC | scheduled 14:00 UTC same day |
+| `JPLUS_R4_ETH_V2` | ETH perp | **Wed/Fri** wk1-2, 04:00 UTC | scheduled 14:00 UTC same day |
 | `JPLUS_EMA_BTC` | BTC perp | first tick with `today_inputs.ema_p ≠ 0` | open-ended; FLIP on weekly cross |
 | `JPLUS_ETH_DAILY` | ETH perp | first tick after regime enters strong_bull / mild_bull | first tick after regime exits bull |
+
+The V1 R4_BTC sleeve was **Mon+Wed** before 2026-05-08; the calendar-window
+study in [tools/r4_study/](tools/r4_study/) found that Wed responds better
+to a 04→14 UTC window than the V1's 06→18, so Wednesday was moved to a new
+sleeve (R4_BTC_V2) along with Friday — historically the strongest single
+weekday cell on BTC (NFP-anticipation effect). The same Wed+Fri 04→14 cell
+extracts comparable signal on ETH (R4_ETH_V2) per the cross-asset study.
 
 Each handler:
 - pulls today's regime mode, vol-target leverage, R4 gate, EMA position,
@@ -210,8 +219,10 @@ Four signal sources contribute to the daily 1× return. Each sub-sleeve's
 |---|---|---|---|
 | EMA(BTC) | [jplus/ema_sleeve.py](jplus/ema_sleeve.py) | position direction × BTC daily return | 1× |
 | ETH daily | [jplus/data.py](jplus/data.py) | ETH's daily return | 1× |
-| R4 BTC | [jplus/r4.py](jplus/r4.py) | intraday 06→18 UTC window return | **2.5× / 1×** (gated) |
+| R4 BTC | [jplus/r4.py](jplus/r4.py) | Mon 06→18 UTC window return | **2.5× / 1×** (gated) |
 | R4 ETH | [jplus/r4.py](jplus/r4.py) | 24h Tue 20→Wed 20 UTC window return | **2.5× / 1×** (gated) |
+| R4 BTC V2 | [jplus/r4.py](jplus/r4.py) | Wed/Fri 04→14 UTC window return | **2.5× / 1×** (gated) |
+| R4 ETH V2 | [jplus/r4.py](jplus/r4.py) | Wed/Fri 04→14 UTC window return | **2.5× / 1×** (gated) |
 
 #### 3.1.1 EMA(BTC) — Weekly crossover position-flip
 
@@ -235,9 +246,9 @@ Four signal sources contribute to the daily 1× return. Each sub-sleeve's
 - **Edge thesis**: pure long-ETH-beta during bull regimes. ETH outperforms BTC on the way up; this gives the portfolio that exposure when conditions are constructive.
 - **Active in**: `strong_bull` and `mild_bull` only.
 
-#### 3.1.3 S-099 R4 BTC — Mon + Wed intraday long, weeks 1–2 only
+#### 3.1.3 S-099 R4 BTC — Mon intraday long, weeks 1–2 only
 
-- **Signal**: pure calendar trigger. Fires on Mondays and Wednesdays whose date is **≤ 14 of the month** (first half only).
+- **Signal**: pure calendar trigger. Fires on Mondays whose date is **≤ 14 of the month** (first half only). Mon-only since 2026-05-08; was Mon+Wed before the V1/V2 split — Wednesdays moved to R4 BTC V2 at the era-stable 04→14 window. See [tools/r4_study/findings.md](tools/r4_study/findings.md).
 - **Entry**: `06:00 UTC` open price of that day.
 - **Exit**: `18:00 UTC` open price (i.e., end of the 12-hour window), same day.
 - **Direction**: LONG always.
@@ -245,7 +256,7 @@ Four signal sources contribute to the daily 1× return. Each sub-sleeve's
 - **Inner leverage**: **2.5×** normally, **1.0×** when the vol-percentile gate fires (§3.3).
 - **Daily contribution**: `R4_BTC_return × inner_lev × regime_weight` (0.30 in `uncertain`, 0.20 in `mild_bull`, 0.15 in `strong_bull`, 0 in `bear`).
 - **Cost model**: 10bp round-trip taker fee, baked into the windowed return.
-- **Edge thesis**: a known intraday window in BTC where US/Europe overlap drives directional pressure. Concentrated in early-month days when month-start flows hit. Empirically: ~96 fires over 973 days, mean +0.052%/day, +61.8% compounded if run alone.
+- **Edge thesis**: post-Binance-perp / post-ETF emergent flow effect — Mon was −0.76%/trade pre-Binance and +0.83%/trade post-ETF. The strategy bets on the post-2024 regime continuing; per-sleeve health metrics in [services/strategy_health.py](services/strategy_health.py) trigger disable on expectancy decay. See [tools/r4_study/findings.md](tools/r4_study/findings.md).
 - **Active in**: every non-`bear` regime.
 
 #### 3.1.4 S-099 R4 ETH — Tue → Wed 24h long, weeks 1–2 only
@@ -262,14 +273,35 @@ Four signal sources contribute to the daily 1× return. Each sub-sleeve's
 - **Active in**: every non-`bear` regime; weighted heaviest in `uncertain` (40%).
 - **Caveat**: 48 events in 2.6 years is a thin sample. The +116% compounded standalone return is striking and demands skepticism — could be genuine alpha, could be a quirk of how ETH happened to behave on those exact dates in 2024–2025. Worth a longer-horizon sanity check.
 
-### S-095 3.2 Per-regime allocation weights ([jplus/simulate.py:108-117](jplus/simulate.py))
+#### 3.1.5 R4 BTC V2 — Wed + Fri intraday long, weeks 1–2 (added 2026-05-08)
 
-| Mode | EMA(BTC) | ETH daily | R4 ETH | R4 BTC | Sum | When this fires |
-|---|---|---|---|---|---|---|
-| **strong_bull** | 0.50 | 0.20 | 0.15 | 0.15 | 1.00 | full risk-on |
-| **mild_bull** | 0.30 | 0.10 | 0.30 | 0.20 | 0.90 | partial risk-on, R4 emphasised |
-| **uncertain** | 0.30 | 0.00 | 0.40 | 0.30 | 1.00 | calendar-driven only (R4 carries) |
-| **bear** | 0.30 | 0.00 | 0.00 | 0.00 | 0.30 | EMA only, R4 idle |
+- **Signal**: calendar trigger. Fires on Wednesdays and Fridays whose date is **≤ 14 of the month**.
+- **Entry**: `04:00 UTC` open price.
+- **Exit**: `14:00 UTC` open price (10-hour hold), same day.
+- **Direction**: LONG always.
+- **Return per fire**: `(price_at_14:00 − price_at_04:00) / price_at_04:00 − 10bp RT cost`.
+- **Inner leverage**: **2.5×** normally, **1.0×** when the vol-percentile gate fires (§3.3).
+- **Daily contribution**: `R4_BTC_V2_return × inner_lev × regime_weight` (0.15 in `uncertain`, 0.10 in `mild_bull`, 0.075 in `strong_bull`, 0 in `bear`) — half the V1 weight.
+- **Edge thesis**: era-stable BTC alpha cell (positive in pre-Binance-perp, Binance-perp, and post-ETF eras). Likely captures NFP-anticipation (Friday wk1 cell is the strongest single-day cell on BTC) plus early-month Wed flow. Full-sample t=+4.6 across 402 fires per the [r4_study](tools/r4_study/) grid search.
+- **Active in**: every non-`bear` regime.
+
+#### 3.1.6 R4 ETH V2 — Wed + Fri intraday long, weeks 1–2 (added 2026-05-08)
+
+- Same calendar and window as R4 BTC V2 (Wed+Fri wk1-2 04→14 UTC), applied to ETH.
+- **Daily contribution**: `R4_ETH_V2_return × inner_lev × regime_weight` (0.20 in `uncertain`, 0.15 in `mild_bull`, 0.075 in `strong_bull`, 0 in `bear`).
+- **Edge thesis**: cross-asset bonus from the BTC study — the same Wed+Fri 04→14 window extracts comparable signal on ETH (+0.62% pre-ETH-ETF, +0.48% post-ETH-ETF per fire).
+- **Active in**: every non-`bear` regime.
+
+### S-095 3.2 Per-regime allocation weights ([jplus/simulate.py](jplus/simulate.py))
+
+| Mode | EMA(BTC) | ETH daily | R4 ETH | R4 BTC | R4 BTC V2 | R4 ETH V2 | Sum | When this fires |
+|---|---|---|---|---|---|---|---|---|
+| **strong_bull** | 0.50 | 0.20 | 0.15 | 0.15 | 0.075 | 0.075 | 1.15 | full risk-on |
+| **mild_bull** | 0.30 | 0.10 | 0.30 | 0.20 | 0.10  | 0.15  | 1.15 | partial risk-on, R4 emphasised |
+| **uncertain** | 0.30 | 0.00 | 0.40 | 0.30 | 0.15  | 0.20  | 1.35 | calendar-driven only (R4 carries) |
+| **bear** | 0.30 | 0.00 | 0.00 | 0.00 | 0.00  | 0.00  | 0.30 | EMA only, R4 idle |
+
+**Total > 1.0 in three regimes**: as of the V2 sleeves being added (2026-05-08), Core total exposure can exceed 1.0 when multiple R4 sleeves fire concurrently. Peak concurrent exposure is on Wednesdays (R4 ETH V1 still open from Tue + R4 BTC V2 + R4 ETH V2 all firing 04:00-14:00 UTC) — about 75% of capital in `uncertain` regime. Vol-target leverage scales this further. The V2 sleeves are at half the V1 weights specifically to keep peak Wed concurrent exposure comparable to the pre-2026-05-08 baseline.
 
 The bot spent 62% of the 2023-09 → 2026-04 window in `uncertain` and 25% in
 `bear` — so for most days, R4 BTC and R4 ETH are doing the real work when
@@ -277,7 +309,7 @@ they fire, and EMA carries the rest.
 
 ### 3.3 Layer 1 — R4 inner multiplier ([jplus/simulate.py:26-27](jplus/simulate.py))
 
-R4 BTC and R4 ETH (and ONLY those two — not EMA, not ETH daily) get an inner
+R4 BTC, R4 ETH, R4 BTC V2, R4 ETH V2 (and ONLY those four — not EMA, not ETH daily) get an inner
 amplification on top of their raw windowed return:
 
 | State | Multiplier | Why |

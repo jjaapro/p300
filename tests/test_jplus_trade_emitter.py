@@ -761,3 +761,167 @@ def test_eth_daily_cold_start_opens_on_regime_entry(emitter_env):
     assert len(rows) == 1, \
         f"expected exactly 1 ETH_DAILY trade on fresh bull entry, got {len(rows)}"
     assert rows[0][1] == "LONG"
+
+
+# ─── R4 V2 parity + calendar correctness ────────────────────────────────────
+
+
+@pytest.mark.slow
+def test_r4_btc_only_fires_on_mondays_after_v1_v2_split(emitter_env):
+    """Post-2026-05-08, R4_BTC_V1 fires Mon-only (Wed moved to V2). Verify
+    no Wed entries are emitted in the parity window."""
+    from jplus import simulate as core_sim
+    from services import jplus_trade_emitter as emitter
+
+    clock.set_simulated_now(datetime(2024, 5, 1, tzinfo=timezone.utc))
+    series = core_sim.simulate(start_date=PARITY_WINDOW_START,
+                                end_date=PARITY_WINDOW_END)
+    try:
+        _replay_series(emitter, _variant(), series)
+    finally:
+        clock.set_simulated_now(None)
+
+    con = sqlite3.connect(str(emitter_env))
+    try:
+        rows = con.execute(
+            "SELECT id, actual_entry_time FROM trades "
+            "WHERE strategy='JPLUS_R4_BTC'"
+        ).fetchall()
+    finally:
+        con.close()
+    assert rows, "no R4_BTC trades emitted (parity window has Mon wk1-2 fires)"
+    for tid, ent in rows:
+        dt = datetime.fromisoformat(ent)
+        assert dt.weekday() == 0, \
+            f"R4_BTC {tid} entry {ent} on weekday={dt.weekday()} (expected Mon=0)"
+        assert 1 <= dt.day <= 14
+
+
+@pytest.mark.slow
+def test_r4_btc_v2_only_fires_on_wed_fri_wk1_2(emitter_env):
+    """V2 calendar: only Wed (weekday=2) or Fri (weekday=4), day 1-14,
+    entry hour 04:00 UTC."""
+    from jplus import simulate as core_sim
+    from services import jplus_trade_emitter as emitter
+
+    clock.set_simulated_now(datetime(2024, 5, 1, tzinfo=timezone.utc))
+    series = core_sim.simulate(start_date=PARITY_WINDOW_START,
+                                end_date=PARITY_WINDOW_END)
+    try:
+        _replay_series(emitter, _variant(), series)
+    finally:
+        clock.set_simulated_now(None)
+
+    con = sqlite3.connect(str(emitter_env))
+    try:
+        rows = con.execute(
+            "SELECT id, actual_entry_time FROM trades "
+            "WHERE strategy='JPLUS_R4_BTC_V2'"
+        ).fetchall()
+    finally:
+        con.close()
+    assert rows, "no R4_BTC_V2 trades emitted in parity window"
+    for tid, ent in rows:
+        dt = datetime.fromisoformat(ent)
+        assert dt.weekday() in (2, 4), \
+            f"R4_BTC_V2 {tid} entry {ent} on weekday={dt.weekday()} (expected Wed/Fri)"
+        assert 1 <= dt.day <= 14
+        assert dt.hour == 4, \
+            f"R4_BTC_V2 {tid} entry hour={dt.hour} != 4"
+
+
+@pytest.mark.slow
+def test_r4_btc_v2_parity_with_simulator(emitter_env):
+    """Trade-derived gross R4_BTC_V2 P&L must equal sim's
+    r4_btc_v2_contrib_1x_pct × lev within 1bp on every fire day."""
+    from jplus import simulate as core_sim
+    from services import jplus_trade_emitter as emitter
+
+    clock.set_simulated_now(datetime(2024, 5, 1, tzinfo=timezone.utc))
+    series = core_sim.simulate(start_date=PARITY_WINDOW_START,
+                                end_date=PARITY_WINDOW_END)
+    try:
+        _replay_series(emitter, _variant(), series)
+    finally:
+        clock.set_simulated_now(None)
+
+    con = sqlite3.connect(str(emitter_env))
+    try:
+        diffs: list[tuple] = []
+        n_fired = 0
+        for date_iso in sorted(series.keys()):
+            rec = series[date_iso]
+            if not rec.get("r4_btc_v2_fired"):
+                continue
+            sim_contrib_pct = (float(rec["r4_btc_v2_contrib_1x_pct"])
+                               * float(rec["lev"]))
+            trade_pct = _trade_gross_pct(con, "JPLUS_R4_BTC_V2", date_iso)
+            if trade_pct is None:
+                if rec.get("mode") == "bear":
+                    continue
+                diffs.append((date_iso, "no_trade", sim_contrib_pct, None))
+                continue
+            n_fired += 1
+            if abs(trade_pct - sim_contrib_pct) > PARITY_TOLERANCE_PCT:
+                diffs.append((date_iso, "mismatch", sim_contrib_pct, trade_pct))
+    finally:
+        con.close()
+
+    assert n_fired >= 5, f"need >= 5 R4_BTC_V2 firings, got {n_fired}"
+    assert not diffs, f"R4_BTC_V2 parity mismatches (first 5): {diffs[:5]}"
+
+
+@pytest.mark.slow
+def test_r4_eth_v2_parity_with_simulator(emitter_env):
+    """Trade-derived gross R4_ETH_V2 P&L must equal sim's
+    r4_eth_v2_contrib_1x_pct × lev within 1bp on every fire day."""
+    from jplus import simulate as core_sim
+    from services import jplus_trade_emitter as emitter
+
+    clock.set_simulated_now(datetime(2024, 5, 1, tzinfo=timezone.utc))
+    series = core_sim.simulate(start_date=PARITY_WINDOW_START,
+                                end_date=PARITY_WINDOW_END)
+    try:
+        _replay_series(emitter, _variant(), series)
+    finally:
+        clock.set_simulated_now(None)
+
+    con = sqlite3.connect(str(emitter_env))
+    try:
+        diffs: list[tuple] = []
+        n_fired = 0
+        for date_iso in sorted(series.keys()):
+            rec = series[date_iso]
+            if not rec.get("r4_eth_v2_fired"):
+                continue
+            sim_contrib_pct = (float(rec["r4_eth_v2_contrib_1x_pct"])
+                               * float(rec["lev"]))
+            trade_pct = _trade_gross_pct(con, "JPLUS_R4_ETH_V2", date_iso)
+            if trade_pct is None:
+                if rec.get("mode") == "bear":
+                    continue
+                diffs.append((date_iso, "no_trade", sim_contrib_pct, None))
+                continue
+            n_fired += 1
+            if abs(trade_pct - sim_contrib_pct) > PARITY_TOLERANCE_PCT:
+                diffs.append((date_iso, "mismatch", sim_contrib_pct, trade_pct))
+    finally:
+        con.close()
+
+    assert n_fired >= 5, f"need >= 5 R4_ETH_V2 firings, got {n_fired}"
+    assert not diffs, f"R4_ETH_V2 parity mismatches (first 5): {diffs[:5]}"
+
+
+def test_regime_weights_emitter_simulator_parity():
+    """Hand-coded REGIME_WEIGHTS in the emitter must match
+    REGIME_WEIGHTS_FULL in the simulator. Single-source-of-truth would
+    be nicer but we duplicate to avoid the simulator's heavy import path
+    in the emitter — this test catches drift."""
+    from services.jplus_trade_emitter import REGIME_WEIGHTS as EMITTER_W
+    from jplus.simulate import REGIME_WEIGHTS_FULL as SIM_W
+    for regime in ("strong_bull", "mild_bull", "uncertain", "bear"):
+        for sleeve in ("ema_btc", "eth_daily", "r4_btc", "r4_eth",
+                        "r4_btc_v2", "r4_eth_v2"):
+            assert EMITTER_W[regime][sleeve] == SIM_W[regime][sleeve], \
+                f"weight drift at {regime}.{sleeve}: " \
+                f"emitter={EMITTER_W[regime][sleeve]} sim={SIM_W[regime][sleeve]}"

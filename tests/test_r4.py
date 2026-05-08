@@ -1,10 +1,12 @@
-"""jplus.r4 — R4 BTC (06→18 UTC) and R4 ETH (Tue20→Wed20 UTC) returns.
+"""jplus.r4 — R4 BTC (Mon 06→18), R4 ETH (Tue20→Wed20), R4 V2
+(Wed+Fri 04→14, both BTC and ETH) returns.
 
 Fixtures are hand-built (date, hour) → (open, close) dicts covering
-  - Mon/Wed wk1-2 firing conditions
+  - V1 Mon-only wk1-2 firing (post-2026-05-08; previously Mon+Wed)
+  - V2 Wed+Fri wk1-2 firing
   - Skip conditions (wrong day, wrong week, missing exit bar)
   - Sign of return (rise vs fall)
-  - Fee deduction
+  - Gross-only (fees deducted at trade-emit time, not in r4.py)
 """
 from __future__ import annotations
 
@@ -28,16 +30,15 @@ def test_r4_btc_fires_on_monday_week_one():
     assert out["2024-01-01"] == pytest.approx(0.02)
 
 
-def test_r4_btc_fires_on_wednesday_week_two():
-    # 2024-01-10 is Wed, day=10 (week 2). Should fire.
+def test_r4_btc_skips_wednesday_after_v1_v2_split():
+    # 2024-01-10 is Wed, day=10 (week 2). Pre-2026-05-08 this fired
+    # under R4_BTC; post-split, Wed is R4_BTC_V2's territory only.
     by_hour = {
         ("2024-01-10", 6): (50_000.0, 50_000.0),
-        ("2024-01-10", 18): (49_000.0, 49_000.0),  # fell
+        ("2024-01-10", 18): (49_000.0, 49_000.0),
     }
     out = r4.r4_btc_returns(by_hour)
-    assert "2024-01-10" in out
-    # Gross only — fees applied at trade-event close, not in r4.py.
-    assert out["2024-01-10"] == pytest.approx(-0.02)
+    assert "2024-01-10" not in out
 
 
 def test_r4_btc_skips_day_over_14():
@@ -140,3 +141,101 @@ def test_r4_eth_ignores_non_tue_20_bars():
     }
     out = r4.r4_eth_returns(eth_by_hour)
     assert out == {}
+
+
+# ─── R4 V2 (BTC + ETH share Wed+Fri wk1-2 04→14) ───────────────────────────
+
+def test_r4_btc_v2_fires_on_wednesday_wk1():
+    # 2024-01-03 is Wed, day=3 (wk1). Entry 04, exit 14.
+    by_hour = {
+        ("2024-01-03", 4): (50_000.0, 50_000.0),
+        ("2024-01-03", 14): (51_000.0, 51_000.0),
+    }
+    out = r4.r4_btc_v2_returns(by_hour)
+    assert "2024-01-03" in out
+    assert out["2024-01-03"] == pytest.approx(0.02)
+
+
+def test_r4_btc_v2_fires_on_friday_wk2():
+    # 2024-01-12 is Fri, day=12 (wk2).
+    by_hour = {
+        ("2024-01-12", 4): (50_000.0, 50_000.0),
+        ("2024-01-12", 14): (49_500.0, 49_500.0),
+    }
+    out = r4.r4_btc_v2_returns(by_hour)
+    assert "2024-01-12" in out
+    assert out["2024-01-12"] == pytest.approx(-0.01)
+
+
+def test_r4_btc_v2_skips_monday():
+    by_hour = {
+        ("2024-01-01", 4): (50_000.0, 50_000.0),  # Mon (V1 territory)
+        ("2024-01-01", 14): (51_000.0, 51_000.0),
+    }
+    out = r4.r4_btc_v2_returns(by_hour)
+    assert "2024-01-01" not in out
+
+
+def test_r4_btc_v2_skips_thursday():
+    by_hour = {
+        ("2024-01-04", 4): (50_000.0, 50_000.0),  # Thu
+        ("2024-01-04", 14): (51_000.0, 51_000.0),
+    }
+    out = r4.r4_btc_v2_returns(by_hour)
+    assert "2024-01-04" not in out
+
+
+def test_r4_btc_v2_skips_day_over_14():
+    # 2024-01-17 is Wed, day=17 (wk3) — should NOT fire.
+    by_hour = {
+        ("2024-01-17", 4): (50_000.0, 50_000.0),
+        ("2024-01-17", 14): (51_000.0, 51_000.0),
+    }
+    out = r4.r4_btc_v2_returns(by_hour)
+    assert "2024-01-17" not in out
+
+
+def test_r4_btc_v2_skips_if_exit_bar_missing():
+    by_hour = {
+        ("2024-01-03", 4): (50_000.0, 50_000.0),
+    }
+    out = r4.r4_btc_v2_returns(by_hour)
+    assert out == {}
+
+
+def test_r4_btc_v2_uses_exit_bar_open():
+    by_hour = {
+        ("2024-01-03", 4): (50_000.0, 50_500.0),
+        ("2024-01-03", 14): (52_000.0, 60_000.0),  # huge wick
+    }
+    out = r4.r4_btc_v2_returns(by_hour)
+    assert out["2024-01-03"] == pytest.approx((52_000 - 50_000) / 50_000)
+
+
+def test_r4_eth_v2_fires_on_wednesday_wk1():
+    eth_by_hour = {
+        ("2024-01-03", 4): (3_000.0, 3_000.0),
+        ("2024-01-03", 14): (3_060.0, 3_060.0),
+    }
+    out = r4.r4_eth_v2_returns(eth_by_hour)
+    assert "2024-01-03" in out
+    assert out["2024-01-03"] == pytest.approx(0.02)
+
+
+def test_r4_eth_v2_fires_on_friday_wk2():
+    eth_by_hour = {
+        ("2024-01-12", 4): (3_000.0, 3_000.0),
+        ("2024-01-12", 14): (3_030.0, 3_030.0),
+    }
+    out = r4.r4_eth_v2_returns(eth_by_hour)
+    assert "2024-01-12" in out
+
+
+def test_r4_eth_v2_skips_tuesday():
+    # ETH V1 fires on Tuesday; V2 should not.
+    eth_by_hour = {
+        ("2024-01-02", 4): (3_000.0, 3_000.0),  # Tue
+        ("2024-01-02", 14): (3_050.0, 3_050.0),
+    }
+    out = r4.r4_eth_v2_returns(eth_by_hour)
+    assert "2024-01-02" not in out

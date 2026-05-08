@@ -272,7 +272,9 @@ def _load_closed_trades(variant_id: str, strategy: str,
 # up in the bot startup banner.
 KNOWN_SLEEVES = (
     "ADX", "CARRY", "THU_BEAR", "PDO_RETOUCH", "CPR", "FOMC",
-    "JPLUS_EMA_BTC", "JPLUS_ETH_DAILY", "JPLUS_R4_BTC", "JPLUS_R4_ETH",
+    "JPLUS_EMA_BTC", "JPLUS_ETH_DAILY",
+    "JPLUS_R4_BTC", "JPLUS_R4_ETH",
+    "JPLUS_R4_BTC_V2", "JPLUS_R4_ETH_V2",
 )
 
 
