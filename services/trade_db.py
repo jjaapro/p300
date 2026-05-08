@@ -120,6 +120,46 @@ def init_db() -> None:
         "CREATE INDEX IF NOT EXISTS idx_adj_date "
         "ON trade_adjustments(event_date, event_type)"
     )
+    # AI_QUANT decision audit table — one row per daily LLM call (the
+    # AI_QUANT sleeve). Persisted regardless of whether a trade is
+    # ultimately opened, so we can see every decision the model made
+    # including FLATs and errors. context_json may be truncated to keep
+    # the row from blowing up; tool_calls_json is the full per-call
+    # audit. trade_action is set by the sleeve after reconciliation
+    # ('opened:SJ-1234' / 'closed:SJ-1234' / 'flipped:SJ-1234' / 'noop' /
+    # 'error'). See services.ai_quant.journal for the writer.
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS ai_quant_decisions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            decision_utc INTEGER NOT NULL,
+            decision_date TEXT NOT NULL,
+            variant_id TEXT NOT NULL,
+            asset TEXT NOT NULL,
+            decided TEXT NOT NULL,
+            conviction INTEGER,
+            time_horizon_days INTEGER,
+            key_drivers_json TEXT,
+            exit_conditions TEXT,
+            confidence_caveats TEXT,
+            rationale_md TEXT,
+            context_json TEXT,
+            tool_calls_json TEXT,
+            model_id TEXT,
+            input_tokens INTEGER,
+            output_tokens INTEGER,
+            cache_read_tokens INTEGER,
+            cache_write_tokens INTEGER,
+            cost_usd REAL,
+            turns INTEGER,
+            trade_action TEXT,
+            error TEXT,
+            created_at TEXT DEFAULT (datetime('now'))
+        )
+    """)
+    con.execute(
+        "CREATE INDEX IF NOT EXISTS idx_ai_quant_variant_date "
+        "ON ai_quant_decisions(variant_id, decision_date DESC)"
+    )
     con.execute("""
         CREATE TABLE IF NOT EXISTS config (
             key TEXT PRIMARY KEY,
