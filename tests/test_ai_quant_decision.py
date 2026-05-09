@@ -652,3 +652,21 @@ def test_system_prompt_includes_concrete_examples_block():
     assert "✗" in sys_text
     # The specific EMA failure mode appears as a ✗ example
     assert "bullish cross confirmed" in sys_text.lower()
+
+
+def test_system_prompt_clarifies_exit_conditions_are_daily_resolution():
+    """The first real run wrote '8h funding sustained 24h' as an exit
+    condition — but the AI sleeve only fires once per UTC day, so
+    sub-daily triggers are never seen. The prompt must call out that
+    exit_conditions are evaluated by the MODEL on its next daily call,
+    not by the runtime intra-day, and must be at daily resolution.
+    """
+    from services.ai_quant import prompt as prompt_mod
+    sys_text = prompt_mod.SYSTEM_PROMPT.lower()
+    # The contract: NOT a standing-order monitor
+    assert "does not evaluate" in sys_text or "does not monitor" in sys_text \
+        or "do not monitor" in sys_text or "not evaluate" in sys_text
+    # Daily-resolution language explicit
+    assert "daily resolution" in sys_text or "daily close" in sys_text
+    # Sub-daily counter-example called out
+    assert "sub-daily" in sys_text or "intra-day" in sys_text

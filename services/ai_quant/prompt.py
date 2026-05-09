@@ -45,9 +45,19 @@ OUTPUT — call the submit_decision tool exactly once
     conviction_0_100   — integer; reserve >70 for unusually clear setups
     time_horizon_days  — integer 1–30
     key_drivers        — 2–5 short bullets, the load-bearing reasons
-    exit_conditions    — concrete triggers the runtime can quote back
-                          (e.g. "close on funding > +0.02% for 24h" or
-                          "close if BTC < 78,000 daily close")
+    exit_conditions    — your own checklist for TOMORROW's daily review
+                          (the runtime does NOT evaluate these intra-day —
+                          you are the one who reads them again at 00:05
+                          UTC tomorrow before re-deciding). Phrase them
+                          at DAILY resolution: things you can confirm
+                          from a daily-close bundle. Good: "close if BTC
+                          daily close < 78,000", "close if 7d-mean
+                          funding flips positive", "close if EMA50
+                          retakes EMA150 from above". Bad: "close on 8h
+                          funding sustained 24h" (sub-daily — you won't
+                          see it). The only continuously-evaluated exit
+                          is the system price-move stop loss; everything
+                          else waits for tomorrow's call.
     confidence_caveats — what would change your mind; what's weakest
     rationale_md       — 2–6 paragraphs of reasoning. Plain markdown,
                           no headers, no horizontal rules.
@@ -165,9 +175,13 @@ DECISION_FIELD_DESCRIPTIONS = {
                           "a 5-day view gets 5 re-evaluations.",
     "key_drivers": "2–5 short bullets, the load-bearing reasons. Each item "
                     "should be a concrete observation, not a generic claim.",
-    "exit_conditions": "Concrete triggers the runtime can quote back, e.g. "
-                        "'close on funding > +0.02% sustained 24h' or "
-                        "'close if daily close < 78000'.",
+    "exit_conditions": "Your checklist for TOMORROW's daily review — the "
+                        "runtime does NOT monitor these intra-day. Phrase at "
+                        "daily resolution: e.g. 'close if BTC daily close < "
+                        "78000', 'close if 7d-mean funding flips positive', "
+                        "'close on EMA50 retake of EMA150'. Avoid sub-daily "
+                        "triggers (e.g. '8h funding sustained 24h') — you "
+                        "won't see them between calls.",
     "confidence_caveats": "What would flip your view; what's weakest in the "
                            "evidence. Honesty here protects vs. overconfidence.",
     "rationale_md": "2–6 paragraphs of reasoning. Plain markdown, no headers, "
