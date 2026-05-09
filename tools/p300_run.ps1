@@ -28,7 +28,14 @@ $noise = @(
     '\[feed\]',             # binance_feed thread per-tick refresh summary
     'tick ok',              # variant_engine 60s heartbeat
     "S-096.*'status': 'ok', 'actions': \[\]", # S-096 idle (no entry/exit)
-    "no_upcoming_fomc"      # FOMC dispatcher: no FOMC within 2-day lookahead
+    "no_upcoming_fomc",     # FOMC dispatcher: no FOMC within 2-day lookahead
+    "not_tuesday",
+    "no_position_needed",
+    "in_sync",
+    "awaiting_fresh_cross",
+    "not_calendar_day",
+    "new rows",
+    "new headlines"
 )
 
 $args_list = @()
