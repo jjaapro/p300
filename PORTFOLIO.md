@@ -5,7 +5,7 @@ leverage it uses, and how the pieces compose. All percentages are **fractions
 of total capital** unless stated otherwise.
 
 > Variant ID: `p300_aggressive_v2_v1_0` · Status: SHADOW (paper-only)
-> Last updated: 2026-04-30 (FOMC sleeve added).
+> Last updated: 2026-05-09 (AI_QUANT experimental sleeve documented; sleeve itself added 2026-05-08).
 
 ---
 
@@ -15,15 +15,18 @@ of total capital** unless stated otherwise.
 |---|---|---|---|
 | **Core J+ engine** | **50%** | daily-return accrual via `jplus.simulate()` | `variant_daily_returns` (one row/day, `source='live_computed'`) |
 | **Tactical stack** | **50%** | discrete entries/exits in 6 sleeves | `trades` table (`execution_mode='SHADOW'`) |
+| **AI_QUANT** (experimental) | **+2%** *additive, default-OFF* | daily LLM decision (Anthropic Opus 4.7) at 00:05–00:15 UTC | `trades` table (`execution_mode='SHADOW'`) |
 | ~~Stable reserve~~ | 0% | (removed 2026-04-30 — FOMC absorbed the slot) | — |
 
 The Core's daily return is computed once per day after midnight UTC. The
 6 tactical sleeves each tick every minute, opening / closing phantom trades
-based on their own signal logic.
+based on their own signal logic. AI_QUANT is an additional Phase-1
+experimental bucket layered on top — gated behind an env var and skipped on
+historical replay (see §2.7).
 
 ---
 
-## 2. The Tactical Stack — 6 sleeves, 50% of capital
+## 2. The Tactical Stack — 6 sleeves, 50% of capital (+ AI_QUANT, additive)
 
 Each sleeve has its own service module under [services/](services/) and is
 dispatched per-minute by [services/variant_engine.py](services/variant_engine.py).
@@ -36,8 +39,13 @@ dispatched per-minute by [services/variant_engine.py](services/variant_engine.py
 | [S-102 PDO-L-RF](services/pdo_retouch_service.py) | **11%** (5.5% BTC + 5.5% ETH) | 1× | BTC + ETH | LONG | 24h |
 | [S-101 CPR](services/cpr_service.py) | **5%** (2.5% BTC + 2.5% ETH) | 1× | BTC + ETH | LONG | up to 15 days |
 | [S-103 FOMC](services/fomc_service.py) | **5%** | 10× | BTC | LONG | ~10.5h (FOMC days only) |
+| [AI_QUANT](services/ai_quant_service.py) *(experimental)* | **+2%** *additive, default-OFF* | 3× | BTC | LONG / SHORT / FLAT | LLM-discretionary (no fixed exit) |
 
-**Total: 50%** (matches Core's 50% so the portfolio is fully allocated.)
+**Tactical total: 50%** (matches Core's 50% so the portfolio is fully allocated).
+**AI_QUANT** sits on top as a **Phase-1 experimental** bucket — its 2% is
+*not* drawn from the 50% tactical allocation; gross exposure with AI_QUANT
+enabled tops out at ~102% of capital before vol-target leverage and Core
+overlap.
 
 > **Stop-loss semantics.** All `stop_loss_pct` values configured per sleeve
 > are interpreted as **price-move** percentages by default — i.e. a 10% stop
@@ -108,6 +116,57 @@ dispatched per-minute by [services/variant_engine.py](services/variant_engine.py
 - **Audit trail**: every FOMC date writes a row to `fomc_observer` in `data/trader.db` with the decision + reason + inputs, even when the decision is SKIP.
 - **Edge thesis**: short-window event trade. Drift up into the announcement, partial fade after. Filter weeds out the regimes where this fails.
 - **Caveat**: filter was tuned on the same 52-event historical cohort the in-sample backtest is drawn from. Going-forward edge unproven.
+
+### 2.7 AI_QUANT — Discretionary LLM trader (experimental, default-OFF)
+
+- **Status**: Phase-1 experiment. Added 2026-05-08. Default-disabled via
+  `AI_QUANT_ENABLED` env var ([`.env.example`](.env.example) ships with
+  `false`); when unset, [services/ai_quant_service.py:_kill_switch_on()](services/ai_quant_service.py)
+  short-circuits to `status='disabled'` and no LLM call is made.
+- **Allocation**: 2% of capital, additive on top of Core+Tactical (not part of
+  the 50/50 split). Raise to 5% only after 60+ days of forward shadow PnL
+  net of API cost.
+- **Leverage**: 3×. **Asset**: BTC perp. **Direction**: LONG / SHORT / FLAT,
+  chosen daily by the model.
+- **Signal**: an Anthropic Opus 4.7 tool-use loop runs once per UTC day in a
+  10-minute window (00:05–00:15 UTC). Every minute, four cheap gates are
+  evaluated by [variant_engine](services/variant_engine.py) before any
+  LLM call: kill-switch / time-window / per-day-already-fired /
+  daily-cost-cap. On the one tick that passes all four, the service builds
+  a context bundle (regime, F&G, funding, recent volatility, open
+  positions, etc.), renders a 90-bar daily chart, and runs the decision
+  loop with server tools enabled.
+- **Output schema**: the model returns `direction ∈ {LONG, SHORT, FLAT}`,
+  `conviction_0_100`, `time_horizon_days`, and `key_drivers[]`. The
+  service applies a **conviction floor**: `conviction < 30` is forced to
+  FLAT regardless of the model's stated direction.
+- **Sizing**: `allocation_pct = weight_pct × (conviction / 100)`, capped at
+  the 2% weight ([ai_quant_service.py:_allocation_pct_for](services/ai_quant_service.py)).
+  So a conviction-50 LONG sizes to 1% of capital at 3× leverage; a
+  conviction-100 LONG sizes to the full 2%.
+- **Reconciliation**: each day's decision is reconciled against any open
+  AI_QUANT position — open / hold / close / flip. No mid-day scaling in v1.
+- **Exit logic**: there is no fixed time-stop. Positions are held until the
+  next day's decision flips them or sets FLAT, or until the configured
+  `stop_loss_pct=10.0` price-move stop fires.
+- **Cost cap**: $5/day default API spend ceiling
+  (`AI_QUANT_DAILY_COST_CAP_USD`); when exceeded, the gate returns
+  `cost_capped` and no decision runs that day.
+- **Audit trail**: every fire writes a row to the AI_QUANT journal
+  ([services/ai_quant/journal.py](services/ai_quant/journal.py)) with the
+  decision payload, tool calls, token usage, cost, and resulting trade
+  action — including ERROR rows when context-build / chart-render / API
+  fail, so idempotency triggers next tick.
+- **Backtest behavior**: `params.deterministic=False` is consumed by
+  [backtest_runner.py](backtest_runner.py) to **skip** AI_QUANT on
+  historical replay — the LLM is non-deterministic and replay would
+  produce different decisions each run. AI_QUANT contributes nothing to
+  the §6 in-sample backtest numbers.
+- **Edge thesis**: a discretionary trader with broad context (macro,
+  sentiment, microstructure, chart) may catch regime shifts that the
+  rule-based sleeves are structurally blind to. Whether the model can
+  beat its own API cost net of slippage is the open question this
+  experiment exists to answer.
 
 ---
 
@@ -509,6 +568,12 @@ were affected by the data-source switch.
 9. **Live BTC-long cap (skip-if-over) vs simulator cap (proportional
    down-scale) diverge by construction** — live NAV ≠ sim NAV even with
    identical signals.
+
+10. **AI_QUANT is excluded from all backtest figures in §6.** The sleeve
+    is non-deterministic (LLM outputs vary run-to-run) and is skipped on
+    historical replay via `params.deterministic=False`. Its edge — if any —
+    will only be visible in forward shadow PnL, and must be evaluated
+    *net of API cost* (capped at $5/day, ~$1,825/yr against a 2% sleeve).
 
 ---
 
