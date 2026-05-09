@@ -187,6 +187,50 @@ def mark_remaining_at_end(variant_id: str) -> int:
     return n
 
 
+def check_liquidations_for_variant(variant_id: str, now_utc: datetime) -> int:
+    """Walk open shadow trades for this variant; for any leveraged trade
+    whose margin trajectory would have breached maintenance margin between
+    its entry and now_utc, force-close it via the sleeve's close function
+    at the liquidation price/time.
+
+    Tags forced-closes via the sleeve's close `reason` argument with
+    'forced_exit:liquidation' so they're identifiable in the trades table.
+
+    Always-on in backtest mode (per project decision). Trades at leverage
+    <= 1 are skipped inside the adapter (no liquidation possible).
+    Returns count force-closed.
+    """
+    from services.margin_check import check_liquidations_for_variant as _check_liq
+
+    events = _check_liq(variant_id, now_utc)
+    if not events:
+        return 0
+    n = 0
+    for trade, liq in events:
+        close_fn = _load_close_fn(trade["strategy"])
+        if close_fn is None:
+            log.warning(f"[liq] no close_fn for {trade['strategy']!r} "
+                        f"({trade['id']}) — liquidation event ignored")
+            continue
+        # Set the simulated clock to the liquidation time so the close
+        # function records actual_exit_time correctly.
+        prior = clock._simulated_now if hasattr(clock, '_simulated_now') else None
+        clock.set_simulated_now(liq.liq_time)
+        try:
+            close_fn(trade["id"], liq.liq_price, "forced_exit:liquidation")
+            n += 1
+            log.warning(f"[liq] {trade['id']} {trade['strategy']} {trade['asset']} "
+                        f"force-closed at {liq.liq_time.isoformat()} "
+                        f"px={liq.liq_price:.2f} ({liq.reason})")
+        except Exception:
+            log.exception(f"[liq] close_fn raised for {trade['id']} during "
+                          f"liquidation force-close — trade may be inconsistent")
+        finally:
+            # Restore prior clock; the main loop will set it back per-tick anyway.
+            clock.set_simulated_now(prior)
+    return n
+
+
 def close_due_for_variant(variant_id: str, now_utc: datetime) -> int:
     """Close any open shadow trade for this variant whose scheduled exit_time
     has passed. Dispatches to the sleeve-specific close (so fees/funding are
@@ -400,10 +444,15 @@ def run(start: datetime, end: datetime, interval_hours: int,
     t0 = _time.time()
     last_progress = t0
     n_closed_scheduled = 0
+    n_liquidated = 0
     tick_count = 0
     cur = start
     while cur <= end:
         clock.set_simulated_now(cur)
+        # Liquidation checks run BEFORE scheduled-exit checks so a liquidated
+        # trade can't be re-counted as a scheduled close. Always-on per
+        # project decision (v1 of the margin/liquidation simulator).
+        n_liquidated += check_liquidations_for_variant(variant["id"], cur)
         n_closed_scheduled += close_due_for_variant(variant["id"], cur)
         tick_replay_variant(variant)
         tick_count += 1
@@ -431,6 +480,7 @@ def run(start: datetime, end: datetime, interval_hours: int,
     log.info(f"Replay complete. {tick_count:,} ticks in {elapsed:.1f}s "
              f"({tick_count/elapsed:.0f} ticks/s). "
              f"Scheduled-exit closes: {n_closed_scheduled:,} during window, "
+             f"{n_liquidated:,} liquidations, "
              f"{n_final} marked-to-end-of-window (open at final tick, "
              f"closed at end clock price).")
 
