@@ -446,12 +446,12 @@ def test_dataclass_is_json_serializable():
     assert "claude-opus-4-7" in j
 
 
-# ─── Extended thinking (reasoning-effort) budget ──────────────────────────
+# ─── Adaptive thinking + reasoning-effort level ───────────────────────────
 
-def test_thinking_budget_passed_to_api_when_default(monkeypatch):
-    """Default AI_QUANT_THINKING_BUDGET is non-zero, so every API call
-    must include a `thinking` parameter."""
-    monkeypatch.delenv("AI_QUANT_THINKING_BUDGET", raising=False)
+def test_effort_default_high_passes_adaptive_thinking_and_output_config(monkeypatch):
+    """Default AI_QUANT_EFFORT='high'; every API call must include
+    thinking={'type': 'adaptive'} AND output_config={'effort': 'high'}."""
+    monkeypatch.delenv("AI_QUANT_EFFORT", raising=False)
     client = MockClient([
         MockResponse(
             content=[tool_use_block("submit_decision", _typical_decision_input())],
@@ -463,17 +463,14 @@ def test_thinking_budget_passed_to_api_when_default(monkeypatch):
         context_bundle=_DUMMY_CONTEXT, baseline_chart_png=_DUMMY_PNG,
     )
     call_kwargs = client.messages.calls[0]
-    assert "thinking" in call_kwargs
-    assert call_kwargs["thinking"]["type"] == "enabled"
-    assert call_kwargs["thinking"]["budget_tokens"] == decision.DEFAULT_THINKING_BUDGET
-    # max_tokens must accommodate budget + headroom
-    assert call_kwargs["max_tokens"] >= (
-        decision.DEFAULT_THINKING_BUDGET + decision.MIN_RESPONSE_HEADROOM
-    )
+    assert call_kwargs["thinking"] == {"type": "adaptive"}
+    assert call_kwargs["output_config"] == {"effort": decision.DEFAULT_EFFORT}
+    assert call_kwargs["output_config"]["effort"] == "high"
 
 
-def test_thinking_budget_respected_from_env(monkeypatch):
-    monkeypatch.setenv("AI_QUANT_THINKING_BUDGET", "16000")
+@pytest.mark.parametrize("level", ["low", "medium", "high", "max"])
+def test_effort_levels_passed_through_from_env(monkeypatch, level):
+    monkeypatch.setenv("AI_QUANT_EFFORT", level)
     client = MockClient([
         MockResponse(
             content=[tool_use_block("submit_decision", _typical_decision_input())],
@@ -485,14 +482,18 @@ def test_thinking_budget_respected_from_env(monkeypatch):
         context_bundle=_DUMMY_CONTEXT, baseline_chart_png=_DUMMY_PNG,
     )
     call_kwargs = client.messages.calls[0]
-    assert call_kwargs["thinking"]["budget_tokens"] == 16000
-    assert call_kwargs["max_tokens"] >= 16000 + decision.MIN_RESPONSE_HEADROOM
+    assert call_kwargs["output_config"]["effort"] == level
+    assert call_kwargs["thinking"]["type"] == "adaptive"
 
 
-def test_thinking_disabled_when_budget_zero(monkeypatch):
-    """AI_QUANT_THINKING_BUDGET=0 omits the thinking parameter entirely
-    and reverts to the caller's max_tokens."""
-    monkeypatch.setenv("AI_QUANT_THINKING_BUDGET", "0")
+@pytest.mark.parametrize("disable_token", ["", "none", "NONE", "disabled",
+                                              "off", "0"])
+def test_effort_disable_tokens_omit_thinking_and_output_config(monkeypatch,
+                                                                 disable_token):
+    """A disable token means: omit thinking and output_config entirely.
+    The API then uses model defaults (no extended thinking on Opus 4.7's
+    adaptive path)."""
+    monkeypatch.setenv("AI_QUANT_EFFORT", disable_token)
     client = MockClient([
         MockResponse(
             content=[tool_use_block("submit_decision", _typical_decision_input())],
@@ -506,23 +507,21 @@ def test_thinking_disabled_when_budget_zero(monkeypatch):
     )
     call_kwargs = client.messages.calls[0]
     assert "thinking" not in call_kwargs
+    assert "output_config" not in call_kwargs
     assert call_kwargs["max_tokens"] == 4096
 
 
-def test_thinking_budget_invalid_env_falls_back_to_default(monkeypatch):
-    monkeypatch.setenv("AI_QUANT_THINKING_BUDGET", "not-an-int")
-    assert decision._thinking_budget() == decision.DEFAULT_THINKING_BUDGET
+def test_effort_unrecognized_value_falls_back_to_default(monkeypatch):
+    """An unknown effort string logs a warning and defaults to 'high'
+    (better than erroring out the live decision over a typo)."""
+    monkeypatch.setenv("AI_QUANT_EFFORT", "ultra-mega-thinking")
+    assert decision._effort_level() == decision.DEFAULT_EFFORT == "high"
 
 
-def test_thinking_budget_negative_clamped_to_zero(monkeypatch):
-    monkeypatch.setenv("AI_QUANT_THINKING_BUDGET", "-100")
-    assert decision._thinking_budget() == 0
-
-
-def test_thinking_budget_persists_across_multi_turn(monkeypatch):
-    """When thinking is enabled, every API call in the loop must carry
-    the same parameter — not just the first one."""
-    monkeypatch.setenv("AI_QUANT_THINKING_BUDGET", "8000")
+def test_effort_persists_across_multi_turn_loop(monkeypatch):
+    """The effort hint must be passed on every turn of the tool-use loop,
+    not just the first request."""
+    monkeypatch.setenv("AI_QUANT_EFFORT", "max")
     client = MockClient([
         MockResponse(
             content=[tool_use_block("render_chart",
@@ -548,7 +547,15 @@ def test_thinking_budget_persists_across_multi_turn(monkeypatch):
         t._handle_render_chart = orig
     assert len(client.messages.calls) == 2
     for call in client.messages.calls:
-        assert call.get("thinking", {}).get("budget_tokens") == 8000
+        assert call["thinking"] == {"type": "adaptive"}
+        assert call["output_config"]["effort"] == "max"
+
+
+def test_effort_helper_is_case_insensitive(monkeypatch):
+    monkeypatch.setenv("AI_QUANT_EFFORT", "HIGH")
+    assert decision._effort_level() == "high"
+    monkeypatch.setenv("AI_QUANT_EFFORT", "Max")
+    assert decision._effort_level() == "max"
 
 
 # ─── Fact-check protocol in system prompt ─────────────────────────────────
