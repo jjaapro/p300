@@ -156,7 +156,12 @@ overlap.
   ([services/ai_quant/journal.py](services/ai_quant/journal.py)) with the
   decision payload, tool calls, token usage, cost, and resulting trade
   action — including ERROR rows when context-build / chart-render / API
-  fail, so idempotency triggers next tick.
+  fail, so idempotency triggers next tick. The journal also writes a
+  human-browsable markdown mirror per row to
+  `data/ai_quant_archive/{date}_{variant}_{asset}_{decided}_id{N}.md`
+  ([services/ai_quant/archive.py](services/ai_quant/archive.py)) for
+  decision-quality monitoring; regenerable from the DB via
+  [tools/ai_quant_archive_rebuild.py](tools/ai_quant_archive_rebuild.py).
 - **Backtest behavior**: `params.deterministic=False` is consumed by
   [backtest_runner.py](backtest_runner.py) to **skip** AI_QUANT on
   historical replay — the LLM is non-deterministic and replay would

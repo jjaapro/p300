@@ -138,9 +138,43 @@ def save_decision(
             ),
         )
         con.commit()
-        return cur.lastrowid
+        row_id = cur.lastrowid
     finally:
         con.close()
+
+    # Best-effort markdown archive — the DB row is the source of truth;
+    # this file is a human-browsable mirror for monitoring decision
+    # quality. A failure here must never poison the durable DB row.
+    try:
+        from services.ai_quant import archive
+        archive.write_archive_md(row_id=row_id, row={
+            "id": row_id,
+            "decision_utc": decision_ts,
+            "decision_date": decision_date,
+            "variant_id": variant_id,
+            "asset": asset.upper(),
+            "decided": decided,
+            "conviction": conviction,
+            "time_horizon_days": horizon,
+            "key_drivers_json": json.dumps(key_drivers, default=str),
+            "exit_conditions": exit_conditions,
+            "confidence_caveats": caveats,
+            "rationale_md": rationale,
+            "tool_calls_json": tool_calls_json,
+            "model_id": decision_result.model_id,
+            "input_tokens": usage.get("input_tokens"),
+            "output_tokens": usage.get("output_tokens"),
+            "cache_read_tokens": usage.get("cache_read_input_tokens"),
+            "cache_write_tokens": usage.get("cache_creation_input_tokens"),
+            "cost_usd": decision_result.cost_usd,
+            "turns": decision_result.turns,
+            "trade_action": trade_action,
+            "error": decision_result.error,
+        })
+    except Exception:
+        log.exception("AI_QUANT archive write failed for row %s", row_id)
+
+    return row_id
 
 
 def get_today_decision(variant_id: str) -> dict | None:

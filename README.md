@@ -15,22 +15,23 @@ history comes from Coinalyze (free tier).
 
 ## What runs live here
 
-7 sleeves dispatched per-minute via `services/variant_engine.py`. Weights
-are pre-leverage fractions of total capital:
+Sleeves dispatched per-minute via `services/variant_engine.py`:
 
-- **50% JPLUS-CORE** — Core J+ daily-return anchor (EMA weekly cross + R4 BTC
-  + R4 ETH, vol-target leverage, rule-based vol-percentile gate). Computed
-  daily, persisted to `variant_daily_returns`.
-- **15% S-003 ADX** — BTC regime-flip long/short at k=5x
-- **8% S-078 Carry** — BTC delta-neutral funding harvest at k=5x
-- **6% S-096 V4 Thu Bear** — BTC+ETH Thursday short, CPI/NFP-adjacent, at k=5x
-- **11% PDO-L-RF** — gap-open retouch long (BTC+ETH) at k=1x
-- **5% CPR** — contrarian positioning reversal (BTC+ETH) at k=1x
-- **5% FOMC** — BTC long T-10h to T+0.5h on FOMC days, at k=10x. Filtered by
-  rate-environment phase (skip mid-cycle holds + expected -25bp cuts), F&G
-  bucket (extreme greed → skip; extreme fear unlocks otherwise-marginal
-  setups), and Polymarket cuts-2026 implied probability. See
-  [services/fomc_service.py](services/fomc_service.py).
+- **Core J+ engine (50%)** — daily-return anchor: weekly EMA cross on BTC,
+  R4 BTC/ETH intraday windows + V2 Wed/Fri windows, regime-gated ETH-daily,
+  vol-target leverage, deterministic vol-percentile gate.
+- **Six tactical sleeves (50%)** — S-003 ADX, S-078 Carry, S-096 V4 Thu
+  Bear, S-102 PDO-L-RF, S-101 CPR, S-103 FOMC. Discrete entries/exits in
+  BTC and ETH.
+- **AI_QUANT (additive 2%, default-OFF)** — discretionary LLM trader using
+  Anthropic Opus 4.7 once per UTC day. Gated behind `AI_QUANT_ENABLED` env
+  var; shadow-only like every other sleeve; skipped on historical replay.
+  Per-decision markdown archive under `data/ai_quant_archive/`.
+
+See [PORTFOLIO.md](PORTFOLIO.md) for the canonical per-sleeve reference
+(signals, entries, exits, leverage stack, regime weights, edge thesis,
+caveats). It stays in sync with [register_p300.py](register_p300.py); this
+README is intentionally a thin pointer to avoid duplication drift.
 
 The original ML gate was replaced with a deterministic vol-percentile rule
 (see [jplus/gate.py](jplus/gate.py)) after we found the upstream gate's
@@ -131,7 +132,8 @@ p300/
 │   ├── fomc_backtest_drilldown.py  # FOMC trade-by-trade attribution
 │   ├── fomc_leverage_sensitivity.py# FOMC leverage sweep
 │   ├── p300_run.ps1                # PowerShell launcher script
-│   └── tools_statistical_validation.py # bootstrap Sharpe CI + rolling/year breakdown
+│   ├── tools_statistical_validation.py # bootstrap Sharpe CI + rolling/year breakdown
+│   └── ai_quant_archive_rebuild.py # rebuild data/ai_quant_archive/ .md files from DB
 ├── requirements.txt               # numpy only
 ├── data/
 │   ├── trader.db                  # market data (built by bootstrap; live-refreshed)
@@ -170,7 +172,10 @@ p300/
 │   ├── fed_funds_service.py       # Fed rate-cycle phase classifier
 │   ├── sentiment_index_service.py # Fear & Greed index bucketing
 │   ├── polymarket_service.py      # Polymarket-implied rate expectations
-│   └── jplus_service.py           # JPLUS-CORE daily-return dispatcher
+│   ├── jplus_service.py           # JPLUS-CORE daily-return dispatcher
+│   ├── ai_quant_service.py        # AI_QUANT live dispatcher (gates + reconciliation)
+│   └── ai_quant/                  # AI_QUANT internals: context, chart, prompt,
+│                                  #   decision loop, journal, archive (.md mirror)
 └── tests/                         # 172 tests including look-ahead canary
 ```
 
