@@ -54,7 +54,7 @@ DEFAULT_MAX_TOKENS = 65536
 #   thinking      = {"type": "adaptive"}
 #   output_config = {"effort": "<level>"}
 #
-# Valid levels (Anthropic API as of 2026): "low" / "medium" / "high" /
+# Valid levels (Anthropic API as of 2026): "low" / "medium" / "high" / "xhigh" /
 # "max". Higher values let the model think longer before answering;
 # the model still adaptively decides how much of that ceiling to use.
 #
@@ -62,24 +62,10 @@ DEFAULT_MAX_TOKENS = 65536
 # both parameters entirely — the API uses its model defaults (no
 # thinking on Opus 4.7's adaptive path).
 #
-# Cost impact (Opus 4.7 output rate $75/M, observed empirically):
-#   none/low   ~ baseline (~$0.30/call with caching)
-#   medium     ~ +$0.20–$0.50
-#   high       ~ +$0.40–$0.90 (default)
-#   max        ~ +$0.80–$2.00
 # Override via AI_QUANT_EFFORT env var.
-DEFAULT_EFFORT = "high"
-_VALID_EFFORTS = ("low", "medium", "high", "max")
+DEFAULT_EFFORT = "xhigh"
+_VALID_EFFORTS = ("low", "medium", "high", "xhigh", "max")
 _DISABLED_TOKENS = ("", "none", "disabled", "off", "0")
-
-# Per-million-token rates in USD (input, output, cache_write_5min, cache_read).
-# Approximate — verify against your latest Anthropic pricing page when
-# reviewing this sleeve's cost. Used for in-process tracking only.
-_PRICING: dict[str, tuple[float, float, float, float]] = {
-    "claude-opus-4-7":           (15.0, 75.0, 18.75, 1.50),
-    "claude-sonnet-4-6":         ( 3.0, 15.0,  3.75, 0.30),
-    "claude-haiku-4-5-20251001": ( 1.0,  5.0,  1.25, 0.10),
-}
 
 
 @dataclass
@@ -120,22 +106,6 @@ def _effort_level() -> str | None:
                      f"disable. Falling back to '{DEFAULT_EFFORT}'.")
         return DEFAULT_EFFORT
     return raw
-
-
-def _compute_cost(model: str, usage: dict) -> float:
-    rates = _PRICING.get(model)
-    if not rates:
-        return 0.0
-    in_rate, out_rate, cw_rate, cr_rate = rates
-    return round(
-        (
-            usage.get("input_tokens", 0) * in_rate
-            + usage.get("output_tokens", 0) * out_rate
-            + usage.get("cache_creation_input_tokens", 0) * cw_rate
-            + usage.get("cache_read_input_tokens", 0) * cr_rate
-        ) / 1_000_000.0,
-        6,
-    )
 
 
 def _build_initial_messages(context_bundle: dict, baseline_chart_png: bytes) -> list[dict]:
@@ -350,7 +320,6 @@ def run_decision(
         turns=turn_index + 1,
         tool_calls=tool_call_log,
         usage=usage_total,
-        cost_usd=_compute_cost(model, usage_total),
         model_id=model,
     )
 
