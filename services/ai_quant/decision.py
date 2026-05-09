@@ -45,7 +45,7 @@ log = logging.getLogger("p300.ai_quant.decision")
 
 DEFAULT_MODEL = "claude-opus-4-7"
 DEFAULT_MAX_TURNS = 10
-DEFAULT_MAX_TOKENS = 4096
+DEFAULT_MAX_TOKENS = 65536
 
 # Reasoning-effort level for the API call. Opus 4.7's adaptive thinking
 # is the gateway to step-by-step verification, but without an explicit
@@ -283,7 +283,13 @@ def run_decision(
             api_kwargs["thinking"] = {"type": "adaptive"}
             api_kwargs["output_config"] = {"effort": effort}
         try:
-            resp = client.messages.create(**api_kwargs)
+            # Streaming is required by the SDK for any request that may
+            # take longer than 10 minutes. With high effort + adaptive
+            # thinking + large max_tokens the SDK refuses messages.create,
+            # so we use the stream context manager and pull the final
+            # assembled Message at the end.
+            with client.messages.stream(**api_kwargs) as stream:
+                resp = stream.get_final_message()
         except Exception as e:  # noqa: BLE001
             error_str = f"{type(e).__name__}: {e}"
             log.warning(f"AI_QUANT API call failed on turn {turn_index}: {error_str}")

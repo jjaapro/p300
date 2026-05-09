@@ -1,7 +1,7 @@
 """Tests for services.ai_quant.decision.run_decision.
 
 The Anthropic client is mocked: every test scripts a sequence of
-"messages.create" responses and asserts the orchestrator drives the
+"messages.stream" responses and asserts the orchestrator drives the
 loop correctly. No network, no DB, no chart rendering — context bundle
 and baseline image are injected directly so each test is fast and
 deterministic.
@@ -52,12 +52,30 @@ class MockResponse:
         self.usage = MockUsage(**(usage or {}))
 
 
+class _StreamCtx:
+    """Mimics the SDK's MessageStream context manager. The orchestrator
+    enters the context and calls .get_final_message() — that's the only
+    method we need to provide for the test surface."""
+
+    def __init__(self, response: Any):
+        self._response = response
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc_info):
+        return False
+
+    def get_final_message(self):
+        return self._response
+
+
 class _MessagesNamespace:
     def __init__(self, scripted: list[Any]):
         self._scripted = list(scripted)
         self.calls: list[dict] = []
 
-    def create(self, **kw):
+    def stream(self, **kw):
         # Snapshot a shallow copy of `messages` — the orchestrator mutates
         # the list in place across turns, so capturing the live reference
         # would let later turns rewrite history we want to inspect.
@@ -69,14 +87,16 @@ class _MessagesNamespace:
             raise RuntimeError("MockClient: no more scripted responses")
         nxt = self._scripted.pop(0)
         if isinstance(nxt, Exception):
+            # Mirror real SDK behavior: a connection error surfaces when
+            # the stream is opened, before any final message can be read.
             raise nxt
-        return nxt
+        return _StreamCtx(nxt)
 
 
 class MockClient:
-    """Anthropic-shaped client whose .messages.create() returns scripted
-    responses (or raises a scripted exception). Tracks each call's kwargs
-    in .messages.calls for assertion."""
+    """Anthropic-shaped client whose .messages.stream() returns scripted
+    responses wrapped in a context manager (or raises a scripted exception
+    on enter). Tracks each call's kwargs in .messages.calls for assertion."""
 
     def __init__(self, scripted: list[Any]):
         self.messages = _MessagesNamespace(scripted)

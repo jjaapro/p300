@@ -135,6 +135,20 @@ class _Response:
         self.usage = _Usage(**(usage or {}))
 
 
+class _StreamCtx:
+    def __init__(self, response: Any):
+        self._response = response
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc_info):
+        return False
+
+    def get_final_message(self):
+        return self._response
+
+
 class ScriptedClient:
     """Anthropic-shaped client that returns scripted responses across calls.
     Exposes `.calls` for the test to introspect post-run."""
@@ -144,7 +158,7 @@ class ScriptedClient:
         self._scripted = list(scripted)
         self.calls: list[dict] = []
 
-    def create(self, **kw):
+    def stream(self, **kw):
         snap = dict(kw)
         if "messages" in snap:
             snap["messages"] = list(snap["messages"])
@@ -154,7 +168,7 @@ class ScriptedClient:
         nxt = self._scripted.pop(0)
         if isinstance(nxt, Exception):
             raise nxt
-        return nxt
+        return _StreamCtx(nxt)
 
 
 def _decision_response(direction: str, conviction: int = 65,

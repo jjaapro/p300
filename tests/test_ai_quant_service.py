@@ -122,19 +122,35 @@ def fixture(tmp_path, monkeypatch):
 
 # ─── MockClient (mirrors decision-test pattern) ────────────────────────────
 
+class _StreamCtx:
+    """Context-manager stand-in for the SDK's MessageStream."""
+
+    def __init__(self, response):
+        self._response = response
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc_info):
+        return False
+
+    def get_final_message(self):
+        return self._response
+
+
 class _MockMessages:
     def __init__(self, scripted):
         self._scripted = list(scripted)
         self.calls = []
 
-    def create(self, **kw):
+    def stream(self, **kw):
         self.calls.append(kw)
         if not self._scripted:
             raise RuntimeError("MockClient: no more scripted responses")
         nxt = self._scripted.pop(0)
         if isinstance(nxt, Exception):
             raise nxt
-        return nxt
+        return _StreamCtx(nxt)
 
 
 class MockClient:
