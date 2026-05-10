@@ -137,37 +137,33 @@ def _load_daily_returns(variant_id: str, start: str, end: str,
     return [float(r[0]) for r in rows if r[0] is not None]
 
 
-# Default Core/tactical split for the P-300 portfolio (matches
-# tools/combine_replay.py:W_CORE/W_TACTICAL and PORTFOLIO.md §1). Kept
-# for documentation; the trades-only computation below doesn't apply
-# any weighting because per-sleeve trade sizes already reflect their
-# allocation × leverage at open time.
+# Per-sleeve allocation × leverage is already baked into trades.size_usdt
+# at open time, so the trades-only daily-returns computation below does
+# not apply any further weighting.
 W_CORE = 0.50
 W_TACTICAL = 0.50
 
 
-def _trades_daily_returns(variant_id: str, start: str, end: str,
-                           capital_usdt: float) -> list[float]:
+def trades_daily_returns(variant_id: str, start: str, end: str,
+                          capital_usdt: float,
+                          *, zero_fill: bool = False
+                          ) -> list[tuple[str, float]]:
     """Daily realized portfolio returns (percent), oldest-first, computed
     purely from closed-trade P&L in the trades table.
 
-    Why trades-only: per the trade-emitter migration (Path B), trades are
-    the canonical P&L ledger. Core sub-sleeves emit JPLUS_* rows; tactical
-    sleeves emit their named rows. Each row's pnl_usdt already reflects
-    that trade's fee-net P&L on its actual size_usdt at open time —
-    nothing in the daily computation needs further scaling, because the
-    per-sleeve allocation × leverage is already baked into size_usdt.
+    Returns ``[(date_iso, return_pct), ...]`` over [start, end] inclusive.
+    ``trades.size_usdt`` already reflects each sleeve's allocation × leverage
+    at open time, so no further weighting is applied here:
 
         daily[d] = (sum closed-trade pnl_usdt where exit_date == d)
                    / capital × 100
 
-    Open positions are NOT included here — this function reports
-    REALIZED returns only. For unrealized MTM the caller would need to
-    walk open trades and mark to current price (deferred).
+    Open positions are NOT included — this is REALIZED returns only.
 
-    Note: dates with no closing trades simply don't appear. If you need a
-    zero-filled series for Sharpe-on-flat-days computation, post-process
-    the result against a calendar."""
+    By default, dates with no closing trades simply don't appear (sparse
+    series). Pass ``zero_fill=True`` to get a calendar-complete series
+    (each missing UTC date gets a 0.0 return entry) — required for
+    Sharpe-on-flat-days, max-drawdown, and equity-curve plots."""
     con = sqlite3.connect(str(db.DASH_DB))
     try:
         rows = con.execute(
@@ -184,8 +180,33 @@ def _trades_daily_returns(variant_id: str, start: str, end: str,
         con.close()
     if capital_usdt <= 0:
         return []
-    return [float(r[1]) / capital_usdt * 100.0 for r in rows
-            if r[0] is not None and r[1] is not None]
+    sparse = {
+        r[0]: float(r[1]) / capital_usdt * 100.0
+        for r in rows if r[0] is not None and r[1] is not None
+    }
+    if not zero_fill:
+        return sorted(sparse.items())
+
+    # Zero-fill UTC calendar between start and end inclusive.
+    from datetime import date as _date, timedelta as _td
+    d0 = _date.fromisoformat(start)
+    d1 = _date.fromisoformat(end)
+    out: list[tuple[str, float]] = []
+    cur = d0
+    while cur <= d1:
+        iso = cur.isoformat()
+        out.append((iso, sparse.get(iso, 0.0)))
+        cur += _td(days=1)
+    return out
+
+
+# Back-compat alias: the historical private name returned just the float
+# series (no dates). Kept so external readers / older notebooks don't
+# break, but new code should use the public ``trades_daily_returns``.
+def _trades_daily_returns(variant_id: str, start: str, end: str,
+                           capital_usdt: float) -> list[float]:
+    return [r for _, r in trades_daily_returns(variant_id, start, end,
+                                                 capital_usdt)]
 
 
 @dataclass(frozen=True)
@@ -206,23 +227,16 @@ def portfolio_metrics(variant_id: str, window: Window,
     """Portfolio metrics for one window.
 
     For ``source='live_computed'`` with ``capital_usdt`` supplied, returns
-    are computed as the COMBINED daily series (Core VDR × w_core +
-    tactical trade P&L / capital × 100). This is what an operator
-    actually wants — the variant's true daily return — because the
-    live-variant VDR row alone is just Core standalone.
+    are derived from realized closed trades via ``trades_daily_returns``
+    (closed-trade pnl_usdt summed by exit date / capital × 100). This is
+    the canonical PnL path; ``variant_daily_returns`` is no longer
+    written for live variants since the daily-return accrual was
+    removed.
 
-    For ``source='replay'`` (or live without capital), reads VDR rows
-    directly and treats them as already-final returns (matches
-    combine_replay's convention: ``__core_*`` variants store standalone
-    Core, ``__combined_*`` variants store the 50/50 mix). Caller picks
-    the right variant id.
-
-    NOTE: as of the trade-emitter migration, ``source='live_computed'``
-    routes through ``_trades_daily_returns`` (closed-trade pnl_usdt
-    summed by exit date / capital × 100). The previous combined-with-VDR
-    path is gone — VDR rows for the live variant are now just an audit
-    log of the simulator's gross output, while the trades table is the
-    canonical realized-P&L ledger."""
+    For ``source='replay'`` (or live without capital), reads any
+    pre-existing ``variant_daily_returns`` rows directly. Mostly
+    historical at this point — newer replay runs also emit trades and
+    can use the trades-only path."""
     if source == "live_computed" and capital_usdt is not None:
         rets = _trades_daily_returns(variant_id, window.start, window.end,
                                        capital_usdt)

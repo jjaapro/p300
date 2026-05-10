@@ -365,13 +365,11 @@ _REGIME_R4_WEIGHTS = {
 def apply_r4_fees(series: dict[str, dict], fee_bp_rt: float = 10.0) -> None:
     """Subtract R4 round-trip fees from each day's ``return_pct``, in place.
 
-    Pre-Step-5 of the trade-emitter migration, ``jplus/r4.py`` deducted a
-    10bp round-trip fee from R4 window returns BEFORE the simulator
-    weighted them into the daily contribution. Step 5 zeroed that
-    deduction so live trades own fee accounting via trade-adjustment
-    events. Backtest-replay paths that consume ``return_pct`` directly
-    (notably ``tools/combine_replay.py``) need to re-apply the same fee
-    model to remain comparable to historical backtests.
+    The simulator emits GROSS R4 window returns; trade-event ledger
+    paths charge the round-trip fee at trade close. Offline-research
+    consumers of ``return_pct`` that want fee-net analytic series
+    (e.g. parameter sweeps that compare against legacy backtest
+    numbers) re-apply the same fee model via this helper.
 
     The fee in % of capital terms for one R4 fire =
         regime_weight × r4_inner_lev × vol_target_lev × (fee_bp/10000) × 100

@@ -1,23 +1,20 @@
-"""Full-portfolio replay report with buy-and-hold (BTC) comparison.
+"""Full-portfolio report with buy-and-hold (BTC) comparison, derived
+from the trade ledger.
 
-Produces the metrics requested for a 2-year (or any window) replay:
-total P&L, max DD, total trades, profitable trades, profit factor,
-CAGR, Sharpe — for the combined portfolio, with BTC buy-and-hold side-
+Produces total P&L, max DD, total trades, profitable trades, profit
+factor, CAGR, Sharpe — for one variant — with BTC buy-and-hold side-
 by-side.
 
-Inputs:
-  - --combined-variant: variant id holding the combined daily returns
-    (written by tools/combine_replay.py, source='replay').
-  - --tactical-variant: variant id holding tactical trades (written by
-    backtest_runner.py). Used for trade-count / profit-factor metrics
-    since Core J+ contributes via daily returns, not per-trade events.
-  - --capital: starting capital in USDT (default 10000).
+Reads daily returns straight from ``trades`` via
+``services.strategy_health.trades_daily_returns`` (the canonical
+realized-PnL path). Core sub-sleeves and tactical sleeves contribute
+to one variant's trades table uniformly, so there is no longer a
+"combined" variant — pass --variant whichever one you want to report.
 
 Usage:
   python tools/full_portfolio_report.py \\
-    --combined-variant p300_aggressive_v2_v1_0__full2y \\
-    --tactical-variant p300_aggressive_v2_v1_0__replay_full2y \\
-    --capital 10000
+      --variant p300_aggressive_v2_v1_0 \\
+      --capital 10000
 """
 from __future__ import annotations
 
@@ -31,18 +28,29 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
-from services import db  # noqa: E402
+from services import db, strategy_health  # noqa: E402
 
 
-def load_daily_returns(variant_id: str) -> list[tuple[str, float]]:
+def load_daily_returns(variant_id: str, capital: float
+                        ) -> list[tuple[str, float]]:
+    """Calendar-complete daily realized returns (percent) for `variant_id`,
+    derived from closed trades. Window auto-spans the variant's first
+    closing trade to its last."""
     con = sqlite3.connect(str(db.DASH_DB))
-    rows = con.execute(
-        "SELECT date, return_1x_pct FROM variant_daily_returns "
-        "WHERE variant_id = ? AND source = 'replay' ORDER BY date",
-        (variant_id,),
-    ).fetchall()
-    con.close()
-    return [(d, float(r or 0.0)) for d, r in rows]
+    try:
+        row = con.execute(
+            "SELECT MIN(date(actual_exit_time)) AS lo, "
+            "       MAX(date(actual_exit_time)) AS hi "
+            "FROM trades WHERE strategy_variant=? AND status='closed'",
+            (variant_id,),
+        ).fetchone()
+    finally:
+        con.close()
+    if not row or row[0] is None:
+        return []
+    return strategy_health.trades_daily_returns(
+        variant_id, row[0], row[1], capital, zero_fill=True
+    )
 
 
 def load_trades(variant_id: str) -> list[dict]:
@@ -227,22 +235,22 @@ def print_side_by_side(port: dict, port_trades: dict, bh: dict,
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--combined-variant", required=True,
-                    help="Variant id with combined daily returns (from combine_replay.py).")
-    ap.add_argument("--tactical-variant", required=True,
-                    help="Variant id with tactical trades (from backtest_runner.py).")
+    ap = argparse.ArgumentParser(description=__doc__,
+                                  formatter_class=argparse.RawDescriptionHelpFormatter)
+    ap.add_argument("--variant", required=True,
+                    help="Variant id whose trades to report.")
     ap.add_argument("--capital", type=float, default=10000.0,
                     help="Starting capital (default 10000).")
     args = ap.parse_args()
 
-    daily = load_daily_returns(args.combined_variant)
+    daily = load_daily_returns(args.variant, args.capital)
     if not daily:
-        raise SystemExit(f"No daily returns for {args.combined_variant} — "
-                         f"run tools/combine_replay.py first.")
+        raise SystemExit(
+            f"No closed trades for variant {args.variant!r} — nothing to report."
+        )
     port_metrics = equity_metrics(args.capital, daily)
 
-    trades = load_trades(args.tactical_variant)
+    trades = load_trades(args.variant)
     tmetrics = trade_metrics(trades)
 
     btc = load_btc_daily_closes(daily[0][0], daily[-1][0])

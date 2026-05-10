@@ -24,7 +24,7 @@ from pathlib import Path
 # tools/ scripts run from repo root via `python tools/backtest_report.py ...`
 # Add the repo root to sys.path so `from services import db` resolves.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from services import db  # noqa: E402
+from services import db, strategy_health  # noqa: E402
 
 DEFAULT_VARIANT = "p300_aggressive_v2_v1_0__replay"
 
@@ -38,21 +38,30 @@ def load_variant_capital(variant_id: str) -> float:
 
 
 def load_nav_series(variant_id: str) -> list[tuple[str, float, float]]:
-    """[(date, return_pct, equity)] — equity compounded from return_pct."""
-    con = sqlite3.connect(str(db.DASH_DB))
-    rows = con.execute("""
-        SELECT date, return_1x_pct FROM variant_daily_returns
-        WHERE variant_id = ? AND source = 'replay'
-        ORDER BY date
-    """, (variant_id,)).fetchall()
-    con.close()
-    # Our return_1x_pct is daily PnL as % of PREVIOUS equity — rebuild equity
+    """[(date, return_pct, equity)] — derived from realized closed trades.
+    Calendar-complete: dates with no closing trades have a 0.0 return so
+    Sharpe / drawdown / yearly aggregations have a contiguous series."""
     capital = load_variant_capital(variant_id)
-    out = []
+    con = sqlite3.connect(str(db.DASH_DB))
+    try:
+        row = con.execute(
+            "SELECT MIN(date(actual_exit_time)) AS lo, "
+            "       MAX(date(actual_exit_time)) AS hi "
+            "FROM trades WHERE strategy_variant=? AND status='closed'",
+            (variant_id,),
+        ).fetchone()
+    finally:
+        con.close()
+    if not row or row[0] is None:
+        return []
+    daily = strategy_health.trades_daily_returns(
+        variant_id, row[0], row[1], capital, zero_fill=True
+    )
+    out: list[tuple[str, float, float]] = []
     eq = capital
-    for d, ret_pct in rows:
+    for d, ret_pct in daily:
         eq = eq * (1 + (ret_pct or 0) / 100.0)
-        out.append((d, ret_pct or 0, eq))
+        out.append((d, ret_pct or 0.0, eq))
     return out
 
 
