@@ -110,15 +110,15 @@ def _ensure_variant_registered() -> None:
 def _print_open_trades() -> None:
     """Show every open shadow trade across enabled variants at startup so
     the operator can see what positions the bot is inheriting (e.g. from a
-    prior session). Reads dashboard.db directly — keeps run.py self-
-    contained without a service-layer dependency."""
+    prior session). Reads via ``services.db.DASH_DB`` so a sim-mode
+    redirection of that constant is honoured here too."""
     import sqlite3
-    from pathlib import Path
-    db = Path(__file__).resolve().parent / "data" / "dashboard.db"
-    if not db.exists():
+    from services import db as _db_mod
+    db_path = _db_mod.DASH_DB
+    if not db_path.exists():
         log.info("=== open shadow trades: dashboard.db missing ===")
         return
-    con = sqlite3.connect(str(db))
+    con = sqlite3.connect(str(db_path))
     con.row_factory = sqlite3.Row
     rows = con.execute("""
         SELECT t.id, t.strategy_variant, t.strategy, t.asset, t.direction,
@@ -196,45 +196,23 @@ def _print_health_report() -> None:
         log.warning(f"health report skipped: {e!r}")
 
 
-def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="P-300 headless paper-trading bot")
-    ap.add_argument("--interval", type=int, default=60,
-                    help="Tick interval seconds (default 60)")
-    ap.add_argument("--feed", action="store_true",
-                    help="Also run binance_feed in a background thread")
-    ap.add_argument("--once", action="store_true",
-                    help="Run one tick and exit (for testing)")
-    ap.add_argument("--skip-gap-fix", action="store_true",
-                    help="Skip the startup gap-detection pass when --feed is "
-                         "set. Default with --feed is to heal any holes in "
-                         "the kline + funding tables before the live loop.")
-    args = ap.parse_args(argv)
+def _parse_iso_utc(s: str) -> datetime:
+    """Parse an ISO-8601 datetime, defaulting to UTC if naive. Accepts
+    'YYYY-MM-DD' (treated as 00:00 UTC) and full ISO timestamps."""
+    s = s.strip()
+    if len(s) == 10 and s[4] == "-" and s[7] == "-":
+        s = s + "T00:00:00+00:00"
+    dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc)
 
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(name)s] %(levelname)s %(message)s",
-    )
 
-    # Load .env so ANTHROPIC_API_KEY, COINALYZE_API_KEY etc. are available
-    # to sleeves and fetchers without requiring a shell export. Existing env
-    # values are preserved (an explicit `export` still wins).
-    from services.env import load_env_file
-    load_env_file()
-
-    # init schemas (idempotent)
-    trade_db.init_db()
-    variant_registry.init_schema()
-    _ensure_variant_registered()
-    _catchup_core_trade_emit()
-    _print_open_trades()
-    _print_health_report()
-
-    signal.signal(signal.SIGINT, _signal_handler)
-    signal.signal(signal.SIGTERM, _signal_handler)
-
+def _run_live_loop(args, log) -> int:
+    """Wall-clock-driven live loop. Runs until _stop is set or, with
+    --once, after a single tick."""
+    from services import clock as _clock
     if args.feed and not args.once:
-        # Self-heal any data gaps before starting the live loop. First run
-        # on a sparse DB can take ~20 min; subsequent runs are sub-second.
         if not args.skip_gap_fix:
             log.info("=== startup gap fix ===")
             import binance_feed
@@ -253,7 +231,7 @@ def main(argv: list[str] | None = None) -> int:
              f"feed={'on' if args.feed else 'off'})")
     while not _stop.is_set():
         t0 = time.time()
-        now = datetime.now(timezone.utc)
+        now = _clock.now_utc()
         try:
             variant_engine.tick()
             log.info(f"tick ok ({(time.time() - t0) * 1000:.0f}ms @ {now.isoformat()})")
@@ -261,13 +239,154 @@ def main(argv: list[str] | None = None) -> int:
             log.exception(f"tick error: {e}")
         if args.once:
             return 0
-        # Sleep in 1s increments for prompt Ctrl-C
         for _ in range(args.interval):
             if _stop.is_set():
                 break
             time.sleep(1)
     log.info("shutdown complete")
     return 0
+
+
+def _run_sim_loop(args, log) -> int:
+    """Deterministic sim loop: advance the simulated clock by
+    --sim-tick-seconds per tick from --start to --end (inclusive). No
+    wall-clock sleep; runs as fast as the dispatch can. The bot's
+    trading logic is identical to live mode; only the data source
+    (services.db.{TRADER,DASH}_DB redirected at startup) and clock
+    differ. Phase 6 will extract this loop into services.sim_loop."""
+    from services import clock as _clock
+    start = _parse_iso_utc(args.start)
+    end = _parse_iso_utc(args.end)
+    step = timedelta(seconds=args.sim_tick_seconds)
+    cur = start
+    n_ticks = 0
+    log.info(
+        f"=== sim loop starting === start={start.isoformat()} "
+        f"end={end.isoformat()} step={args.sim_tick_seconds}s "
+        f"trader_db={args.trader_db} dash_db={args.dash_db}"
+    )
+    t_wall = time.time()
+    while cur <= end and not _stop.is_set():
+        _clock.set_simulated_now(cur)
+        try:
+            variant_engine.tick()
+        except Exception as e:
+            log.exception(f"sim tick error at {cur.isoformat()}: {e}")
+        n_ticks += 1
+        cur += step
+    elapsed = time.time() - t_wall
+    log.info(
+        f"=== sim loop complete === ticks={n_ticks} "
+        f"wall_time={elapsed:.1f}s ({n_ticks / max(elapsed, 1e-9):.0f} ticks/s)"
+    )
+    _clock.set_simulated_now(None)
+    log.info("=== sim post-run health report ===")
+    _print_health_report()
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(description="P-300 headless paper-trading bot")
+    ap.add_argument("--mode", choices=("live", "sim"), default="live",
+                    help="Operating mode. 'live' (default): wall-clock loop "
+                         "against the real DBs. 'sim': deterministic loop "
+                         "against the DBs given by --trader-db/--dash-db, "
+                         "advancing a simulated clock from --start to --end.")
+    ap.add_argument("--interval", type=int, default=60,
+                    help="Live tick interval seconds (default 60). Ignored "
+                         "in --mode sim (use --sim-tick-seconds).")
+    ap.add_argument("--feed", action="store_true",
+                    help="Also run binance_feed in a background thread. "
+                         "Incompatible with --mode sim.")
+    ap.add_argument("--once", action="store_true",
+                    help="Run one tick and exit (for live-mode smoke test).")
+    ap.add_argument("--skip-gap-fix", action="store_true",
+                    help="Skip the startup gap-detection pass when --feed is "
+                         "set. Default with --feed is to heal any holes in "
+                         "the kline + funding tables before the live loop.")
+    # ── sim-mode args ─────────────────────────────────────────────────
+    ap.add_argument("--start", type=str, default=None,
+                    help="Sim start (UTC). Required with --mode sim. "
+                         "Accepts 'YYYY-MM-DD' or full ISO-8601.")
+    ap.add_argument("--end", type=str, default=None,
+                    help="Sim end (UTC, inclusive). Required with --mode sim.")
+    ap.add_argument("--trader-db", type=str, default=None,
+                    help="Path to the sim trader.db (market data source). "
+                         "Required with --mode sim. Build with "
+                         "tools/build_sim_trader_db.py.")
+    ap.add_argument("--dash-db", type=str, default=None,
+                    help="Path to the sim dashboard.db (variant + trade ledger "
+                         "destination). Required with --mode sim. Pre-register "
+                         "the variant via P300_DASHBOARD_DB=<path> python "
+                         "register_p300.py.")
+    ap.add_argument("--sim-tick-seconds", type=int, default=60,
+                    help="Simulated-clock advance per tick in seconds "
+                         "(default 60). Lower = finer granularity.")
+    args = ap.parse_args(argv)
+
+    # ── Validate mode-specific arg combos ─────────────────────────────
+    if args.mode == "sim":
+        missing = [
+            f for f, v in (
+                ("--start", args.start), ("--end", args.end),
+                ("--trader-db", args.trader_db), ("--dash-db", args.dash_db),
+            ) if not v
+        ]
+        if missing:
+            ap.error(f"--mode sim requires: {', '.join(missing)}")
+        if args.feed:
+            ap.error("--feed is incompatible with --mode sim "
+                     "(sim runs against pre-populated DBs, no live API)")
+        if args.once:
+            ap.error("--once is a live-mode smoke test; use --start/--end "
+                     "with --mode sim")
+
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(name)s] %(levelname)s %(message)s",
+    )
+
+    # ── Sim-mode DB redirect (must run BEFORE init_db / variant lookup) ──
+    # Module-attribute mutation of services.db propagates everywhere
+    # because every consumer reads ``db.DASH_DB`` / ``db.TRADER_DB`` at
+    # call time, not import time. Confirmed by audit: no
+    # ``from services.db import DASH_DB`` patterns exist.
+    if args.mode == "sim":
+        from services import db as _db_mod
+        _db_mod.TRADER_DB = Path(args.trader_db).resolve()
+        _db_mod.DASH_DB = Path(args.dash_db).resolve()
+        log.info(
+            f"=== sim mode === redirected services.db.TRADER_DB="
+            f"{_db_mod.TRADER_DB} services.db.DASH_DB={_db_mod.DASH_DB}"
+        )
+        from services import clock as _clock
+        _clock.set_simulated_now(_parse_iso_utc(args.start))
+
+    # Load .env so ANTHROPIC_API_KEY, COINALYZE_API_KEY etc. are available
+    # to sleeves and fetchers without requiring a shell export. Existing env
+    # values are preserved (an explicit `export` still wins).
+    from services.env import load_env_file
+    load_env_file()
+
+    # init schemas (idempotent)
+    trade_db.init_db()
+    variant_registry.init_schema()
+    _ensure_variant_registered()
+    if args.mode == "live":
+        # Catchup is a live-only concern — sim starts with whatever the
+        # sim ledger DB contains and lets the live handlers fill from
+        # the simulated start onward. (Phase 4 will delete this entirely.)
+        _catchup_core_trade_emit()
+    _print_open_trades()
+    if args.mode == "live":
+        _print_health_report()
+
+    signal.signal(signal.SIGINT, _signal_handler)
+    signal.signal(signal.SIGTERM, _signal_handler)
+
+    if args.mode == "sim":
+        return _run_sim_loop(args, log)
+    return _run_live_loop(args, log)
 
 
 if __name__ == "__main__":

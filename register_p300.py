@@ -33,7 +33,10 @@ from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(__file__))
 from services import trade_db, variant_registry  # noqa: E402,F401
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "data", "dashboard.db")
+DB_PATH = os.environ.get(
+    "P300_DASHBOARD_DB",
+    os.path.join(os.path.dirname(__file__), "data", "dashboard.db"),
+)
 VARIANT_ID = "p300_aggressive_v2_v1_0"
 
 
