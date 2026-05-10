@@ -289,7 +289,11 @@ def refresh(
     (use force=True or the CLI's --once to bypass). Returns a dict of
     {feed_name: rows_inserted}; -1 indicates a fetcher error.
 
-    Per-feed failures are isolated — one outage doesn't sink the rest."""
+    Per-feed failures are isolated — one outage doesn't sink the rest.
+    No-op (returns {}) in sim mode — sim must not hit the network."""
+    from services import clock
+    if clock.is_simulated():
+        return {}
     global _last_refresh_ts
     now = time.time()
     if not force and (now - _last_refresh_ts) < RATE_LIMIT_SECONDS:

@@ -241,7 +241,8 @@ def refresh(
 
     Returns count of newly-inserted rows across all sources. Rate-limited
     to one fetch per hour unless force=True. Failures on individual
-    sources are logged but don't stop the rest.
+    sources are logged but don't stop the rest. No-op (returns 0) in
+    sim mode — sim must not hit the network.
 
     Args:
         force: bypass the once-per-hour throttle (CLI/manual use).
@@ -249,6 +250,9 @@ def refresh(
             stub returning canned rows.
         sources: override SOURCES (testing or A/B).
     """
+    from services import clock
+    if clock.is_simulated():
+        return 0
     global _last_refresh_ts
     now = time.time()
     if not force and (now - _last_refresh_ts) < RATE_LIMIT_SECONDS:

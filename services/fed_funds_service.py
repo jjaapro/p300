@@ -54,7 +54,14 @@ def refresh_xml() -> bool:
 
     The endpoint serves up to ~3.9MB (full daily history 2019->present).
     Idempotent — safe to call from binance_feed.refresh_all() each cycle.
-    Server enforces a UA filter; default urllib UA gets 403."""
+    Server enforces a UA filter; default urllib UA gets 403.
+
+    No-op in sim mode — sim runs against pre-populated cached data and
+    must never hit the network. Returns False so the caller treats it
+    as 'no fresh fetch this cycle'."""
+    from services import clock
+    if clock.is_simulated():
+        return False
     end = datetime.now(timezone.utc).strftime("%Y-%m-%d")
     url = NYFED_URL.format(end=end)
     req = Request(url, headers={"User-Agent": "Mozilla/5.0 p300/1.0"})

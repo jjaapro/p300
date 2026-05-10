@@ -52,7 +52,11 @@ def refresh() -> bool:
     derived expected-cuts value E[cuts] = sum(i * P(i)).
 
     Returns True on success, False on network/parse failure (cache stays as-is).
+    No-op (returns False) in sim mode — sim must not hit the network.
     """
+    from services import clock
+    if clock.is_simulated():
+        return False
     try:
         events = _gamma_get("/events", {"slug": ANCHOR_SLUG})
         if not isinstance(events, list) or not events:
