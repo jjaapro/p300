@@ -142,6 +142,36 @@ python tools/full_portfolio_report.py --variant p300_aggressive_v2_v1_0 \
     --capital 10000   # reads /tmp/sim_dash.db if env var still set
 ```
 
+### Resuming an interrupted sim run
+
+Sim mode is **idempotent per UTC day** because every sleeve checks
+the trades table for an existing row before opening a new one
+(``services.jplus_live._has_trade_for_day`` and the equivalent in
+each tactical sleeve). So if a long sim run is interrupted — kill
+signal, OOM, you closed the laptop — you can resume by re-launching
+the same command with a `--start` at or before the last completed
+date. Already-fired trades are no-ops on the re-tick.
+
+```bash
+# Original run, killed somewhere in mid-2024:
+python run.py --mode sim --start 2024-01-01 --end 2024-12-31 \
+    --trader-db trader_sim.db --dash-db sim_dash.db
+
+# Find the last completed UTC date in the sim ledger:
+sqlite3 sim_dash.db \
+    "SELECT MAX(date(actual_entry_time)) FROM trades \
+     WHERE strategy_variant='p300_aggressive_v2_v1_0'"
+# ⇒ 2024-07-13
+
+# Resume — re-running 07-13 is safe (idempotent), continues from there:
+python run.py --mode sim --start 2024-07-13 --end 2024-12-31 \
+    --trader-db trader_sim.db --dash-db sim_dash.db
+```
+
+The cost of starting a few days before the killpoint is just a few
+hundred no-op tick-and-skip iterations — much cheaper than restarting
+the whole sim from January.
+
 ### Which sim tool — `run.py --mode sim` or `backtest_runner.py`?
 
 Both drive the live bot under a fake clock via the same
