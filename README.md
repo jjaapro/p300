@@ -143,13 +143,37 @@ python tools/full_portfolio_report.py --variant p300_aggressive_v2_v1_0 \
     --capital 10000   # reads /tmp/sim_dash.db if env var still set
 ```
 
-Sim mode shares the [services/sim_loop.py](services/sim_loop.py)
-clock-advance primitive with [backtest_runner.py](backtest_runner.py)
-(the older research-replay tool, which writes to a `__replay` variant
-in the live `dashboard.db`). For one-off operator-style runs use
-`run.py --mode sim`; for parameter sweeps and A/B comparison runs use
-`backtest_runner.py --tag <label>` to keep multiple replay variants
-side-by-side.
+### Which sim tool — `run.py --mode sim` or `backtest_runner.py`?
+
+Both drive the live bot under a fake clock via the same
+[services/sim_loop.run_sim](services/sim_loop.py) primitive — but they
+differ in **where output lands** and **which features they layer on
+top**:
+
+|  | `run.py --mode sim` | `backtest_runner.py` |
+|---|---|---|
+| Output ledger | separate `--dash-db` file | live `data/dashboard.db` (variant id suffixed `__replay[_<tag>]`) |
+| Live data isolation | **complete** — separate trader.db + dashboard.db | shares `data/trader.db` (read) + `data/dashboard.db` (writes to its own variant) |
+| Liquidation simulator | NO (tactical-style closes only) | YES (`check_liquidations_for_variant`) |
+| Mark-to-end-of-window for trades open at end | NO | YES (`mark_remaining_at_end`) |
+| Per-sleeve PnL summary | uses `strategy_health.build_report` | bespoke report block |
+| `--reset` purges prior runs | NO (use a fresh `--dash-db`) | YES |
+| `--tag` for parallel A/B runs | NO | YES |
+| `--with-fomc` injects FOMC sleeve mid-run | NO | YES |
+| `--skip <strategy>` excludes one sleeve | NO | YES |
+
+**Pick `run.py --mode sim`** when you want a clean *operator-style*
+sim (does the bot work end-to-end on this date range?) with no risk
+of touching the live ledger.
+
+**Pick `backtest_runner.py`** when you want *research workflow* —
+parameter sweeps, A/B comparisons, liquidation-aware long-window
+backtests, or anything where keeping multiple result sets in one DB
+helps.
+
+There is no "third option": the two tools share their dispatch
+(STRATEGY_DISPATCH) and clock primitive, so a sleeve that fires under
+one fires identically under the other.
 
 ## Inspect state
 
