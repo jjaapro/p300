@@ -50,17 +50,15 @@ def build_spec() -> dict:
     from weighting both streams.
     """
     return {
-        "equity_source": "mixed",  # tactical trades + Core daily returns
+        "equity_source": "trades",  # all sleeves emit to trades; PnL is the ledger
         "composition": [
-            # 50% — Core J+ regime-gated (port; not ML-gated; no GOLD).
-            # Daily-return accrual via jplus_service.try_fire_for_variant.
-            {"strategy_id": "JPLUS-CORE", "weight_pct": 50.0,
-             "params": {"inner_leverage": 2.5,
-                        "gate": "regime_volpct_t_minus_one",
-                        "has_gold": False},
-             "note": "Core J+ regime-gated port. See jplus/ package for the "
-                     "simulator; ML gate REPLACED by T-1 vol-percentile rule "
-                     "(upstream ML pipeline had within-day look-ahead)."},
+            # Core J+ no longer has a top-level dispatch entry — the
+            # six sub-sleeves below (R4_BTC/V2, R4_ETH/V2, EMA_BTC,
+            # ETH_DAILY) own real-time trade emission directly. The
+            # umbrella JPLUS-CORE that previously wrote a theoretical
+            # daily-return row to variant_daily_returns was removed
+            # 2026-05-10 (live/sim refactor Phase 3): realized PnL
+            # from the trade ledger is the only PnL.
             {"strategy_id": "S-003", "weight_pct": 15.0,
              "params": {"stop_loss_pct": 10.0, "leverage": 5.0},
              "note": "ADX at k=5x (Aggressive 2.0 diversifier leverage)"},
@@ -102,6 +100,14 @@ def build_spec() -> dict:
             {"strategy_id": "JPLUS_R4_ETH", "weight_pct": 0.0,
              "params": {"asset": "ETH"},
              "note": "Core J+ R4 ETH: Tue 20:00 → Wed 20:00 UTC (Wed day≤14)."},
+            {"strategy_id": "JPLUS_R4_BTC_V2", "weight_pct": 0.0,
+             "params": {"asset": "BTC"},
+             "note": "Core J+ R4 BTC V2: Wed/Fri wk1-2 04:00→14:00 UTC "
+                     "(added 2026-05-08; era-stable BTC alpha cell)."},
+            {"strategy_id": "JPLUS_R4_ETH_V2", "weight_pct": 0.0,
+             "params": {"asset": "ETH"},
+             "note": "Core J+ R4 ETH V2: Wed/Fri wk1-2 04:00→14:00 UTC "
+                     "(added 2026-05-08; cross-asset application of V2)."},
             {"strategy_id": "JPLUS_EMA_BTC", "weight_pct": 0.0,
              "params": {"asset": "BTC"},
              "note": "Core J+ EMA(BTC) continuous; daily SCALE/LEV_ADJ + FLIP "
@@ -133,12 +139,14 @@ def build_spec() -> dict:
             # Core sub-sleeves: live handlers compute stacked leverage
             # internally from today_inputs(). 1.0 placeholder.
             "r4_btc": 1.0, "r4_eth": 1.0,
+            "r4_btc_v2": 1.0, "r4_eth_v2": 1.0,
             "ema_btc": 1.0, "eth_daily": 1.0,
             "ai_quant": 3.0,
         },
-        "sleeves_live": ["JPLUS-CORE", "S-003", "S-078", "S-096", "PDO-L-RF",
+        "sleeves_live": ["S-003", "S-078", "S-096", "PDO-L-RF",
                           "CPR", "FOMC",
                           "JPLUS_R4_BTC", "JPLUS_R4_ETH",
+                          "JPLUS_R4_BTC_V2", "JPLUS_R4_ETH_V2",
                           "JPLUS_EMA_BTC", "JPLUS_ETH_DAILY",
                           "AI_QUANT"],
         "missing_sleeves": [
@@ -226,16 +234,19 @@ def register() -> None:
     spec_json = json.dumps(build_spec(), indent=2)
     now = datetime.now(timezone.utc).isoformat()
     notes = (
-        "P-300 Aggressive 2.0 1.0 — full port (Path A Phase 3/4). "
-        "Upstream backtest results are treated as compromised and are NOT "
-        "seeded here; no daily-returns rows, no Sharpe/CAGR/MDD claims. "
-        "Live dispatch covers 7 sleeves: JPLUS-CORE (50%, daily-return "
-        "accrual via jplus_service) + 6 tactical sleeves (50% phantom "
-        "trades — S-003/S-078/S-096 V4/PDO-L-RF/CPR/FOMC). Core uses "
-        "regime-gate rule instead of upstream ML gate (look-ahead-safe) "
-        "and drops GOLD (no data). FOMC sleeve added 2026-04-30 — replaces "
-        "the prior 5% cash reserve, runs at k=10x with regime + Polymarket "
-        "+ F&G filters; in-sample 100% win rate on 11 events 2023-2026."
+        "P-300 Aggressive 2.0 1.0 — full port. Upstream backtest results "
+        "are treated as compromised and are NOT seeded here; no daily-"
+        "returns rows, no Sharpe/CAGR/MDD claims. Live dispatch (since "
+        "2026-05-10): 6 tactical sleeves (S-003/S-078/S-096 V4/PDO-L-RF/"
+        "CPR/FOMC) + 6 Core J+ sub-sleeves (R4_BTC/V2, R4_ETH/V2, "
+        "EMA_BTC, ETH_DAILY) + AI_QUANT (default-OFF). All sleeves emit "
+        "real-time trades; realized PnL from the trade ledger is the "
+        "only PnL. FOMC sleeve added 2026-04-30 (k=10x, regime + "
+        "Polymarket + F&G filtered, 100% in-sample win rate). The "
+        "umbrella JPLUS-CORE composition entry was removed 2026-05-10 "
+        "along with the simulator-driven daily-return accrual; the "
+        "analytic simulator (jplus.simulate.simulate) remains as a "
+        "research-only tool, not on any runtime path."
     )
     cur.execute("""
         INSERT INTO variants (
@@ -270,15 +281,20 @@ def register() -> None:
     """, (
         now, VARIANT_ID, "registered", "p300_register_script",
         json.dumps({"scope": "full_port",
-                    "live_sleeves": ["JPLUS-CORE", "S-003", "S-078", "S-096",
-                                      "PDO-L-RF", "CPR", "FOMC"],
-                    "core_pct": 50.0, "tactical_pct": 50.0, "reserve_pct": 0.0,
+                    "live_sleeves": ["S-003", "S-078", "S-096",
+                                      "PDO-L-RF", "CPR", "FOMC",
+                                      "JPLUS_R4_BTC", "JPLUS_R4_ETH",
+                                      "JPLUS_R4_BTC_V2", "JPLUS_R4_ETH_V2",
+                                      "JPLUS_EMA_BTC", "JPLUS_ETH_DAILY",
+                                      "AI_QUANT"],
+                    "tactical_pct": 50.0,
                     "core_gate": "regime_volpct_t_minus_one",
                     "gold_included": False,
-                    "fomc_added_at": "2026-04-30"}),
-        "Registered P-300 Aggressive 2.0 1.0 (SHADOW) — 7 live sleeves "
-        "(Core + 6 tactical incl. new FOMC k=10x), Core uses regime-gate "
-        "(no ML), no GOLD",
+                    "fomc_added_at": "2026-04-30",
+                    "core_umbrella_removed_at": "2026-05-10"}),
+        "Registered P-300 Aggressive 2.0 1.0 (SHADOW) — 13 live sleeves "
+        "(6 tactical + 6 J+ sub-sleeves + AI_QUANT). Realized-PnL only; "
+        "JPLUS-CORE umbrella + simulator daily-return accrual removed.",
     ))
     con.commit()
 

@@ -196,6 +196,40 @@ def _print_health_report() -> None:
         log.warning(f"health report skipped: {e!r}")
 
 
+def _print_today_inputs_snapshot() -> None:
+    """One-shot Core J+ today_inputs() snapshot — regime, vol-target
+    leverage, R4 gate state, EMA-position, and the six sub-sleeve
+    weights. Replaces the per-day attribution log line that the
+    deleted jplus_service used to emit; gives the operator the same
+    sanity check on startup ("what regime are we in, are R4 sleeves
+    going to fire today, what's the vol-target leverage")."""
+    try:
+        from jplus import simulate as core_sim
+        ti = core_sim.today_inputs()
+        if ti is None:
+            log.warning("today_inputs snapshot: simulator returned None "
+                        "(insufficient warmup data?)")
+            return
+        weights = ti.get("weights", {}) or {}
+        log.info(
+            f"=== today_inputs ({ti.get('date', '?')}) === "
+            f"mode={ti.get('mode')}  vol_lev={float(ti.get('lev', 0)):.2f}x  "
+            f"gate={'FIRED' if ti.get('gated') else 'open'}  "
+            f"ema_p={int(ti.get('ema_p', 0)):+d}"
+        )
+        log.info(
+            "  sub-sleeve weights: "
+            f"r4_btc={weights.get('r4_btc', 0):.3f}  "
+            f"r4_eth={weights.get('r4_eth', 0):.3f}  "
+            f"r4_btc_v2={weights.get('r4_btc_v2', 0):.3f}  "
+            f"r4_eth_v2={weights.get('r4_eth_v2', 0):.3f}  "
+            f"ema_btc={weights.get('ema_btc', 0):.3f}  "
+            f"eth_daily={weights.get('eth_daily', 0):.3f}"
+        )
+    except Exception as e:
+        log.warning(f"today_inputs snapshot skipped: {e!r}")
+
+
 def _parse_iso_utc(s: str) -> datetime:
     """Parse an ISO-8601 datetime, defaulting to UTC if naive. Accepts
     'YYYY-MM-DD' (treated as 00:00 UTC) and full ISO timestamps."""
@@ -378,6 +412,7 @@ def main(argv: list[str] | None = None) -> int:
         # the simulated start onward. (Phase 4 will delete this entirely.)
         _catchup_core_trade_emit()
     _print_open_trades()
+    _print_today_inputs_snapshot()
     if args.mode == "live":
         _print_health_report()
 

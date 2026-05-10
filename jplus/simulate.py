@@ -386,9 +386,10 @@ def apply_r4_fees(series: dict[str, dict], fee_bp_rt: float = 10.0) -> None:
     V2 sleeves are charged the same fee model with their own per-regime
     weights — see ``_REGIME_R4_WEIGHTS`` above.
 
-    The live path (``services/jplus_service.py``) does NOT call this —
-    it derives fees from the trade-event ledger, which is the canonical
-    P&L source under Path B.
+    No runtime path calls this. Live (and sim) fees come from the
+    trade-event ledger, which is the canonical P&L source. This helper
+    exists only for offline research that wants the analytic fee-net
+    return series alongside ``simulate()`` output.
     """
     fee_frac = fee_bp_rt / 10000.0
     for rec in series.values():

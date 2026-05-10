@@ -305,7 +305,7 @@ def _load_dispatch():
         return
     from services import (adx_service, thu_bear_service, carry_service,
                                      pdo_retouch_service, cpr_service,
-                                     jplus_service, jplus_live, fomc_service,
+                                     jplus_live, fomc_service,
                                      ai_quant_service)
     STRATEGY_DISPATCH = {
         "S-003":           adx_service.try_fire_for_variant,
@@ -313,7 +313,6 @@ def _load_dispatch():
         "S-078":           carry_service.try_fire_for_variant,
         "PDO-L-RF":        pdo_retouch_service.try_fire_for_variant,
         "CPR":             cpr_service.try_fire_for_variant,
-        "JPLUS-CORE":      jplus_service.try_fire_for_variant,
         "FOMC":            fomc_service.try_fire_for_variant,
         # Core J+ sub-sleeves — live entry handlers (Phases 1-3 of the
         # live-execution refactor). Each opens its own discrete trades
