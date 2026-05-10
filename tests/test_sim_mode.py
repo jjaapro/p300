@@ -164,6 +164,76 @@ def test_sim_does_not_touch_live_dashboard_db(
     )
 
 
+def test_sim_and_backtest_runner_produce_identical_jplus_trades(
+    monkeypatch, sim_trader_db, sim_dashboard_db,
+):
+    """Parity: ``run.py --mode sim`` and ``backtest_runner.py`` share the
+    same dispatch (STRATEGY_DISPATCH) and the same clock primitive
+    (services.sim_loop), so for the same window at the same tick
+    cadence they must produce identical trades.
+
+    Run both paths against the same sim dashboard.db at 1h ticks over a
+    full Mon 06:00→18:00 UTC R4_BTC window. The live variant fires
+    under variant_engine.tick (run.py path); a __replay_parity variant
+    fires under backtest_runner.tick_replay_variant. Compare the
+    JPLUS_R4_BTC trades by (asset, direction, entry_time, exit_time,
+    entry_price, size_usdt) — these must match exactly.
+
+    Tactical sleeves (CARRY, etc.) are not compared because their
+    firing depends on tick granularity, not just the calendar / signal
+    moment, so they could legitimately differ between paths in
+    edge cases. R4_* sleeves fire only on signal moments, so they are
+    the right anchor for a parity check."""
+    _redirect_dbs(monkeypatch, sim_trader_db, sim_dashboard_db)
+
+    # Full R4_BTC trade lifecycle: entry 06:00 → close 18:00 UTC.
+    # 1h ticks so both paths see the same signal-moment ticks.
+    start = datetime(2024, 6, 3, 6, 0, 0, tzinfo=timezone.utc)
+    end = datetime(2024, 6, 3, 18, 0, 0, tzinfo=timezone.utc)
+
+    # run.py path — ticks 'p300_aggressive_v2_v1_0' (enabled=1).
+    sim_loop.run_sim(start, end, 3600,
+                      lambda cur: variant_engine.tick())
+
+    # backtest_runner path — registers a __replay_parity variant
+    # (enabled=0; never touched by variant_engine.tick) and runs it
+    # scoped via tick_replay_variant.
+    import io
+    import contextlib
+    import backtest_runner
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        backtest_runner.run(start=start, end=end, interval_hours=1,
+                              reset=True, tag="parity")
+
+    con = sqlite3.connect(str(sim_dashboard_db))
+    con.row_factory = sqlite3.Row
+    try:
+        def _r4(variant: str) -> list[dict]:
+            return [dict(r) for r in con.execute(
+                "SELECT strategy, asset, direction, "
+                "       actual_entry_time, exit_time, "
+                "       ROUND(entry_price, 6) AS ep, "
+                "       ROUND(size_usdt, 6) AS sz "
+                "FROM trades WHERE strategy_variant=? AND strategy='JPLUS_R4_BTC' "
+                "ORDER BY actual_entry_time",
+                (variant,),
+            ).fetchall()]
+        live_r4 = _r4(LIVE_VARIANT)
+        replay_r4 = _r4("p300_aggressive_v2_v1_0__replay_parity")
+    finally:
+        con.close()
+
+    assert len(live_r4) == 1, f"live R4_BTC count != 1: {live_r4}"
+    assert len(replay_r4) == 1, f"replay R4_BTC count != 1: {replay_r4}"
+    assert live_r4[0] == replay_r4[0], (
+        "JPLUS_R4_BTC trade differs between run.py --mode sim and "
+        "backtest_runner — dispatch parity broken:\n"
+        f"  run.py path = {live_r4[0]}\n"
+        f"  backtest    = {replay_r4[0]}"
+    )
+
+
 def test_sim_run_is_idempotent_for_same_window(
     monkeypatch, sim_trader_db, sim_dashboard_db,
 ):
