@@ -652,7 +652,7 @@ python run.py --feed         # also runs binance_feed in a thread
 python tools/build_sim_trader_db.py \
     --start 2024-01-01 --end 2024-12-31 \
     --output data/trader_sim_2024.db
-P300_DASHBOARD_DB=/tmp/sim_dash.db python register_p300.py
+python register_p300.py --dash-db /tmp/sim_dash.db
 python run.py --mode sim \
     --start 2024-01-01 --end 2024-12-31 \
     --trader-db data/trader_sim_2024.db \

@@ -126,9 +126,8 @@ python tools/build_sim_trader_db.py \
     --start 2024-01-01 --end 2024-12-31 \
     --output data/trader_sim_2024.db
 
-# 2. Register the variant in a fresh dashboard sim DB. The env var lets
-#    register_p300.py target a sim DB without code changes.
-P300_DASHBOARD_DB=/tmp/sim_dash.db python register_p300.py
+# 2. Register the variant in a fresh dashboard sim DB.
+python register_p300.py --dash-db /tmp/sim_dash.db
 
 # 3. Run the bot in sim mode. Inclusive date range; sim-tick-seconds
 #    advances the simulated clock per tick (no wall-clock sleep).

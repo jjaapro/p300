@@ -33,10 +33,6 @@ from datetime import datetime, timezone
 sys.path.insert(0, os.path.dirname(__file__))
 from services import trade_db, variant_registry  # noqa: E402,F401
 
-DB_PATH = os.environ.get(
-    "P300_DASHBOARD_DB",
-    os.path.join(os.path.dirname(__file__), "data", "dashboard.db"),
-)
 VARIANT_ID = "p300_aggressive_v2_v1_0"
 
 
@@ -214,9 +210,23 @@ def build_spec() -> dict:
     }
 
 
-def register() -> None:
-    print(f"Registering {VARIANT_ID} in {DB_PATH}")
-    con = sqlite3.connect(DB_PATH)
+def register(dash_db: str | None = None) -> None:
+    """Register the live variant in ``dash_db``.
+
+    Path resolution order:
+      1. ``dash_db`` argument (passed by ``main()`` / ``--dash-db``)
+      2. ``P300_DASHBOARD_DB`` env var (kept for back-compat with the
+         pre-CLI workflow; emit a deprecation note)
+      3. ``data/dashboard.db`` (default)
+    """
+    db_path = dash_db or os.environ.get("P300_DASHBOARD_DB") or os.path.join(
+        os.path.dirname(__file__), "data", "dashboard.db"
+    )
+    if dash_db is None and os.environ.get("P300_DASHBOARD_DB"):
+        print("note: using P300_DASHBOARD_DB env var; "
+              "--dash-db flag is preferred")
+    print(f"Registering {VARIANT_ID} in {db_path}")
+    con = sqlite3.connect(db_path)
     cur = con.cursor()
 
     existing = cur.execute(
@@ -307,5 +317,26 @@ def register() -> None:
     con.close()
 
 
+def main(argv: list[str] | None = None) -> int:
+    import argparse
+    ap = argparse.ArgumentParser(
+        description="Register the P-300 variant in a dashboard.db.",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=(
+            "Examples:\n"
+            "  python register_p300.py\n"
+            "      register in data/dashboard.db (default)\n"
+            "  python register_p300.py --dash-db /tmp/sim_dash.db\n"
+            "      register in a sim ledger DB for run.py --mode sim\n"
+        ),
+    )
+    ap.add_argument("--dash-db", default=None,
+                    help="Path to dashboard.db. Defaults to "
+                         "$P300_DASHBOARD_DB or data/dashboard.db.")
+    args = ap.parse_args(argv)
+    register(dash_db=args.dash_db)
+    return 0
+
+
 if __name__ == '__main__':
-    register()
+    raise SystemExit(main())

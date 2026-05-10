@@ -323,8 +323,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--dash-db", type=str, default=None,
                     help="Path to the sim dashboard.db (variant + trade ledger "
                          "destination). Required with --mode sim. Pre-register "
-                         "the variant via P300_DASHBOARD_DB=<path> python "
-                         "register_p300.py.")
+                         "the variant via "
+                         "`python register_p300.py --dash-db <path>`.")
     ap.add_argument("--sim-tick-seconds", type=int, default=60,
                     help="Simulated-clock advance per tick in seconds "
                          "(default 60). Lower = finer granularity.")
