@@ -16,11 +16,15 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-DB_PATH = Path(__file__).resolve().parent.parent / "data" / "dashboard.db"
-
-
 def _con() -> sqlite3.Connection:
-    con = sqlite3.connect(str(DB_PATH))
+    """Open a connection to the dashboard DB. Reads ``services.db.DASH_DB``
+    at call time so a sim-mode redirection (``run.py --mode sim`` mutates
+    that constant at startup) propagates here. The previous module-local
+    ``DB_PATH = .../dashboard.db`` shadowed the redirection, causing
+    sim runs to read variant config from the live DB while writing
+    trades to the sim DB."""
+    from services import db as _db_mod
+    con = sqlite3.connect(str(_db_mod.DASH_DB))
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA journal_mode=WAL")
     con.execute("PRAGMA foreign_keys=ON")
