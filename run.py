@@ -1,30 +1,39 @@
 """P-300 Aggressive 2.0 1.0 -- standalone paper-trading bot.
 
-Runs the variant engine on a 60-second loop. Each tick dispatches all 7
-P-300 sleeves for the SHADOW variant:
+Runs the variant engine on a 60-second loop. Each tick dispatches all
+sleeves of the SHADOW variant; sleeves emit phantom trades into the
+``trades`` table tagged ``execution_mode='SHADOW'`` and
+``strategy_variant='p300_aggressive_v2_v1_0'``. Realized PnL is the
+sum of the trade ledger; there is no parallel theoretical-PnL track.
 
-  - JPLUS-CORE (50%) -- Core J+ daily-return engine. Computes yesterday's
-    return via jplus.simulate() and persists to variant_daily_returns
-    (source='live_computed', idempotent per UTC day). Also emits discrete
-    entry/exit/scale/leverage events into the `trades` and
-    `trade_adjustments` tables for each of the four sub-sleeves
-    (JPLUS_EMA_BTC, JPLUS_ETH_DAILY, JPLUS_R4_BTC, JPLUS_R4_ETH) so
-    "show all open trades" returns Core + tactical uniformly.
-  - S-003 ADX (15%), S-078 Carry (8%), S-096 V4 Thu Bear (6%),
-    PDO-L-RF (11%), CPR (5%), FOMC (5%) -- tactical sleeves. Open/close
-    phantom trades in the `trades` table tagged execution_mode='SHADOW'
-    and strategy_variant='p300_aggressive_v2_v1_0'.
+Tactical sleeves (50%):
+  S-003 ADX, S-078 Carry, S-096 V4 Thu Bear, PDO-L-RF, CPR, FOMC.
 
-Sleeve weights sum to 100% -- there is no idle cash reserve at the
-portfolio level (any cash drag is internal to a sleeve's regime mode,
-e.g. J+ mild_bull/bear).
+Core J+ sub-sleeves (50%, sized per-tick from
+``jplus.simulate.today_inputs()``):
+  JPLUS_R4_BTC, JPLUS_R4_ETH, JPLUS_R4_BTC_V2, JPLUS_R4_ETH_V2,
+  JPLUS_EMA_BTC, JPLUS_ETH_DAILY.
+
+AI_QUANT (additive 2%, default-OFF via ``AI_QUANT_ENABLED`` env var).
 
 No real orders are placed on any exchange.
+
+Two operating modes:
+
+  python run.py                       # LIVE (default): wall-clock loop
+                                      # against data/trader.db + data/dashboard.db
+  python run.py --mode sim \\
+      --start 2024-01-01 --end 2024-12-31 \\
+      --trader-db data/trader_sim.db \\
+      --dash-db /tmp/sim_dash.db      # SIM: deterministic loop, same
+                                      # dispatch logic, separate DBs.
+                                      # Build trader-sim with
+                                      # tools/build_sim_trader_db.py.
 
 Prerequisites (one-shot bootstrap):
   python bootstrap.py           # build data/trader.db from scratch
                                 # (reads COINALYZE_API_KEY from .env)
-  python register_p300.py       # register variant + seed daily returns
+  python register_p300.py       # register variant in data/dashboard.db
 
 Daily operation:
   python run.py --feed          # single-process: bot + data feed, with
@@ -33,7 +42,7 @@ Daily operation:
                                 # for unattended paper trading.
   python run.py                 # bot only, no data feed (assumes you're
                                 # running `python binance_feed.py` separately)
-  python run.py --once          # one tick and exit (smoke test)
+  python run.py --once          # one tick and exit (smoke test, live only)
   python run.py --feed --skip-gap-fix
                                 # skip the startup gap pass (fast restart)
 
@@ -42,9 +51,6 @@ Inspect state:
   sqlite3 data/dashboard.db "SELECT id, asset, strategy, direction, status, \\
     pnl_pct FROM trades WHERE strategy_variant='p300_aggressive_v2_v1_0' \\
     ORDER BY id DESC LIMIT 20"
-  sqlite3 data/dashboard.db "SELECT date, return_1x_pct, regime \\
-    FROM variant_daily_returns WHERE variant_id='p300_aggressive_v2_v1_0' \\
-    AND source='live_computed' ORDER BY date DESC LIMIT 10"
 """
 from __future__ import annotations
 
@@ -144,39 +150,6 @@ def _print_open_trades() -> None:
         log.info(f"  {r['id']:<8} {r['strategy']:<10} {r['asset']:<4} "
                  f"{r['direction']:<5} ${size:>7,.0f} @ ${ep:>9,.2f}  "
                  f"k={lev:.1f}x  entered={entry}  exit_due={exit_due}")
-
-
-def _catchup_core_trade_emit() -> None:
-    """Backfill JPLUS_* trade events for any date that has a Core J+
-    variant_daily_returns row but no corresponding emitter activity.
-
-    Why: between the trade-emitter migration's Step 6 wiring (which made
-    jplus_service emit on each tick) and a bot restart, historical VDR
-    rows can pile up while the live trades table has no JPLUS_* events
-    for those dates. The per-tick path emits only for yesterday, so it
-    never catches up older dates on its own. This startup pass walks
-    the full simulator window for the live variant and lets idempotency
-    on (trade_id, event_date, event_type) skip dates that are already
-    represented.
-    """
-    try:
-        from services import variant_registry
-        from services.jplus_trade_emitter import emit_catchup
-        from services import clock
-        v = variant_registry.get_variant(VARIANT_ID)
-        if v is None or not v.get("enabled"):
-            return
-        end_date = (clock.now_utc() - timedelta(days=1)).date().isoformat()
-        result = emit_catchup({"id": VARIANT_ID,
-                                "capital_usdt": v.get("capital_usdt") or 10000},
-                                end_date)
-        if result.get("processed"):
-            log.info(f"=== Core trade-emit catchup: "
-                     f"{result['processed']} dates processed "
-                     f"({result.get('first')} -> {result.get('last')}), "
-                     f"{result['skipped']} skipped ===")
-    except Exception as e:
-        log.warning(f"Core trade-emit catchup skipped: {e!r}")
 
 
 def _print_health_report() -> None:
@@ -406,11 +379,6 @@ def main(argv: list[str] | None = None) -> int:
     trade_db.init_db()
     variant_registry.init_schema()
     _ensure_variant_registered()
-    if args.mode == "live":
-        # Catchup is a live-only concern — sim starts with whatever the
-        # sim ledger DB contains and lets the live handlers fill from
-        # the simulated start onward. (Phase 4 will delete this entirely.)
-        _catchup_core_trade_emit()
     _print_open_trades()
     _print_today_inputs_snapshot()
     if args.mode == "live":

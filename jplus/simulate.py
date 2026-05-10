@@ -28,9 +28,7 @@ R4_EXTRA_LEV_GATED = 1.0
 
 # Full per-regime sub-sleeve weights — single source of truth used by both
 # the simulator loop and ``today_inputs()``. Mirrors the inline allocation
-# at the per-day decision step. Values match
-# services.jplus_trade_emitter.REGIME_WEIGHTS by construction; the parity
-# tests in tests/test_jplus_trade_emitter.py catch any drift.
+# at the per-day decision step.
 REGIME_WEIGHTS_FULL = {
     "strong_bull": {"ema_btc": 0.50, "eth_daily": 0.20,
                      "r4_btc": 0.15, "r4_eth": 0.15,
@@ -290,8 +288,7 @@ def today_inputs() -> dict | None:
 
     The ``ema_p_prev`` / ``weights_prev`` / ``mode_prev`` fields carry
     yesterday's signal so callers can detect *fresh transitions* (EMA
-    crosses, regime entries) and avoid cold-start fills mid-signal — see
-    the cold-start guards in ``services/jplus_trade_emitter.py``.
+    crosses, regime entries) and avoid cold-start fills mid-signal.
 
     Look-ahead safety: every input here is derived strictly from data
     available at yesterday's UTC close (regime/EMA cross/gate/vol-target
@@ -355,9 +352,7 @@ def today_inputs() -> dict | None:
 
 # Per-regime sub-sleeve weights — kept here for the fee helper. Mirrors the
 # inline allocation in the loop above (lines 108-131); single source of truth
-# would be nicer but the loop's hot-path doesn't want a dict lookup. The
-# parity test in tests/test_jplus_trade_emitter.py catches drift if these
-# get out of sync with the actual loop logic.
+# would be nicer but the loop's hot-path doesn't want a dict lookup.
 _REGIME_R4_WEIGHTS = {
     # (r4_btc, r4_eth, r4_btc_v2, r4_eth_v2)
     "strong_bull": (0.15, 0.15, 0.075, 0.075),

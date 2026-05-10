@@ -50,11 +50,9 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 
-# Fees moved to trade-event ledger as of the Core J+ trade-emitter
-# migration (plan: how-do-we-modular-curry.md, Step 5/7). The simulator
-# now emits GROSS R4 window returns; ``services.jplus_trade_emitter``
-# applies the 10bp round-trip fee at close-event time, where it lands on
-# the corresponding CLOSE adjustment row in trade_adjustments.
+# Fees come from the trade-event ledger at trade-close time, not from
+# the simulator. The simulator emits GROSS R4 window returns; live and
+# sim runtime paths charge fees on the actual close adjustment.
 COST_BP_RT = 0.0
 
 

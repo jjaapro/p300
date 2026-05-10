@@ -7,19 +7,16 @@ dispatch the same way it dispatches FOMC/ADX/CPR/etc.
 
 This is the LIVE entry path — handlers fire on the actual calendar /
 signal moment, open trades at current market price, and the trades are
-visible in ``trades`` table immediately. Replaces the pre-Phase-1
-retrospective ``services/jplus_trade_emitter`` flow which only emitted
-yesterday's trades at midnight UTC and was a fatal blocker for real-money
-execution (no exchange order ever placed at the entry moment).
+visible in ``trades`` table immediately. The retrospective
+``services/jplus_trade_emitter`` (offline-period catchup) was removed
+2026-05-10; if the bot is offline during a sub-sleeve's window, the
+trade is missed permanently — same semantics as tactical sleeves.
 
-Handlers (this file, Phase 2):
-  - r4_btc_try_fire: Mon wk1-2 06:00 → 18:00 UTC discrete trade
-    (Mon-only since 2026-05-08; was Mon+Wed before R4_V2 split).
+Handlers:
+  - r4_btc_try_fire: Mon wk1-2 06:00 → 18:00 UTC discrete trade.
   - r4_eth_try_fire: Tue 20:00 → Wed 20:00 UTC where Wed.day ≤ 14.
-  - r4_btc_v2_try_fire: Wed/Fri wk1-2 04:00 → 14:00 UTC (added 2026-05-08).
-  - r4_eth_v2_try_fire: Wed/Fri wk1-2 04:00 → 14:00 UTC on ETH (added 2026-05-08).
-
-Handlers (this file, Phase 3 — pending):
+  - r4_btc_v2_try_fire: Wed/Fri wk1-2 04:00 → 14:00 UTC.
+  - r4_eth_v2_try_fire: Wed/Fri wk1-2 04:00 → 14:00 UTC on ETH.
   - ema_btc_try_fire: continuous; 00:00 UTC daily SCALE/LEV_ADJ/FLIP.
   - eth_daily_try_fire: continuous in bull regimes only.
 
@@ -45,9 +42,8 @@ from services import clock, db, price_feed, trades
 
 log = logging.getLogger("dashboard.jplus_live")
 
-# Strategy names — must match those used by services/jplus_trade_emitter.py
-# so the live entries and the catchup-emit path land in the same trade
-# rows (idempotency relies on this alignment).
+# Strategy names written to trades.strategy. The JPLUS_ prefix
+# distinguishes Core sub-sleeves from tactical sleeves at a glance.
 STRATEGY_R4_BTC = "JPLUS_R4_BTC"
 STRATEGY_R4_ETH = "JPLUS_R4_ETH"
 STRATEGY_R4_BTC_V2 = "JPLUS_R4_BTC_V2"
@@ -73,8 +69,7 @@ def _has_trade_for_day(variant_id: str, strategy: str, day_iso: str) -> bool:
     """True if (variant_id, strategy) already has a trade entered on
     ``day_iso`` (any status: pending / open / closed). Stops re-opening
     within the same UTC day if the bot ticks multiple times during the
-    entry window or if ``services.jplus_trade_emitter.emit_catchup``
-    already backfilled the trade at startup."""
+    entry window."""
     con = sqlite3.connect(str(db.DASH_DB))
     try:
         row = con.execute(
