@@ -145,8 +145,9 @@ This is your audit trail and your tax record.
 6. **Compute today's allocation table** (Sheet 5) using the per-regime
    weights from [§6.5](#65-per-regime-weights--combine-everything).
 7. **Identify which sleeves fire today**:
-   - Is today Mon or Wed of weeks 1-2? → R4 BTC fires
-   - Is today Tue of week 1-2 (next-day Wed wk1-2)? → R4 ETH preps
+   - Is today Mon of weeks 1-2? → R4 BTC V1 fires (06:00 entry, 18:00 exit)
+   - Is today Tue of week 1-2 (next-day Wed wk1-2)? → R4 ETH V1 preps
+   - Is today Wed or Fri of weeks 1-2? → R4 BTC V2 + R4 ETH V2 fire (04:00 entry, 14:00 exit)
    - Is today Thursday + V4 conditions met? → THU_BEAR fires
    - Are you holding open trades from prior days? → check stops/exits
 8. **Cross-reference the economic calendar** for any CPI/NFP/OPEX that
@@ -180,10 +181,12 @@ Set these as **phone alarms with sound**. UTC times.
 
 | Alarm | When | Action |
 |---|---|---|
-| 06:00 UTC, Mon+Wed | weeks 1-2 only (day-of-month ≤ 14) | R4 BTC entry check + execute |
-| 18:00 UTC, Mon+Wed | same days | R4 BTC scheduled exit |
-| Tue 20:00 UTC | weeks 1-2 | R4 ETH entry check + execute |
-| Wed 20:00 UTC | weeks 1-2 | R4 ETH scheduled exit |
+| Mon 06:00 UTC | weeks 1-2 only (day-of-month ≤ 14) | R4 BTC V1 entry check + execute |
+| Mon 18:00 UTC | same days | R4 BTC V1 scheduled exit |
+| Tue 20:00 UTC | weeks 1-2 | R4 ETH V1 entry check + execute |
+| Wed 20:00 UTC | weeks 1-2 | R4 ETH V1 scheduled exit |
+| Wed+Fri 04:00 UTC | weeks 1-2 | R4 BTC V2 + R4 ETH V2 entry check + execute |
+| Wed+Fri 14:00 UTC | same days | R4 BTC V2 + R4 ETH V2 scheduled exit |
 | Thu 00:00 UTC | every Thursday | THU_BEAR entry check (regime + V4) |
 | Fri 01:00 UTC | every Friday with open SHORTs | THU_BEAR scheduled exit (matches Pine `process_orders_on_close` fill) |
 | Daily 23:00 UTC | every day | Stop-loss check on open positions |
@@ -285,12 +288,12 @@ cap. When vol > 100%, you de-lever toward the 0.5× floor.
 This applies to the **whole strategy**, not per-sleeve. So the
 sub-sleeves' weighted-sum daily return × LEV = today's portfolio return.
 
-### 6.4 R4 BTC (06:00 → 18:00 UTC, Mon+Wed wk1-2)
+### 6.4 R4 BTC V1 (06:00 → 18:00 UTC, **Mon-only** wk1-2)
 
 ```
 Conditions to fire today:
   1. Today's date.day ≤ 14  (week 1 or 2)
-  2. Today's weekday ∈ {Monday, Wednesday}
+  2. Today's weekday = Monday
   3. Today's regime ∈ {strong_bull, mild_bull, uncertain}
      (in bear regime, R4 sleeves don't fire — see §6.5)
 
@@ -304,7 +307,7 @@ If gate fired today: size at 1×. If not: size at 2.5×.
 Cost expectation: 10bp round-trip taker fees baked into the math.
 ```
 
-### 6.5 R4 ETH (Tue 20:00 → Wed 20:00 UTC, wk1-2)
+### 6.5 R4 ETH V1 (Tue 20:00 → Wed 20:00 UTC, wk1-2)
 
 ```
 Conditions:
@@ -316,7 +319,37 @@ Execution:
   • Wed 20:00 UTC: SELL ETH at market
 ```
 
-Same gate / leverage logic as R4 BTC.
+Same gate / leverage logic as R4 BTC V1.
+
+### 6.5b R4 BTC V2 + R4 ETH V2 (Wed+Fri wk1-2 04→14 UTC, added 2026-05-08)
+
+The Mon+Wed R4_BTC original was split: Wednesdays moved to a new
+`R4_BTC_V2` window (04→14 UTC) along with Fridays — the
+[r4_study](tools/r4_study/findings.md) found the Wed+Fri 04→14 cell
+positive across all eras (pre-Binance-perp, Binance-perp, post-ETF),
+unlike the post-ETF-emergent Mon 06→18 V1 cell.
+
+The same Wed+Fri 04→14 window applies to ETH as `R4_ETH_V2` —
+cross-asset bonus from the BTC study.
+
+```
+R4 BTC V2 — Wed+Fri wk1-2 04→14 UTC:
+  Conditions:
+    1. Today's date.day ≤ 14
+    2. Today is Wed or Fri
+    3. Today's regime ∈ {strong_bull, mild_bull, uncertain}
+  Execution:
+    • 04:00 UTC: BUY BTC at market
+    • 14:00 UTC: SELL BTC at market
+
+R4 ETH V2 — same calendar/window, on ETH instead of BTC.
+```
+
+V2 sleeves use the same gate / leverage stack as V1 (see [§6.3](#63-vol-target-leverage)).
+Per-regime weights for V2 are half the V1 weights (see §6.7) — the
+intent is that adding V2 keeps peak Wed concurrent exposure
+comparable to the pre-2026-05-08 baseline (when V1 fired on
+Mon AND Wed).
 
 ### 6.6 EMA_BTC (weekly 5/21 crossover)
 
@@ -338,24 +371,31 @@ nothing on this sleeve.
 
 ### 6.7 Per-regime weights — combine everything
 
-Each day, the **unleveraged 1× return** of Core J+ is:
+Each day, the **unleveraged 1× return** of Core J+ is the weighted sum
+of contributions from six sub-sleeves:
 
-| Regime | EMA_BTC × BTC_ret | ETH_ret | R4 ETH | R4 BTC |
-|---|---:|---:|---:|---:|
-| strong_bull | 0.50 | 0.20 | 0.15 | 0.15 |
-| mild_bull | 0.30 | 0.10 | 0.30 | 0.20 |
-| uncertain | 0.30 | 0.00 | 0.40 | 0.30 |
-| bear | 0.30 | 0.00 | 0.00 | 0.00 |
+| Regime | EMA_BTC | ETH_daily | R4_ETH | R4_BTC | R4_BTC_V2 | R4_ETH_V2 |
+|---|---:|---:|---:|---:|---:|---:|
+| strong_bull | 0.50 | 0.20 | 0.15 | 0.15 | 0.075 | 0.075 |
+| mild_bull   | 0.30 | 0.10 | 0.30 | 0.20 | 0.10  | 0.15  |
+| uncertain   | 0.30 | 0.00 | 0.40 | 0.30 | 0.15  | 0.20  |
+| bear        | 0.30 | 0.00 | 0.00 | 0.00 | 0.00  | 0.00  |
 
 Where:
-- `BTC_ret` = today's BTC daily close-to-close return
-- `ETH_ret` = today's ETH daily close-to-close return
-- `R4 ETH` = (Wed 20:00 close - Tue 20:00 open) / Tue 20:00 open − 10bp, only on R4 ETH days, **multiplied by gate factor (2.5 or 1.0)**
-- `R4 BTC` = (18:00 close − 06:00 open) / 06:00 open − 10bp, only on R4 BTC days, **multiplied by gate factor**
+- `EMA_BTC contribution` = `ema_position × BTC_daily_return` (ema_position is +1 LONG / −1 SHORT / 0 flat from the weekly EMA(5)/EMA(21) cross)
+- `ETH_daily contribution` = today's ETH daily close-to-close return
+- `R4_ETH` = (Wed 20:00 open − Tue 20:00 open) / Tue 20:00 open − 10bp, only on R4_ETH V1 days
+- `R4_BTC` = (18:00 open − 06:00 open) / 06:00 open − 10bp, only on R4_BTC V1 days (Mondays wk1-2)
+- `R4_BTC_V2` = (14:00 open − 04:00 open) / 04:00 open − 10bp, only on Wed+Fri wk1-2
+- `R4_ETH_V2` = same window as V2_BTC, on ETH
+- All four R4 contributions are **multiplied by the gate factor** (2.5× normally; 1.0× when the vol-percentile gate has fired)
 
-Then multiply the unleveraged sum by today's `LEV` (from [§6.3](#63-vol-target-leverage)).
+The regime-weight rows can sum to >1.0 (e.g. uncertain sums to 1.35) —
+that's intentional, peak Wed concurrent exposure when V1 ETH from Tue
+is still open and V2 BTC + V2 ETH both fire.
 
-That's the **Core J+ daily return** = 50% of P-300.
+Then multiply the unleveraged weighted sum by today's `LEV` (from
+[§6.3](#63-vol-target-leverage)). That's the **Core J+ daily return**.
 
 ### 6.8 Tactical sleeves
 
@@ -520,11 +560,15 @@ P-300 weights × today's leverage × today's gate
 
 Starting: $100,000
 
-Core J+ (50% × LEV) — daily-rebalanced notional sum across:
-  • EMA_BTC contribution     = $100K × 0.50 × today_weight × LEV × position
-  • ETH continuous           = $100K × 0.50 × today_eth_weight × LEV
-  • R4 BTC (if firing)       = $100K × 0.50 × r4b_weight × LEV × gate_factor
-  • R4 ETH (if firing)       = $100K × 0.50 × r4e_weight × LEV × gate_factor
+Core J+ sub-sleeves (each emits its own discrete trades, sized
+per-tick from today_inputs.weights × capital × inner_lev × LEV):
+  • EMA_BTC                  = $100K × ema_btc_weight × LEV × position
+  • ETH daily (regime-gated) = $100K × eth_daily_weight × LEV
+  • R4 BTC V1   (Mon)        = $100K × r4_btc_weight    × inner_lev × LEV
+  • R4 ETH V1   (Tue→Wed)    = $100K × r4_eth_weight    × inner_lev × LEV
+  • R4 BTC V2   (Wed+Fri)    = $100K × r4_btc_v2_weight × inner_lev × LEV
+  • R4 ETH V2   (Wed+Fri)    = $100K × r4_eth_v2_weight × inner_lev × LEV
+  (inner_lev = 2.5 normally, 1.0 when vol-gate fires; weights from §6.7)
 
 Tactical (50%):
   • S-003 ADX                = $100K × 0.15 × 5  = $75K notional   (BTC long or short)
@@ -533,7 +577,17 @@ Tactical (50%):
   • PDO-L-RF                 = $100K × 0.11 × 1  = $11K split 50/50 (BTC+ETH LONG)
   • CPR                      = $100K × 0.05 × 1  = $5K split 50/50 (BTC+ETH LONG)
   • FOMC                     = $100K × 0.05 × 10 = $50K notional   (BTC LONG, 8 days/year)
+
+AI_QUANT (default-OFF; only enabled with AI_QUANT_ENABLED=true):
+  • AI_QUANT                 = $100K × 0.02 × conviction/100 × 3 (BTC LONG/SHORT, daily)
+                               (additive 2% — does NOT come out of the 50/50 split)
 ```
+
+The 2026-05-10 live/sim refactor made Core sub-sleeves operate exactly
+like tactical sleeves — each one opens its own discrete trade at the
+signal moment with the live (or simulated) market price. The
+simulator-driven daily-return accrual (which used to replace per-trade
+emission with a single "yesterday's return" row) was removed.
 
 ### Cross-sleeve BTC long cap
 
@@ -566,15 +620,19 @@ that captures most of the strategy's character:
 
 Drop the 6 tactical sleeves entirely. Keep:
 - EMA_BTC (weekly check, ~5 min on Sunday)
-- R4 BTC (Mon+Wed wk1-2 alarms — 06:00 / 18:00 UTC)
+- R4 BTC V1 (Mon wk1-2 alarms — 06:00 / 18:00 UTC)
+- R4 BTC V2 (Wed+Fri wk1-2 alarms — 04:00 / 14:00 UTC) — optional;
+  if skipping, drop the 0.075-0.15 V2 weight from the regime table
 - Regime classification (15 min daily updating spreadsheet)
 - Gate (one column in spreadsheet)
 - Vol-target leverage (one column)
 
-You'd skip: R4 ETH, ETH continuous (just don't include the 0.10/0.20
-ETH weight), THU_BEAR, ADX, CARRY, PDO, CPR, FOMC.
+You'd skip: R4 ETH (V1 and V2), ETH continuous (just don't include
+the 0.10/0.20 ETH weight), THU_BEAR, ADX, CARRY, PDO, CPR, FOMC,
+AI_QUANT.
 
-**Time:** ~15-20 min daily routine + 4 alarms per week (06/18 Mon, 06/18 Wed, weeks 1-2 only).
+**Time:** ~15-20 min daily routine + 2-6 alarms per week
+(Mon 06/18 V1; optionally Wed+Fri 04/14 V2; weeks 1-2 only).
 
 **Expected lite Sharpe:** lower than full P-300 (no diversification
 from tactical), maybe 1.0-1.4 vs combined's 1.7. MDD likely ~−25% vs combined's −16%.
@@ -645,7 +703,9 @@ bot's behavior so they don't diverge.
 
 5. **Off-by-one on weekday checks.** UTC weekdays:
    - Mon=0, Tue=1, Wed=2, Thu=3, Fri=4, Sat=5, Sun=6.
-   - R4 BTC on Mon (0) and Wed (2). R4 ETH on Tue (1, with Wed exit). THU_BEAR on Thu (3).
+   - R4 BTC V1 on Mon (0). R4 ETH V1 on Tue (1, with Wed exit).
+   - R4 BTC V2 + R4 ETH V2 on Wed (2) and Fri (4).
+   - THU_BEAR on Thu (3).
 
 6. **Forgetting to drop today's still-forming daily candle.** The
    regime classifier uses YESTERDAY'S close (closed daily candle), not

@@ -11,10 +11,15 @@
 | Start live loop | `python run.py --feed` |
 | Single tick (test) | `python run.py --once` |
 | Health check | `python health.py` |
-| Run replay | `python backtest_runner.py --start 2021-07-01 --end 2026-04-15 --reset --tag YOUR_TAG` |
-| Full-P-300 combined replay | After tactical replay: `python tools/combine_replay.py --tac-variant <tac_id>` |
+| Run replay (research) | `python backtest_runner.py --start 2021-07-01 --end 2026-04-15 --reset --tag YOUR_TAG` |
+| Run sim mode (operator) | `python run.py --mode sim --start <iso> --end <iso> --trader-db <sim.db> --dash-db <sim_dash.db>` |
+| Build sim trader.db | `python tools/build_sim_trader_db.py --start <iso> --end <iso> --output <sim.db>` |
 | Deep metrics report | `python tools/backtest_report.py --variant <variant_id>` |
+| Full-portfolio report | `python tools/full_portfolio_report.py --variant <variant_id>` |
 | Unit + integration tests | `python -m pytest tests/` |
+
+See [README.md §"Run in sim mode"](README.md) for the full sim-mode
+recipe and the "which sim tool" decision matrix.
 
 ---
 
@@ -45,7 +50,9 @@ python register_p300.py
 # 4. Sanity
 python health.py
 python run.py --once          # single tick; should complete in <30s
-python -m pytest tests/ -q    # 172 tests should pass
+python -m pytest tests/ -q    # ~518 tests should pass (some slow sim
+                              # tests run end-to-end against data/trader.db
+                              # — they skip if the DB is missing)
 ```
 
 ## 2. Live operation
@@ -70,16 +77,24 @@ The bot ticks every 60s. On each tick:
 
 - `variant_engine.tick()` closes due phantom trades, then dispatches each
   sleeve's `try_fire_for_variant()`.
-- JPLUS-CORE computes yesterday's daily return via `jplus.simulate()` and
-  persists to `variant_daily_returns` (source='live_computed'). Idempotent
-  per UTC day.
-- The 6 tactical sleeves (S-003, S-078, S-096 V4, PDO-L-RF, CPR, FOMC) open /
-  close phantom trades in the `trades` table, tagged with
-  `strategy_variant='p300_aggressive_v2_v1_0'` and `execution_mode='SHADOW'`.
+- All sleeves open / close phantom trades in the `trades` table, tagged
+  with `strategy_variant='p300_aggressive_v2_v1_0'` and
+  `execution_mode='SHADOW'`. Realized PnL is the sum of the trade
+  ledger; there is no parallel theoretical-PnL track.
+- 6 tactical sleeves: S-003 ADX, S-078 Carry, S-096 V4 Thu Bear,
+  PDO-L-RF, CPR, S-103 FOMC.
+- 6 Core J+ sub-sleeves (live since the 2026-05-10 refactor):
+  JPLUS_R4_BTC (Mon wk1-2 06→18 UTC), JPLUS_R4_ETH (Tue→Wed wk1-2 20→20),
+  JPLUS_R4_BTC_V2 / JPLUS_R4_ETH_V2 (Wed+Fri wk1-2 04→14 UTC),
+  JPLUS_EMA_BTC (continuous, weekly EMA cross), JPLUS_ETH_DAILY
+  (continuous in bull regimes only). Sized per-tick from
+  `jplus.simulate.today_inputs()`.
+- AI_QUANT (additive 2%, default-OFF via `AI_QUANT_ENABLED` env) — daily
+  Anthropic Opus 4.7 decision at 00:05–00:15 UTC.
 - FOMC sleeve fires only on FOMC days (8/yr) and writes a decision-row
   audit trail to `fomc_observer` regardless of trade decision.
 - A broken sleeve logs the exception but does **not** kill the loop
-  (per-sleeve try/except in [services/variant_engine.py:409](services/variant_engine.py#L409)).
+  (per-sleeve try/except in [services/variant_engine.py](services/variant_engine.py)).
 
 ## 3. Observing state
 
@@ -108,14 +123,23 @@ sqlite3 data/dashboard.db "
   ORDER BY actual_exit_time DESC LIMIT 20"
 ```
 
-**Core J+ daily returns (last 10):**
+**Daily realized PnL (last 14 days):**
 ```bash
 sqlite3 data/dashboard.db "
-  SELECT date, return_1x_pct, regime
-  FROM variant_daily_returns
-  WHERE variant_id='p300_aggressive_v2_v1_0' AND source='live_computed'
-  ORDER BY date DESC LIMIT 10"
+  SELECT date(actual_exit_time) AS d, ROUND(SUM(pnl_usdt), 2) AS pnl,
+         COUNT(*) AS n_closed
+  FROM trades
+  WHERE strategy_variant='p300_aggressive_v2_v1_0' AND status='closed'
+    AND date(actual_exit_time) >= date('now', '-14 days')
+  GROUP BY d ORDER BY d DESC"
 ```
+
+(The simulator-driven daily-return accrual that previously wrote to
+`variant_daily_returns.source='live_computed'` was removed in the
+2026-05-10 live/sim refactor. The trade ledger is the canonical source
+of realized PnL — see
+`services/strategy_health.trades_daily_returns()` for the
+programmatic version of the query above.)
 
 ## 4. Troubleshooting
 
@@ -139,11 +163,13 @@ Investigate the specific sleeve, then close the duplicates (manually
 via `UPDATE trades SET status='closed'` — they're phantom, no exchange
 action needed).
 
-### `JPLUS-CORE` status = `not_ready`
-The simulator refuses to emit a return for the clock date itself (it's
-incomplete). If `not_ready` persists, the underlying BTC daily data is
-more than 1 day stale. Run `python binance_feed.py --once` to refresh,
-then next tick will succeed.
+### `today_inputs` returns None / J+ sub-sleeves don't fire
+`jplus.simulate.today_inputs()` returns None when there isn't enough
+warmup data (regime classifier needs ~50 daily closes; vol-percentile
+gate needs 365 days of BTC daily history). On a cold DB or one whose
+`btc_1m` / `cd_spot_binance` table is more than 1 day stale, J+
+sub-sleeves exit with `status='no_inputs'`. Run
+`python binance_feed.py --once` to refresh, then next tick will succeed.
 
 ### Tests fail after a code change
 ```bash
@@ -168,28 +194,53 @@ python health.py           # confirm fresh registration
 
 ## 5. Backtest workflows
 
-### Run the tactical stack over a window
+Two ways to drive the live bot under a fake clock — see
+[README.md §"Which sim tool"](README.md) for the decision matrix. In
+short: `run.py --mode sim` for clean operator-style sims (separate DB
+file, no live-DB risk), `backtest_runner.py` for research workflow
+(`--tag` for parallel A/B, liquidation simulator, mark-to-end).
+
+### Research replay with `backtest_runner.py`
 
 ```bash
 python backtest_runner.py --start 2021-07-01 --end 2026-04-15 --reset --tag A
 ```
 
-`--tag A` suffixes the replay variant id so multiple runs coexist in the
-DB. Results live under `p300_aggressive_v2_v1_0__replay_A`.
+`--tag A` suffixes the replay variant id so multiple runs coexist in
+the live `data/dashboard.db`. Results live under
+`p300_aggressive_v2_v1_0__replay_A`. The replay variant is registered
+with `enabled=0` so the live engine never touches it; only
+`backtest_runner` ticks it.
 
-### Run tactical + Core combined
+After the run, report it:
+```bash
+python tools/backtest_report.py --variant p300_aggressive_v2_v1_0__replay_A
+python tools/full_portfolio_report.py --variant p300_aggressive_v2_v1_0__replay_A
+```
+
+Both tools derive equity curves from the trade ledger via
+`services.strategy_health.trades_daily_returns` — no
+`variant_daily_returns` involvement.
+
+### Operator sim with `run.py --mode sim`
 
 ```bash
-# 1. Run tactical replay (tag A2 is the canonical "post-all-fixes" baseline)
-python backtest_runner.py --start 2021-07-01 --end 2026-04-15 --reset --tag A2
+# Build a slice of trader.db for the desired window
+python tools/build_sim_trader_db.py --start 2024-01-01 --end 2024-12-31 \
+    --output data/trader_sim_2024.db
 
-# 2. Combine with Core (computed on the fly from jplus.simulate)
-python tools/combine_replay.py --tac-variant p300_aggressive_v2_v1_0__replay_A2 \
-    --tag-combined C --start 2021-07-01 --end 2026-04-15
+# Register the variant in a fresh sim ledger DB
+python register_p300.py --dash-db /tmp/sim_dash.db
 
-# 3. Deep report
-python tools/backtest_report.py --variant p300_aggressive_v2_v1_0__C
+# Run the bot under a simulated clock — no contact with the live DBs
+python run.py --mode sim --start 2024-01-01 --end 2024-12-31 \
+    --trader-db data/trader_sim_2024.db --dash-db /tmp/sim_dash.db \
+    --sim-tick-seconds 60
 ```
+
+Sim mode is idempotent per UTC day — a re-run over the same window is
+a no-op. To resume an interrupted run, restart with `--start` at or
+before the last completed UTC date.
 
 ### Switch SL semantic to margin-loss
 
@@ -197,34 +248,38 @@ python tools/backtest_report.py --variant p300_aggressive_v2_v1_0__C
 P300_STOP_SEMANTICS=margin python backtest_runner.py --start ... --tag B
 ```
 
-`price_move` (default) gave better results than `margin` in our 2021-07
-to 2026-04 replay — but the knob is there for experimentation.
+`price_move` (default) gave better results than `margin` in our
+2021-07 to 2026-04 replay — but the knob is there for experimentation.
 
-## 6. Variant IDs registered in `dashboard.db`
+## 6. Variant IDs in `dashboard.db`
 
 ```
 p300_aggressive_v2_v1_0              LIVE variant (what run.py ticks)
-p300_aggressive_v2_v1_0__replay_A    replay, price-move SL, ETH funding=0
-p300_aggressive_v2_v1_0__replay_A2   replay, price-move SL, ETH funding correct ← tactical baseline
-p300_aggressive_v2_v1_0__replay_B    replay, margin-loss SL, ETH funding=0
-p300_aggressive_v2_v1_0__core        Core J+ standalone (50%, not weighted)
-p300_aggressive_v2_v1_0__C           Full P-300 combined (50% Core + 45% Tactical + 5% cash)
+p300_aggressive_v2_v1_0__replay_<X>  research replays from backtest_runner --tag X
+                                     (enabled=0; only backtest_runner ticks them)
 ```
+
+Historical legacy variants from earlier eras (`__core`, `__C`,
+`__core_v5`, `__combined_v6`, etc.) may still be present from before
+the 2026-05-10 live/sim refactor. They're enabled=0 so the live engine
+ignores them; safe to leave or delete as you prefer.
 
 Delete unused replay variants with:
 ```sql
-DELETE FROM variants WHERE id = '<variant_id>';
+DELETE FROM variants            WHERE id = '<variant_id>';
+DELETE FROM variant_events      WHERE variant_id = '<variant_id>';
+DELETE FROM trades              WHERE strategy_variant = '<variant_id>';
+-- variant_daily_returns is no longer auto-created on fresh DBs
+-- (Phase 7 of the refactor); the DELETE below is harmless if absent:
 DELETE FROM variant_daily_returns WHERE variant_id = '<variant_id>';
-DELETE FROM variant_events WHERE variant_id = '<variant_id>';
-DELETE FROM trades WHERE strategy_variant = '<variant_id>';
 ```
 
 ## 7. Critical invariants — if broken, investigate
 
 1. **Single open trade per (variant, sleeve, asset).** Enforced in the
-   sleeve services (see `_get_open_*_trades()` helpers and the
+   sleeve services (see `_has_trade_for_day()` helpers and the
    "single-open invariant" inline comments). Violation indicates a
-   regression in the tactical sleeve logic.
+   regression in the sleeve logic.
 
 2. **No look-ahead.** Every DB read goes through `services.clock` so the
    simulated clock can be moved without any module reading future data.
@@ -232,14 +287,21 @@ DELETE FROM trades WHERE strategy_variant = '<variant_id>';
    different clock positions.
 
 3. **Idempotent registration.** Re-running `register_p300.py` deletes
-   and reinserts — never duplicates. Safe to run any time.
+   and reinserts — never duplicates. Safe to run any time. `--dash-db`
+   flag lets you target a sim DB.
 
-4. **Daily cadence for JPLUS-CORE.** The Core writes ONE daily-return
-   row per UTC day per variant, checked at ingest. Multiple rows for
-   the same day mean `_already_computed_today` is broken.
+4. **Sim/live dispatch parity.** `run.py --mode sim` and
+   `backtest_runner.py` produce byte-identical J+ sub-sleeve trades
+   for the same window at the same tick cadence. Verified by
+   `tests/test_sim_mode.py::test_sim_and_backtest_runner_produce_identical_jplus_trades`.
 
-5. **Test suite green.** `python -m pytest tests/` = 172 passing. If this
-   drops, don't deploy.
+5. **Sim never hits the network.** When `clock.is_simulated()` is True,
+   every external-API refresh function early-returns its no-op value.
+   Verified by `tests/test_sim_network_isolation.py`.
+
+6. **Test suite green.** `python -m pytest tests/` = 518 passing
+   (some sim tests skip if `data/trader.db` / `data/dashboard.db` are
+   absent, e.g. on a fresh CI checkout). If counts drop, don't deploy.
 
 ## 8. Contacts / knowledge
 
