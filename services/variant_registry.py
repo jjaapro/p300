@@ -165,11 +165,17 @@ def _record_event(variant_id: str, event_type: str, actor: str,
                   summary: str = "", details: dict | None = None) -> None:
     con = None
     try:
+        # Use the canonical clock so events recorded during a sim run land
+        # at simulated time (event-log lines up with the simulated bot
+        # history) rather than wall time. Live runs are unaffected —
+        # clock.now_utc() returns datetime.now(timezone.utc) when no
+        # simulated clock is set.
+        from services import clock
         con = _con()
         con.execute(
             "INSERT INTO variant_events (timestamp, variant_id, event_type, actor, "
             "details_json, summary) VALUES (?, ?, ?, ?, ?, ?)",
-            (datetime.now(timezone.utc).isoformat(), variant_id, event_type, actor,
+            (clock.now_utc().isoformat(), variant_id, event_type, actor,
              json.dumps(details, default=str) if details else None, summary),
         )
         con.commit()
