@@ -1,10 +1,11 @@
-"""Backtest runner for the P-300 tactical sleeves (5 live sleeves, 45% of
-intended capital — Core J+ MLgate NOT included; see register_p300.py).
+"""Backtest runner for the P-300 portfolio.
 
-Replays each sleeve's LIVE dispatch code against historical market data from
-trader.db, using services/clock.py to present a simulated "now" to each
-module so DB queries never see future bars. No signal logic is reimplemented;
-the strategy code under test is literally the same code that runs live.
+Replays each sleeve's LIVE dispatch code against historical market data
+from trader.db, using services/clock.py to present a simulated "now" to
+each module so DB queries never see future bars. No signal logic is
+reimplemented — the strategy code under test is literally the same code
+that runs live. The clock-advance loop is shared with run.py --mode sim
+via services.sim_loop.
 
 Usage:
   python backtest_runner.py --start 2023-01-01 --end 2026-04-15
@@ -13,9 +14,11 @@ Usage:
 
 Output:
   - Closed trades in dashboard.db tagged strategy_variant='p300..._replay'
-    (NEVER contaminates the live variant's data)
-  - Daily NAV series in variant_daily_returns with source='replay'
-  - Console report: total / annualized / Sharpe / MDD / trade count / per-sleeve PnL
+    (NEVER contaminates the live variant's data).
+  - NAV is computed from the trade ledger via
+    services.strategy_health.trades_daily_returns. No variant_daily_returns
+    rows are written — Phase 5 made reporting tools trades-based.
+  - Console report: total / annualized / Sharpe / MDD / trade count / per-sleeve PnL.
 """
 from __future__ import annotations
 
@@ -33,9 +36,9 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent
 sys.path.insert(0, str(REPO))
 
-from services import clock, trade_db, variant_engine, variant_registry  # noqa: E402
+from services import clock, sim_loop, trade_db, variant_engine, variant_registry  # noqa: E402
 from services.price_feed import _get_current_price  # noqa: E402
-from services import db
+from services import db, strategy_health
 
 log = logging.getLogger("p300.backtest")
 
@@ -46,9 +49,8 @@ REPLAY_VARIANT_ID_PREFIX = "p300_aggressive_v2_v1_0__replay"
 # Single-element list so closures can mutate without `nonlocal` gymnastics.
 WITH_FOMC: list[bool] = [False]
 
-# Strategy ids to skip during replay (-x flag). Use to drop slow sleeves
-# that don't affect a comparison run (e.g. JPLUS-CORE, which contributes
-# to variant_daily_returns rather than trades-based NAV).
+# Strategy ids to skip during replay (--skip flag). Use to isolate a
+# sleeve's contribution in A/B comparison runs.
 SKIP_STRATEGIES: set[str] = set()
 
 
@@ -322,54 +324,27 @@ def tick_replay_variant(variant: dict) -> None:
 
 def build_daily_nav(variant_id: str, capital: float, start: datetime,
                     end: datetime) -> list[dict]:
-    """Aggregate closed-trade PnL by UTC date, compound into NAV curve."""
-    con = sqlite3.connect(str(db.DASH_DB))
-    con.row_factory = sqlite3.Row
-    rows = con.execute("""
-        SELECT actual_exit_time, pnl_usdt, strategy
-        FROM trades
-        WHERE strategy_variant = ? AND status = 'closed'
-          AND actual_exit_time IS NOT NULL AND pnl_usdt IS NOT NULL
-        ORDER BY actual_exit_time
-    """, (variant_id,)).fetchall()
-    con.close()
-    from collections import defaultdict
-    daily_pnl: dict[str, float] = defaultdict(float)
-    for r in rows:
-        d = r["actual_exit_time"][:10]
-        daily_pnl[d] += float(r["pnl_usdt"] or 0.0)
-    # Emit one row per calendar day in [start, end] — even zero-PnL days,
-    # so Sharpe / MDD are well-defined over the full window.
-    out = []
+    """Calendar-complete daily NAV series from the trades ledger.
+
+    Uses the canonical trades-based realized-PnL path
+    (services.strategy_health.trades_daily_returns). Equity is rebuilt
+    here as ``capital + cumulative daily PnL`` so the per-row equity_usdt
+    matches the user's mental model of "starting bankroll plus what the
+    bot earned by date d." Empty days are zero-filled."""
+    daily = strategy_health.trades_daily_returns(
+        variant_id, start.date().isoformat(), end.date().isoformat(),
+        capital, zero_fill=True,
+    )
+    out: list[dict] = []
     equity = capital
-    d = start.date()
-    end_d = end.date()
-    while d <= end_d:
-        key = d.isoformat()
-        pnl = daily_pnl.get(key, 0.0)
+    for date_iso, ret_pct in daily:
+        # ret_pct from trades_daily_returns is (sum closed pnl_usdt that
+        # day / capital × 100). Convert back to dollars and accumulate.
+        pnl = ret_pct / 100.0 * capital
         equity += pnl
-        ret_pct = (pnl / (equity - pnl) * 100) if (equity - pnl) > 0 else 0.0
-        out.append({"date": key, "equity_usdt": equity,
+        out.append({"date": date_iso, "equity_usdt": equity,
                     "daily_pnl": pnl, "return_pct": ret_pct})
-        d = d + timedelta(days=1)
     return out
-
-
-def write_replay_daily_returns(variant_id: str, nav_rows: list[dict]) -> None:
-    """Persist the daily NAV series as variant_daily_returns rows (source='replay')."""
-    con = sqlite3.connect(str(db.DASH_DB))
-    now_iso = datetime.now(timezone.utc).isoformat()
-    con.execute("DELETE FROM variant_daily_returns WHERE variant_id = ?",
-                (variant_id,))
-    rows = [(variant_id, r["date"], r["return_pct"], "replay", None, now_iso)
-            for r in nav_rows]
-    con.executemany("""
-        INSERT INTO variant_daily_returns
-        (variant_id, date, return_1x_pct, source, regime, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-    """, rows)
-    con.commit()
-    con.close()
 
 
 def compute_metrics(nav_rows: list[dict], capital: float) -> dict:
@@ -441,33 +416,37 @@ def run(start: datetime, end: datetime, interval_hours: int,
     total_ticks = int(((end - start).total_seconds() // 3600) // interval_hours) + 1
     log.info(f"Total ticks: {total_ticks:,}")
 
+    # Counters are mutable so the per-tick closure can update them in place
+    # without nonlocal gymnastics — sim_loop.run_sim doesn't return tick state.
+    counters = {"liquidated": 0, "closed_scheduled": 0}
     t0 = _time.time()
-    last_progress = t0
-    n_closed_scheduled = 0
-    n_liquidated = 0
-    tick_count = 0
-    cur = start
-    while cur <= end:
-        clock.set_simulated_now(cur)
+    last_progress = [t0]  # mutable for closure
+
+    def _tick(cur: datetime) -> None:
         # Liquidation checks run BEFORE scheduled-exit checks so a liquidated
         # trade can't be re-counted as a scheduled close. Always-on per
         # project decision (v1 of the margin/liquidation simulator).
-        n_liquidated += check_liquidations_for_variant(variant["id"], cur)
-        n_closed_scheduled += close_due_for_variant(variant["id"], cur)
+        counters["liquidated"] += check_liquidations_for_variant(
+            variant["id"], cur)
+        counters["closed_scheduled"] += close_due_for_variant(
+            variant["id"], cur)
         tick_replay_variant(variant)
-        tick_count += 1
-        # Progress log every 120 ticks (~5 days of simulated time at hourly
-        # cadence), OR every 10 wall-seconds, whichever comes first.
-        if tick_count % 120 == 0 or (_time.time() - last_progress) > 10:
-            now_r = _time.time()
-            elapsed = now_r - t0
-            pct = tick_count / total_ticks
-            eta = elapsed * (1 - pct) / pct if pct > 0 else 0
-            rate = tick_count / elapsed if elapsed > 0 else 0
-            log.info(f"[{cur.date()} {cur.hour:02d}h] tick {tick_count:,}/{total_ticks:,} "
+        # Progress log every 120 ticks OR every 10 wall-seconds.
+        elapsed_now = _time.time() - t0
+        # Rough tick count from elapsed sim-time (avoids needing to thread
+        # tick_count through the closure).
+        sim_secs = (cur - start).total_seconds()
+        approx_ticks = int(sim_secs // (interval_hours * 3600)) + 1
+        if approx_ticks % 120 == 0 or (_time.time() - last_progress[0]) > 10:
+            pct = approx_ticks / total_ticks
+            eta = elapsed_now * (1 - pct) / pct if pct > 0 else 0
+            rate = approx_ticks / elapsed_now if elapsed_now > 0 else 0
+            log.info(f"[{cur.date()} {cur.hour:02d}h] "
+                     f"tick {approx_ticks:,}/{total_ticks:,} "
                      f"({pct*100:.1f}%) {rate:.0f} t/s eta={eta:.0f}s")
-            last_progress = now_r
-        cur = cur + timedelta(hours=interval_hours)
+            last_progress[0] = _time.time()
+
+    tick_count = sim_loop.run_sim(start, end, interval_hours * 3600, _tick)
 
     # Mark any trades still open at end-of-window at end-of-window PRICES,
     # via each sleeve's own close (so fees + funding are applied). We do NOT
@@ -479,20 +458,21 @@ def run(start: datetime, end: datetime, interval_hours: int,
     elapsed = _time.time() - t0
     log.info(f"Replay complete. {tick_count:,} ticks in {elapsed:.1f}s "
              f"({tick_count/elapsed:.0f} ticks/s). "
-             f"Scheduled-exit closes: {n_closed_scheduled:,} during window, "
-             f"{n_liquidated:,} liquidations, "
+             f"Scheduled-exit closes: {counters['closed_scheduled']:,} "
+             f"during window, {counters['liquidated']:,} liquidations, "
              f"{n_final} marked-to-end-of-window (open at final tick, "
              f"closed at end clock price).")
 
-    # Build NAV, persist, report
+    # Build NAV from realized trades and report. No variant_daily_returns
+    # write — Phase 5 made reporting tools trades-based, so VDR rows for
+    # replay variants are no longer read by anything.
     nav = build_daily_nav(variant["id"], capital, start, end)
-    write_replay_daily_returns(variant["id"], nav)
     metrics = compute_metrics(nav, capital)
     sleeves = per_sleeve_pnl(variant["id"])
 
     print("\n" + "=" * 72)
-    print(f"  P-300 TACTICAL-ONLY REPLAY — {start.date()} to {end.date()}")
-    print(f"  (5 live sleeves, 45% intended capital; Core J+ MLgate NOT included)")
+    print(f"  P-300 REPLAY — {start.date()} to {end.date()}")
+    print(f"  (tactical + Core J+ sub-sleeves; AI_QUANT skipped — non-deterministic)")
     print("=" * 72)
     print(f"  Starting capital:   ${capital:>14,.2f}")
     if metrics:
@@ -530,9 +510,9 @@ def main(argv: list[str] | None = None) -> int:
                          "tactical stack PLUS FOMC. Use --tag to label runs.")
     ap.add_argument("--skip", action="append", default=[],
                     help="Skip a strategy id during replay (repeatable). "
-                         "E.g. --skip JPLUS-CORE drops the daily-return "
-                         "sleeve, which is the slowest dispatch. Trades-based "
-                         "NAV is unaffected by skipping JPLUS-CORE.")
+                         "E.g. --skip CPR drops the contrarian-positioning-"
+                         "reversal sleeve from this run. Useful for A/B "
+                         "comparisons that isolate one sleeve's contribution.")
     args = ap.parse_args(argv)
     WITH_FOMC[0] = bool(args.with_fomc)
     SKIP_STRATEGIES.update(args.skip)

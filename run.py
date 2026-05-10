@@ -260,33 +260,32 @@ def _run_sim_loop(args, log) -> int:
     wall-clock sleep; runs as fast as the dispatch can. The bot's
     trading logic is identical to live mode; only the data source
     (services.db.{TRADER,DASH}_DB redirected at startup) and clock
-    differ. Phase 6 will extract this loop into services.sim_loop."""
-    from services import clock as _clock
+    differ. The loop primitive lives in services.sim_loop so
+    backtest_runner.py can reuse the same clock-advance logic with
+    its own per-tick callback."""
+    from services import sim_loop
     start = _parse_iso_utc(args.start)
     end = _parse_iso_utc(args.end)
-    step = timedelta(seconds=args.sim_tick_seconds)
-    cur = start
-    n_ticks = 0
     log.info(
         f"=== sim loop starting === start={start.isoformat()} "
         f"end={end.isoformat()} step={args.sim_tick_seconds}s "
         f"trader_db={args.trader_db} dash_db={args.dash_db}"
     )
-    t_wall = time.time()
-    while cur <= end and not _stop.is_set():
-        _clock.set_simulated_now(cur)
+
+    def _tick(cur):
         try:
             variant_engine.tick()
         except Exception as e:
             log.exception(f"sim tick error at {cur.isoformat()}: {e}")
-        n_ticks += 1
-        cur += step
+
+    t_wall = time.time()
+    n_ticks = sim_loop.run_sim(start, end, args.sim_tick_seconds, _tick,
+                                 stop_event=_stop)
     elapsed = time.time() - t_wall
     log.info(
         f"=== sim loop complete === ticks={n_ticks} "
         f"wall_time={elapsed:.1f}s ({n_ticks / max(elapsed, 1e-9):.0f} ticks/s)"
     )
-    _clock.set_simulated_now(None)
     log.info("=== sim post-run health report ===")
     _print_health_report()
     return 0
