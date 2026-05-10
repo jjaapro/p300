@@ -13,6 +13,28 @@ differ:
 
 This module owns nothing else — no NAV building, no progress logic,
 no DB writes. It just advances the clock and yields control.
+
+## Exception handling — caller's responsibility
+
+``run_sim`` does NOT catch exceptions raised by ``tick_fn``. The two
+production callers wrap their tick_fn differently and that
+inconsistency is intentional:
+
+- **run.py --mode sim**: wraps ``variant_engine.tick`` in
+  try/except + log.exception so a single bad tick does not abort a
+  long sim. Operator semantics — "keep going, surface errors in the
+  log."
+- **backtest_runner.py**: does NOT wrap. A tick exception aborts the
+  whole run. Research semantics — "loud failures are better than
+  silent drift; investigate before continuing."
+
+If you write a third caller, pick the wrapping that fits your
+intent. ``run_sim`` itself stays neutral so neither caller has to
+unwind a built-in policy.
+
+The simulated clock is reset to ``None`` on exit (try/finally) even
+if ``tick_fn`` raises, so the bot doesn't end up stuck on a
+simulated time.
 """
 from __future__ import annotations
 
