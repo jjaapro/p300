@@ -234,8 +234,15 @@ def register(dash_db: str | None = None) -> None:
     ).fetchone()
     if existing:
         print("  Already registered. Clearing existing rows for clean re-insert.")
-        cur.execute("DELETE FROM variant_daily_returns WHERE variant_id = ?",
-                    (VARIANT_ID,))
+        # variant_daily_returns is no longer auto-created (Phase 7 removed
+        # it from init_schema); legacy DBs still have the table with
+        # historical rows, so the DELETE only runs when the table exists.
+        try:
+            cur.execute("DELETE FROM variant_daily_returns WHERE variant_id = ?",
+                        (VARIANT_ID,))
+        except sqlite3.OperationalError as e:
+            if "no such table" not in str(e).lower():
+                raise
         cur.execute("DELETE FROM variant_events WHERE variant_id = ?",
                     (VARIANT_ID,))
         cur.execute("DELETE FROM variants WHERE id = ?", (VARIANT_ID,))
@@ -308,12 +315,21 @@ def register(dash_db: str | None = None) -> None:
     ))
     con.commit()
 
-    cnt = cur.execute(
-        "SELECT COUNT(*) FROM variant_daily_returns WHERE variant_id = ?",
-        (VARIANT_ID,),
-    ).fetchone()[0]
     print(f"  Variant {VARIANT_ID} registered as SHADOW.")
-    print(f"  variant_daily_returns rows: {cnt} (expected 0 — no backtest seed).")
+    # Legacy DBs may still have variant_daily_returns rows from before
+    # Phase 3 deleted the daily-return accrual; print the count only if
+    # the table is present.
+    try:
+        cnt = cur.execute(
+            "SELECT COUNT(*) FROM variant_daily_returns WHERE variant_id = ?",
+            (VARIANT_ID,),
+        ).fetchone()[0]
+        if cnt:
+            print(f"  variant_daily_returns rows: {cnt} (legacy artifact, "
+                  f"no longer read by any code path).")
+    except sqlite3.OperationalError as e:
+        if "no such table" not in str(e).lower():
+            raise
     con.close()
 
 

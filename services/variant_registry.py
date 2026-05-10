@@ -32,7 +32,17 @@ def _con() -> sqlite3.Connection:
 
 
 def init_schema() -> None:
-    """Create variants + variant_events + variant_daily_returns tables. Idempotent."""
+    """Create variants + variant_events tables. Idempotent.
+
+    NOTE: ``variant_daily_returns`` is no longer created here. The table
+    was a write-target for the simulator-driven daily-return accrual
+    (deleted Phase 3 of the live/sim refactor) and the analytic
+    backtest_runner output (migrated to trades-based reporting Phase 5).
+    Existing DBs that still have the table keep their historical rows
+    untouched; readers that may hit it (legacy replay variants whose
+    spec_json sets equity_source='daily_returns', or the ``--source
+    replay`` path of strategy_health.portfolio_metrics) handle the
+    missing-table case defensively."""
     con = _con()
     con.execute("""
         CREATE TABLE IF NOT EXISTS variants (
@@ -77,18 +87,6 @@ def init_schema() -> None:
         "CREATE INDEX IF NOT EXISTS idx_variant_events_variant "
         "ON variant_events(variant_id, timestamp DESC)"
     )
-    # Used by equity_source='daily_returns' seeded variants (like P-300)
-    con.execute("""
-        CREATE TABLE IF NOT EXISTS variant_daily_returns (
-            variant_id TEXT NOT NULL,
-            date TEXT NOT NULL,
-            return_1x_pct REAL NOT NULL,
-            source TEXT,
-            regime TEXT,
-            created_at TEXT NOT NULL,
-            PRIMARY KEY (variant_id, date)
-        )
-    """)
     con.commit()
     con.close()
 

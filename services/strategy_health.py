@@ -121,17 +121,26 @@ def resolve_windows(end_date: date | None = None) -> list[Window]:
 def _load_daily_returns(variant_id: str, start: str, end: str,
                         source: str = "live_computed") -> list[float]:
     """Fetch daily returns (percent) for the variant within [start, end]
-    inclusive, oldest-first. ``source`` filters ``variant_daily_returns.source``
-    — pass ``'live_computed'`` for the live variant (default) or ``'replay'``
-    for backtest inspection."""
+    inclusive, oldest-first. ``source`` filters
+    ``variant_daily_returns.source``.
+
+    Returns ``[]`` if the table doesn't exist (fresh DB created after
+    Phase 3 of the live/sim refactor — VDR is no longer auto-created).
+    Live variants don't use this path; ``trades_daily_returns`` is the
+    canonical realized-PnL aggregator."""
     con = sqlite3.connect(str(db.DASH_DB))
     try:
-        rows = con.execute(
-            "SELECT return_1x_pct FROM variant_daily_returns "
-            "WHERE variant_id=? AND source=? "
-            "  AND date >= ? AND date <= ? ORDER BY date",
-            (variant_id, source, start, end),
-        ).fetchall()
+        try:
+            rows = con.execute(
+                "SELECT return_1x_pct FROM variant_daily_returns "
+                "WHERE variant_id=? AND source=? "
+                "  AND date >= ? AND date <= ? ORDER BY date",
+                (variant_id, source, start, end),
+            ).fetchall()
+        except sqlite3.OperationalError as e:
+            if "no such table" in str(e).lower():
+                return []
+            raise
     finally:
         con.close()
     return [float(r[0]) for r in rows if r[0] is not None]

@@ -454,30 +454,38 @@ def get_variant_equity_series(variant_id: str) -> list[dict]:
 
     Source selection:
       - spec.equity_source == 'daily_returns' → compound from variant_daily_returns
-        (used by variants whose trades are partial/seeded, e.g. P-200 where only
-        S-003 + S-096 fire live; Carry + Core-J+ come from the daily-return seed)
+        (legacy P-200-style variants whose trades are partial/seeded).
+        Returns [] if the table doesn't exist (fresh DB).
       - default 'trades' → accumulate pnl_usdt across closed trades for this variant
 
     Starts equity from variant.capital_usdt (or paper_account_usdt fallback).
+    Uses ``services.db.DASH_DB`` so a sim-mode DB redirection propagates here.
     """
     import sqlite3
-    from pathlib import Path
-    db = str(Path(__file__).resolve().parent.parent / "data" / "dashboard.db")
+    from services import db as _db_mod
+    db_path = str(_db_mod.DASH_DB)
     v = variant_registry.get_variant(variant_id)
     if v is None:
         return []
     capital = float(v.get("capital_usdt") or trade_db.get_config("paper_account_usdt") or 10000)
     source = (v.get("spec") or {}).get("equity_source", "trades")
 
-    con = sqlite3.connect(db)
+    con = sqlite3.connect(db_path)
     con.row_factory = sqlite3.Row
 
     if source == "daily_returns":
-        rows = con.execute(
-            "SELECT date, return_1x_pct FROM variant_daily_returns "
-            "WHERE variant_id = ? ORDER BY date ASC",
-            (variant_id,),
-        ).fetchall()
+        try:
+            rows = con.execute(
+                "SELECT date, return_1x_pct FROM variant_daily_returns "
+                "WHERE variant_id = ? ORDER BY date ASC",
+                (variant_id,),
+            ).fetchall()
+        except sqlite3.OperationalError as e:
+            if "no such table" in str(e).lower():
+                rows = []
+            else:
+                con.close()
+                raise
         con.close()
         out = []
         equity = capital
