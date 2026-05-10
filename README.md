@@ -142,6 +142,29 @@ python tools/full_portfolio_report.py --variant p300_aggressive_v2_v1_0 \
     --capital 10000   # reads /tmp/sim_dash.db if env var still set
 ```
 
+### Choosing `--sim-tick-seconds`
+
+Each tick advances the simulated clock by `--sim-tick-seconds`. Lower
+values give finer granularity; higher values run faster.
+
+| `--sim-tick-seconds` | Behavior | When to use |
+|---|---|---|
+| **60** (default) | Same cadence live runs at. Tactical sleeves' "fire when in window" check sees every minute. | Operator-style sims where you want the result to look exactly like a live run over that window. |
+| **3600** | One tick per hour. Calendar-driven sleeves (R4_BTC, R4_ETH, V2 sleeves, FOMC) still fire correctly because their entry hour is on a clean hour boundary. | Long backtests where you trust the dispatch logic and want the run to finish in minutes instead of hours. |
+| **300** | 5 minutes. | A reasonable compromise — captures intra-hour tactical fires (e.g. CARRY's per-tick funding accrual) without paying the full 60s tick cost. |
+
+A signal that fires at HH:00 hits at the same simulated tick under
+all three settings — calendar sleeves are tick-granularity-invariant.
+Tactical sleeves whose firing decisions depend on intra-hour state
+(e.g. CARRY checking funding every tick) will see fewer or more
+opportunities. Pick the granularity that matches what you're trying
+to measure.
+
+The sim/backtest_runner parity test
+(`tests/test_sim_mode.py:test_sim_and_backtest_runner_produce_identical_jplus_trades`)
+runs both at 1h ticks and verifies J+ sub-sleeves produce byte-identical
+trades — proving calendar-anchored sleeves are granularity-invariant.
+
 ### Resuming an interrupted sim run
 
 Sim mode is **idempotent per UTC day** because every sleeve checks
