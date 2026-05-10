@@ -15,11 +15,18 @@ history comes from Coinalyze (free tier).
 
 ## What runs live here
 
-Sleeves dispatched per-minute via `services/variant_engine.py`:
+Sleeves dispatched per-minute via `services/variant_engine.py`. All sleeves
+emit real-time trades to the same `trades` table; realized PnL is the
+trade-ledger sum (no parallel theoretical-return track):
 
-- **Core J+ engine (50%)** — daily-return anchor: weekly EMA cross on BTC,
-  R4 BTC/ETH intraday windows + V2 Wed/Fri windows, regime-gated ETH-daily,
-  vol-target leverage, deterministic vol-percentile gate.
+- **Core J+ sub-sleeves (50%)** — six discrete-entry sleeves dispatched
+  uniformly with the tactical stack:
+  R4_BTC (Mon wk1-2 06:00→18:00 UTC), R4_ETH (Tue 20:00 → Wed 20:00 UTC
+  wk1-2), R4_BTC_V2 / R4_ETH_V2 (Wed+Fri wk1-2 04:00→14:00 UTC),
+  EMA_BTC (continuous, weekly EMA(5)/EMA(21) crossover), ETH_DAILY
+  (continuous in bull regimes only). Sized per-tick from
+  [`jplus.simulate.today_inputs()`](jplus/simulate.py) — regime-weighted
+  sub-sleeve weights × inner R4 lev × vol-target lev, all from T-1 data.
 - **Six tactical sleeves (50%)** — S-003 ADX, S-078 Carry, S-096 V4 Thu
   Bear, S-102 PDO-L-RF, S-101 CPR, S-103 FOMC. Discrete entries/exits in
   BTC and ETH.
@@ -36,6 +43,13 @@ README is intentionally a thin pointer to avoid duplication drift.
 The original ML gate was replaced with a deterministic vol-percentile rule
 (see [jplus/gate.py](jplus/gate.py)) after we found the upstream gate's
 features used same-day data and could not be reproduced without look-ahead.
+
+The simulator-driven daily-return accrual and the offline-period catchup
+emitter were removed in the 2026-05-10 live/sim refactor — Core sub-sleeves
+now have the same operational shape as tactical sleeves
+(if the bot is offline during a window, that trade is missed permanently).
+The analytic [`jplus.simulate.simulate()`](jplus/simulate.py) function
+remains as a research-only tool with no runtime caller.
 
 ## Bootstrap (one time)
 
@@ -97,6 +111,46 @@ table (klines + funding) for missing rows, then fetches each gap window
 from Binance. The first run on a sparse DB can take ~20 minutes; every
 subsequent run is sub-second.
 
+## Run in sim mode
+
+Sim mode is the same bot binary running against a separate sim trader.db
+and a separate sim dashboard.db, with a deterministic simulated clock —
+no live API calls, no contamination of the live ledger. Identical
+dispatch to live, so a sleeve that fires in sim is exactly the same
+code path that fires in live.
+
+```bash
+# 1. Build a date-range slice of trader.db. The result is self-contained;
+#    sim never reaches back to the source DB or the network.
+python tools/build_sim_trader_db.py \
+    --start 2024-01-01 --end 2024-12-31 \
+    --output data/trader_sim_2024.db
+
+# 2. Register the variant in a fresh dashboard sim DB. The env var lets
+#    register_p300.py target a sim DB without code changes.
+P300_DASHBOARD_DB=/tmp/sim_dash.db python register_p300.py
+
+# 3. Run the bot in sim mode. Inclusive date range; sim-tick-seconds
+#    advances the simulated clock per tick (no wall-clock sleep).
+python run.py --mode sim \
+    --start 2024-01-01 --end 2024-12-31 \
+    --trader-db data/trader_sim_2024.db \
+    --dash-db /tmp/sim_dash.db \
+    --sim-tick-seconds 60
+
+# 4. Report the sim run from the trade ledger:
+python tools/full_portfolio_report.py --variant p300_aggressive_v2_v1_0 \
+    --capital 10000   # reads /tmp/sim_dash.db if env var still set
+```
+
+Sim mode shares the [services/sim_loop.py](services/sim_loop.py)
+clock-advance primitive with [backtest_runner.py](backtest_runner.py)
+(the older research-replay tool, which writes to a `__replay` variant
+in the live `dashboard.db`). For one-off operator-style runs use
+`run.py --mode sim`; for parameter sweeps and A/B comparison runs use
+`backtest_runner.py --tag <label>` to keep multiple replay variants
+side-by-side.
+
 ## Inspect state
 
 ```bash
@@ -124,29 +178,30 @@ p300/
 ├── health.py                      # 8 invariant checks for live operation
 ├── backtest_runner.py             # clock-driven hourly replay over a date window
 ├── tools/
-│   ├── backtest_report.py          # per-variant deep metrics report
+│   ├── backtest_report.py          # per-variant deep metrics report (trade ledger)
 │   ├── bitstamp_adx_backtest.py    # Pine S-003 ADX validator (vs TV BITSTAMP)
 │   ├── bitstamp_thu_bear_backtest.py # Pine S-096 THU_BEAR validator
-│   ├── combine_replay.py           # combines tactical replay + Core J+ daily returns
 │   ├── compare_with_fomc.py        # A/B comparison helper
 │   ├── fomc_backtest_drilldown.py  # FOMC trade-by-trade attribution
 │   ├── fomc_leverage_sensitivity.py# FOMC leverage sweep
+│   ├── full_portfolio_report.py    # equity / Sharpe / CAGR + buy-and-hold compare
 │   ├── p300_run.ps1                # PowerShell launcher script
 │   ├── tools_statistical_validation.py # bootstrap Sharpe CI + rolling/year breakdown
+│   ├── build_sim_trader_db.py      # date-slice trader.db → sim trader.db
 │   └── ai_quant_archive_rebuild.py # rebuild data/ai_quant_archive/ .md files from DB
 ├── requirements.txt               # numpy only
 ├── data/
 │   ├── trader.db                  # market data (built by bootstrap; live-refreshed)
 │   ├── dashboard.db               # variant registry + trade log
 │   └── known_unfillable.json      # gaps known to be unfillable (exchange downtime etc.)
-├── jplus/                         # Core J+ daily-return engine (50% anchor)
+├── jplus/                         # Core J+ sizing inputs + analytic backtester
 │   ├── data.py                    # clock-bounded loaders
 │   ├── regime.py                  # 4-state classifier + LS circuit breaker
-│   ├── r4.py                      # R4 BTC + R4 ETH intraday windows
+│   ├── r4.py                      # R4 BTC + R4 ETH intraday windows (offline)
 │   ├── ema_sleeve.py              # weekly EMA(5/21) crossover for BTC anchor
 │   ├── voltarget.py               # vol-target leverage with per-regime caps
 │   ├── gate.py                    # rule-based 30d-vol percentile gate (T-1)
-│   └── simulate.py                # daily orchestrator → variant_daily_returns
+│   └── simulate.py                # today_inputs() (live sizing) + simulate() (research)
 ├── services/
 │   ├── variant_engine.py          # scheduler tick + dispatch
 │   ├── variant_registry.py        # variant CRUD + schema
@@ -172,10 +227,12 @@ p300/
 │   ├── fed_funds_service.py       # Fed rate-cycle phase classifier
 │   ├── sentiment_index_service.py # Fear & Greed index bucketing
 │   ├── polymarket_service.py      # Polymarket-implied rate expectations
-│   ├── jplus_service.py           # JPLUS-CORE daily-return dispatcher
+│   ├── jplus_live.py              # Core J+ sub-sleeve live dispatchers (R4/EMA/ETH_DAILY)
 │   ├── ai_quant_service.py        # AI_QUANT live dispatcher (gates + reconciliation)
-│   └── ai_quant/                  # AI_QUANT internals: context, chart, prompt,
-│                                  #   decision loop, journal, archive (.md mirror)
+│   ├── ai_quant/                  # AI_QUANT internals: context, chart, prompt,
+│   │                              #   decision loop, journal, archive (.md mirror)
+│   ├── strategy_health.py         # realized-PnL aggregation (trades_daily_returns)
+│   └── sim_loop.py                # deterministic clock-advance loop primitive
 └── tests/                         # 172 tests including look-ahead canary
 ```
 

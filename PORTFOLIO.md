@@ -5,7 +5,7 @@ leverage it uses, and how the pieces compose. All percentages are **fractions
 of total capital** unless stated otherwise.
 
 > Variant ID: `p300_aggressive_v2_v1_0` · Status: SHADOW (paper-only)
-> Last updated: 2026-05-09 (AI_QUANT experimental sleeve documented; sleeve itself added 2026-05-08).
+> Last updated: 2026-05-10 (live/sim refactor — daily-return accrual + catchup deleted; sim mode added; analytic simulator now research-only).
 
 ---
 
@@ -216,21 +216,33 @@ and LEVERAGE_ADJUST events on the first tick of each UTC day to bring the
 position size to today's `weight × lev × capital` notional. EMA_BTC emits
 a FLIP event when the weekly EMA cross changes the sign of `ema_p`.
 
-Two writers per day:
-1. **Trades + adjustments** — emitted live by the four handlers above. The
-   primary ledger; `SELECT * FROM trades WHERE status='open'` returns Core +
-   tactical positions uniformly.
-2. **Daily-return row** — written by the slim
-   [services/jplus_service.py](services/jplus_service.py) once per UTC day:
-   yesterday's gross return from the simulator goes into
-   `variant_daily_returns` (`source='live_computed'`) for backtest /
-   dashboard consumers.
+**One writer per sleeve:** the live handlers above emit trades and
+adjustments to the [trades](services/trades.py) and `trade_adjustments`
+tables at the actual signal moment. That ledger is the single source of
+truth for realized PnL — Core sub-sleeves and tactical sleeves both
+write there uniformly. `SELECT * FROM trades WHERE status='open'`
+returns the bot's complete current exposure.
 
-The retroactive [services/jplus_trade_emitter.py](services/jplus_trade_emitter.py)
-remains as the **offline-period gap-filler**: `_catchup_core_trade_emit` runs
-at startup to fill any historical dates whose live handlers were never
-called (e.g. bot was offline). It uses the same `UNIQUE` constraint, so
-emitter and live-handler outputs are consistent without coordination.
+Two earlier paths were removed in the 2026-05-10 live/sim refactor:
+- The simulator-driven daily-return accrual (`services/jplus_service.py`,
+  which wrote `variant_daily_returns` once per UTC day from the analytic
+  formula) was a research artifact running parallel to the realized
+  trade ledger. With the trade ledger as the canonical PnL, the parallel
+  theoretical track only confused the operator about which number was real.
+- The retroactive trade-emitter (`services/jplus_trade_emitter.py`,
+  startup gap-filler) backfilled trades for dates the bot had been
+  offline. That has no analogue in real trading and silently masked
+  sleeve-disablement bugs (the V2 sleeves silently fired only via
+  catchup for two days because they were missing from the variant
+  composition).
+
+Today: the bot opens trades when each handler's signal fires; if the
+bot is offline during a window, that trade is missed permanently — same
+semantics as tactical sleeves. The analytic
+[`jplus.simulate.simulate()`](jplus/simulate.py) function remains
+available as a **research-only** tool for offline analysis (regenerating
+§6 numbers, parameter sweeps, walk-forward studies); no runtime path
+calls it.
 
 Cost migration: [jplus/r4.py](jplus/r4.py) emits gross window returns
 (`COST_BP_RT = 0.0`); the 10bp R4 round-trip is charged at trade close.
@@ -490,6 +502,16 @@ read spot data (`cd_spot_binance`, `btc_1m`), aligned with TradingView's
 default BTCUSDT 1D feed. Earlier v1–v5 numbers used perp data and are
 superseded; do not compare side-by-side.
 
+> The Core columns below are the analytic output of
+> [`jplus.simulate.simulate()`](jplus/simulate.py), which has been
+> retained as a research-only tool after the 2026-05-10 live/sim
+> refactor — no runtime path calls it. Tactical numbers come from the
+> backtest_runner's realized trade ledger. Live operation (real-money or
+> SHADOW) tracks PnL purely from the trade ledger via
+> [services/strategy_health.py:trades_daily_returns](services/strategy_health.py),
+> so live numbers may diverge from these analytic values by the
+> idealized-fill / discretization gap.
+
 | Component | Final equity | Total return | CAGR | Max DD |
 |---|---|---|---|---|
 | Core J+ alone (100%-basis) | $58,573 | +485.7% | ~95% | -32.1% |
@@ -589,12 +611,57 @@ were affected by the data-source switch.
 | Variant registration + weights | [register_p300.py](register_p300.py) |
 | Sleeve dispatch + spec resolution | [services/variant_engine.py](services/variant_engine.py) |
 | Per-tactical-sleeve services | [services/](services/) — adx, carry, cpr, fomc, pdo_retouch, thu_bear |
-| Core J+ engine | [jplus/](jplus/) — simulate, regime, ema_sleeve, r4, voltarget, gate, data |
+| Core J+ live handlers | [services/jplus_live.py](services/jplus_live.py) — r4_btc / r4_eth / r4_btc_v2 / r4_eth_v2 / ema_btc / eth_daily |
+| Core J+ sizing inputs | [jplus.simulate.today_inputs()](jplus/simulate.py) — regime/lev/gate/ema_p/weights from T-1 data |
+| Core J+ analytic backtest (research-only) | [jplus.simulate.simulate()](jplus/simulate.py) |
+| AI_QUANT discretionary trader | [services/ai_quant_service.py](services/ai_quant_service.py) + [services/ai_quant/](services/ai_quant/) |
 | Decision rule for FOMC | [services/fomc_service.py:evaluate()](services/fomc_service.py) |
 | FOMC observer audit log | `data/trader.db:fomc_observer` |
 | Look-ahead clock infrastructure | [services/clock.py](services/clock.py) |
+| Sim-mode loop primitive | [services/sim_loop.py](services/sim_loop.py) |
+| Build a sim trader.db | [tools/build_sim_trader_db.py](tools/build_sim_trader_db.py) |
 | Price feed (1m spot, strict-`<`) | [services/price_feed.py](services/price_feed.py) |
+| Realized PnL aggregation | [services/strategy_health.py:trades_daily_returns](services/strategy_health.py) |
 | Standardized close log | [services/trade_db.py:format_close_summary()](services/trade_db.py) |
 | Backtest replay engine | [backtest_runner.py](backtest_runner.py) |
-| Combined Core+Tactical NAV | [combine_replay.py](combine_replay.py) |
+| Per-decision AI_QUANT archive | [services/ai_quant/archive.py](services/ai_quant/archive.py) + [tools/ai_quant_archive_rebuild.py](tools/ai_quant_archive_rebuild.py) |
 | Data-layer health checks | [health.py](health.py) |
+
+---
+
+## 9. Live and sim modes
+
+The bot binary in [`run.py`](run.py) supports two modes that share
+identical dispatch logic — only the data source and clock differ:
+
+| | LIVE (default) | SIM |
+|---|---|---|
+| Clock | wall clock | simulated, advanced deterministically |
+| Market data | `data/trader.db` (kept fresh by `binance_feed`) | `--trader-db <path>` (built by `tools/build_sim_trader_db.py`) |
+| Trade ledger | `data/dashboard.db` | `--dash-db <path>` (separate file) |
+| External APIs | NY Fed XML, Polymarket, F&G, news | all blocked — sim must be reproducible offline |
+| Loop | wall-clock 60s tick | `services.sim_loop.run_sim` (no sleep) |
+
+```
+# Live (current default):
+python run.py
+python run.py --feed         # also runs binance_feed in a thread
+
+# Sim — build a sliced trader.db, register the variant in a fresh
+# dashboard sim DB, then run the bot under a fake clock:
+python tools/build_sim_trader_db.py \
+    --start 2024-01-01 --end 2024-12-31 \
+    --output data/trader_sim_2024.db
+P300_DASHBOARD_DB=/tmp/sim_dash.db python register_p300.py
+python run.py --mode sim \
+    --start 2024-01-01 --end 2024-12-31 \
+    --trader-db data/trader_sim_2024.db \
+    --dash-db /tmp/sim_dash.db \
+    --sim-tick-seconds 60
+```
+
+The same `STRATEGY_DISPATCH` runs in both modes; the same six J+ live
+handlers and six tactical handlers open trades to whichever
+`dashboard.db` they're pointed at. Sim mode produces a complete
+trade ledger that reporting tools (`tools/full_portfolio_report.py`,
+`tools/backtest_report.py`) can summarize identically to a live run.
