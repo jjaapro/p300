@@ -35,7 +35,10 @@ $noise = @(
     "awaiting_fresh_cross",
     "not_calendar_day",
     "new rows",
-    "new headlines"
+    "new headlines",
+    "off_window",
+    "before_open_window",
+    "already_open"
 )
 
 $args_list = @()
