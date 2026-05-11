@@ -113,7 +113,14 @@ _DISABLED_TOKENS = ("", "none", "disabled", "off", "0")
 
 @dataclass
 class DecisionResult:
-    """Single decision-call outcome. JSON-serialisable for journaling."""
+    """Single decision-call outcome. JSON-serialisable for journaling.
+
+    Exactly one of ``decision`` or ``deferred`` is non-None on a successful
+    call; both are None when ``error`` is set. The runtime distinguishes
+    these three states to route the post-call action: open/close/hold
+    (decision), schedule a re-fire later today (deferred), or record an
+    ERROR row (error).
+    """
     decision: dict | None
     error: str | None
     turns: int
@@ -121,6 +128,7 @@ class DecisionResult:
     usage: dict = field(default_factory=dict)
     cost_usd: float = 0.0
     model_id: str = ""
+    deferred: dict | None = None
 
     def to_dict(self) -> dict:
         return dataclasses.asdict(self)
@@ -215,6 +223,7 @@ def run_decision(
     open_positions: list[dict] | None = None,
     client: Any = None,
     include_server_tools: bool = True,
+    allow_defer: bool = True,
     max_turns: int = DEFAULT_MAX_TURNS,
     max_tokens: int = DEFAULT_MAX_TOKENS,
     context_bundle: dict | None = None,
@@ -260,7 +269,10 @@ def run_decision(
             )
         client = anthropic.Anthropic(api_key=api_key)
 
-    tools_list = tools_mod.tool_definitions(include_server_tools=include_server_tools)
+    tools_list = tools_mod.tool_definitions(
+        include_server_tools=include_server_tools,
+        include_defer=allow_defer,
+    )
     dispatcher = tools_mod.make_dispatcher(
         variant_id=variant_id, asset=asset, open_positions=open_positions,
     )
@@ -274,6 +286,7 @@ def run_decision(
     tool_call_log: list[dict] = []
     usage_total: dict = {}
     decision_payload: dict | None = None
+    deferred_payload: dict | None = None
     error_str: str | None = None
     turn_index = 0
 
@@ -343,6 +356,10 @@ def run_decision(
                 decision_payload = ds.payload
                 content = "Decision recorded; turn ends."
                 terminate = True
+            except tools_mod.DecisionDeferred as dd:
+                deferred_payload = dd.payload
+                content = "Defer recorded; turn ends."
+                terminate = True
             except Exception as e:  # noqa: BLE001
                 content = f"Tool error: {type(e).__name__}: {e}"
             tool_results.append({
@@ -357,9 +374,11 @@ def run_decision(
     else:
         error_str = f"hit max_turns={max_turns} without a decision"
 
+    is_success = decision_payload is not None or deferred_payload is not None
     return DecisionResult(
         decision=decision_payload,
-        error=error_str if decision_payload is None else None,
+        deferred=deferred_payload,
+        error=error_str if not is_success else None,
         turns=turn_index + 1,
         tool_calls=tool_call_log,
         usage=usage_total,

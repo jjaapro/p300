@@ -478,3 +478,126 @@ def _import_register_p300():
     if "register_p300" in sys.modules:
         return importlib.reload(sys.modules["register_p300"])
     return importlib.import_module("register_p300")
+
+
+# ─── E2E #9: defer flow — defer at 00:07, wait, re-fire later in the day ──
+
+def _defer_response(retry_h: float = 4, waiting_for: str = "CPI 8:30 ET",
+                     reasoning: str = "binary event imminent") -> _Response:
+    return _Response(
+        content=[
+            _Block(type="text", text="Wait for the macro print."),
+            _Block(type="tool_use", id="tu_def", name="defer_decision",
+                   input={
+                       "retry_in_hours": retry_h,
+                       "waiting_for": waiting_for,
+                       "reasoning": reasoning,
+                   }),
+        ],
+        stop_reason="tool_use",
+        usage={"input_tokens": 4000, "output_tokens": 200},
+    )
+
+
+def test_defer_then_wait_then_refire_full_flow(e2e_setup):
+    """First in-window call defers for 4h. Next minute's tick is gated
+    by 'deferred_waiting'. After 4h passes the next tick fires the LLM
+    again — this time submitting LONG — and the entry-window check is
+    bypassed because today already has an expired defer row."""
+    # 00:07 UTC — first call defers
+    clock.set_simulated_now(datetime(2026, 5, 8, 0, 7, tzinfo=timezone.utc))
+    client = ScriptedClient([
+        _defer_response(retry_h=4, waiting_for="BTC > 83k"),
+        _decision_response("LONG", conviction=72),
+    ])
+    variant = _build_p300_variant(client)
+    statuses_1 = _dispatch_via_variant_engine(variant)
+    s1 = statuses_1[0][1]
+    assert s1["status"] == "deferred"
+    assert s1["waiting_for"] == "BTC > 83k"
+    assert s1["defers_today"] == 1
+    # No trade emitted on a defer
+    assert _ai_quant_trades(e2e_setup["dash_db"]) == []
+    # Journal row exists with decided='DEFER' and defer_until_utc set
+    j = journal.get_today_decision("p300_e2e_test")
+    assert j["decided"] == "DEFER"
+    assert j["defer_until_utc"] is not None
+
+    # 00:12 — still inside the entry window but defer is active → blocked
+    clock.set_simulated_now(datetime(2026, 5, 8, 0, 12, tzinfo=timezone.utc))
+    statuses_2 = _dispatch_via_variant_engine(variant)
+    assert statuses_2[0][1]["status"] == "deferred_waiting"
+    # No new API call burned while waiting
+    assert len(client.calls) == 1
+
+    # 04:08 — past the 4h target, outside the entry window. Defer-aware
+    # gate must bypass the window and let the call fire.
+    clock.set_simulated_now(datetime(2026, 5, 8, 4, 8, tzinfo=timezone.utc))
+    statuses_3 = _dispatch_via_variant_engine(variant)
+    s3 = statuses_3[0][1]
+    assert s3["status"] == "decided"
+    assert s3["decision"] == "LONG"
+    assert s3["trade_action"].startswith("opened:SJ-")
+    # The second scripted API call was consumed
+    assert len(client.calls) == 2
+
+
+def test_defer_clamped_to_2355_when_request_would_cross_midnight(e2e_setup):
+    """A defer at 23:00 with retry_in_hours=5 must be clamped to 23:55 UTC
+    so the deferred slot still lands on today's date (rather than getting
+    swallowed by tomorrow's 00:05 entry window)."""
+    clock.set_simulated_now(datetime(2026, 5, 8, 23, 0, tzinfo=timezone.utc))
+    client = ScriptedClient([_defer_response(retry_h=5)])
+    variant = _build_p300_variant(client)
+    # Defer-aware gate doesn't yet trip; entry-window check WOULD reject
+    # this at 23:00 UTC — but for the test we need to verify the clamp
+    # behavior assuming the call did fire. We exercise it via a fresh
+    # defer-row injection so the bypass_entry_window path activates.
+    # Simpler: just call _compute_defer_until_utc directly to assert clamp.
+    from services import ai_quant_service
+    now = clock.now_utc()
+    ts = ai_quant_service._compute_defer_until_utc(now, 5.0)
+    target = datetime.fromtimestamp(ts, tz=timezone.utc)
+    assert target.date() == now.date()
+    assert (target.hour, target.minute) == (23, 55)
+
+
+def test_defer_chain_cap_strips_defer_tool_on_fourth_call(e2e_setup):
+    """After 3 defers today, the 4th run_decision call must NOT include
+    the defer_decision tool — forcing the model to commit. We assert on
+    the tools list passed to the API client to prove this."""
+    clock.set_simulated_now(datetime(2026, 5, 8, 0, 7, tzinfo=timezone.utc))
+    # 4 calls: 3 defers, then a forced LONG (the model is told it has
+    # no defer tool available)
+    client = ScriptedClient([
+        _defer_response(retry_h=1),  # 00:07 -> retry at 01:07
+        _defer_response(retry_h=1),  # 01:07 -> retry at 02:07
+        _defer_response(retry_h=1),  # 02:07 -> retry at 03:07
+        _decision_response("LONG", conviction=60),  # 03:07 forced commit
+    ])
+    variant = _build_p300_variant(client)
+
+    # 00:07 first defer
+    _dispatch_via_variant_engine(variant)
+    # 01:08 second
+    clock.set_simulated_now(datetime(2026, 5, 8, 1, 8, tzinfo=timezone.utc))
+    _dispatch_via_variant_engine(variant)
+    # 02:08 third
+    clock.set_simulated_now(datetime(2026, 5, 8, 2, 8, tzinfo=timezone.utc))
+    _dispatch_via_variant_engine(variant)
+    # 03:08 fourth — defer tool must be stripped
+    clock.set_simulated_now(datetime(2026, 5, 8, 3, 8, tzinfo=timezone.utc))
+    statuses_4 = _dispatch_via_variant_engine(variant)
+
+    assert statuses_4[0][1]["status"] == "decided"
+    assert statuses_4[0][1]["decision"] == "LONG"
+
+    # The 4th API call's tools list must NOT include defer_decision
+    fourth_call_tools = {t["name"] for t in client.calls[3]["tools"]
+                          if "name" in t}
+    assert "defer_decision" not in fourth_call_tools, (
+        "After 3 defers, the defer tool must be stripped to force commit")
+    # And it WAS present on the first 3 calls
+    for i in range(3):
+        names = {t["name"] for t in client.calls[i]["tools"] if "name" in t}
+        assert "defer_decision" in names, f"call {i} should have defer tool"

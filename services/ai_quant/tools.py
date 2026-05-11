@@ -41,6 +41,17 @@ class DecisionSubmitted(Exception):
         self.payload = payload
 
 
+class DecisionDeferred(Exception):
+    """Raised by the defer_decision handler to terminate the loop without
+    taking a directional position. The runtime schedules another decision
+    run later today based on the validated ``payload`` (retry_in_hours,
+    waiting_for, reasoning)."""
+
+    def __init__(self, payload: dict):
+        super().__init__("decision deferred")
+        self.payload = payload
+
+
 # ─── Tool definitions ───────────────────────────────────────────────────────
 
 # Server-side tools (Anthropic executes; we just declare them).
@@ -139,6 +150,46 @@ QUERY_NEWS_TOOL = {
     },
 }
 
+DEFER_DECISION_TOOL = {
+    "name": "defer_decision",
+    "description": (
+        "Defer the decision: do not open or close any position now, and "
+        "trigger another decision run later today instead. Use this when "
+        "the current moment is structurally a poor entry — e.g., price "
+        "sitting at major resistance, minutes before a binary macro release, "
+        "or in a low-conviction zone where waiting for confirmation is "
+        "the right call. The runtime will re-prompt you after `retry_in_hours` "
+        "with fresh context. Max 3 defers per UTC day; on the 4th call of "
+        "the day this tool is no longer available and you must submit_decision. "
+        "If your retry would cross midnight UTC, it is clamped to 23:55 today."
+    ),
+    "input_schema": {
+        "type": "object",
+        "properties": {
+            "retry_in_hours": {
+                "type": "number",
+                "minimum": 1,
+                "maximum": 23,
+                "description": "Hours to wait before the next decision run. "
+                                "1-23. Pick the smallest value that gets you "
+                                "past the trigger you're waiting for.",
+            },
+            "waiting_for": {
+                "type": "string",
+                "description": "Short label for the trigger event, e.g. "
+                                "'CPI 8:30 ET', 'BTC daily close vs $83k', "
+                                "'4h pullback into EMA50'.",
+            },
+            "reasoning": {
+                "type": "string",
+                "description": "1-3 sentences: why this moment is wrong and "
+                                "what would make it right.",
+            },
+        },
+        "required": ["retry_in_hours", "waiting_for", "reasoning"],
+    },
+}
+
 SUBMIT_DECISION_TOOL = {
     "name": "submit_decision",
     "description": (
@@ -204,19 +255,29 @@ SUBMIT_DECISION_TOOL = {
 }
 
 
-def tool_definitions(*, include_server_tools: bool = True) -> list[dict]:
+def tool_definitions(
+    *,
+    include_server_tools: bool = True,
+    include_defer: bool = True,
+) -> list[dict]:
     """Build the `tools` parameter payload for the Anthropic API.
 
     The server-side web_search and web_fetch tools are included by default
     so the model can pull fresh outside-world information. Pass
     include_server_tools=False in tests / dry-runs that should not touch
     the public web (the orchestrator also exposes a flag for this).
+
+    `include_defer` controls whether the model can defer the decision. The
+    service strips this tool when today's defer-chain cap (3) is exhausted,
+    forcing the model to submit_decision on its next call.
     """
     out: list[dict] = [
         RENDER_CHART_TOOL,
         QUERY_NEWS_TOOL,
         SUBMIT_DECISION_TOOL,
     ]
+    if include_defer:
+        out.append(DEFER_DECISION_TOOL)
     if include_server_tools:
         out.extend([WEB_SEARCH_TOOL, WEB_FETCH_TOOL])
     return out
@@ -292,6 +353,31 @@ def _handle_submit_decision(input_: dict) -> str:
     raise DecisionSubmitted(payload)
 
 
+def _handle_defer_decision(input_: dict) -> str:
+    """Validate and short-circuit. Raises DecisionDeferred with the
+    validated payload. The runtime converts retry_in_hours to an absolute
+    timestamp at save time."""
+    payload = _validate_defer_payload(input_)
+    raise DecisionDeferred(payload)
+
+
+def _validate_defer_payload(input_: dict) -> dict:
+    """Defensive validation on the model's defer call. Clamps retry_in_hours
+    to [1, 23] and caps reasoning string lengths so the journal row stays
+    reasonable. Service layer separately clamps the resulting absolute
+    timestamp to 23:55 UTC of today's date."""
+    try:
+        retry_h = float(input_.get("retry_in_hours", 0))
+    except (TypeError, ValueError):
+        raise ValueError("defer_decision: retry_in_hours must be a number")
+    retry_h = max(1.0, min(23.0, retry_h))
+    return {
+        "retry_in_hours": retry_h,
+        "waiting_for": str(input_.get("waiting_for", ""))[:200],
+        "reasoning": str(input_.get("reasoning", ""))[:1000],
+    }
+
+
 def _validate_decision_payload(input_: dict) -> dict:
     """Defensive validation on the model's submission. The Anthropic
     schema validator catches most issues, but we coerce types and clamp
@@ -359,7 +445,9 @@ def make_dispatcher(
             return _handle_query_news(input_)
         if name == "submit_decision":
             return _handle_submit_decision(input_)  # raises DecisionSubmitted
+        if name == "defer_decision":
+            return _handle_defer_decision(input_)  # raises DecisionDeferred
         log.warning(f"unknown tool {name!r}; returning error to model")
-        return f"Error: unknown tool {name!r}. Available custom tools: render_chart, query_news, submit_decision."
+        return f"Error: unknown tool {name!r}. Available custom tools: render_chart, query_news, submit_decision, defer_decision."
 
     return dispatch

@@ -38,6 +38,62 @@ def test_tool_definitions_includes_server_tools_by_default():
     assert "web_fetch_20250910" in types
 
 
+def test_tool_definitions_includes_defer_by_default():
+    defs = tools.tool_definitions(include_server_tools=False)
+    assert "defer_decision" in {d["name"] for d in defs}
+
+
+def test_tool_definitions_strips_defer_when_disabled():
+    """When the service has already accepted 3 defers today, the next call
+    must omit defer_decision so the model is forced to commit."""
+    defs = tools.tool_definitions(include_server_tools=False, include_defer=False)
+    assert "defer_decision" not in {d["name"] for d in defs}
+    # The other custom tools are still present.
+    assert {"render_chart", "query_news", "submit_decision"}.issubset(
+        {d["name"] for d in defs})
+
+
+def test_defer_decision_schema_constrains_retry_hours_and_required_fields():
+    schema = tools.DEFER_DECISION_TOOL["input_schema"]
+    retry = schema["properties"]["retry_in_hours"]
+    assert retry["minimum"] == 1 and retry["maximum"] == 23
+    assert set(schema["required"]) == {"retry_in_hours", "waiting_for", "reasoning"}
+
+
+def test_defer_handler_raises_with_validated_payload():
+    """defer_decision must terminate the loop via DecisionDeferred and the
+    payload must be clamped to the [1, 23] hour range."""
+    with pytest.raises(tools.DecisionDeferred) as exc:
+        tools._handle_defer_decision({
+            "retry_in_hours": 50,        # over max — clamp to 23
+            "waiting_for": "CPI 8:30 ET",
+            "reasoning": "binary event in 36h, no edge here",
+        })
+    payload = exc.value.payload
+    assert payload["retry_in_hours"] == 23.0
+    assert payload["waiting_for"] == "CPI 8:30 ET"
+    assert "binary event" in payload["reasoning"]
+
+    with pytest.raises(tools.DecisionDeferred) as exc2:
+        tools._handle_defer_decision({
+            "retry_in_hours": 0.1,       # under min — clamp to 1
+            "waiting_for": "x", "reasoning": "y",
+        })
+    assert exc2.value.payload["retry_in_hours"] == 1.0
+
+
+def test_defer_handler_via_dispatcher_round_trip():
+    """End-to-end through make_dispatcher to confirm routing wiring."""
+    dispatch = tools.make_dispatcher(
+        variant_id="v", asset="BTC", open_positions=None)
+    with pytest.raises(tools.DecisionDeferred):
+        dispatch("defer_decision", {
+            "retry_in_hours": 4,
+            "waiting_for": "BTC > 83k",
+            "reasoning": "wait for breakout confirmation",
+        })
+
+
 def test_render_chart_schema_constrains_timeframe_and_indicator_enums():
     schema = tools.RENDER_CHART_TOOL["input_schema"]
     assert schema["properties"]["timeframe"]["enum"] == tools.CHART_TIMEFRAMES

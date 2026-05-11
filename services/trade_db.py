@@ -153,6 +153,7 @@ def init_db() -> None:
             turns INTEGER,
             trade_action TEXT,
             error TEXT,
+            defer_until_utc INTEGER,
             created_at TEXT DEFAULT (datetime('now'))
         )
     """)
@@ -160,6 +161,13 @@ def init_db() -> None:
         "CREATE INDEX IF NOT EXISTS idx_ai_quant_variant_date "
         "ON ai_quant_decisions(variant_id, decision_date DESC)"
     )
+    # Migrate existing DBs that pre-date the defer feature.
+    cols = {r[1] for r in con.execute(
+        "PRAGMA table_info(ai_quant_decisions)").fetchall()}
+    if "defer_until_utc" not in cols:
+        con.execute(
+            "ALTER TABLE ai_quant_decisions ADD COLUMN defer_until_utc INTEGER"
+        )
     con.execute("""
         CREATE TABLE IF NOT EXISTS config (
             key TEXT PRIMARY KEY,

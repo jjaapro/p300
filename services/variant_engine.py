@@ -403,7 +403,8 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
         try:
             result = dispatcher(variant, sleeve)
             if result and result.get("status") not in ("no_action", "not_thursday",
-                                                       "already_fired_today", "warmup"):
+                                                       "already_fired_today", "warmup",
+                                                       "deferred_waiting"):
                 log.info(f"[{variant['id']}] {strategy_id} -> {result}")
         except Exception as e:
             log.exception(f"[{variant['id']}] {strategy_id} dispatch error: {e}")

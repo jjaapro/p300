@@ -62,9 +62,46 @@ def test_ensure_schema_columns_match_writer_expectations(fixture_db):
         "context_json", "tool_calls_json", "model_id",
         "input_tokens", "output_tokens",
         "cache_read_tokens", "cache_write_tokens",
-        "cost_usd", "turns", "trade_action", "error", "created_at",
+        "cost_usd", "turns", "trade_action", "error",
+        "defer_until_utc", "created_at",
     }
     assert expected.issubset(cols), f"missing columns: {expected - cols}"
+
+
+def test_ensure_schema_migrates_legacy_table_without_defer_until(fixture_db):
+    """A DB created before the defer feature is missing defer_until_utc;
+    _ensure_schema must ALTER TABLE to add it without dropping data."""
+    con = sqlite3.connect(str(fixture_db))
+    try:
+        # Build the legacy shape (defer_until_utc deliberately omitted).
+        con.execute("""
+            CREATE TABLE ai_quant_decisions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                decision_utc INTEGER NOT NULL,
+                decision_date TEXT NOT NULL,
+                variant_id TEXT NOT NULL,
+                asset TEXT NOT NULL,
+                decided TEXT NOT NULL,
+                created_at TEXT DEFAULT (datetime('now'))
+            )
+        """)
+        con.execute(
+            "INSERT INTO ai_quant_decisions "
+            "(decision_utc, decision_date, variant_id, asset, decided) "
+            "VALUES (?, ?, ?, ?, ?)",
+            (1715169600, "2026-05-08", "v1", "BTC", "LONG"),
+        )
+        con.commit()
+        journal._ensure_schema(con)
+        cols = {r[1] for r in con.execute(
+            "PRAGMA table_info(ai_quant_decisions)").fetchall()}
+        assert "defer_until_utc" in cols
+        # Pre-existing row survives the migration.
+        rows = con.execute(
+            "SELECT decided FROM ai_quant_decisions").fetchall()
+        assert rows == [("LONG",)]
+    finally:
+        con.close()
 
 
 def test_trade_db_init_db_creates_ai_quant_decisions_table(tmp_path, monkeypatch):
@@ -339,3 +376,79 @@ def test_get_recent_decisions_respects_variant_filter(fixture_db):
     b = journal.get_recent_decisions("variant_B", days=14)
     assert len(a) == 1 and a[0]["trade_action"] == "opened:SJ-A"
     assert len(b) == 1 and b[0]["trade_action"] == "opened:SJ-B"
+
+
+# ─── Defer feature ─────────────────────────────────────────────────────────
+
+def _result_with_defer(retry_h: float = 4.0, **overrides) -> DecisionResult:
+    return DecisionResult(
+        decision=None,
+        deferred={
+            "retry_in_hours": retry_h,
+            "waiting_for": overrides.get("waiting_for", "CPI 8:30 ET"),
+            "reasoning": overrides.get("reasoning", "binary event window"),
+        },
+        error=None,
+        turns=overrides.get("turns", 2),
+        tool_calls=overrides.get("tool_calls", []),
+        usage=overrides.get("usage", {"input_tokens": 4000, "output_tokens": 300}),
+        cost_usd=overrides.get("cost_usd", 0.08),
+        model_id=overrides.get("model_id", "claude-opus-4-7"),
+    )
+
+
+def test_save_decision_writes_defer_row_with_defer_until(fixture_db):
+    """When the result is deferred, the row's decided='DEFER' and the
+    defer_until_utc column is populated. waiting_for and reasoning flow
+    into caveats and rationale_md for archive readability."""
+    res = _result_with_defer(retry_h=6.0)
+    # Service-computed absolute target (would be 6h from now in production).
+    target_ts = int(clock.now_utc().timestamp()) + 6 * 3600
+    rid = journal.save_decision(
+        variant_id="p300_defer_test", asset="BTC", decision_result=res,
+        trade_action="deferred",
+        defer_until_utc=target_ts,
+    )
+    con = sqlite3.connect(str(fixture_db))
+    con.row_factory = sqlite3.Row
+    try:
+        r = dict(con.execute(
+            "SELECT * FROM ai_quant_decisions WHERE id=?",
+            (rid,)).fetchone())
+    finally:
+        con.close()
+    assert r["decided"] == "DEFER"
+    assert r["defer_until_utc"] == target_ts
+    assert r["trade_action"] == "deferred"
+    assert r["conviction"] is None
+    assert r["time_horizon_days"] is None
+    # waiting_for is stored under confidence_caveats; reasoning under rationale_md
+    assert r["confidence_caveats"] == "CPI 8:30 ET"
+    assert r["rationale_md"] == "binary event window"
+
+
+def test_count_today_defers_per_variant(fixture_db):
+    """count_today_defers must count only DEFER rows for today and the
+    given variant — LONG/SHORT/FLAT/ERROR rows don't count."""
+    target_ts = int(clock.now_utc().timestamp()) + 3 * 3600
+    # 2 defers for variant_A today
+    for _ in range(2):
+        journal.save_decision(
+            variant_id="variant_A", asset="BTC",
+            decision_result=_result_with_defer(), trade_action="deferred",
+            defer_until_utc=target_ts,
+        )
+    # 1 LONG for variant_A — must NOT inflate the defer count
+    journal.save_decision(
+        variant_id="variant_A", asset="BTC",
+        decision_result=_result_with_decision(), trade_action="opened:SJ-A",
+    )
+    # 1 defer for variant_B
+    journal.save_decision(
+        variant_id="variant_B", asset="BTC",
+        decision_result=_result_with_defer(), trade_action="deferred",
+        defer_until_utc=target_ts,
+    )
+    assert journal.count_today_defers("variant_A") == 2
+    assert journal.count_today_defers("variant_B") == 1
+    assert journal.count_today_defers("variant_C_unknown") == 0

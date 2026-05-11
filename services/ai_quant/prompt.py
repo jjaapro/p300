@@ -39,8 +39,21 @@ INPUTS YOU RECEIVE
     sets, query_news for the local headline cache, web_search and
     web_fetch for current external information.
 
-OUTPUT — call the submit_decision tool exactly once
-  Submit only after you have a coherent view. The fields you must fill:
+OUTPUT — call submit_decision OR defer_decision exactly once
+  Two terminal actions are available:
+
+  defer_decision — call when this moment is structurally a poor entry
+    (price at major resistance, minutes before a binary macro release,
+    low-conviction zone where waiting for confirmation is the right
+    call). The runtime will re-prompt you with fresh context after
+    your chosen retry_in_hours (1–23). Max 3 defers per UTC day; on
+    the 4th call this tool is no longer available and you MUST
+    submit_decision. Prefer defer over a low-conviction FLAT when a
+    specific trigger is hours away — FLAT is the right answer when
+    the next legitimate re-evaluation is tomorrow's normal slot.
+
+  submit_decision — your final directional call. Submit only after you
+    have a coherent view. The fields you must fill:
     direction          — "LONG" / "SHORT" / "FLAT"
     conviction_0_100   — integer; reserve >70 for unusually clear setups
     time_horizon_days  — integer 1–30
@@ -197,6 +210,9 @@ the P-300 data sources at the timestamp shown in `as_of_utc`. The image
 that follows is the baseline daily chart (BTC, last 90 daily bars, EMA50
 + EMA150 + funding + L/S ratio panels).
 
-When you have a clear view, call submit_decision exactly once. Use
-render_chart, query_news, web_search, or web_fetch as needed before that.
+When you have a clear view, call submit_decision exactly once. If the
+moment is wrong but a specific trigger is hours away (a macro release,
+a level break, a confirmation candle), call defer_decision instead and
+the runtime will re-prompt you later today. Use render_chart, query_news,
+web_search, or web_fetch as needed before that.
 """

@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import logging
 import os
+from datetime import datetime, timedelta
 from typing import Any
 
 from services import clock, price_feed, trades
@@ -47,6 +48,14 @@ ENTRY_WINDOW_START_MIN = 5          # 00:05
 ENTRY_WINDOW_END_MIN = 15           # 00:15 (inclusive)
 DEFAULT_DAILY_COST_CAP_USD = 5.0
 MIN_CONVICTION_FOR_TRADE = 30
+# Defer feature: max defers per UTC day before the defer tool is stripped
+# from the next API call, forcing a LONG/SHORT/FLAT commitment.
+MAX_DEFERS_PER_DAY = 3
+# Latest absolute clock-time a deferred re-fire may land on within today's
+# UTC date. Past this, defer targets are clamped down so they still execute
+# today (avoids the next-day's 00:05 window swallowing the deferred call).
+DEFER_LATEST_HOUR = 23
+DEFER_LATEST_MIN = 55
 
 
 # ─── Gates ──────────────────────────────────────────────────────────────────
@@ -72,6 +81,21 @@ def _daily_cost_cap_usd() -> float:
         return float(raw)
     except ValueError:
         return DEFAULT_DAILY_COST_CAP_USD
+
+
+def _compute_defer_until_utc(now: datetime, retry_in_hours: float) -> int:
+    """Convert the model's relative retry_in_hours to an absolute unix-ts,
+    clamped so the deferred call still lands on today's UTC date (≤ 23:55).
+    Past 23:55 the runtime would lose the deferred slot to the next day's
+    00:05 entry window, so we cap aggressively rather than spill over."""
+    target = now + timedelta(hours=retry_in_hours)
+    end_of_day = now.replace(
+        hour=DEFER_LATEST_HOUR, minute=DEFER_LATEST_MIN,
+        second=0, microsecond=0,
+    )
+    if target > end_of_day:
+        target = end_of_day
+    return int(target.timestamp())
 
 
 # ─── Sizing helpers ─────────────────────────────────────────────────────────
@@ -245,11 +269,29 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     if not _kill_switch_on():
         return {"status": "disabled"}
 
-    if not _in_entry_window():
-        return {"status": "off_window"}
+    # Defer-aware idempotency: if today's latest row is an active defer,
+    # block; if it's an expired defer, allow re-fire and bypass the entry
+    # window check; if it's a real LONG/SHORT/FLAT/DEFER-chain-exhausted
+    # decision, the standard once-per-day rule applies.
+    today_row = journal.get_today_decision(variant_id)
+    bypass_entry_window = False
+    if today_row is not None:
+        if today_row.get("decided") == "DEFER":
+            defer_until = today_row.get("defer_until_utc")
+            now_ts = clock.now_ts()
+            if defer_until is not None and now_ts < int(defer_until):
+                return {
+                    "status": "deferred_waiting",
+                    "until_utc": int(defer_until),
+                    "waiting_for": today_row.get("confidence_caveats"),
+                }
+            # Defer expired — proceed without re-checking the entry window.
+            bypass_entry_window = True
+        else:
+            return {"status": "already_fired_today"}
 
-    if journal.get_today_decision(variant_id) is not None:
-        return {"status": "already_fired_today"}
+    if not bypass_entry_window and not _in_entry_window():
+        return {"status": "off_window"}
 
     cap = _daily_cost_cap_usd()
     spent = journal.get_today_cost_usd(variant_id)
@@ -292,15 +334,40 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
         )
         return {"status": "decision_error", "error": "chart_render"}
 
+    defers_today = journal.count_today_defers(variant_id)
+    allow_defer = defers_today < MAX_DEFERS_PER_DAY
+
     result = decision_mod.run_decision(
         variant_id=variant_id,
         asset=asset,
         open_positions=open_overlay or None,
         client=sleeve_cfg.get("_anthropic_client"),  # tests inject; production None
         include_server_tools=sleeve_cfg.get("_include_server_tools", True),
+        allow_defer=allow_defer,
         context_bundle=context_bundle,
         baseline_chart_png=baseline_png,
     )
+
+    if result.deferred is not None:
+        defer_until = _compute_defer_until_utc(
+            clock.now_utc(),
+            float(result.deferred.get("retry_in_hours", 1.0)),
+        )
+        journal.save_decision(
+            variant_id=variant_id, asset=asset,
+            decision_result=result, context_bundle=context_bundle,
+            trade_action="deferred",
+            defer_until_utc=defer_until,
+        )
+        return {
+            "status": "deferred",
+            "asset": asset,
+            "waiting_for": result.deferred.get("waiting_for"),
+            "retry_at_utc": defer_until,
+            "defers_today": defers_today + 1,
+            "max_defers_per_day": MAX_DEFERS_PER_DAY,
+            "turns": result.turns,
+        }
 
     if result.decision is None:
         journal.save_decision(

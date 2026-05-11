@@ -29,7 +29,10 @@ CONTEXT_JSON_MAX_CHARS = 32_000
 
 
 def _ensure_schema(con: sqlite3.Connection) -> None:
-    """Create ai_quant_decisions if missing (idempotent)."""
+    """Create ai_quant_decisions if missing (idempotent). Migrates the table
+    by adding any columns introduced after the initial schema — currently
+    ``defer_until_utc``, which carries the unix-ts that a deferred decision
+    is scheduled to re-fire at (NULL for normal decisions)."""
     con.execute("""
         CREATE TABLE IF NOT EXISTS ai_quant_decisions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,6 +58,7 @@ def _ensure_schema(con: sqlite3.Connection) -> None:
             turns INTEGER,
             trade_action TEXT,
             error TEXT,
+            defer_until_utc INTEGER,
             created_at TEXT DEFAULT (datetime('now'))
         )
     """)
@@ -62,6 +66,13 @@ def _ensure_schema(con: sqlite3.Connection) -> None:
         "CREATE INDEX IF NOT EXISTS idx_ai_quant_variant_date "
         "ON ai_quant_decisions(variant_id, decision_date DESC)"
     )
+    # Migrate existing DBs that pre-date the defer feature.
+    cols = {r[1] for r in con.execute(
+        "PRAGMA table_info(ai_quant_decisions)").fetchall()}
+    if "defer_until_utc" not in cols:
+        con.execute(
+            "ALTER TABLE ai_quant_decisions ADD COLUMN defer_until_utc INTEGER"
+        )
 
 
 def _truncate(s: str | None, n: int) -> str | None:
@@ -77,27 +88,47 @@ def save_decision(
     decision_result: Any,  # services.ai_quant.decision.DecisionResult
     context_bundle: dict | None = None,
     trade_action: str = "noop",
+    defer_until_utc: int | None = None,
 ) -> int:
     """Persist one decision call. Returns the new row's autoincrement id.
 
     `decision_result` is a DecisionResult dataclass; we read .decision /
-    .error / .turns / .usage / .cost_usd / .model_id / .tool_calls. When
-    decision_result.decision is None (model errored or refused to
-    submit) we still record a row with decided='ERROR' so the audit has
-    visibility into every API call.
+    .deferred / .error / .turns / .usage / .cost_usd / .model_id /
+    .tool_calls. The row's ``decided`` field is one of:
+      - "LONG" / "SHORT" / "FLAT" — model called submit_decision
+      - "DEFER"                   — model called defer_decision; the
+        ``defer_until_utc`` argument carries the absolute unix-ts the
+        runtime will re-fire at. ``waiting_for`` and ``reasoning`` are
+        stuffed into ``exit_conditions`` and ``rationale_md`` so they
+        appear in the markdown archive too.
+      - "ERROR"                   — model errored or refused to submit.
     """
     now_utc = clock.now_utc()
     decision_ts = int(now_utc.timestamp())
     decision_date = now_utc.date().isoformat()
 
-    payload = decision_result.decision or {}
-    decided = payload.get("direction") or "ERROR"
-    conviction = payload.get("conviction_0_100")
-    horizon = payload.get("time_horizon_days")
-    key_drivers = payload.get("key_drivers") or []
-    exit_conditions = payload.get("exit_conditions")
-    caveats = payload.get("confidence_caveats")
-    rationale = payload.get("rationale_md")
+    deferred = getattr(decision_result, "deferred", None)
+    if deferred is not None:
+        decided = "DEFER"
+        conviction = None
+        horizon = None
+        key_drivers = [
+            f"waiting_for: {deferred.get('waiting_for', '')}",
+            f"retry_in_hours: {deferred.get('retry_in_hours')}",
+        ]
+        exit_conditions = (f"Re-fire scheduled at unix-ts "
+                            f"{defer_until_utc} UTC.")
+        caveats = deferred.get("waiting_for")
+        rationale = deferred.get("reasoning")
+    else:
+        payload = decision_result.decision or {}
+        decided = payload.get("direction") or "ERROR"
+        conviction = payload.get("conviction_0_100")
+        horizon = payload.get("time_horizon_days")
+        key_drivers = payload.get("key_drivers") or []
+        exit_conditions = payload.get("exit_conditions")
+        caveats = payload.get("confidence_caveats")
+        rationale = payload.get("rationale_md")
 
     usage = decision_result.usage or {}
     ctx_json = (json.dumps(context_bundle, default=str)
@@ -116,8 +147,8 @@ def save_decision(
                 rationale_md, context_json, tool_calls_json,
                 model_id, input_tokens, output_tokens,
                 cache_read_tokens, cache_write_tokens,
-                cost_usd, turns, trade_action, error
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                cost_usd, turns, trade_action, error, defer_until_utc
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             (
                 decision_ts, decision_date, variant_id, asset.upper(),
@@ -135,6 +166,7 @@ def save_decision(
                 decision_result.turns,
                 trade_action,
                 decision_result.error,
+                defer_until_utc,
             ),
         )
         con.commit()
@@ -170,11 +202,30 @@ def save_decision(
             "turns": decision_result.turns,
             "trade_action": trade_action,
             "error": decision_result.error,
+            "defer_until_utc": defer_until_utc,
         })
     except Exception:
         log.exception("AI_QUANT archive write failed for row %s", row_id)
 
     return row_id
+
+
+def count_today_defers(variant_id: str) -> int:
+    """Number of DEFER rows for ``variant_id`` on today's UTC date. Used by
+    the chain-cap gate (3 defers/day max before the defer tool is stripped
+    from the next API call)."""
+    today = clock.now_utc().date().isoformat()
+    con = sqlite3.connect(str(db.DASH_DB))
+    try:
+        _ensure_schema(con)
+        row = con.execute(
+            "SELECT COUNT(*) FROM ai_quant_decisions "
+            "WHERE variant_id = ? AND decision_date = ? AND decided = 'DEFER'",
+            (variant_id, today),
+        ).fetchone()
+    finally:
+        con.close()
+    return int(row[0]) if row else 0
 
 
 def get_today_decision(variant_id: str) -> dict | None:
