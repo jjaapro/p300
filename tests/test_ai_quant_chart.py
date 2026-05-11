@@ -152,6 +152,31 @@ def test_render_chart_rejects_too_small_lookback(fixture_db):
         render_chart(timeframe="1d", lookback_bars=2)
 
 
+def test_render_chart_new_indicators_are_accepted(fixture_db):
+    """ema20, volume, rsi14 must be valid indicator names and render OK
+    both individually and as a set."""
+    for ind in ("ema20", "volume", "rsi14"):
+        png = render_chart(timeframe="1d", lookback_bars=60, indicators=[ind])
+        assert png[:8] == PNG_MAGIC, f"{ind} alone produced non-PNG"
+
+    png = render_chart(
+        timeframe="1d", lookback_bars=60,
+        indicators=["ema20", "ema50", "ema150", "volume", "rsi14",
+                    "funding", "lsr"],
+    )
+    assert png[:8] == PNG_MAGIC
+
+
+def test_render_chart_default_includes_volume_and_rsi(fixture_db):
+    """Default-args chart should now include volume + RSI panels — the PNG
+    is materially larger than the price-only minimal chart."""
+    full = render_chart(asset="BTC", timeframe="1d", lookback_bars=60)
+    minimal = render_chart(timeframe="1d", lookback_bars=60, indicators=["ema50"])
+    assert full[:8] == PNG_MAGIC
+    assert len(full) > len(minimal), \
+        "default chart should be larger than ema50-only after adding panels"
+
+
 def test_render_chart_raises_when_no_candles_available(tmp_path, monkeypatch):
     """Empty DB → clear error rather than silent empty PNG."""
     p = tmp_path / "empty.db"

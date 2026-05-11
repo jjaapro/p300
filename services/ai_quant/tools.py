@@ -57,7 +57,12 @@ WEB_FETCH_TOOL = {
 
 # Custom tools we execute locally. Schemas are deliberately tight — we
 # want the model's tool calls to be unambiguous and unambiguously routable.
-CHART_INDICATORS = ["ema50", "ema150", "funding", "lsr", "open_positions"]
+CHART_INDICATORS = [
+    "ema20", "ema50", "ema150",
+    "volume", "rsi14",
+    "funding", "lsr",
+    "open_positions",
+]
 CHART_TIMEFRAMES = ["1h", "4h", "1d"]
 
 RENDER_CHART_TOOL = {

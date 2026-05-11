@@ -27,17 +27,26 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--timeframe", default="1d", choices=["1h", "4h", "1d"])
     p.add_argument("--lookback", type=int, default=90, help="number of bars to display")
     p.add_argument("--out", required=True, help="output PNG path")
+    p.add_argument("--no-ema20", action="store_true")
     p.add_argument("--no-ema50", action="store_true")
     p.add_argument("--no-ema150", action="store_true")
+    p.add_argument("--no-volume", action="store_true")
+    p.add_argument("--no-rsi", action="store_true")
     p.add_argument("--no-funding", action="store_true")
     p.add_argument("--no-lsr", action="store_true")
     args = p.parse_args(argv)
 
     indicators = []
+    if not args.no_ema20:
+        indicators.append("ema20")
     if not args.no_ema50:
         indicators.append("ema50")
     if not args.no_ema150:
         indicators.append("ema150")
+    if not args.no_volume:
+        indicators.append("volume")
+    if not args.no_rsi:
+        indicators.append("rsi14")
     if not args.no_funding:
         indicators.append("funding")
     if not args.no_lsr:
