@@ -162,7 +162,10 @@ def _reconcile(
             },
             scheduled_exit_dt=None,
         )
-        return f"opened:{tid}", {"trade_id": tid, "alloc_pct": alloc}
+        return f"opened:{tid}", {
+            "trade_id": tid, "alloc_pct": alloc,
+            "entry_price": live_price, "leverage": leverage,
+        }
 
     # ── Case: open position exists ──
     if eff_direction == "FLAT":
@@ -172,10 +175,15 @@ def _reconcile(
             trade_id=open_trade["id"], exit_price=live_price,
             reason="ai_quant_flat", sleeve_name=SLEEVE_NAME,
         )
-        return f"closed:{open_trade['id']}", {"closed_trade_id": open_trade["id"]}
+        return f"closed:{open_trade['id']}", {
+            "closed_trade_id": open_trade["id"], "exit_price": live_price,
+        }
 
     if eff_direction == current_dir:
-        return "held", {"trade_id": open_trade["id"], "direction": current_dir}
+        return "held", {
+            "trade_id": open_trade["id"], "direction": current_dir,
+            "entry_price": open_trade.get("avg_entry_price") or open_trade.get("entry_price"),
+        }
 
     # Direction flipped: close existing, open opposite
     if live_price is None:
@@ -204,7 +212,7 @@ def _reconcile(
     return (
         f"flipped:{open_trade['id']}->{new_tid}",
         {"closed_trade_id": open_trade["id"], "new_trade_id": new_tid,
-         "alloc_pct": alloc},
+         "alloc_pct": alloc, "entry_price": live_price, "leverage": leverage},
     )
 
 
@@ -300,8 +308,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             decision_result=result, context_bundle=context_bundle,
             trade_action="error",
         )
-        return {"status": "decision_error", "error": result.error,
-                "cost_usd": result.cost_usd}
+        return {"status": "decision_error", "error": result.error}
 
     live_price = price_feed.get_current_price(asset)
     trade_action, debug = _reconcile(
@@ -316,10 +323,11 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     )
     return {
         "status": "decided",
+        "asset": asset,
         "decision": result.decision["direction"],
         "conviction": result.decision["conviction_0_100"],
+        "horizon_days": result.decision.get("time_horizon_days"),
         "trade_action": trade_action,
-        "cost_usd": result.cost_usd,
         "turns": result.turns,
         **debug,
     }

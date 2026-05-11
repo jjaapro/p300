@@ -300,7 +300,6 @@ def test_in_window_first_tick_fires_long_opens_trade_journals(e2e_setup):
     assert status["status"] == "decided"
     assert status["decision"] == "LONG"
     assert status["trade_action"].startswith("opened:SJ-")
-    assert status["cost_usd"] > 0
 
     # Anthropic was actually called
     assert len(client.calls) == 1
@@ -323,7 +322,6 @@ def test_in_window_first_tick_fires_long_opens_trade_journals(e2e_setup):
     assert j["decided"] == "LONG"
     assert j["conviction"] == 70
     assert j["trade_action"] == status["trade_action"]
-    assert j["cost_usd"] == status["cost_usd"]
 
 
 # ─── E2E #4: idempotency on the second in-window tick ──────────────────────

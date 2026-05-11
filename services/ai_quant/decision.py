@@ -47,6 +47,49 @@ DEFAULT_MODEL = "claude-opus-4-7"
 DEFAULT_MAX_TURNS = 10
 DEFAULT_MAX_TOKENS = 65536
 
+# Per-million-token rates in USD. Tracking aid only; the real bill comes
+# from Anthropic. Cache pricing follows Anthropic's standard convention
+# (creation = 1.25x base input, read = 0.10x base input). Unknown models
+# get cost 0 rather than a guessed rate so a model bump never silently
+# under- or over-charges the cost-cap gate.
+_PRICING: dict[str, dict[str, float]] = {
+    "claude-opus-4-7": {
+        "input": 15.0,
+        "output": 75.0,
+        "cache_creation_input": 18.75,
+        "cache_read_input": 1.50,
+    },
+    "claude-sonnet-4-6": {
+        "input": 3.0,
+        "output": 15.0,
+        "cache_creation_input": 3.75,
+        "cache_read_input": 0.30,
+    },
+    "claude-haiku-4-5-20251001": {
+        "input": 1.0,
+        "output": 5.0,
+        "cache_creation_input": 1.25,
+        "cache_read_input": 0.10,
+    },
+}
+
+
+def _compute_cost(model: str, usage: dict) -> float:
+    """Compute USD cost from a usage dict using the static pricing table.
+    Returns 0.0 for unknown models — preferable to a guessed rate that
+    would silently break the daily-cost-cap gate."""
+    rates = _PRICING.get(model)
+    if rates is None:
+        return 0.0
+    total = 0.0
+    total += rates["input"] * (usage.get("input_tokens") or 0) / 1_000_000
+    total += rates["output"] * (usage.get("output_tokens") or 0) / 1_000_000
+    total += (rates["cache_creation_input"]
+              * (usage.get("cache_creation_input_tokens") or 0) / 1_000_000)
+    total += (rates["cache_read_input"]
+              * (usage.get("cache_read_input_tokens") or 0) / 1_000_000)
+    return total
+
 # Reasoning-effort level for the API call. Opus 4.7's adaptive thinking
 # is the gateway to step-by-step verification, but without an explicit
 # effort hint the model often doesn't engage it on routine prompts. The
@@ -320,6 +363,7 @@ def run_decision(
         turns=turn_index + 1,
         tool_calls=tool_call_log,
         usage=usage_total,
+        cost_usd=_compute_cost(model, usage_total),
         model_id=model,
     )
 

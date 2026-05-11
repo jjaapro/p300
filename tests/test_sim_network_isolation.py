@@ -96,8 +96,15 @@ def test_guards_only_block_under_simulated_clock(network_tripwire):
     refreshes. Without the simulated clock, refresh_xml's network call
     fires (hits our tripwire and raises) — which proves the no-op in
     sim mode comes from the is_simulated() check, not from some other
-    path turning all fetchers off."""
+    path turning all fetchers off.
+
+    Match either tripwire — fed_funds_service does ``from urllib.request
+    import urlopen`` so the local binding bypasses the ``urllib.request``
+    patch; in that case the call reaches ``socket.socket.connect``
+    instead. Either way the network WAS attempted, which is what this
+    negative control proves."""
     from services import fed_funds_service
     assert not clock.is_simulated()
-    with pytest.raises(AssertionError, match="urlopen called"):
+    with pytest.raises(AssertionError,
+                        match="(urlopen called|socket.connect called)"):
         fed_funds_service.refresh_xml()

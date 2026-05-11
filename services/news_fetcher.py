@@ -306,7 +306,13 @@ def query(
             The stored value is "rss:<name>", so we match on suffix
             equality. None returns all sources.
     """
-    cutoff = int(time.time()) - hours * 3600
+    # Use the simulated clock, not wall-clock — backtest replay and tests
+    # set clock.now_ts() to a deterministic point in time. Using time.time()
+    # here caused the news cutoff to drift past inserted headlines whenever
+    # the simulated date didn't match wall-clock (every test, and every
+    # backtest).
+    from services import clock as _clock
+    cutoff = _clock.now_ts() - hours * 3600
     sql = (
         "SELECT url_hash, source, published_utc, fetched_utc, title, url, "
         "asset_tag, importance "

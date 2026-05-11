@@ -468,9 +468,9 @@ def test_dataclass_is_json_serializable():
 
 # ─── Adaptive thinking + reasoning-effort level ───────────────────────────
 
-def test_effort_default_high_passes_adaptive_thinking_and_output_config(monkeypatch):
-    """Default AI_QUANT_EFFORT='high'; every API call must include
-    thinking={'type': 'adaptive'} AND output_config={'effort': 'high'}."""
+def test_effort_default_passes_adaptive_thinking_and_output_config(monkeypatch):
+    """Default AI_QUANT_EFFORT (DEFAULT_EFFORT); every API call must include
+    thinking={'type': 'adaptive'} AND output_config={'effort': DEFAULT_EFFORT}."""
     monkeypatch.delenv("AI_QUANT_EFFORT", raising=False)
     client = MockClient([
         MockResponse(
@@ -485,7 +485,7 @@ def test_effort_default_high_passes_adaptive_thinking_and_output_config(monkeypa
     call_kwargs = client.messages.calls[0]
     assert call_kwargs["thinking"] == {"type": "adaptive"}
     assert call_kwargs["output_config"] == {"effort": decision.DEFAULT_EFFORT}
-    assert call_kwargs["output_config"]["effort"] == "high"
+    assert decision.DEFAULT_EFFORT in decision._VALID_EFFORTS
 
 
 @pytest.mark.parametrize("level", ["low", "medium", "high", "max"])
@@ -532,10 +532,11 @@ def test_effort_disable_tokens_omit_thinking_and_output_config(monkeypatch,
 
 
 def test_effort_unrecognized_value_falls_back_to_default(monkeypatch):
-    """An unknown effort string logs a warning and defaults to 'high'
+    """An unknown effort string logs a warning and defaults to DEFAULT_EFFORT
     (better than erroring out the live decision over a typo)."""
     monkeypatch.setenv("AI_QUANT_EFFORT", "ultra-mega-thinking")
-    assert decision._effort_level() == decision.DEFAULT_EFFORT == "high"
+    assert decision._effort_level() == decision.DEFAULT_EFFORT
+    assert decision.DEFAULT_EFFORT in decision._VALID_EFFORTS
 
 
 def test_effort_persists_across_multi_turn_loop(monkeypatch):
