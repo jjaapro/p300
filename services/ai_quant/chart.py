@@ -2,14 +2,14 @@
 
 Renders a single PNG that the multimodal LLM looks at as part of its daily
 decision. Reads from trader.db only (cd_spot_binance for BTC OHLC,
-cd_funding_rate for funding, ca_long_short_ratio for L/S). All times use
-clock.now_utc() so this is replay-safe — the renderer never peeks past the
-simulated clock.
+cd_futures_ohlcv for perp CVD, cd_funding_rate for funding,
+ca_long_short_ratio for L/S). All times use clock.now_utc() so this is
+replay-safe — the renderer never peeks past the simulated clock.
 
 The chart is intentionally simple and AI-readable: candles + EMA20/50/150
-on the main panel, plus volume, RSI(14), funding rate (in %), and long/short
-ratio as separate sub-panels. Open AI_QUANT positions appear as dashed
-horizontal lines on the price panel.
+on the main panel, plus volume, RSI(14), cumulative CVD on the perp,
+funding rate (in %), and long/short ratio as separate sub-panels. Open
+AI_QUANT positions appear as dashed horizontal lines on the price panel.
 
 Usage:
     png = render_chart(asset="BTC", timeframe="1d", lookback_bars=90)
@@ -41,12 +41,14 @@ _TF_SECONDS = {"1h": 3600, "4h": 4 * 3600, "1d": 86400}
 _ALLOWED_INDICATORS = {
     "ema20", "ema50", "ema150",
     "volume", "rsi14",
+    "cvd",
     "funding", "lsr",
     "open_positions",
 }
 _DEFAULT_INDICATORS: tuple[str, ...] = (
     "ema20", "ema50", "ema150",
     "volume", "rsi14",
+    "cvd",
     "funding", "lsr",
     "open_positions",
 )
@@ -127,6 +129,52 @@ def _aggregate(rows_1h: list, timeframe: str) -> pd.DataFrame:
     df = pd.DataFrame(rows)
     df["dt"] = pd.to_datetime(df["ts"], unit="s", utc=True)
     return df.set_index("dt")[["Open", "High", "Low", "Close", "Volume"]]
+
+
+def _load_futures_cvd_1h(lookback_seconds: int) -> list[tuple]:
+    """Pull hourly (timestamp, volume_buy, volume_sell) from cd_futures_ohlcv.
+    The chart's OHLC comes from spot but CVD is most meaningful on the perp
+    (~5-10× the spot volume), so this dips into a separate table. Rows
+    where volume_buy IS NULL are filtered — they were partial-bar writes
+    before the kline fetcher learned to populate taker columns. If the
+    table is missing (e.g. unseeded test fixture) the panel is dropped
+    rather than the chart crashing."""
+    upper_ts = clock.now_ts()
+    since_ts = upper_ts - lookback_seconds
+    con = sqlite3.connect(str(db.TRADER_DB))
+    try:
+        try:
+            return con.execute(
+                "SELECT timestamp, volume_buy, volume_sell FROM cd_futures_ohlcv "
+                "WHERE timestamp >= ? AND timestamp <= ? "
+                "  AND volume_buy IS NOT NULL ORDER BY timestamp",
+                (since_ts, upper_ts),
+            ).fetchall()
+        except sqlite3.OperationalError:
+            return []
+    finally:
+        con.close()
+
+
+def _aggregate_cvd(rows_1h: list, timeframe: str,
+                    target_index: pd.DatetimeIndex) -> pd.Series:
+    """Bucket 1h CVD rows into the chart timeframe and align to the price
+    panel's index. Returns a per-bar delta Series (buy − sell) reindexed
+    to ``target_index`` with missing buckets filled with 0 — calling
+    ``.cumsum()`` then gives the displayed cumulative line."""
+    if not rows_1h or len(target_index) == 0:
+        return pd.Series(0.0, index=target_index, dtype="float64")
+    secs = _TF_SECONDS[timeframe]
+    buckets: dict[int, float] = defaultdict(float)
+    for ts, buy, sell in rows_1h:
+        if buy is None or sell is None:
+            continue
+        buckets[(ts // secs) * secs] += float(buy) - float(sell)
+    if not buckets:
+        return pd.Series(0.0, index=target_index, dtype="float64")
+    s = pd.Series(buckets)
+    s.index = pd.to_datetime(s.index, unit="s", utc=True)
+    return s.reindex(target_index).fillna(0.0)
 
 
 def _load_funding(lookback_seconds: int) -> pd.DataFrame:
@@ -267,6 +315,25 @@ def render_chart(
         sub_panels.append((next_panel, latest_rsi, "{:.0f}", "#8c564b"))
         next_panel += 1
 
+    cvd_panel: int | None = None
+    cum_cvd_latest: float | None = None
+    if "cvd" in inds:
+        cvd_rows = _load_futures_cvd_1h(lookback_secs)
+        if cvd_rows:
+            cvd_per_bar = _aggregate_cvd(cvd_rows, timeframe, df_show.index)
+            cum_cvd = cvd_per_bar.cumsum()
+            if not cum_cvd.empty:
+                addplots.append(mpf.make_addplot(
+                    cum_cvd.tolist(),
+                    panel=next_panel, color="#17becf", width=1.0,
+                    ylabel="", type="line",
+                ))
+                cvd_panel = next_panel
+                cum_cvd_latest = float(cum_cvd.iloc[-1])
+                sub_panels.append((next_panel, cum_cvd_latest, "{:+,.0f}",
+                                    "#17becf"))
+                next_panel += 1
+
     if "funding" in inds:
         f_aligned = _load_funding(lookback_secs).reindex(df_show.index, method="ffill")
         if not f_aligned["funding"].isna().all():
@@ -365,10 +432,13 @@ def render_chart(
                               if v is not None), None) if rsi_full else None
         if latest_rsi_h is not None:
             _panel_header(rsi_panel, f"RSI 14 close  {latest_rsi_h:.2f}")
+    if cvd_panel is not None and cum_cvd_latest is not None:
+        _panel_header(cvd_panel,
+                       f"CVD Perp cum  {cum_cvd_latest:+,.0f}")
     # Funding & L/S headers reuse the latest values stored on sub_panels —
     # find them by panel index.
     for panel_idx, latest, fmt, _color in sub_panels:
-        if panel_idx in (volume_panel_idx, rsi_panel):
+        if panel_idx in (volume_panel_idx, rsi_panel, cvd_panel):
             continue  # already headered above
         if latest is None or not pd.notna(latest):
             continue

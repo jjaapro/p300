@@ -193,7 +193,7 @@ def test_build_context_returns_all_expected_sections(fixture_dbs):
     bundle = ctx_mod.build_context("p300_test", "BTC")
     expected_sections = {
         "as_of_utc", "variant_id", "asset", "market", "funding", "lsr",
-        "open_interest", "liquidations", "dvol",
+        "open_interest", "cvd", "liquidations", "dvol",
         "calendar", "sentiment", "macro", "news", "portfolio", "data_freshness",
     }
     assert set(bundle) == expected_sections

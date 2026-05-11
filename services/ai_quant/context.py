@@ -31,6 +31,7 @@ from services import (
     price_feed,
     sentiment_index_service,
 )
+from services.ai_quant import cvd as ai_cvd
 from services.indicators import adx, ema
 
 log = logging.getLogger("p300.ai_quant.context")
@@ -375,6 +376,21 @@ def _open_interest_section(asset: str) -> dict:
     }
 
 
+# ─── Section: CVD (Cumulative Volume Delta) ─────────────────────────────────
+
+def _cvd_section(asset: str) -> dict:
+    """Taker-buy minus taker-sell volume on the BTC perp from Binance klines.
+
+    Surfaces the latest day's CVD with a 30d rolling z-score (so the LLM
+    can see when today's net flow is unusual) plus 24h and 7d net sums.
+    The buy-pressure ratio (0-100) makes the direction unambiguous: 50 is
+    neutral, >50 means buyers were aggressors on net, <50 means sellers.
+    """
+    if asset.upper() != "BTC":
+        return {"error": f"CVD section: only BTC supported (got {asset})"}
+    return ai_cvd.cvd_summary()
+
+
 # ─── Section: liquidations ──────────────────────────────────────────────────
 
 def _liquidations_section(asset: str) -> dict:
@@ -618,6 +634,7 @@ def build_context(variant_id: str, asset: str = "BTC") -> dict:
         "lsr": _safe("lsr", lambda: _lsr_section(asset)),
         "open_interest": _safe("open_interest",
                                  lambda: _open_interest_section(asset)),
+        "cvd": _safe("cvd", lambda: _cvd_section(asset)),
         "liquidations": _safe("liquidations",
                                 lambda: _liquidations_section(asset)),
         "dvol": _safe("dvol", lambda: {

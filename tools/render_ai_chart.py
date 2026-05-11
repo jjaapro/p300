@@ -32,6 +32,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--no-ema150", action="store_true")
     p.add_argument("--no-volume", action="store_true")
     p.add_argument("--no-rsi", action="store_true")
+    p.add_argument("--no-cvd", action="store_true")
     p.add_argument("--no-funding", action="store_true")
     p.add_argument("--no-lsr", action="store_true")
     args = p.parse_args(argv)
@@ -47,6 +48,8 @@ def main(argv: list[str] | None = None) -> int:
         indicators.append("volume")
     if not args.no_rsi:
         indicators.append("rsi14")
+    if not args.no_cvd:
+        indicators.append("cvd")
     if not args.no_funding:
         indicators.append("funding")
     if not args.no_lsr:

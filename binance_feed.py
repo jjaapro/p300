@@ -118,14 +118,21 @@ def fetch_klines_1h(api_base: str, symbol: str, table: str) -> int:
         inserted = 0
         for r in rows:
             ts_s = int(r[0]) // 1000
+            # Binance kline indexes 5/7/9/10 are base-volume, quote-volume,
+            # taker-buy-base-volume, taker-buy-quote-volume. Sell-side =
+            # total minus taker-buy. trades_buy/_sell aren't in the klines
+            # endpoint (would need aggTrades) — kept NULL.
+            vol, qvol = float(r[5]), float(r[7])
+            buy_base, buy_quote = float(r[9]), float(r[10])
             con.execute(
                 f"INSERT OR REPLACE INTO {table} "
                 "(timestamp, open, high, low, close, volume, quote_volume, "
                 " volume_buy, quote_volume_buy, volume_sell, quote_volume_sell, "
                 " total_trades, trades_buy, trades_sell) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?, NULL, NULL)",
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)",
                 (ts_s, float(r[1]), float(r[2]), float(r[3]), float(r[4]),
-                 float(r[5]), float(r[7]), int(r[8])),
+                 vol, qvol, buy_base, buy_quote,
+                 vol - buy_base, qvol - buy_quote, int(r[8])),
             )
             inserted += 1
         con.commit()
@@ -433,9 +440,12 @@ def backfill_klines_1h(api_base: str, symbol: str, table: str,
                     "(timestamp, open, high, low, close, volume, quote_volume, "
                     " volume_buy, quote_volume_buy, volume_sell, quote_volume_sell, "
                     " total_trades, trades_buy, trades_sell) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, NULL, ?, NULL, NULL)",
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)",
                     [(int(r[0]) // 1000, float(r[1]), float(r[2]), float(r[3]),
-                      float(r[4]), float(r[5]), float(r[7]), int(r[8]))
+                      float(r[4]), float(r[5]), float(r[7]),
+                      float(r[9]), float(r[10]),
+                      float(r[5]) - float(r[9]), float(r[7]) - float(r[10]),
+                      int(r[8]))
                      for r in rows],
                 )
                 con.commit()
@@ -453,6 +463,104 @@ def backfill_klines_1h(api_base: str, symbol: str, table: str,
     finally:
         con.close()
     return total
+
+
+def _find_null_taker_ranges(con: sqlite3.Connection, table: str,
+                              cadence_s: int) -> list[tuple[int, int]]:
+    """Contiguous (inclusive) timestamp ranges where volume_buy IS NULL.
+    Two NULL rows separated by more than one bar's cadence become separate
+    ranges so we don't re-fetch large stretches of already-populated bars."""
+    rows = con.execute(
+        f"SELECT timestamp FROM {table} "
+        f"WHERE volume_buy IS NULL ORDER BY timestamp"
+    ).fetchall()
+    if not rows:
+        return []
+    ranges: list[tuple[int, int]] = []
+    start = prev = int(rows[0][0])
+    for (ts,) in rows[1:]:
+        ts = int(ts)
+        if ts - prev <= cadence_s:
+            prev = ts
+            continue
+        ranges.append((start, prev))
+        start = prev = ts
+    ranges.append((start, prev))
+    return ranges
+
+
+def repair_null_taker_volumes(api_base: str, symbol: str, table: str) -> int:
+    """Repair rows in `table` where volume_buy IS NULL by re-fetching Binance
+    klines for those ranges and overwriting the bar in place.
+
+    Uses UPDATE … WHERE volume_buy IS NULL — only touches NULL-taker rows so
+    older rows ingested from a different upstream stay untouched. Refreshes
+    OHLC + volume + taker columns together so the buy+sell=volume invariant
+    holds (some NULL-taker rows were partial-bar writes from the running
+    bot whose volume field is also stale). Idempotent: subsequent calls find
+    no NULLs and return 0."""
+    import time as _time
+    cadence_s = 3600
+    con = sqlite3.connect(str(DB_PATH))
+    try:
+        ranges = _find_null_taker_ranges(con, table, cadence_s)
+        if not ranges:
+            return 0
+        expected = sum((e - s) // cadence_s + 1 for s, e in ranges)
+        log.info(f"[repair {table}] {len(ranges)} NULL taker range(s), "
+                 f"~{expected:,} rows to fill")
+        total = 0
+        for i, (rng_start, rng_end) in enumerate(ranges, start=1):
+            cursor = rng_start
+            while cursor <= rng_end:
+                params = {"symbol": symbol, "interval": "1h",
+                          "startTime": cursor * 1000,
+                          "endTime": rng_end * 1000,
+                          "limit": 1000}
+                try:
+                    rows = _get(f"{api_base}/klines", params)
+                except Exception as e:
+                    log.warning(f"[repair {table}] range {i} fetch failed: {e}")
+                    break
+                if not rows:
+                    break
+                con.executemany(
+                    f"UPDATE {table} "
+                    "SET open = ?, high = ?, low = ?, close = ?, "
+                    "    volume = ?, quote_volume = ?, "
+                    "    volume_buy = ?, quote_volume_buy = ?, "
+                    "    volume_sell = ?, quote_volume_sell = ?, "
+                    "    total_trades = ? "
+                    "WHERE timestamp = ? AND volume_buy IS NULL",
+                    [(float(r[1]), float(r[2]), float(r[3]), float(r[4]),
+                      float(r[5]), float(r[7]),
+                      float(r[9]), float(r[10]),
+                      float(r[5]) - float(r[9]), float(r[7]) - float(r[10]),
+                      int(r[8]),
+                      int(r[0]) // 1000)
+                     for r in rows],
+                )
+                con.commit()
+                total += con.total_changes  # approximate; useful for log only
+                next_cursor = (int(rows[-1][0]) // 1000) + cadence_s
+                if next_cursor <= cursor:
+                    break
+                cursor = next_cursor
+                if len(rows) < 1000:
+                    break
+                _time.sleep(0.2)
+            if i % 50 == 0 or i == len(ranges):
+                log.info(f"[repair {table}] {i}/{len(ranges)} ranges done")
+        # total_changes is cumulative across the connection; report the
+        # NULL count delta as the more meaningful number.
+        remaining = con.execute(
+            f"SELECT COUNT(*) FROM {table} WHERE volume_buy IS NULL"
+        ).fetchone()[0]
+        filled = expected - remaining
+        log.info(f"[repair {table}] filled {filled:,} of {expected:,} NULL rows")
+        return filled
+    finally:
+        con.close()
 
 
 def backfill_all_klines(since: str | None = "2020-01-01") -> dict[str, int]:
@@ -473,8 +581,16 @@ def fix_all_gaps() -> dict[str, int]:
     """Detect + fill gaps in all kline + funding tables. Same machinery as
     backfill but with no leading floor — only heals existing data, doesn't
     extend history. Wired into binance_feed.py startup so the DB self-heals
-    every time the bot is restarted."""
+    every time the bot is restarted.
+
+    Also repairs rows where the taker-buy/sell columns are NULL (legacy data
+    from before the kline fetcher learned to populate those fields). The
+    NULL-repair is idempotent — once-and-done after the first startup."""
     out = backfill_all_klines(since=None)
+    out["repair_cd_futures_ohlcv"] = repair_null_taker_volumes(
+        FAPI, "BTCUSDT", "cd_futures_ohlcv")
+    out["repair_cd_spot_binance"] = repair_null_taker_volumes(
+        SPOT_API, "BTCUSDT", "cd_spot_binance")
     for sym, tbl in [("BTCUSDT", "cd_funding_rate"),
                      ("ETHUSDT", "cd_funding_rate_eth")]:
         out[tbl] = backfill_funding_rate(sym, tbl, since=None)
