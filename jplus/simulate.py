@@ -196,9 +196,30 @@ def _run_decision_loop() -> tuple[dict[str, dict], dict]:
             "r4_btc": 0.0, "r4_eth": 0.0,
             "r4_btc_v2": 0.0, "r4_eth_v2": 0.0,
         }))
+        # R4_ETH live entry is Tue 20:00 UTC, BEFORE Tue daily close
+        # (00:00 UTC). At Tue 20:00, today_inputs()'s latest complete
+        # daily close is Monday — so the live bot weights R4_ETH by
+        # Tuesday's regime, which the simulator computed at iteration
+        # i-1 using det_i = i-2 = Monday's close. Using `weights` here
+        # (Wed regime, based on Tue close) would inject ~4h of
+        # post-entry data into the analytic series. See AUDIT_2026_05_13
+        # "High — methodology / look-ahead" item 1. Other sub-sleeves
+        # at Wed key (R4_BTC_V2 / R4_ETH_V2 at 04:00 UTC) DO have Tue
+        # close available at entry, so they keep the Wed weights.
+        prev_rec = out.get(prev_d) if is_r4_e else None
+        if prev_rec is not None:
+            r4_eth_weights = _cap_core_weights(REGIME_WEIGHTS_FULL.get(
+                prev_rec.get("mode"), {
+                    "ema_btc": 0.0, "eth_daily": 0.0,
+                    "r4_btc": 0.0, "r4_eth": 0.0,
+                    "r4_btc_v2": 0.0, "r4_eth_v2": 0.0,
+                }))
+        else:
+            r4_eth_weights = weights
+
         c_ema = weights["ema_btc"] * ema_p * br
         c_eth = weights["eth_daily"] * er
-        c_r4e = weights["r4_eth"] * r4e_r
+        c_r4e = r4_eth_weights["r4_eth"] * r4e_r
         c_r4b = weights["r4_btc"] * r4b_r
         c_r4b_v2 = weights.get("r4_btc_v2", 0.0) * r4b_v2_r
         c_r4e_v2 = weights.get("r4_eth_v2", 0.0) * r4e_v2_r
