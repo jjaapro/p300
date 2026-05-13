@@ -261,8 +261,12 @@ calls it.
 Cost migration: [jplus/r4.py](jplus/r4.py) emits gross window returns
 (`COST_BP_RT = 0.0`); the 10bp R4 round-trip is charged at trade close.
 [jplus/ema_sleeve.py](jplus/ema_sleeve.py)'s `_COMMISSION` is `0.0`
-explicitly (was a phantom constant pre-migration). ETH_DAILY remains
-zero-fee in the simulator and live handler pending a spot-fee model.
+explicitly (was a phantom constant pre-migration). Since 2026-05-13
+EMA_BTC and ETH_DAILY live closes also charge the default cost (10bp
+fee + 5bp slippage) and apply funding accrual — pre-2026-05-13 both
+ran zero-fee + zero-funding, which was structurally wrong for the perp
+positions they actually trade (multi-week ETH-LONG perp funding alone
+~4.5%/yr was previously invisible).
 
 ```
                  ┌──────────────────────────────────────┐
@@ -668,11 +672,13 @@ were affected by the data-source switch.
       fee — 4 fills × 1bp limit-style slip on the synthetic spot+perp
       position. Lower than directional because CARRY entries are at the
       basis, not market.
-    - **JPLUS_EMA_BTC and JPLUS_ETH_DAILY currently pass
-      `cost_bp_rt=0.0, slippage_bp_rt=0.0`** — preserved pending the
-      audit-#8 fix (zero-fee + zero-funding on perp closes is structurally
-      wrong, but the fix is bundled with funding accrual). SHADOW PnL for
-      those two sleeves is therefore gross of fees and slippage today.
+    - **JPLUS_EMA_BTC and JPLUS_ETH_DAILY** now use the same default
+      (10bp fee + 5bp slip + funding accrual) on close. Pre-2026-05-13
+      these sleeves passed `cost_bp_rt=0.0, apply_funding=False` because
+      ETH_DAILY's status was framed as "pending a spot-fee model" — but
+      both trade the *perp*, so the zero-funding default was structurally
+      wrong. Multi-week ETH-LONG perp at 8h funding ~0.005% accrues to
+      ~4.5%/yr and was previously invisible to SHADOW PnL.
     - **Pre-2026-05-13 SHADOW PnL** was net of fees only. Forward
       numbers from 2026-05-13 onward are net of fees + slippage; the
       backtest figures in §6 (run before this commit) are not. Treat the

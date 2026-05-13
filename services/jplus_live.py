@@ -420,7 +420,6 @@ def ema_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
             open_pos["id"], exit_price=price,
             reason=f"ema_p_zero_{today_iso}",
             sleeve_name=STRATEGY_EMA_BTC,
-            cost_bp_rt=0.0, slippage_bp_rt=0.0, apply_funding=False,
         )
         log.info(f"[jplus_live EMA_BTC {variant['id']}] CLOSED {open_pos['id']} "
                  f"@ ${price:,.2f} reason=ema_p_zero")
@@ -545,7 +544,6 @@ def eth_daily_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
             open_pos["id"], exit_price=price,
             reason=f"regime_exit_{ti['mode']}_{today_iso}",
             sleeve_name=STRATEGY_ETH_DAILY,
-            cost_bp_rt=0.0, slippage_bp_rt=0.0, apply_funding=False,
         )
         log.info(f"[jplus_live ETH_DAILY {variant['id']}] CLOSED {open_pos['id']} "
                  f"@ ${price:,.2f} reason=regime_exit_{ti['mode']}")
