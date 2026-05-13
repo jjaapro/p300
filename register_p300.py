@@ -161,7 +161,7 @@ def build_spec() -> dict:
             "core_pct": 50.0,
             "tactical_pct": 50.0,
             "reserve_pct": 0.0,
-            "max_net_btc_non_core_pct": 15.0,
+            "max_net_btc_pdo_cpr_pct": 15.0,
             "btc_cap_policy": "skip_if_over (live) — simulator uses proportional "
                               "scale-down; enforced in services/risk_caps.py",
             "gross_notional_target_x": 2.25,
