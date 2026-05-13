@@ -23,13 +23,16 @@ def test_compute_long_pnl_increases_with_price_rise():
         qty=1.0, size_usdt=100.0, asset="BTC",
         entry_dt=e_dt, exit_dt=x_dt, apply_funding=False,
     )
-    # Price PnL: (110-100)*1 = 10. Cost: 100 * 10/10000 = 0.1. Net: 9.9.
+    # Price PnL: (110-100)*1 = 10. Cost: 100 * (10+5)/10000 = 0.15
+    # (10bp fee + 5bp default slippage). Net: 9.85.
     assert out.price_pnl_usdt == pytest.approx(10.0)
-    assert out.cost_usdt == pytest.approx(0.1)
-    assert out.cost_pct == pytest.approx(0.10)  # bp -> pct
+    assert out.cost_usdt == pytest.approx(0.15)
+    assert out.cost_pct == pytest.approx(0.15)  # (fee+slip) bp -> pct
+    assert out.fee_pct == pytest.approx(0.10)
+    assert out.slippage_pct == pytest.approx(0.05)
     assert out.funding_pct == 0.0
-    assert out.pnl_usdt == pytest.approx(9.9)
-    assert out.pnl_pct == pytest.approx(9.9)  # 9.9 / 100 * 100
+    assert out.pnl_usdt == pytest.approx(9.85)
+    assert out.pnl_pct == pytest.approx(9.85)
 
 
 def test_compute_short_pnl_increases_with_price_drop():
@@ -39,9 +42,9 @@ def test_compute_short_pnl_increases_with_price_drop():
         qty=1.0, size_usdt=100.0, asset="BTC",
         entry_dt=e_dt, exit_dt=x_dt, apply_funding=False,
     )
-    # Price PnL: (100-90)*1 = 10. Cost: 0.1. Net: 9.9.
+    # Price PnL: (100-90)*1 = 10. Cost: 0.15 (10bp fee + 5bp slip). Net: 9.85.
     assert out.price_pnl_usdt == pytest.approx(10.0)
-    assert out.pnl_usdt == pytest.approx(9.9)
+    assert out.pnl_usdt == pytest.approx(9.85)
 
 
 def test_compute_short_with_unfavorable_move():
@@ -51,9 +54,9 @@ def test_compute_short_with_unfavorable_move():
         qty=1.0, size_usdt=100.0, asset="BTC",
         entry_dt=e_dt, exit_dt=x_dt, apply_funding=False,
     )
-    # SHORT loses when price rises: (100-110)*1 = -10, plus 0.1 fee = -10.1.
+    # SHORT loses when price rises: (100-110)*1 = -10, plus 0.15 cost = -10.15.
     assert out.price_pnl_usdt == pytest.approx(-10.0)
-    assert out.pnl_usdt == pytest.approx(-10.1)
+    assert out.pnl_usdt == pytest.approx(-10.15)
 
 
 def test_compute_invalid_direction_raises():
@@ -88,11 +91,11 @@ def test_compute_applies_funding_when_requested(monkeypatch):
         qty=1.0, size_usdt=100.0, asset="BTC",
         entry_dt=e_dt, exit_dt=x_dt, apply_funding=True,
     )
-    # Price PnL 10, cost 0.1, funding -1.5% on 100 = -1.5 USDT.
-    # Net: 10 - 0.1 - 1.5 = 8.4.
+    # Price PnL 10, cost 0.15 (10bp fee + 5bp slip), funding -1.5 USDT.
+    # Net: 10 - 0.15 - 1.5 = 8.35.
     assert out.funding_pct == pytest.approx(-1.5)
     assert out.funding_usdt == pytest.approx(-1.5)
-    assert out.pnl_usdt == pytest.approx(8.4)
+    assert out.pnl_usdt == pytest.approx(8.35)
 
 
 def test_compute_funding_swallowed_on_typeerror(monkeypatch):
@@ -108,21 +111,53 @@ def test_compute_funding_swallowed_on_typeerror(monkeypatch):
         entry_dt=e_dt, exit_dt=x_dt, apply_funding=True,
     )
     assert out.funding_pct == 0.0
-    assert out.pnl_usdt == pytest.approx(9.9)  # same as no-funding case
+    assert out.pnl_usdt == pytest.approx(9.85)  # same as no-funding case
 
 
 def test_compute_custom_cost_bp():
-    """CARRY-style higher cost rate is configurable (though CARRY uses its
-    own close path; this just validates the parameterization)."""
+    """Higher fee rate is configurable; slippage stays at its 5bp default."""
     e_dt, x_dt = _entry_exit_dts()
     out = trades.compute_perp_close(
         direction="LONG", entry_price=100.0, exit_price=110.0,
         qty=1.0, size_usdt=100.0, asset="BTC",
         entry_dt=e_dt, exit_dt=x_dt, apply_funding=False, cost_bp_rt=20.0,
     )
-    assert out.cost_usdt == pytest.approx(0.2)
-    assert out.cost_pct == pytest.approx(0.20)
-    assert out.pnl_usdt == pytest.approx(9.8)
+    # 20bp fee + 5bp default slip = 25bp = 0.25 USDT cost on 100 notional.
+    assert out.cost_usdt == pytest.approx(0.25)
+    assert out.cost_pct == pytest.approx(0.25)
+    assert out.fee_pct == pytest.approx(0.20)
+    assert out.slippage_pct == pytest.approx(0.05)
+    assert out.pnl_usdt == pytest.approx(9.75)
+
+
+def test_compute_custom_slippage_bp():
+    """Slippage is independently configurable; FOMC-like 10bp slip on top
+    of 10bp fee = 20bp total RT cost."""
+    e_dt, x_dt = _entry_exit_dts()
+    out = trades.compute_perp_close(
+        direction="LONG", entry_price=100.0, exit_price=110.0,
+        qty=1.0, size_usdt=100.0, asset="BTC",
+        entry_dt=e_dt, exit_dt=x_dt, apply_funding=False, slippage_bp_rt=10.0,
+    )
+    assert out.fee_pct == pytest.approx(0.10)
+    assert out.slippage_pct == pytest.approx(0.10)
+    assert out.cost_usdt == pytest.approx(0.20)
+    assert out.pnl_usdt == pytest.approx(9.80)
+
+
+def test_compute_zero_slippage_preserves_legacy_behavior():
+    """JPLUS perp closes pass cost_bp_rt=0, slippage_bp_rt=0 — must yield
+    pre-2026-05-13 zero-cost semantics. Audit item #8 will fix those
+    sleeves separately; this test pins the explicit-opt-out path."""
+    e_dt, x_dt = _entry_exit_dts()
+    out = trades.compute_perp_close(
+        direction="LONG", entry_price=100.0, exit_price=110.0,
+        qty=1.0, size_usdt=100.0, asset="BTC",
+        entry_dt=e_dt, exit_dt=x_dt, apply_funding=False,
+        cost_bp_rt=0.0, slippage_bp_rt=0.0,
+    )
+    assert out.cost_usdt == 0.0
+    assert out.pnl_usdt == pytest.approx(10.0)
 
 
 # ─── persist_close + close_perp_trade (DB-touching) ──────────────────────────
@@ -206,8 +241,10 @@ def test_close_perp_trade_end_to_end(trades_db, monkeypatch):
     con.close()
     assert r[0] == "closed"
     assert r[1] == 110.0
-    # Fixture: LONG @100 -> 110, qty=10, size=1000 → price PnL 100, cost 1, net 99.
-    assert r[2] == pytest.approx(99.0)
+    # Fixture: LONG @100 -> 110, qty=10, size=1000 → price PnL 100,
+    # cost 15bp RT (10bp fee + 5bp default slip) = 1.5 on 1000 notional,
+    # net 98.5.
+    assert r[2] == pytest.approx(98.5)
     assert "UNIT_EXIT: test_close" in r[3]
 
 
@@ -227,24 +264,45 @@ def test_close_perp_trade_unknown_id_silent(trades_db):
 
 
 def test_close_carry_trade_uses_funding_minus_fees(trades_db, monkeypatch):
-    """CARRY: P&L = funding collected − cost_pct (no price PnL component)."""
+    """CARRY: P&L = funding collected − (cost_pct + slippage_pct) — no price PnL."""
     from services import funding
     monkeypatch.setattr(funding, "accrued_pct", lambda *a, **k: 0.50)
     clock.set_simulated_now(datetime(2024, 1, 1, 1, 0, tzinfo=timezone.utc))
     try:
+        # Explicit slippage_pct=0 isolates the fee-only behavior so the
+        # math stays exactly as documented in the original test.
         trades.close_carry_trade("TX-1", exit_price=110.0,
-                                  reason="window_end", cost_pct=0.20)
+                                  reason="window_end", cost_pct=0.20,
+                                  slippage_pct=0.0)
     finally:
         clock.set_simulated_now(None)
     con = sqlite3.connect(str(trades_db))
     r = con.execute("SELECT pnl_usdt, pnl_pct, notes FROM trades "
                     "WHERE id='TX-1'").fetchone()
     con.close()
-    # net_pct = 0.50 - 0.20 = 0.30%; pnl_usdt = 1000 * 0.30/100 = 3.0
+    # net_pct = 0.50 - 0.20 - 0.0 = 0.30%; pnl_usdt = 1000 * 0.30/100 = 3.0
     assert r[0] == pytest.approx(3.0)
     assert r[1] == pytest.approx(0.30)
     assert "CARRY_EXIT" in r[2]
     assert "funding=0.500%" in r[2]
+
+
+def test_close_carry_trade_default_slippage_reduces_pnl(trades_db, monkeypatch):
+    """Default CARRY_SLIPPAGE_PCT=0.04 is deducted alongside the 20bp fee."""
+    from services import funding
+    monkeypatch.setattr(funding, "accrued_pct", lambda *a, **k: 0.50)
+    clock.set_simulated_now(datetime(2024, 1, 1, 1, 0, tzinfo=timezone.utc))
+    try:
+        trades.close_carry_trade("TX-1", exit_price=110.0, reason="window_end")
+    finally:
+        clock.set_simulated_now(None)
+    con = sqlite3.connect(str(trades_db))
+    r = con.execute("SELECT pnl_usdt, pnl_pct FROM trades "
+                    "WHERE id='TX-1'").fetchone()
+    con.close()
+    # net_pct = 0.50 - 0.20 - 0.04 = 0.26%; pnl_usdt = 1000 * 0.26/100 = 2.6
+    assert r[0] == pytest.approx(2.6)
+    assert r[1] == pytest.approx(0.26)
 
 
 def test_close_perp_trade_disabled_funding_omits_funding_in_notes(trades_db):
@@ -259,6 +317,7 @@ def test_close_perp_trade_disabled_funding_omits_funding_in_notes(trades_db):
     r = con.execute("SELECT notes FROM trades WHERE id='TX-1'").fetchone()
     con.close()
     assert "fees=10bp RT" in r[0]
+    assert "slip=5bp RT" in r[0]
     assert "funding=" not in r[0]
 
 

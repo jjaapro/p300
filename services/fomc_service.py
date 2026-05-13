@@ -329,6 +329,13 @@ def tick_observer() -> dict:
 
 # Round-trip taker fee estimate (5bp entry + 5bp exit).
 COST_BP_RT = 10.0
+# FOMC slippage override — 10bp RT vs the 5bp default. Rationale: FOMC
+# enters around the announcement bar at 18:00 UTC with 10× leverage,
+# which is when BTC/USDT spread widens and impact is largest. Per
+# AUDIT_2026_05_13 High-tier execution-cost row, the audit range is
+# 5-10bp/RT in normal conditions and "more in volatile windows" — FOMC
+# is the canonical volatile window.
+SLIPPAGE_BP_RT = 10.0
 
 
 def _open_fomc_long(variant: dict, asset: str, entry_price: float,
@@ -354,7 +361,8 @@ def _close_fomc_shadow(trade_id: str, exit_price: float, reason: str) -> None:
     """Sleeve close — delegates to services.trades.close_perp_trade."""
     from services.trades import close_perp_trade
     close_perp_trade(trade_id, exit_price, reason, sleeve_name="FOMC",
-                     cost_bp_rt=COST_BP_RT, apply_funding=True)
+                     cost_bp_rt=COST_BP_RT, slippage_bp_rt=SLIPPAGE_BP_RT,
+                     apply_funding=True)
 
 
 def _has_fomc_trade(variant_id: str, fomc_date: str) -> bool:

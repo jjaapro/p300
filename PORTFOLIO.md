@@ -14,15 +14,17 @@ of total capital** unless stated otherwise.
 | Block | Capital | Mechanism | What it writes |
 |---|---|---|---|
 | **Core J+ engine** | **50%** | daily-return accrual via `jplus.simulate()` | `variant_daily_returns` (one row/day, `source='live_computed'`) |
-| **Tactical stack** | **50%** | discrete entries/exits in 6 sleeves | `trades` table (`execution_mode='SHADOW'`) |
-| **AI_QUANT** (experimental) | **+2%** *additive, default-OFF* | daily LLM decision (Anthropic Opus 4.7) at 00:05–00:15 UTC | `trades` table (`execution_mode='SHADOW'`) |
+| **Tactical stack** | **50%** *(includes AI_QUANT)* | discrete entries/exits across 6 sleeves + AI_QUANT | `trades` table (`execution_mode='SHADOW'`) |
 | ~~Stable reserve~~ | 0% | (removed 2026-04-30 — FOMC absorbed the slot) | — |
 
 The Core's daily return is computed once per day after midnight UTC. The
 6 tactical sleeves each tick every minute, opening / closing phantom trades
 based on their own signal logic. AI_QUANT is an additional Phase-1
-experimental bucket layered on top — gated behind an env var and skipped on
-historical replay (see §2.7).
+experimental bucket inside the 50% tactical cap — gated behind an env
+var and skipped on historical replay (see §2.7). Core/Tactical 50/50 is
+enforced by `CORE_ALLOC_CAP=0.5` ([jplus/simulate.py](jplus/simulate.py))
+on the Core side and by per-sleeve allocations summing to 50% (15 + 8 +
+6 + 9 + 5 + 5 + 2) on the Tactical side.
 
 ---
 
@@ -633,6 +635,31 @@ were affected by the data-source switch.
     historical replay via `params.deterministic=False`. Its edge — if any —
     will only be visible in forward shadow PnL, and must be evaluated
     *net of API cost* (capped at $5/day, ~$1,825/yr against a 2% sleeve).
+
+11. **Execution-cost model — fees + slippage, modeled separately.**
+    `services.trades.compute_perp_close` charges round-trip cost as
+    `(cost_bp_rt + slippage_bp_rt)` against notional at close. Defaults
+    (since 2026-05-13, audit-calibrated):
+    - `DEFAULT_COST_BP_RT = 10.0` — Binance taker fee × 2 legs.
+    - `DEFAULT_SLIPPAGE_BP_RT = 5.0` — conservative mid of the
+      audit-estimated 5–10bp/RT retail bid-ask spread + market-impact
+      band at $1k–$20k notional.
+    - **FOMC override: `SLIPPAGE_BP_RT = 10.0`** — 10× leverage at the
+      announcement bar, when BTC/USDT spread widens.
+    - **CARRY: `CARRY_SLIPPAGE_PCT = 0.04`** on top of the existing 20bp
+      fee — 4 fills × 1bp limit-style slip on the synthetic spot+perp
+      position. Lower than directional because CARRY entries are at the
+      basis, not market.
+    - **JPLUS_EMA_BTC and JPLUS_ETH_DAILY currently pass
+      `cost_bp_rt=0.0, slippage_bp_rt=0.0`** — preserved pending the
+      audit-#8 fix (zero-fee + zero-funding on perp closes is structurally
+      wrong, but the fix is bundled with funding accrual). SHADOW PnL for
+      those two sleeves is therefore gross of fees and slippage today.
+    - **Pre-2026-05-13 SHADOW PnL** was net of fees only. Forward
+      numbers from 2026-05-13 onward are net of fees + slippage; the
+      backtest figures in §6 (run before this commit) are not. Treat the
+      step-down on 2026-05-13 as a methodology change, not a regime
+      change.
 
 ---
 

@@ -243,7 +243,8 @@ def test_self_sweep_closes_past_exit_trade(tmp_path, monkeypatch):
     con.close()
     assert r[0] == "closed"
     assert r[1] == 43000.0
-    # pnl = (43000 - 42000) * 0.0595 - fees(2.5) + 0 funding = 59.5 - 2.5 = 57.0
+    # pnl = (43000 - 42000) × 0.0595 = 59.5 price PnL; fees(10bp) + slip(10bp)
+    # on $2500 = $5.0 total cost; net ≈ 54.5 (funding stubbed to 0).
     assert r[2] is not None
     assert 50 < r[2] < 65
 

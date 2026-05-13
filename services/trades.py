@@ -38,10 +38,26 @@ from services import db
 log = logging.getLogger("dashboard.trades")
 
 # Standard round-trip taker fee on a single perp leg, in basis points.
+# Covers exchange fees only; slippage + bid-ask spread is modeled
+# separately via DEFAULT_SLIPPAGE_BP_RT below so the two cost sources
+# can be tuned independently per sleeve.
 DEFAULT_COST_BP_RT = 10.0
 # CARRY pays fees on BOTH the spot leg and the perp leg, both sides — 4 taker
 # fills × 5bp = 20bp per round-trip on the synthetic position.
 CARRY_COST_PCT = 0.20
+
+# Bid-ask spread + market-impact on a round-trip directional perp position,
+# in basis points. AUDIT_2026_05_13 calibration: Binance BTC/USDT retail
+# market-order fills cost ~3–5bp spread + 1–2bp impact at $1k–$20k notional;
+# 5bp is the conservative mid of the 5–10bp/RT range. FOMC overrides this
+# to 10bp (10× leverage at the announcement bar = elevated cost). JPLUS
+# perp sleeves pass 0.0 to preserve pre-2026-05-13 behavior pending audit
+# item #8 (EMA_BTC / ETH_DAILY zero-fee + zero-funding cleanup).
+DEFAULT_SLIPPAGE_BP_RT = 5.0
+# CARRY round-trip slippage on the synthetic spot+perp position. 4 fills ×
+# ~1bp = 4bp; lower than directional because CARRY entries are limit-style
+# at the spot/perp basis, not market orders.
+CARRY_SLIPPAGE_PCT = 0.04
 
 # Distant-future sentinel for "open-ended" trades (CARRY, ADX) — written to
 # the exit_time column so the engine's close_due loop never matches them.
@@ -183,8 +199,10 @@ def open_shadow_trade(*, variant: dict, sleeve_name: str,
 class CloseComponents:
     """All numeric pieces of a trade's close, before persistence."""
     price_pnl_usdt: float
-    cost_usdt: float
-    cost_pct: float           # round-trip fee as % of notional
+    cost_usdt: float          # total execution cost = fee + slippage
+    cost_pct: float           # total execution cost as % of notional
+    fee_pct: float            # exchange-fee component only (cost_bp_rt / 100)
+    slippage_pct: float       # spread+impact component only (slippage_bp_rt / 100)
     funding_pct: float        # accrued funding as % of notional, signed for direction
     funding_usdt: float
     pnl_usdt: float           # net = price_pnl − cost + funding
@@ -197,12 +215,20 @@ def compute_perp_close(*, direction: str,
                        asset: str,
                        entry_dt: datetime, exit_dt: datetime,
                        cost_bp_rt: float = DEFAULT_COST_BP_RT,
+                       slippage_bp_rt: float = DEFAULT_SLIPPAGE_BP_RT,
                        apply_funding: bool = True) -> CloseComponents:
-    """Pure compute: price PnL (direction-aware), fees, optional funding.
+    """Pure compute: price PnL (direction-aware), fees, slippage, optional funding.
 
     Direction is ``LONG`` or ``SHORT`` — the price-PnL sign convention is
     enforced here. Sleeves that hold delta-neutral positions (CARRY) use
     ``close_carry_trade`` instead, which has no price-PnL component.
+
+    ``cost_bp_rt`` is the exchange-fee round-trip cost (taker fees only).
+    ``slippage_bp_rt`` is the bid-ask spread + market-impact round-trip cost.
+    Both are charged against ``size_usdt`` at close; total execution cost
+    is (cost_bp_rt + slippage_bp_rt) bp of notional. The two are kept
+    separate so the slippage assumption can be tuned per sleeve without
+    perturbing the fee accounting.
 
     ``apply_funding`` should be False for sleeves whose holds are short
     enough that funding is negligible (CPR, PDO are intraday).
@@ -218,8 +244,11 @@ def compute_perp_close(*, direction: str,
             f"Use close_carry_trade for delta-neutral positions."
         )
 
-    cost_usdt = size_usdt * cost_bp_rt / 10000.0
-    cost_pct = cost_bp_rt / 100.0  # bp -> percent
+    total_bp = cost_bp_rt + slippage_bp_rt
+    cost_usdt = size_usdt * total_bp / 10000.0
+    cost_pct = total_bp / 100.0  # bp -> percent
+    fee_pct = cost_bp_rt / 100.0
+    slippage_pct = slippage_bp_rt / 100.0
 
     funding_pct = 0.0
     if apply_funding:
@@ -236,6 +265,7 @@ def compute_perp_close(*, direction: str,
     return CloseComponents(
         price_pnl_usdt=price_pnl,
         cost_usdt=cost_usdt, cost_pct=cost_pct,
+        fee_pct=fee_pct, slippage_pct=slippage_pct,
         funding_pct=funding_pct, funding_usdt=funding_usdt,
         pnl_usdt=pnl_usdt, pnl_pct=pnl_pct,
     )
@@ -311,9 +341,11 @@ def persist_close(trade_id: str, exit_price: float, exit_time_iso: str,
 
 
 def _format_perp_notes(sleeve_name: str, reason: str,
-                       cost_bp_rt: float, funding_pct: float | None) -> str:
+                       cost_bp_rt: float, slippage_bp_rt: float,
+                       funding_pct: float | None) -> str:
     """Build the notes_suffix appended to the trade row on close."""
-    suffix = f"\n{sleeve_name.upper()}_EXIT: {reason}; fees={cost_bp_rt:.0f}bp RT"
+    suffix = (f"\n{sleeve_name.upper()}_EXIT: {reason}; "
+              f"fees={cost_bp_rt:.0f}bp RT, slip={slippage_bp_rt:.0f}bp RT")
     if funding_pct is not None:
         suffix += f", funding={funding_pct:+.3f}%"
     return suffix
@@ -322,6 +354,7 @@ def _format_perp_notes(sleeve_name: str, reason: str,
 def close_perp_trade(trade_id: str, exit_price: float, reason: str,
                      sleeve_name: str, *,
                      cost_bp_rt: float = DEFAULT_COST_BP_RT,
+                     slippage_bp_rt: float = DEFAULT_SLIPPAGE_BP_RT,
                      apply_funding: bool = True) -> None:
     """End-to-end close for ADX / THU_BEAR / FOMC / CPR / PDO.
 
@@ -362,11 +395,12 @@ def close_perp_trade(trade_id: str, exit_price: float, reason: str,
         entry_dt=entry_dt,
         exit_dt=now,
         cost_bp_rt=cost_bp_rt,
+        slippage_bp_rt=slippage_bp_rt,
         apply_funding=apply_funding,
     )
 
     notes = _format_perp_notes(
-        sleeve_name, reason, cost_bp_rt,
+        sleeve_name, reason, cost_bp_rt, slippage_bp_rt,
         components.funding_pct if apply_funding else None,
     )
     persist_close(trade_id, exit_price, now.isoformat(),
@@ -383,12 +417,17 @@ def close_perp_trade(trade_id: str, exit_price: float, reason: str,
 
 
 def close_carry_trade(trade_id: str, exit_price: float, reason: str,
-                      *, cost_pct: float = CARRY_COST_PCT) -> None:
+                      *, cost_pct: float = CARRY_COST_PCT,
+                      slippage_pct: float = CARRY_SLIPPAGE_PCT) -> None:
     """End-to-end close for CARRY (delta-neutral long-spot + short-perp).
 
-    P&L is collected funding minus round-trip fees on both legs. Price PnL is
-    assumed zero (delta-neutral). The short-perp leg's funding accrual is
-    computed as ``services.funding.accrued_pct(BTC, entry, now, "SHORT")``.
+    P&L is collected funding minus (round-trip fees + slippage) on both legs.
+    Price PnL is assumed zero (delta-neutral). The short-perp leg's funding
+    accrual is computed as ``services.funding.accrued_pct(BTC, entry, now, "SHORT")``.
+
+    ``cost_pct`` covers exchange fees on the synthetic position (4 fills);
+    ``slippage_pct`` covers bid-ask spread + impact. The two are tracked
+    separately so the spread assumption can be tuned without touching fees.
     """
     con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
@@ -413,12 +452,14 @@ def close_carry_trade(trade_id: str, exit_price: float, reason: str,
     except (TypeError, ValueError):
         funding_pct = 0.0
 
-    net_pct = funding_pct - cost_pct
+    total_cost_pct = cost_pct + slippage_pct
+    net_pct = funding_pct - total_cost_pct
     pnl_usdt = float(row["size_usdt"]) * net_pct / 100.0
 
     notes = (f"\nCARRY_EXIT: {reason}; funding={funding_pct:.3f}% "
-             f"(per-settlement), fees={cost_pct:.2f}%, net={net_pct:.3f}%")
-    fee_carry = float(row["size_usdt"] or 0.0) * cost_pct / 100.0
+             f"(per-settlement), fees={cost_pct:.2f}%, slip={slippage_pct:.2f}%, "
+             f"net={net_pct:.3f}%")
+    fee_carry = float(row["size_usdt"] or 0.0) * total_cost_pct / 100.0
     persist_close(trade_id, exit_price, now.isoformat(),
                   pnl_usdt, net_pct, notes,
                   fee_usdt=fee_carry)
