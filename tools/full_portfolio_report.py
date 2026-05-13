@@ -85,22 +85,43 @@ def load_btc_daily_closes(start_iso: str, end_iso: str) -> list[tuple[str, float
     return sorted(by_day.items())
 
 
-def compound_equity(capital: float,
-                    rets_pct: list[tuple[str, float]]) -> list[tuple[str, float]]:
+def accumulate_equity(capital: float,
+                       rets_pct: list[tuple[str, float]]) -> list[tuple[str, float]]:
+    """Build the equity curve by **summing** daily PnL on fixed capital.
+
+    Each ``r`` is realized-PnL-as-%-of-starting-capital; the dollar PnL on
+    day d is ``capital * r / 100``, and equity is the running sum. The
+    pre-2026-05-13 implementation compounded these (``eq *= (1 + r/100)``)
+    which applied Jensen's gap to non-compounding returns — over-reporting
+    total return and shrinking MDD. See AUDIT_2026_05_13 and the matching
+    helpers in ``services.strategy_health``."""
     out = []
     eq = capital
     for d, r in rets_pct:
-        eq = eq * (1 + r / 100.0)
+        eq += capital * r / 100.0
         out.append((d, eq))
     return out
 
 
+# Back-compat alias — the old name reads as a misnomer now but external
+# callers may still reference it. Use ``accumulate_equity`` in new code.
+compound_equity = accumulate_equity
+
+
 def equity_metrics(capital: float,
                     daily_rets_pct: list[tuple[str, float]]) -> dict:
-    """All portfolio-level metrics given a daily-return series."""
+    """All portfolio-level metrics given a daily-return series.
+
+    Returns are arithmetic-on-fixed-capital (``trades_daily_returns``-style):
+    total return is the *sum* of daily returns, equity grows additively
+    by ``capital * r / 100``, MDD walks that additive equity. CAGR is
+    still geometric by definition — it asks "what constant compound rate
+    would have produced this final equity?" — but it's computed from the
+    additively-built final equity, so it's the answer to the right
+    question."""
     if not daily_rets_pct:
         return {}
-    eq_curve = compound_equity(capital, daily_rets_pct)
+    eq_curve = accumulate_equity(capital, daily_rets_pct)
     final_eq = eq_curve[-1][1]
     total_pnl = final_eq - capital
     total_ret_pct = (final_eq / capital - 1) * 100

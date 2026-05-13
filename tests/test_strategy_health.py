@@ -55,15 +55,20 @@ def test_max_drawdown_pct_monotone_up_is_zero():
 
 
 def test_max_drawdown_pct_simple_drop():
-    """+10% then -20% → equity 1 → 1.10 → 0.88 → DD = (0.88-1.10)/1.10 = -20%."""
+    """+10% then -20% on additive equity: eq 1 → 1.10 → 0.90.
+    Peak 1.10, trough 0.90 → DD = (0.90 - 1.10) / 1.10 = -18.1818%.
+    (Pre-2026-05-13 this compounded equity and reported -20.0%; the
+    additive walk matches how trades_daily_returns sizes off fixed
+    capital. See AUDIT_2026_05_13.)"""
     mdd = sh.max_drawdown_pct([10.0, -20.0])
     assert mdd is not None
-    assert mdd == pytest.approx(-20.0, abs=1e-9)
+    assert mdd == pytest.approx(-100.0 * 0.20 / 1.10, abs=1e-9)
 
 
 def test_cumulative_return_pct():
-    """+10%, +10% compounds to +21%."""
-    assert sh.cumulative_return_pct([10.0, 10.0]) == pytest.approx(21.0, abs=1e-9)
+    """Arithmetic-on-fixed-capital returns sum, they don't compound:
+    +10% twice on fixed capital = +20% total realized PnL."""
+    assert sh.cumulative_return_pct([10.0, 10.0]) == pytest.approx(20.0, abs=1e-9)
     assert sh.cumulative_return_pct([]) == 0.0
 
 
@@ -268,9 +273,9 @@ def test_portfolio_metrics_trades_only_realized(synthetic_db):
     p = sh.portfolio_metrics("syn_v", window, source="live_computed",
                               capital_usdt=10000.0)
     assert p.n_days == 3  # only days with closed trades, not the 6 VDR rows
-    # Compounded: (1.005)(0.998)(1.003) - 1 = ~+0.6014%
-    expected = (1.005 * 0.998 * 1.003 - 1) * 100
-    assert p.total_return_pct == pytest.approx(expected, rel=1e-4)
+    # Summed: 0.5 + (-0.2) + 0.3 = +0.6%. Arithmetic-on-fixed-capital
+    # returns sum, they don't compound (Jensen-gap fix, AUDIT_2026_05_13).
+    assert p.total_return_pct == pytest.approx(0.6, abs=1e-9)
     # Win rate: 2 of 3 days were up.
     assert p.win_rate_pct == pytest.approx(200.0 / 3.0)
 

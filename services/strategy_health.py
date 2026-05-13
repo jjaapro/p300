@@ -45,15 +45,28 @@ def annualized_sharpe(rets_pct: list[float]) -> float | None:
 
 def max_drawdown_pct(rets_pct: list[float]) -> float | None:
     """Max peak-to-trough drawdown across the equity curve formed by
-    compounding the daily returns. Returned as a NEGATIVE percent (e.g.
-    -15.3 for a 15.3% drawdown). None if no data."""
+    **summing** daily returns. Returned as a NEGATIVE percent (e.g.
+    -15.3 for a 15.3% drawdown). None if no data.
+
+    The series this consumes comes from ``trades_daily_returns`` (or
+    ``_load_daily_returns``), where each ``return_pct`` is realized PnL
+    divided by *fixed* starting capital. The trades that produced those
+    PnLs were sized off that same fixed capital, so the correct equity
+    walk is additive (``eq += capital * r / 100``), not geometric.
+    Compounding would apply Jensen's gap to returns that have no compound
+    structure to begin with — inflating total return / CAGR and shrinking
+    MDD by ~nσ²/2 on positive-drift windows. See AUDIT_2026_05_13.
+
+    Equity is tracked in units of starting capital (capital ≡ 1.0); the
+    final percent is invariant to the choice of unit since both eq and
+    peak scale together."""
     if not rets_pct:
         return None
     eq = 1.0
     peak = 1.0
     mdd = 0.0
     for r in rets_pct:
-        eq *= (1 + r / 100.0)
+        eq += r / 100.0
         if eq > peak:
             peak = eq
         dd = (eq / peak - 1.0) * 100.0
@@ -63,11 +76,13 @@ def max_drawdown_pct(rets_pct: list[float]) -> float | None:
 
 
 def cumulative_return_pct(rets_pct: list[float]) -> float:
-    """Compound the daily returns and return total return as a percent."""
-    eq = 1.0
-    for r in rets_pct:
-        eq *= (1 + r / 100.0)
-    return (eq - 1.0) * 100.0
+    """Sum the daily returns and return total return as a percent.
+
+    Summation (not compounding) is the correct aggregation for arithmetic
+    returns sized off fixed capital — see ``max_drawdown_pct`` for the
+    full rationale. Pre-2026-05-13 this function compounded and
+    over-reported total return by ~nσ²/2; see AUDIT_2026_05_13."""
+    return sum(rets_pct)
 
 
 def max_drawdown_from_pnl_curve(pnls_usdt: list[float],

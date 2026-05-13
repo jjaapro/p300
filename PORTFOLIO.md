@@ -536,6 +536,24 @@ read spot data (`cd_spot_binance`, `btc_1m`), aligned with TradingView's
 default BTCUSDT 1D feed. Earlier v1–v5 numbers used perp data and are
 superseded; do not compare side-by-side.
 
+> **The numbers below were generated pre-2026-05-13 with the
+> compound-equity defect** ([AUDIT_2026_05_13](AUDIT_2026_05_13.md)):
+> `full_portfolio_report.compound_equity` walked daily returns as
+> `eq *= (1 + r/100)`, applying Jensen's gap to returns that were
+> arithmetic-on-fixed-capital. The fix is summation (commit history,
+> 2026-05-13). Re-running today on the same trade ledger produces:
+> - Total return: roughly 1–2pp lower per year of window (~3–5pp over
+>   the 2.66-year run, dominated by σ²/2 on the high-vol Core sleeve).
+> - CAGR: slightly lower (same direction).
+> - MDD: slightly *larger* (compounding flatters drawdowns on positive
+>   drift).
+>
+> Treat the +485.7% / +121.1% / +294.8% / -15.7% figures below as
+> directionally informative but **not exact**. They will be regenerated
+> in the next backtest refresh; until then, the *live* SHADOW
+> trade-ledger metrics (which now run on the corrected math) are the
+> ground truth for forward operation.
+
 > The Core columns below are the analytic output of
 > [`jplus.simulate.simulate()`](jplus/simulate.py), which has been
 > retained as a research-only tool after the 2026-05-10 live/sim
