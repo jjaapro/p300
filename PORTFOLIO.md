@@ -619,6 +619,22 @@ were affected by the data-source switch.
    performance will likely be lower than the in-sample +294.8% total
    (~66% CAGR).
 
+   **R4 windows-grid selection (2026-05-08, separately).** The live R4
+   config for `JPLUS_R4_BTC` (Mon wk1-2 06→18 UTC, was Mon+Wed) and the
+   V2 sleeves (Wed+Fri wk1-2 04→14 UTC) were picked from a 7,500-config
+   grid search over (asset × day × week × start-hour × end-hour) using
+   the constraint "57 configs that were positive in every backtest
+   year". The Wed-responds-better-to-04→14 + Wed+Fri-era-stability
+   t-stats (+4.6 over 402 fires; +2.5 OOS walk-forward per
+   [tools/r4_study/findings.md](tools/r4_study/findings.md)) are
+   empirically defensible, but the post-ETF era (2024-01 onward, ~2.3y)
+   is too short for the post-ETF-only walk-forward to be conclusive —
+   the findings doc acknowledges this. The user's decision to run the
+   live config and watch it via the strategy_health expectancy monitor
+   is documented in `memory/feedback_r4_post_etf_ride_with_monitor.md`.
+   Worth recording as a distinct selection-bias surface from the family
+   choice above.
+
 2. **Look-ahead protections** are real and tested ([tests/test_jplus_lookahead.py](tests/test_jplus_lookahead.py)) — the upstream ML R4 gate had
    within-day look-ahead and was REPLACED by a rule-based gate. But not
    every input has been audited at the same depth.
