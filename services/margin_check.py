@@ -49,6 +49,21 @@ def _is_carry_pair(strategy: str) -> bool:
     return strategy == "CARRY"
 
 
+# Per-sleeve margin-mode mapping for the go-live plan
+# (memory/project_margin_mode_design.md): cross for every sleeve except
+# FOMC (isolated, because FOMC's 10× leverage at the announcement bar is
+# the one place we explicitly do NOT want netting with other positions).
+# CARRY is also cross but handled separately because of its spot leg.
+_ISOLATED_STRATEGIES = frozenset({"FOMC"})
+
+
+def _margin_mode_for_strategy(strategy: str) -> MarginMode:
+    """Return the configured margin mode for a sleeve. Default is CROSS;
+    FOMC is the sole opt-out (ISOLATED). See _ISOLATED_STRATEGIES."""
+    return (MarginMode.ISOLATED if strategy in _ISOLATED_STRATEGIES
+            else MarginMode.CROSS)
+
+
 # ─── trader.db data fetchers ──────────────────────────────────────────────────
 
 def _aggregate_minute_to_hourly(rows: list[tuple]) -> list[PriceBar]:
@@ -193,7 +208,7 @@ def check_trade_for_liquidation(
     )
 
     spot_legs: list[SpotLeg] = []
-    margin_mode = MarginMode.ISOLATED  # default for non-hedge perps
+    margin_mode = _margin_mode_for_strategy(strategy)
 
     if _is_carry_pair(strategy):
         # CARRY's hedge: matching long spot. qty matches notional / spot_price.
@@ -203,7 +218,7 @@ def check_trade_for_liquidation(
             asset=asset, qty=spot_qty,
             entry_price=entry_price, entry_time=entry_time,
         ))
-        margin_mode = MarginMode.CROSS
+        # CARRY's mode is already CROSS via _margin_mode_for_strategy.
 
     # Fetch market data over [entry, sim_now] window.
     start_ts = int(entry_time.timestamp())
@@ -217,21 +232,26 @@ def check_trade_for_liquidation(
         return None  # No data to check against.
 
     # Initial USDT cash for the simulator.
-    # ISOLATED mode: just the position's IM (per-trade isolated check).
-    # CROSS mode (CARRY): start with 0 USDT cash; rely on spot collateral.
-    if margin_mode == MarginMode.ISOLATED:
+    # - ISOLATED (FOMC): the position's IM is its only margin pool.
+    # - CROSS with spot collateral (CARRY): seed with 0 cash and let the
+    #   spot leg's haircut value carry the pool.
+    # - CROSS without spot (every other directional sleeve): seed with the
+    #   position's IM. This is a single-trade check that doesn't model the
+    #   variant-wide margin pool (would require summing all open trades'
+    #   IM + variant free cash); in practice the simulator's cross/isolated
+    #   liquidation breach is then identical for these sleeves until the
+    #   variant-pool model lands. Direction is correct (no over-strict
+    #   isolated walls); magnitude undercounts the cushion. Tracked in
+    #   memory/project_margin_mode_design.md.
+    if margin_mode == MarginMode.ISOLATED or not spot_legs:
         initial_usdt = perp.initial_margin
     else:
         initial_usdt = 0.0
 
-    sim_params = params or SimParams(margin_mode=margin_mode)
     if params is None:
-        sim_params = SimParams(
-            margin_mode=margin_mode,
-            mm_pct=0.005,
-            spot_haircut=0.95,
-            liquidation_fee_pct=0.005,
-        )
+        sim_params = SimParams(margin_mode=margin_mode)
+    else:
+        sim_params = params
 
     result = simulate_position_path(
         initial_usdt=initial_usdt,

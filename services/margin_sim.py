@@ -213,7 +213,14 @@ class SimParams:
     """All tunables in one place."""
     margin_mode: MarginMode = MarginMode.CROSS
     mm_pct: float = 0.005                  # 0.5% maintenance margin
-    spot_haircut: float = 0.95             # 95% (Binance BTC default; user choice)
+    spot_haircut: float = 0.50             # Binance USDM cross-margin collateral
+                                            # ratio for BTC spot is 0.50 (0.70 at
+                                            # higher VIP tier). Pre-2026-05-13
+                                            # this defaulted to 0.95, which
+                                            # overstated CARRY's cross-margin
+                                            # pool by ~80% and under-reported
+                                            # liquidation risk on hedge
+                                            # positions. See AUDIT_2026_05_13.
     liquidation_fee_pct: float = 0.005     # 0.5% of notional on liquidation
 
 
