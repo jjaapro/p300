@@ -410,17 +410,48 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
             log.exception(f"[{variant['id']}] {strategy_id} dispatch error: {e}")
 
 
+def _check_liquidations_all_variants(now_utc) -> int:
+    """Per-tick liquidation sweep across every active shadow variant.
+
+    Reuses ``backtest_runner.check_liquidations_for_variant`` — the same
+    function the research replay runs — so live SHADOW, ``run.py --mode
+    sim``, and the backtest path all evaluate margin trajectories with
+    identical logic. Each open SHADOW trade whose entry→now path would
+    have breached maintenance margin gets force-closed via the sleeve's
+    close function with reason ``forced_exit:liquidation``.
+
+    Wrapped in try/except per-variant so a single misbehaving variant
+    cannot abort the tick. Returns total trades force-closed across all
+    variants this tick (logged as a warning if non-zero)."""
+    total = 0
+    shadows = variant_registry.get_active_shadows()
+    for v in shadows:
+        try:
+            from backtest_runner import check_liquidations_for_variant
+            total += check_liquidations_for_variant(v["id"], now_utc)
+        except Exception as e:
+            log.exception(f"[liq {v['id']}] check raised: {e}")
+    if total > 0:
+        log.warning(f"[liq] {total} trade(s) force-closed this tick")
+    return total
+
+
 def tick() -> None:
     """Scheduler entry point — runs every minute.
 
-    1. Close any shadow trades whose scheduled exit_time has passed.
-    2. Tick the FOMC observer (records would-be FOMC decisions + P&L
+    1. Liquidation sweep — force-close any open SHADOW trade whose
+       entry→now margin trajectory would have breached maintenance.
+       Runs BEFORE scheduled-exit checks so a liquidated trade is not
+       re-counted as a scheduled close.
+    2. Close any shadow trades whose scheduled exit_time has passed.
+    3. Tick the FOMC observer (records would-be FOMC decisions + P&L
        without opening shadow trades). Out-of-portfolio research feed.
-    3. For each enabled shadow variant:
+    4. For each enabled shadow variant:
        - signal_overlay variants: evaluate their R4 window modifiers
        - full_portfolio with composition: dispatch each sleeve to its service
     """
     now_utc = clock.now_utc()
+    _check_liquidations_all_variants(now_utc)
     _close_due_shadows(now_utc)
 
     # FOMC observer — runs unconditionally each tick, regardless of variants.

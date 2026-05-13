@@ -214,7 +214,7 @@ top**:
 |---|---|---|
 | Output ledger | separate `--dash-db` file | live `data/dashboard.db` (variant id suffixed `__replay[_<tag>]`) |
 | Live data isolation | **complete** — separate trader.db + dashboard.db | shares `data/trader.db` (read) + `data/dashboard.db` (writes to its own variant) |
-| Liquidation simulator | NO (tactical-style closes only) | YES (`check_liquidations_for_variant`) |
+| Liquidation simulator | YES (via `variant_engine.tick` since 2026-05-13 — same `check_liquidations_for_variant` path) | YES (`check_liquidations_for_variant`) |
 | Mark-to-end-of-window for trades open at end | NO | YES (`mark_remaining_at_end`) |
 | Per-sleeve PnL summary | uses `strategy_health.build_report` | bespoke report block |
 | `--reset` purges prior runs | NO (use a fresh `--dash-db`) | YES |

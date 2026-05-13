@@ -199,7 +199,8 @@ Two ways to drive the live bot under a fake clock — see
 [README.md §"Which sim tool"](README.md) for the decision matrix. In
 short: `run.py --mode sim` for clean operator-style sims (separate DB
 file, no live-DB risk), `backtest_runner.py` for research workflow
-(`--tag` for parallel A/B, liquidation simulator, mark-to-end).
+(`--tag` for parallel A/B, mark-to-end). Both modes — and live —
+run the liquidation simulator since 2026-05-13.
 
 ### Research replay with `backtest_runner.py`
 
