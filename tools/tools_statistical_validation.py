@@ -1,4 +1,5 @@
-"""Statistical validation suite for replay variants.
+"""Statistical validation suite for a P-300 variant's realized SHADOW
+trade ledger.
 
 Produces, for a chosen variant id:
   1. Bootstrap Sharpe 95% confidence interval (N=1000 resamples with
@@ -10,9 +11,15 @@ Produces, for a chosen variant id:
   4. Correlation to BTC buy-and-hold daily returns — how much is BTC-beta?
   5. Worst / best 30-day windows.
 
-Default target: p300_aggressive_v2_v1_0__C (full P-300 combined).
+Default target: p300_aggressive_v2_v1_0 (live SHADOW variant).
 
 Output is plain text organized by section. Writes nothing to the DB.
+
+Data source: closed trades in ``trades`` (via
+``services.strategy_health.trades_daily_returns``). Pre-2026-05-13 this
+tool read from ``variant_daily_returns WHERE source='replay'``, but
+that table is no longer written by any production path after the
+trade-emitter migration (Phase 3-5). See AUDIT_2026_05_13.
 """
 from __future__ import annotations
 
@@ -23,18 +30,9 @@ import sqlite3
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from services import db
+from services import db, strategy_health
 
 REPO = Path(__file__).resolve().parent.parent
-def load_returns(variant_id: str) -> list[tuple[str, float]]:
-    con = sqlite3.connect(str(db.DASH_DB))
-    rows = con.execute(
-        "SELECT date, return_1x_pct FROM variant_daily_returns "
-        "WHERE variant_id = ? AND source = 'replay' ORDER BY date",
-        (variant_id,),
-    ).fetchall()
-    con.close()
-    return [(d, float(r or 0)) for d, r in rows]
 
 
 def load_variant_capital(variant_id: str) -> float:
@@ -46,11 +44,52 @@ def load_variant_capital(variant_id: str) -> float:
     return float(row[0]) if row and row[0] else 10_000.0
 
 
+def _variant_trade_window(variant_id: str) -> tuple[str, str] | None:
+    """Earliest and latest closed-trade exit date for the variant. Returns
+    None if no closed trades exist."""
+    con = sqlite3.connect(str(db.DASH_DB))
+    try:
+        row = con.execute(
+            "SELECT MIN(date(actual_exit_time)), MAX(date(actual_exit_time)) "
+            "FROM trades WHERE strategy_variant=? AND status='closed' "
+            "  AND actual_exit_time IS NOT NULL",
+            (variant_id,),
+        ).fetchone()
+    finally:
+        con.close()
+    if not row or row[0] is None or row[1] is None:
+        return None
+    return row[0], row[1]
+
+
+def load_returns(variant_id: str) -> list[tuple[str, float]]:
+    """Daily realized returns for the variant, percent, oldest-first.
+
+    Aggregates closed-trade pnl_usdt by exit date and divides by the
+    variant's capital — same math as
+    ``services.strategy_health.trades_daily_returns``. The series is
+    zero-filled across the calendar window so Sharpe / MDD / rolling
+    stats see flat days, not gaps."""
+    window = _variant_trade_window(variant_id)
+    if window is None:
+        return []
+    start, end = window
+    capital = load_variant_capital(variant_id)
+    return strategy_health.trades_daily_returns(
+        variant_id, start, end, capital, zero_fill=True,
+    )
+
+
 def load_btc_daily_returns() -> dict[str, float]:
-    """BTC daily log-returns keyed by date."""
+    """BTC daily log-returns keyed by date.
+
+    Switched 2026-05-13 from ``cd_futures_ohlcv`` (perp) to
+    ``cd_spot_binance`` to match the v6 signal-data switch — perp and
+    spot daily returns are close but not identical (basis drift adds
+    ~10bp daily noise). See AUDIT_2026_05_13 Medium item."""
     con = sqlite3.connect(str(db.TRADER_DB))
     rows = con.execute(
-        "SELECT timestamp, close FROM cd_futures_ohlcv ORDER BY timestamp"
+        "SELECT timestamp, close FROM cd_spot_binance ORDER BY timestamp"
     ).fetchall()
     con.close()
     by_day: dict[str, float] = {}
@@ -81,23 +120,28 @@ def daily_ann_sharpe(rets: list[float]) -> float:
 
 
 def cagr(rets: list[float]) -> float:
-    """Compound growth annualised, assumes 365d/y."""
+    """Compound annual growth rate, assumes 365d/y.
+
+    Equity is built additively (``eq += r/100`` on unit capital — the
+    returns are arithmetic-on-fixed-capital, see strategy_health
+    rationale). CAGR itself remains a geometric annualisation of the
+    final equity since that's what the term means."""
     if not rets:
         return float("nan")
     eq = 1.0
     for r in rets:
-        eq *= (1 + r / 100)
+        eq += r / 100
     years = len(rets) / 365.25
     return eq ** (1 / years) - 1 if eq > 0 and years > 0 else float("nan")
 
 
 def max_drawdown(rets: list[float]) -> float:
-    """Max DD as fraction (negative)."""
+    """Max DD as fraction (negative). Additive equity walk — see cagr()."""
     eq = 1.0
     peak = 1.0
     mdd = 0.0
     for r in rets:
-        eq *= (1 + r / 100)
+        eq += r / 100
         if eq > peak:
             peak = eq
         dd = eq / peak - 1
@@ -221,17 +265,15 @@ def yearly_breakdown(rows: list[tuple[str, float]]) -> dict[str, dict]:
 
 def worst_and_best_30d(rows: list[tuple[str, float]], window: int = 30
                        ) -> tuple[tuple[str, float], tuple[str, float]]:
+    """Find the worst / best rolling N-day window by summed return.
+    Returns are arithmetic-on-fixed-capital, so window return is the sum
+    of the daily returns in that window (not compound)."""
     if len(rows) < window:
         return ("", float("nan")), ("", float("nan"))
     best = ("", -1e18)
     worst = ("", 1e18)
     for i in range(window - 1, len(rows)):
-        # Cumulative return of last `window` days
-        chunk = [r for _, r in rows[i - window + 1: i + 1]]
-        eq = 1.0
-        for r in chunk:
-            eq *= (1 + r / 100)
-        ret = (eq - 1) * 100
+        ret = sum(r for _, r in rows[i - window + 1: i + 1])
         if ret > best[1]:
             best = (rows[i][0], ret)
         if ret < worst[1]:
@@ -254,16 +296,17 @@ def correlation_vs_btc(rows: list[tuple[str, float]], btc: dict[str, float]) -> 
 def run(variant_id: str) -> None:
     rows = load_returns(variant_id)
     if not rows:
-        print(f"No replay returns found for {variant_id}")
+        print(f"No realized trades found for {variant_id}")
         return
     rets = [r for _, r in rows]
     n = len(rets)
     capital = load_variant_capital(variant_id)
 
-    # Rebuild equity curve for context
+    # Rebuild equity curve for context — additive on fixed capital
+    # because each daily return is realized PnL / starting capital.
     eq = capital
     for r in rets:
-        eq *= (1 + r / 100)
+        eq += capital * r / 100
     total_ret = (eq / capital - 1) * 100
 
     print("=" * 78)
@@ -332,8 +375,10 @@ def run(variant_id: str) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--variant", default="p300_aggressive_v2_v1_0__C",
-                    help="Variant id to validate.")
+    ap.add_argument("--variant", default="p300_aggressive_v2_v1_0",
+                    help="Variant id to validate. Default: the live "
+                         "SHADOW variant. Pre-2026-05-13 default was the "
+                         "since-deprecated `__C` replay variant.")
     args = ap.parse_args()
     run(args.variant)
     return 0

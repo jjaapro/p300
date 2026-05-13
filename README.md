@@ -8,10 +8,16 @@ REST, scheduled events are computed in-process, and long-short ratio
 history comes from Coinalyze (free tier).
 
 > **Status: SHADOW validation in progress.** All prior upstream backtest
-> numbers are treated as compromised and have been stripped. A clean replay
-> over 2021-07 → 2026-04 with no look-ahead produced Sharpe ≈ 1.73 with a
-> bootstrap 95% CI of [0.96, 2.44] (`python tools/tools_statistical_validation.py`).
-> Live SHADOW accumulation is the only real OOS validation path.
+> numbers are treated as compromised and have been stripped. The earlier
+> headline (Sharpe ≈ 1.73, bootstrap 95% CI [0.96, 2.44]) was computed
+> from a `variant_daily_returns WHERE source='replay'` table that the
+> 2026-05 trade-emitter migration stopped writing — it is **not
+> reproducible from current code** and has been retracted pending
+> regeneration on the realized trade ledger. The migrated tool
+> (`python tools/tools_statistical_validation.py`) now runs against
+> closed SHADOW trades directly; SHADOW accumulation is the only real
+> OOS validation path, and the live-window Sharpe stabilises only after
+> ~6+ months of realized data.
 
 ## What runs live here
 
