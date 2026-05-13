@@ -370,18 +370,6 @@ def today_inputs() -> dict | None:
     }
 
 
-# Per-regime sub-sleeve weights — kept here for the fee helper. Mirrors the
-# inline allocation in the loop above (lines 108-131); single source of truth
-# would be nicer but the loop's hot-path doesn't want a dict lookup.
-_REGIME_R4_WEIGHTS = {
-    # (r4_btc, r4_eth, r4_btc_v2, r4_eth_v2)
-    "strong_bull": (0.15, 0.15, 0.075, 0.075),
-    "mild_bull":   (0.20, 0.30, 0.10,  0.15),
-    "uncertain":   (0.30, 0.40, 0.15,  0.20),
-    "bear":        (0.00, 0.00, 0.00,  0.00),
-}
-
-
 def apply_r4_fees(series: dict[str, dict], fee_bp_rt: float = 10.0) -> None:
     """Subtract R4 round-trip fees from each day's ``return_pct``, in place.
 
@@ -392,12 +380,16 @@ def apply_r4_fees(series: dict[str, dict], fee_bp_rt: float = 10.0) -> None:
     numbers) re-apply the same fee model via this helper.
 
     The fee in % of capital terms for one R4 fire =
-        regime_weight × r4_inner_lev × vol_target_lev × (fee_bp/10000) × 100
+        capped_regime_weight × r4_inner_lev × vol_target_lev × (fee_bp/10000) × 100
 
     where ``r4_inner_lev`` is 1.0 if the gate fired today, else 2.5.
-
-    V2 sleeves are charged the same fee model with their own per-regime
-    weights — see ``_REGIME_R4_WEIGHTS`` above.
+    Weights are looked up via ``_cap_core_weights(REGIME_WEIGHTS_FULL[mode])``
+    — the same capped values the simulator loop and ``today_inputs()``
+    use, NOT raw REGIME_WEIGHTS_FULL. Pre-2026-05-13 a separate inline
+    duplicate of the raw weight table (``_REGIME_R4_WEIGHTS``) was used
+    here, which charged fees on the raw 40%-of-capital R4_ETH position
+    while the simulator's gross P&L was sized at the capped 14.8% — the
+    helper subtracted 2-3× too much in fees. See AUDIT_2026_05_13.
 
     No runtime path calls this. Live (and sim) fees come from the
     trade-event ledger, which is the canonical P&L source. This helper
@@ -405,20 +397,25 @@ def apply_r4_fees(series: dict[str, dict], fee_bp_rt: float = 10.0) -> None:
     return series alongside ``simulate()`` output.
     """
     fee_frac = fee_bp_rt / 10000.0
+    # Pre-compute capped weights per regime once — same source of truth
+    # as the simulator loop (avoids drift between the two).
+    _capped: dict[str, dict[str, float]] = {
+        mode: _cap_core_weights(REGIME_WEIGHTS_FULL[mode])
+        for mode in REGIME_WEIGHTS_FULL
+    }
     for rec in series.values():
-        weights = _REGIME_R4_WEIGHTS.get(rec.get("mode", ""),
-                                          (0.0, 0.0, 0.0, 0.0))
+        weights = _capped.get(rec.get("mode", ""), {})
         gated = bool(rec.get("gated", False))
         r4_lev = 1.0 if gated else 2.5
         lev = float(rec.get("lev", 1.0))
         fee_pct = 0.0
         if rec.get("r4_btc_fired"):
-            fee_pct += weights[0] * r4_lev * lev * fee_frac * 100.0
+            fee_pct += weights.get("r4_btc", 0.0) * r4_lev * lev * fee_frac * 100.0
         if rec.get("r4_eth_fired"):
-            fee_pct += weights[1] * r4_lev * lev * fee_frac * 100.0
+            fee_pct += weights.get("r4_eth", 0.0) * r4_lev * lev * fee_frac * 100.0
         if rec.get("r4_btc_v2_fired"):
-            fee_pct += weights[2] * r4_lev * lev * fee_frac * 100.0
+            fee_pct += weights.get("r4_btc_v2", 0.0) * r4_lev * lev * fee_frac * 100.0
         if rec.get("r4_eth_v2_fired"):
-            fee_pct += weights[3] * r4_lev * lev * fee_frac * 100.0
+            fee_pct += weights.get("r4_eth_v2", 0.0) * r4_lev * lev * fee_frac * 100.0
         rec["return_pct"] = float(rec["return_pct"]) - fee_pct
         rec["r4_fees_pct"] = fee_pct
