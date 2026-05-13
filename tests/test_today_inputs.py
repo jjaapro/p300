@@ -43,7 +43,8 @@ def test_today_inputs_returns_expected_shape():
 @pytest.mark.slow
 def test_today_inputs_weights_match_regime_table():
     """Whichever regime today_inputs returns, the weights it returns must
-    equal ``REGIME_WEIGHTS_FULL[mode]`` exactly. This is the single
+    equal ``_cap_core_weights(REGIME_WEIGHTS_FULL[mode])`` — the
+    CORE_ALLOC_CAP-applied weights, not the raw table. This is the single
     invariant guarding against drift between today_inputs and the
     simulator's inline allocation."""
     clock.set_simulated_now(datetime(2026, 5, 6, 12, tzinfo=timezone.utc))
@@ -52,8 +53,11 @@ def test_today_inputs_weights_match_regime_table():
     finally:
         clock.set_simulated_now(None)
     assert ti is not None
-    expected = simulate.REGIME_WEIGHTS_FULL[ti["mode"]]
+    expected = simulate._cap_core_weights(
+        simulate.REGIME_WEIGHTS_FULL[ti["mode"]])
     assert ti["weights"] == expected
+    # And the cap itself is enforced: sum ≤ CORE_ALLOC_CAP.
+    assert sum(ti["weights"].values()) <= simulate.CORE_ALLOC_CAP + 1e-9
 
 
 @pytest.mark.slow

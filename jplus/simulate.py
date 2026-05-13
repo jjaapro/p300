@@ -44,6 +44,28 @@ REGIME_WEIGHTS_FULL = {
                      "r4_btc_v2": 0.00, "r4_eth_v2": 0.00},
 }
 
+CORE_ALLOC_CAP = 0.5
+# Maximum combined Core sub-sleeve pre-leverage allocation as a fraction of
+# variant capital. Raw REGIME_WEIGHTS_FULL sums per regime are 1.10 / 1.15 /
+# 1.35 / 0.30 (strong_bull / mild_bull / uncertain / bear); the cap enforces
+# the documented `core_pct: 50.0` intent that was previously decorative in
+# register_p300.py:allocator_notes. Added 2026-05-12 after the live bot was
+# discovered emitting R4_ETH trades at 200% of variant capital (uncertain
+# regime, raw weight 0.40 × 5x stacked leverage = $100k gross on $10k cap).
+
+
+def _cap_core_weights(raw: dict[str, float]) -> dict[str, float]:
+    """Return ``raw`` rescaled so its values sum to at most
+    ``CORE_ALLOC_CAP``. If the input already sums to ≤ cap (e.g. bear
+    regime), it is returned unchanged. Otherwise each weight is scaled by
+    ``CORE_ALLOC_CAP / sum(raw)`` — preserves relative weighting between
+    sub-sleeves while bounding total Core gross."""
+    total = sum(raw.values())
+    if total <= CORE_ALLOC_CAP or total <= 0:
+        return dict(raw)
+    scale = CORE_ALLOC_CAP / total
+    return {k: v * scale for k, v in raw.items()}
+
 
 def _gate_for_today(bc: list[float]) -> bool:
     """Compute today's R4 gate value from BTC closes through yesterday.
@@ -165,17 +187,15 @@ def _run_decision_loop() -> tuple[dict[str, dict], dict]:
         r4b_v2_r *= r4_lev
         r4e_v2_r *= r4_lev
 
-        # Per-regime allocation. Weights intentionally sum < 1.0 in risk-off
-        # regimes (remainder is idle cash):
-        #   strong_bull: 1.00 (fully invested)
-        #   mild_bull:   0.90 (10% cash buffer)
-        #   uncertain:   1.00 (fully invested in mean-reversion sleeves)
-        #   bear:        0.30 (70% cash — defensive posture)
-        weights = REGIME_WEIGHTS_FULL.get(mode, {
+        # Per-regime allocation, capped at CORE_ALLOC_CAP (50% of capital).
+        # Raw sums per regime: strong_bull 1.10, mild_bull 1.15, uncertain
+        # 1.35, bear 0.30. _cap_core_weights rescales the first three down
+        # to 0.50 and leaves bear unchanged.
+        weights = _cap_core_weights(REGIME_WEIGHTS_FULL.get(mode, {
             "ema_btc": 0.0, "eth_daily": 0.0,
             "r4_btc": 0.0, "r4_eth": 0.0,
             "r4_btc_v2": 0.0, "r4_eth_v2": 0.0,
-        })
+        }))
         c_ema = weights["ema_btc"] * ema_p * br
         c_eth = weights["eth_daily"] * er
         c_r4e = weights["r4_eth"] * r4e_r
@@ -328,12 +348,12 @@ def today_inputs() -> dict | None:
     # mode is read from the per-day decision loop output ``out``; if yesterday
     # is before warmup or otherwise missing, mode_prev is None and weights_prev
     # is all-zero (treated by callers as "no signal yet" — same as no entry).
-    weights = dict(REGIME_WEIGHTS_FULL.get(
+    weights = _cap_core_weights(REGIME_WEIGHTS_FULL.get(
         mode, {"ema_btc": 0.0, "eth_daily": 0.0, "r4_btc": 0.0, "r4_eth": 0.0,
                 "r4_btc_v2": 0.0, "r4_eth_v2": 0.0}))
     yest_rec = out.get(yesterday_iso) or {}
     mode_prev = yest_rec.get("mode")
-    weights_prev = dict(REGIME_WEIGHTS_FULL.get(
+    weights_prev = _cap_core_weights(REGIME_WEIGHTS_FULL.get(
         mode_prev, {"ema_btc": 0.0, "eth_daily": 0.0, "r4_btc": 0.0, "r4_eth": 0.0,
                      "r4_btc_v2": 0.0, "r4_eth_v2": 0.0}))
 

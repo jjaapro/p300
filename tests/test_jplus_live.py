@@ -47,8 +47,10 @@ def _today_inputs_stub(mode="uncertain", lev=2.0, gated=False, ema_p=-1,
         "gated": gated,
         "ema_p": ema_p,
         "ema_p_prev": ema_p_prev,
-        "weights": dict(simulate.REGIME_WEIGHTS_FULL[mode]),
-        "weights_prev": dict(simulate.REGIME_WEIGHTS_FULL[mode_prev]),
+        "weights": simulate._cap_core_weights(
+            simulate.REGIME_WEIGHTS_FULL[mode]),
+        "weights_prev": simulate._cap_core_weights(
+            simulate.REGIME_WEIGHTS_FULL[mode_prev]),
     }
 
 
@@ -138,7 +140,9 @@ def test_r4_btc_opens_on_monday_within_window(live_env, monkeypatch):
     assert result["status"] == "opened"
     assert result["entry_price"] == 70_000.0
     assert result["stacked_lev"] == pytest.approx(5.0)  # 2.5 inner * 2.0 vol
-    assert result["weight"] == pytest.approx(0.30)      # uncertain regime
+    expected_r4_btc = core_sim._cap_core_weights(
+        core_sim.REGIME_WEIGHTS_FULL["uncertain"])["r4_btc"]
+    assert result["weight"] == pytest.approx(expected_r4_btc)
 
     con = sqlite3.connect(str(live_env))
     con.row_factory = sqlite3.Row
@@ -151,10 +155,11 @@ def test_r4_btc_opens_on_monday_within_window(live_env, monkeypatch):
     assert row["direction"] == "LONG"
     assert row["leverage"] == pytest.approx(5.0)
     assert row["entry_price"] == 70_000.0
-    # Notional = capital × weight × stacked_lev = 10_000 × 0.30 × 5.0 = 15_000
-    assert row["size_usdt"] == pytest.approx(15_000.0)
-    # qty = size / price = 15_000 / 70_000 ≈ 0.2143
-    assert row["qty"] == pytest.approx(15_000.0 / 70_000.0, rel=1e-6)
+    # Notional = capital × capped_weight × stacked_lev. uncertain regime
+    # raw r4_btc=0.30, capped by CORE_ALLOC_CAP=0.5 / sum(1.35) → 0.1111
+    expected_notional = CAPITAL_USDT * expected_r4_btc * 5.0
+    assert row["size_usdt"] == pytest.approx(expected_notional)
+    assert row["qty"] == pytest.approx(expected_notional / 70_000.0, rel=1e-6)
     # Exit scheduled at 18:00 same day
     assert row["exit_time"].startswith("2026-05-04T18:00")
 
@@ -310,8 +315,10 @@ def test_r4_eth_opens_tue_20_with_exit_wed_20(live_env, monkeypatch):
     assert row is not None
     assert row["asset"] == "ETH"
     assert row["direction"] == "LONG"
-    # Notional = 10_000 × 0.40 × 5.0 = 20_000 (uncertain weight 0.40 × 5x)
-    assert row["size_usdt"] == pytest.approx(20_000.0)
+    # uncertain raw r4_eth=0.40, capped by CORE_ALLOC_CAP/1.35 → 0.1481
+    from jplus import simulate as _sim
+    expected_w = _sim._cap_core_weights(_sim.REGIME_WEIGHTS_FULL["uncertain"])["r4_eth"]
+    assert row["size_usdt"] == pytest.approx(CAPITAL_USDT * expected_w * 5.0)
     # Exit at Wed 2026-05-06 20:00 UTC
     assert row["exit_time"].startswith("2026-05-06T20:00")
 
@@ -383,8 +390,10 @@ def test_ema_btc_opens_when_no_position(live_env, monkeypatch):
     assert row is not None
     assert row["asset"] == "BTC"
     assert row["direction"] == "LONG"
-    # Notional = 10_000 × 0.30 × 2.0 = 6_000 (uncertain weight 0.30, lev 2)
-    assert row["size_usdt"] == pytest.approx(6_000.0)
+    # uncertain raw ema_btc=0.30, capped by CORE_ALLOC_CAP/1.35 → 0.1111; lev=2
+    expected_w = core_sim._cap_core_weights(
+        core_sim.REGIME_WEIGHTS_FULL["uncertain"])["ema_btc"]
+    assert row["size_usdt"] == pytest.approx(CAPITAL_USDT * expected_w * 2.0)
     assert row["leverage"] == pytest.approx(2.0)
 
 
@@ -545,8 +554,10 @@ def test_eth_daily_opens_in_strong_bull(live_env, monkeypatch):
     con.close()
     assert row is not None
     assert row["direction"] == "LONG"
-    # Notional = 10_000 × 0.20 × 3.0 = 6_000
-    assert row["size_usdt"] == pytest.approx(6_000.0)
+    # strong_bull raw eth_daily=0.20, capped by CORE_ALLOC_CAP/1.15 → 0.0870; lev=3
+    expected_w = core_sim._cap_core_weights(
+        core_sim.REGIME_WEIGHTS_FULL["strong_bull"])["eth_daily"]
+    assert row["size_usdt"] == pytest.approx(CAPITAL_USDT * expected_w * 3.0)
 
 
 def test_eth_daily_closes_when_regime_exits_bull(live_env, monkeypatch):
@@ -815,8 +826,10 @@ def test_r4_btc_v2_opens_on_wednesday_within_window(live_env, monkeypatch):
         clock.set_simulated_now(None)
     assert result["status"] == "opened"
     assert result["entry_price"] == 80_000.0
-    # uncertain regime: r4_btc_v2 weight = 0.15 (half of v1's 0.30)
-    assert result["weight"] == pytest.approx(0.15)
+    # uncertain regime, capped: r4_btc_v2 raw 0.15 → capped 0.15 × (0.5/1.35)
+    expected = core_sim._cap_core_weights(
+        core_sim.REGIME_WEIGHTS_FULL["uncertain"])["r4_btc_v2"]
+    assert result["weight"] == pytest.approx(expected)
     # inner_lev 2.5 × vol_lev 2.0
     assert result["stacked_lev"] == pytest.approx(5.0)
 
@@ -829,8 +842,10 @@ def test_r4_btc_v2_opens_on_wednesday_within_window(live_env, monkeypatch):
     assert row is not None
     assert row["asset"] == "BTC"
     assert row["direction"] == "LONG"
-    # Notional = 10_000 × 0.15 × 5.0 = 7_500
-    assert row["size_usdt"] == pytest.approx(7_500.0)
+    # uncertain raw r4_btc_v2=0.15, capped by CORE_ALLOC_CAP/1.35 → 0.0556; lev=5
+    expected_w_v2 = core_sim._cap_core_weights(
+        core_sim.REGIME_WEIGHTS_FULL["uncertain"])["r4_btc_v2"]
+    assert row["size_usdt"] == pytest.approx(CAPITAL_USDT * expected_w_v2 * 5.0)
 
 
 def test_r4_btc_v2_opens_on_friday_within_window(live_env, monkeypatch):
@@ -897,8 +912,10 @@ def test_r4_eth_v2_opens_on_wednesday_within_window(live_env, monkeypatch):
     finally:
         clock.set_simulated_now(None)
     assert result["status"] == "opened"
-    # uncertain regime: r4_eth_v2 weight = 0.20
-    assert result["weight"] == pytest.approx(0.20)
+    # uncertain regime, capped: r4_eth_v2 raw 0.20 → capped 0.20 × (0.5/1.35)
+    expected = core_sim._cap_core_weights(
+        core_sim.REGIME_WEIGHTS_FULL["uncertain"])["r4_eth_v2"]
+    assert result["weight"] == pytest.approx(expected)
 
     con = sqlite3.connect(str(live_env))
     direction = con.execute(

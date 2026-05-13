@@ -65,10 +65,12 @@ def build_spec() -> dict:
              "params": {"version": "V4_event_conditioned", "assets": ["BTC", "ETH"],
                         "stop_loss_pct": 5.0, "leverage": 5.0},
              "note": "Thu Bear V4 at k=5x"},
-            {"strategy_id": "PDO-L-RF", "weight_pct": 11.0,
+            {"strategy_id": "PDO-L-RF", "weight_pct": 9.0,
              "params": {"assets": ["BTC", "ETH"], "leverage": 1.0,
                         "gap_pct": 2.0, "regime_threshold_pct": -10.0},
-             "note": "PDO Retouch Long BTC+ETH at k=1x"},
+             "note": "PDO Retouch Long BTC+ETH at k=1x. Trimmed from 11% "
+                     "to 9% on 2026-05-12 to bring tactical total to the "
+                     "50% cap (Core/Tactical 50/50 policy)."},
             {"strategy_id": "CPR", "weight_pct": 5.0,
              "params": {"assets": ["BTC", "ETH"], "leverage": 1.0},
              "note": "Contrarian Positioning Reversal BTC+ETH at k=1x (experimental)"},

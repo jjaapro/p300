@@ -30,10 +30,12 @@ trade-ledger sum (no parallel theoretical-return track):
 - **Six tactical sleeves (50%)** — S-003 ADX, S-078 Carry, S-096 V4 Thu
   Bear, S-102 PDO-L-RF, S-101 CPR, S-103 FOMC. Discrete entries/exits in
   BTC and ETH.
-- **AI_QUANT (additive 2%, default-OFF)** — discretionary LLM trader using
-  Anthropic Opus 4.7 once per UTC day. Gated behind `AI_QUANT_ENABLED` env
-  var; shadow-only like every other sleeve; skipped on historical replay.
-  Per-decision markdown archive under `data/ai_quant_archive/`.
+- **AI_QUANT (2%, inside the tactical 50%, default-OFF)** — discretionary
+  LLM trader using Anthropic Opus 4.7 once per UTC day. Gated behind
+  `AI_QUANT_ENABLED` env var; shadow-only like every other sleeve; skipped
+  on historical replay. Per-decision markdown archive under
+  `data/ai_quant_archive/`. (Was additive; folded into the 50% cap on
+  2026-05-12 — PDO trimmed from 11% to 9% to make room.)
 
 See [PORTFOLIO.md](PORTFOLIO.md) for the canonical per-sleeve reference
 (signals, entries, exits, leverage stack, regime weights, edge thesis,

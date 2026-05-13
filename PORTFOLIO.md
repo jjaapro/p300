@@ -36,16 +36,15 @@ dispatched per-minute by [services/variant_engine.py](services/variant_engine.py
 | [S-003 ADX](services/adx_service.py) | **15%** | 5× | BTC | both | days–weeks |
 | [S-078 Carry](services/carry_service.py) | **8%** | 5× | BTC (delta-neutral) | n/a | days |
 | [S-096 V4 Thu Bear](services/thu_bear_service.py) | **6%** (3% BTC + 3% ETH) | 5× | BTC + ETH | SHORT | 24h (Thursdays) |
-| [S-102 PDO-L-RF](services/pdo_retouch_service.py) | **11%** (5.5% BTC + 5.5% ETH) | 1× | BTC + ETH | LONG | 24h |
+| [S-102 PDO-L-RF](services/pdo_retouch_service.py) | **9%** (4.5% BTC + 4.5% ETH) | 1× | BTC + ETH | LONG | 24h |
 | [S-101 CPR](services/cpr_service.py) | **5%** (2.5% BTC + 2.5% ETH) | 1× | BTC + ETH | LONG | up to 15 days |
 | [S-103 FOMC](services/fomc_service.py) | **5%** | 10× | BTC | LONG | ~10.5h (FOMC days only) |
-| [AI_QUANT](services/ai_quant_service.py) *(experimental)* | **+2%** *additive, default-OFF* | 3× | BTC | LONG / SHORT / FLAT | LLM-discretionary (no fixed exit) |
+| [AI_QUANT](services/ai_quant_service.py) *(experimental)* | **2%** *default-OFF* | 3× | BTC | LONG / SHORT / FLAT | LLM-discretionary (no fixed exit) |
 
-**Tactical total: 50%** (matches Core's 50% so the portfolio is fully allocated).
-**AI_QUANT** sits on top as a **Phase-1 experimental** bucket — its 2% is
-*not* drawn from the 50% tactical allocation; gross exposure with AI_QUANT
-enabled tops out at ~102% of capital before vol-target leverage and Core
-overlap.
+**Tactical total: 50%** (15 + 8 + 6 + 9 + 5 + 5 + 2). Matches Core's 50% cap
+so combined pre-leverage allocation is exactly 100% of capital. AI_QUANT
+counts inside the 50% (PDO was trimmed from 11% → 9% on 2026-05-12 to make
+room while keeping the cap exact).
 
 > **Stop-loss semantics.** All `stop_loss_pct` values configured per sleeve
 > are interpreted as **price-move** percentages by default — i.e. a 10% stop
@@ -123,9 +122,10 @@ overlap.
   `AI_QUANT_ENABLED` env var ([`.env.example`](.env.example) ships with
   `false`); when unset, [services/ai_quant_service.py:_kill_switch_on()](services/ai_quant_service.py)
   short-circuits to `status='disabled'` and no LLM call is made.
-- **Allocation**: 2% of capital, additive on top of Core+Tactical (not part of
-  the 50/50 split). Raise to 5% only after 60+ days of forward shadow PnL
-  net of API cost.
+- **Allocation**: 2% of capital, **inside** the 50% Tactical cap (since
+  2026-05-12; PDO was trimmed from 11% to 9% to make room). Raise to 5%
+  only after 60+ days of forward shadow PnL net of API cost, which would
+  require trimming another tactical sleeve to stay under the 50% cap.
 - **Leverage**: 3×. **Asset**: BTC perp. **Direction**: LONG / SHORT / FLAT,
   chosen daily by the model.
 - **Signal**: an Anthropic Opus 4.7 tool-use loop runs once per UTC day in a
@@ -182,14 +182,26 @@ package. Each of its six sub-sleeves is dispatched as a tactical-style
 top-level entry in `STRATEGY_DISPATCH` and runs its own per-tick handler in
 [services/jplus_live.py](services/jplus_live.py):
 
-| Strategy ID | Asset | Live entry condition | Live exit condition |
-|---|---|---|---|
-| `JPLUS_R4_BTC` | BTC perp | **Mon** wk1-2, 06:00 UTC | scheduled 18:00 UTC same day |
-| `JPLUS_R4_ETH` | ETH perp | Tue 20:00 UTC where next-day Wed.day ≤ 14 | scheduled Wed 20:00 UTC |
-| `JPLUS_R4_BTC_V2` | BTC perp | **Wed/Fri** wk1-2, 04:00 UTC | scheduled 14:00 UTC same day |
-| `JPLUS_R4_ETH_V2` | ETH perp | **Wed/Fri** wk1-2, 04:00 UTC | scheduled 14:00 UTC same day |
-| `JPLUS_EMA_BTC` | BTC perp | first tick with `today_inputs.ema_p ≠ 0` | open-ended; FLIP on weekly cross |
-| `JPLUS_ETH_DAILY` | ETH perp | first tick after regime enters strong_bull / mild_bull | first tick after regime exits bull |
+| Sleeve | Allocation | Leverage | Asset | Direction | Holding period |
+|---|---|---|---|---|---|
+| [JPLUS_R4_BTC](services/jplus_live.py) | **0–11.1%** (regime-varying, capped) | 2.5× inner × vol_lev → ~5× typ / 7.5× max | BTC | LONG | 12h (Mon 06→18 UTC, weeks 1-2) |
+| [JPLUS_R4_ETH](services/jplus_live.py) | **0–14.8%** (regime-varying, capped) | 2.5× inner × vol_lev → ~5× typ / 7.5× max | ETH | LONG | 24h (Tue 20→Wed 20 UTC, weeks 1-2) |
+| [JPLUS_R4_BTC_V2](services/jplus_live.py) | **0–5.6%** (regime-varying, capped) | 2.5× inner × vol_lev → ~5× typ / 7.5× max | BTC | LONG | 10h (Wed/Fri 04→14 UTC, weeks 1-2) |
+| [JPLUS_R4_ETH_V2](services/jplus_live.py) | **0–7.4%** (regime-varying, capped) | 2.5× inner × vol_lev → ~5× typ / 7.5× max | ETH | LONG | 10h (Wed/Fri 04→14 UTC, weeks 1-2) |
+| [JPLUS_EMA_BTC](services/jplus_live.py) | **11.1–30%** (regime-varying, capped) | vol_lev only: 0.5×–3× (regime-capped) | BTC | LONG / SHORT (weekly EMA flip) | continuous (open-ended; FLIP on weekly cross) |
+| [JPLUS_ETH_DAILY](services/jplus_live.py) | **0–8.7%** (bull regimes only) | vol_lev only: 0.5×–3× (regime-capped) | ETH | LONG | continuous (opens on regime enter bull; closes on regime exit) |
+
+**Core total: 50%** of capital, enforced by `CORE_ALLOC_CAP` ([jplus/simulate.py](jplus/simulate.py)).
+Allocation ranges above are the **capped** values across the four regimes
+(min = 0% in regimes where the sub-sleeve is dormant; max = the highest
+regime's capped weight). Per-regime breakdown is in §3.2.
+
+**Leverage stacking** (R4 sub-sleeves):
+- *Inner* — 2.5× ungated, 1.0× when the vol-percentile gate fires (high-vol regime, see §3.3).
+- *Vol-target overlay* — 0.5× floor to a regime cap (1.5× bear / 2.0× uncertain / 2.5× mild_bull / 3.0× strong_bull). See [jplus/voltarget.py](jplus/voltarget.py).
+- *Stacked* — inner × vol_lev. Typical 5×, max 7.5× (ungated + strong_bull regime), min 0.5× (gated + low realised vol).
+
+EMA_BTC and ETH_DAILY have no inner R4 leverage — their effective k = vol_lev only.
 
 The V1 R4_BTC sleeve was **Mon+Wed** before 2026-05-08; the calendar-window
 study in [tools/r4_study/](tools/r4_study/) found that Wed responds better
@@ -370,12 +382,32 @@ Four signal sources contribute to the daily 1× return. Each sub-sleeve's
 
 ### S-095 3.2 Per-regime allocation weights ([jplus/simulate.py](jplus/simulate.py))
 
-| Mode | EMA(BTC) | ETH daily | R4 ETH | R4 BTC | R4 BTC V2 | R4 ETH V2 | Sum | When this fires |
+**Raw weights** (as stored in `REGIME_WEIGHTS_FULL`):
+
+| Mode | EMA(BTC) | ETH daily | R4 ETH | R4 BTC | R4 BTC V2 | R4 ETH V2 | Raw sum | When this fires |
 |---|---|---|---|---|---|---|---|---|
 | **strong_bull** | 0.50 | 0.20 | 0.15 | 0.15 | 0.075 | 0.075 | 1.15 | full risk-on |
 | **mild_bull** | 0.30 | 0.10 | 0.30 | 0.20 | 0.10  | 0.15  | 1.15 | partial risk-on, R4 emphasised |
 | **uncertain** | 0.30 | 0.00 | 0.40 | 0.30 | 0.15  | 0.20  | 1.35 | calendar-driven only (R4 carries) |
 | **bear** | 0.30 | 0.00 | 0.00 | 0.00 | 0.00  | 0.00  | 0.30 | EMA only, R4 idle |
+
+> **CORE_ALLOC_CAP — applied at every read site since 2026-05-12.** Raw rows
+> above are rescaled by `_cap_core_weights()` ([jplus/simulate.py](jplus/simulate.py))
+> so the per-regime sum never exceeds **0.50** (the Core half of the
+> 50/50 capital split). When raw sum ≤ 0.50 (bear regime), weights pass
+> through unchanged. When raw sum > 0.50, every entry is multiplied by
+> `0.50 / raw_sum` — relative weighting between sub-sleeves is preserved,
+> but no single sub-sleeve's pre-leverage allocation can dominate the
+> account. The capped weights `today_inputs()` actually returns are below.
+
+**Capped weights** (what `today_inputs()` returns and what live trades size against):
+
+| Mode | EMA(BTC) | ETH daily | R4 ETH | R4 BTC | R4 BTC V2 | R4 ETH V2 | Sum |
+|---|---|---|---|---|---|---|---|
+| **strong_bull** | 0.217 | 0.087 | 0.065 | 0.065 | 0.033 | 0.033 | **0.500** |
+| **mild_bull** | 0.130 | 0.043 | 0.130 | 0.087 | 0.043 | 0.065 | **0.500** |
+| **uncertain** | 0.111 | 0.000 | 0.148 | 0.111 | 0.056 | 0.074 | **0.500** |
+| **bear** | 0.300 | 0.000 | 0.000 | 0.000 | 0.000 | 0.000 | **0.300** |
 
 **Total > 1.0 in three regimes**: as of the V2 sleeves being added (2026-05-08), Core total exposure can exceed 1.0 when multiple R4 sleeves fire concurrently. Peak concurrent exposure is on Wednesdays (R4 ETH V1 still open from Tue + R4 BTC V2 + R4 ETH V2 all firing 04:00-14:00 UTC) — about 75% of capital in `uncertain` regime. Vol-target leverage scales this further. The V2 sleeves are at half the V1 weights specifically to keep peak Wed concurrent exposure comparable to the pre-2026-05-08 baseline.
 
@@ -419,15 +451,15 @@ The simulator targets **50% annualised volatility** for the strategy. When reali
 
 ### 3.6 Effective leverage for a single R4 trade
 
-Stacking the 3 layers on a representative day: R4 ETH firing on a Tuesday in `uncertain` regime, gate not fired, vol-target lev 2.0:
+Stacking the 3 layers on a representative day: R4 ETH firing on a Tuesday in `uncertain` regime, gate not fired, vol-target lev 2.0. Note the regime weight is the **capped** value (0.148 = raw 0.40 × 0.50/1.35), not the raw 0.40:
 
 ```
 final_contrib_to_daily_return =
-    raw_R4_ETH_return × R4_inner(2.5) × regime_weight(0.40) × vol_target(2.0)
-  = raw × 2.0
+    raw_R4_ETH_return × R4_inner(2.5) × capped_weight(0.148) × vol_target(2.0)
+  = raw × 0.74
 ```
 
-So R4 ETH's effective leverage on that day is **2.0× of raw spot move**, applied to **20% of capital** (Core's 50% × the portion of `rl` that R4 ETH contributes that day, ~40%).
+So R4 ETH's effective leverage on that day is **0.74× of raw spot move**, applied to **~15% of capital** (the capped R4_ETH allocation in `uncertain`). Pre-cap (before 2026-05-12) this was 2.0× / 40%, which produced $20k LONG positions on $10k variant capital — the over-allocation that motivated the cap.
 
 ---
 

@@ -374,12 +374,14 @@ nothing on this sleeve.
 Each day, the **unleveraged 1× return** of Core J+ is the weighted sum
 of contributions from six sub-sleeves:
 
-| Regime | EMA_BTC | ETH_daily | R4_ETH | R4_BTC | R4_BTC_V2 | R4_ETH_V2 |
-|---|---:|---:|---:|---:|---:|---:|
-| strong_bull | 0.50 | 0.20 | 0.15 | 0.15 | 0.075 | 0.075 |
-| mild_bull   | 0.30 | 0.10 | 0.30 | 0.20 | 0.10  | 0.15  |
-| uncertain   | 0.30 | 0.00 | 0.40 | 0.30 | 0.15  | 0.20  |
-| bear        | 0.30 | 0.00 | 0.00 | 0.00 | 0.00  | 0.00  |
+**Raw weights** (as stored in `REGIME_WEIGHTS_FULL`):
+
+| Regime | EMA_BTC | ETH_daily | R4_ETH | R4_BTC | R4_BTC_V2 | R4_ETH_V2 | Sum |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| strong_bull | 0.50 | 0.20 | 0.15 | 0.15 | 0.075 | 0.075 | 1.15 |
+| mild_bull   | 0.30 | 0.10 | 0.30 | 0.20 | 0.10  | 0.15  | 1.15 |
+| uncertain   | 0.30 | 0.00 | 0.40 | 0.30 | 0.15  | 0.20  | 1.35 |
+| bear        | 0.30 | 0.00 | 0.00 | 0.00 | 0.00  | 0.00  | 0.30 |
 
 Where:
 - `EMA_BTC contribution` = `ema_position × BTC_daily_return` (ema_position is +1 LONG / −1 SHORT / 0 flat from the weekly EMA(5)/EMA(21) cross)
@@ -390,9 +392,13 @@ Where:
 - `R4_ETH_V2` = same window as V2_BTC, on ETH
 - All four R4 contributions are **multiplied by the gate factor** (2.5× normally; 1.0× when the vol-percentile gate has fired)
 
-The regime-weight rows can sum to >1.0 (e.g. uncertain sums to 1.35) —
-that's intentional, peak Wed concurrent exposure when V1 ETH from Tue
-is still open and V2 BTC + V2 ETH both fire.
+> **CORE_ALLOC_CAP = 0.50 (since 2026-05-12).** The raw rows above sum to
+> >1.0 in every non-bear regime. To enforce the Core/Tactical 50/50 cap,
+> `jplus.simulate._cap_core_weights()` rescales every row whose raw sum
+> > 0.50 by `0.50 / raw_sum`, preserving relative weighting. After
+> capping: strong_bull/mild_bull/uncertain all sum to **0.500**; bear is
+> unchanged at 0.30. The capped values are what `today_inputs()`
+> returns and what each Core sub-sleeve sizes its live trade against.
 
 Then multiply the unleveraged weighted sum by today's `LEV` (from
 [§6.3](#63-vol-target-leverage)). That's the **Core J+ daily return**.
@@ -477,7 +483,7 @@ Execution:
 Size: 6% × capital × 5× = 30% notional, split 50/50 across BTC and ETH.
 ```
 
-#### PDO-L-RF (11%, k=1×)
+#### PDO-L-RF (9%, k=1×)
 
 ```
 Conditions:
@@ -490,7 +496,8 @@ Execution:
   • Enter LONG when price first touches PDO level
   • Exit at min(end of UTC day, entry_time + 24h for BTC / 4h for ETH)
 
-Size: 11% × capital × 1× = 11% notional, split BTC/ETH.
+Size: 9% × capital × 1× = 9% notional, split BTC/ETH.
+(Trimmed from 11% to 9% on 2026-05-12 to bring tactical total to the 50% cap.)
 
 Manual challenge: detecting the touch live. You'd need price alerts
 at the PDO level and check throughout the day. Easier: set a limit-buy
@@ -570,17 +577,15 @@ per-tick from today_inputs.weights × capital × inner_lev × LEV):
   • R4 ETH V2   (Wed+Fri)    = $100K × r4_eth_v2_weight × inner_lev × LEV
   (inner_lev = 2.5 normally, 1.0 when vol-gate fires; weights from §6.7)
 
-Tactical (50%):
+Tactical (50% total, inclusive of AI_QUANT):
   • S-003 ADX                = $100K × 0.15 × 5  = $75K notional   (BTC long or short)
   • S-078 Carry              = $100K × 0.08 × 5  = $40K each leg   (BTC spot/perp delta-neutral)
   • S-096 V4 Thu Bear        = $100K × 0.06 × 5  = $30K split 50/50 (BTC+ETH SHORT)
-  • PDO-L-RF                 = $100K × 0.11 × 1  = $11K split 50/50 (BTC+ETH LONG)
+  • PDO-L-RF                 = $100K × 0.09 × 1  = $9K split 50/50 (BTC+ETH LONG)
   • CPR                      = $100K × 0.05 × 1  = $5K split 50/50 (BTC+ETH LONG)
   • FOMC                     = $100K × 0.05 × 10 = $50K notional   (BTC LONG, 8 days/year)
-
-AI_QUANT (default-OFF; only enabled with AI_QUANT_ENABLED=true):
-  • AI_QUANT                 = $100K × 0.02 × conviction/100 × 3 (BTC LONG/SHORT, daily)
-                               (additive 2% — does NOT come out of the 50/50 split)
+  • AI_QUANT (default-OFF)   = $100K × 0.02 × conviction/100 × 3 (BTC LONG/SHORT, daily)
+                                                                  (inside the 50% cap since 2026-05-12)
 ```
 
 The 2026-05-10 live/sim refactor made Core sub-sleeves operate exactly
@@ -592,8 +597,8 @@ emission with a single "yesterday's return" row) was removed.
 ### Cross-sleeve BTC long cap
 
 Important constraint: combined BTC LONG allocation across PDO + CPR
-must not exceed **15% of capital pre-leverage**. PDO has 11% × half-on-
-BTC = 5.5%; CPR has 5% × half-on-BTC = 2.5%. Combined 8% — under the
+must not exceed **15% of capital pre-leverage**. PDO has 9% × half-on-
+BTC = 4.5%; CPR has 5% × half-on-BTC = 2.5%. Combined 7% — under the
 cap, so usually fine. But if the bot's already in CPR BTC and PDO
 fires, manually verify you're not above 15% combined BTC exposure.
 

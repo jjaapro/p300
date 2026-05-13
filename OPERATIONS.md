@@ -89,8 +89,9 @@ The bot ticks every 60s. On each tick:
   JPLUS_EMA_BTC (continuous, weekly EMA cross), JPLUS_ETH_DAILY
   (continuous in bull regimes only). Sized per-tick from
   `jplus.simulate.today_inputs()`.
-- AI_QUANT (additive 2%, default-OFF via `AI_QUANT_ENABLED` env) — daily
-  Anthropic Opus 4.7 decision at 00:05–00:15 UTC.
+- AI_QUANT (2% inside the tactical 50% cap; default-OFF via
+  `AI_QUANT_ENABLED` env) — daily Anthropic Opus 4.7 decision at
+  00:05–00:15 UTC.
 - FOMC sleeve fires only on FOMC days (8/yr) and writes a decision-row
   audit trail to `fomc_observer` regardless of trade decision.
 - A broken sleeve logs the exception but does **not** kill the loop
