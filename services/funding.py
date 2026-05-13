@@ -121,6 +121,18 @@ def accrued_pct(asset: str, start_dt: datetime, end_dt: datetime,
         log.warning(f"[funding] DB error for {asset}: {e} — treating as 0")
         return 0.0
     if not rows:
+        # A window that crosses at least one expected settlement boundary
+        # but returns no rows is a data gap — warn so it surfaces in logs.
+        # Sub-settlement windows (intraday PDO/CPR) legitimately have no
+        # rows and stay silent.
+        window_s = end_s - start_s
+        if window_s >= SETTLEMENT_PERIOD_SECONDS:
+            log.warning(
+                f"[funding] {asset} {table}: no settlement rows in "
+                f"window {start_dt.isoformat()} → {end_dt.isoformat()} "
+                f"({window_s // 3600}h ≥ 8h expected ≥1 settlement) — "
+                f"treating as 0; check binance_feed funding backfill."
+            )
         return 0.0
     total_rate = sum(r[0] for r in rows)
     sign = -1.0 if direction.upper() == "LONG" else 1.0
