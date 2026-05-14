@@ -33,7 +33,7 @@ import sqlite3
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from services import db
+from strategies.support import db
 
 REPO = Path(__file__).resolve().parent
 UNFILLABLE_PATH = REPO / "data" / "known_unfillable.json"

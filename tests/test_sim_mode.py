@@ -29,7 +29,8 @@ from pathlib import Path
 
 import pytest
 
-from services import sim_loop, variant_engine
+from services import variant_engine
+from strategies.support import sim_loop
 
 REPO = Path(__file__).resolve().parent.parent
 LIVE_TRADER_DB = REPO / "data" / "trader.db"
@@ -85,7 +86,7 @@ def sim_dashboard_db(tmp_path):
 
 def _redirect_dbs(monkeypatch, trader_db: Path, dash_db: Path) -> None:
     """Mirror what run.py --mode sim does at startup."""
-    from services import db as _db_mod
+    from strategies.support import db as _db_mod
     monkeypatch.setattr(_db_mod, "TRADER_DB", trader_db.resolve())
     monkeypatch.setattr(_db_mod, "DASH_DB", dash_db.resolve())
 
@@ -169,7 +170,7 @@ def test_sim_and_backtest_runner_produce_identical_jplus_trades(
 ):
     """Parity: ``run.py --mode sim`` and ``backtest_runner.py`` share the
     same dispatch (STRATEGY_DISPATCH) and the same clock primitive
-    (services.sim_loop), so for the same window at the same tick
+    (strategies.support.sim_loop), so for the same window at the same tick
     cadence they must produce identical trades.
 
     Run both paths against the same sim dashboard.db at 1h ticks over a

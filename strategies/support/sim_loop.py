@@ -42,7 +42,7 @@ from datetime import datetime, timedelta
 from threading import Event
 from typing import Callable
 
-from services import clock
+from strategies.support import clock
 
 
 def run_sim(start: datetime,

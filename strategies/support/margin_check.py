@@ -1,4 +1,4 @@
-"""Adapter between backtest_runner.py and services.margin_sim.
+"""Adapter between backtest_runner.py and strategies.support.margin_sim.
 
 Builds margin-simulator inputs from the SHADOW trade record + trader.db
 price/funding data, runs the simulator, returns liquidation events.
@@ -23,8 +23,8 @@ from datetime import datetime, timezone
 from functools import lru_cache
 from typing import Optional
 
-from services import db
-from services.margin_sim import (
+from strategies.support import db
+from strategies.support.margin_sim import (
     FundingSettlement,
     LiquidationEvent,
     MarginMode,

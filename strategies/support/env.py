@@ -3,7 +3,7 @@
 Multiple tools in this repo (fetch_coinalyze.py historically; now also
 the AI_QUANT decision CLI and run.py) need to pull values from a
 top-level `.env` file at startup. Rather than duplicate the parser
-across modules, callers import `services.env.load_env_file()` once at
+across modules, callers import `strategies.support.env.load_env_file()` once at
 their main() / startup boundary.
 
 Properties of the loader (kept identical to fetch_coinalyze.py's
@@ -27,7 +27,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
-DEFAULT_ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
+DEFAULT_ENV_PATH = Path(__file__).resolve().parents[2] / ".env"
 
 
 def load_env_file(env_path: Path | str | None = None) -> int:

@@ -25,7 +25,7 @@ from typing import Any
 
 import pytest
 
-from services import clock
+from strategies.support import clock
 from strategies.sleeves.ai_quant import journal
 from strategies.sleeves.ai_quant.decision import DecisionResult
 
@@ -34,7 +34,7 @@ from strategies.sleeves.ai_quant.decision import DecisionResult
 
 def _setup_dash_db(p) -> None:
     """Create dashboard.db with the trades + ai_quant_decisions tables."""
-    from services import trade_db
+    from strategies.support import trade_db
     # trade_db.init_db() reads its own DB_PATH; point it at our file
     # before invoking. We monkeypatch in the fixture below; here we just
     # ensure the schema exists in p.
@@ -103,8 +103,8 @@ def fixture(tmp_path, monkeypatch):
     cost cap of $5. Returns a dict of useful handles for the test body."""
     dash_db = tmp_path / "dashboard.db"
     _setup_dash_db(dash_db)
-    monkeypatch.setattr("services.db.DASH_DB", dash_db)
-    monkeypatch.setattr("services.trade_db.DB_PATH", dash_db)
+    monkeypatch.setattr("strategies.support.db.DASH_DB", dash_db)
+    monkeypatch.setattr("strategies.support.trade_db.DB_PATH", dash_db)
     monkeypatch.setenv("AI_QUANT_ENABLED", "true")
     monkeypatch.setenv("AI_QUANT_DAILY_COST_CAP_USD", "5.0")
     # Pin clock to 2026-05-08 00:06 UTC (inside entry window).

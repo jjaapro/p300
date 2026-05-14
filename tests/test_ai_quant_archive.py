@@ -18,7 +18,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from services import clock
+from strategies.support import clock
 from strategies.sleeves.ai_quant import archive, journal
 from strategies.sleeves.ai_quant.decision import DecisionResult
 
@@ -27,7 +27,7 @@ from strategies.sleeves.ai_quant.decision import DecisionResult
 def fixture_db(tmp_path, monkeypatch):
     p = tmp_path / "dashboard.db"
     sqlite3.connect(str(p)).close()
-    monkeypatch.setattr("services.db.DASH_DB", p)
+    monkeypatch.setattr("strategies.support.db.DASH_DB", p)
     clock.set_simulated_now(datetime(2026, 5, 8, 0, 12, 34, tzinfo=timezone.utc))
     yield p
 

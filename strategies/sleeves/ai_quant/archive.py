@@ -11,7 +11,7 @@ Layout: ``data/ai_quant_archive/{YYYY-MM-DD}_{variant}_{asset}_{decided}_id{row_
 
 Design notes:
 - ``_archive_dir()`` resolves the path off ``db.DASH_DB.parent`` so tests
-  that monkeypatch ``services.db.DASH_DB`` redirect the archive too — no
+  that monkeypatch ``strategies.support.db.DASH_DB`` redirect the archive too — no
   separate fixture needed.
 - ``write_archive_md`` is best-effort: any exception is logged and
   swallowed. The DB row is durable; the file is regenerable. See
@@ -27,7 +27,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
-from services import db
+from strategies.support import db
 
 log = logging.getLogger("p300.ai_quant.archive")
 
@@ -36,7 +36,7 @@ ARCHIVE_DIRNAME = "ai_quant_archive"
 
 def _archive_dir() -> Path:
     """``data/ai_quant_archive/`` next to ``dashboard.db``. Resolved
-    dynamically so test monkeypatches of ``services.db.DASH_DB`` flow
+    dynamically so test monkeypatches of ``strategies.support.db.DASH_DB`` flow
     through here too."""
     return Path(db.DASH_DB).parent / ARCHIVE_DIRNAME
 

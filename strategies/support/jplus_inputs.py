@@ -19,7 +19,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
-from services import clock
+from strategies.support import clock
 from data import loaders as data
 from strategies.support import gate, voltarget
 from strategies.support import regime_jplus as regime

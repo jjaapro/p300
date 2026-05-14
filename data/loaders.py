@@ -1,6 +1,6 @@
 """Data loaders for the J+ port, clock-bounded to avoid look-ahead.
 
-All loaders respect `services.clock.now_utc()`:
+All loaders respect `strategies.support.clock.now_utc()`:
   - Live mode (clock == real now) → returns everything through most recent row.
   - Simulated mode (clock == T) → returns rows with timestamp strictly ≤ T.
 
@@ -27,8 +27,8 @@ from collections import defaultdict
 from datetime import datetime, timezone
 from pathlib import Path
 
-from services import clock
-from services import db
+from strategies.support import clock
+from strategies.support import db
 
 # ─── BTC hourly (perp) ───────────────────────────────────────────────────────
 

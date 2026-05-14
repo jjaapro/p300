@@ -1,9 +1,9 @@
-"""services.risk_config — SL-semantic switch."""
+"""strategies.support.risk_config — SL-semantic switch."""
 from __future__ import annotations
 
 import pytest
 
-from services import risk_config
+from strategies.support import risk_config
 
 
 def test_default_semantic_is_price_move(monkeypatch):

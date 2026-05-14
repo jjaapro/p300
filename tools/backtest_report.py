@@ -24,7 +24,7 @@ from pathlib import Path
 # tools/ scripts run from repo root via `python tools/backtest_report.py ...`
 # Add the repo root to sys.path so `from services import db` resolves.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from services import db, strategy_health  # noqa: E402
+from strategies.support import db, strategy_health  # noqa: E402
 
 DEFAULT_VARIANT = "p300_aggressive_v2_v1_0__replay"
 

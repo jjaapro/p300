@@ -1,9 +1,9 @@
-"""services.sleeves — small runtime helpers shared across sleeve dispatchers."""
+"""strategies.support.sleeves — small runtime helpers shared across sleeve dispatchers."""
 from __future__ import annotations
 
 import pytest
 
-from services.sleeves import is_sl_hit, live_pnl_pct
+from strategies.support.sleeves import is_sl_hit, live_pnl_pct
 
 
 # ─── live_pnl_pct ────────────────────────────────────────────────────────────

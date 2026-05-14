@@ -29,7 +29,7 @@ def fixture_db(tmp_path, monkeypatch):
     """Empty trader.db; schema created on first refresh/fetch."""
     p = tmp_path / "trader.db"
     sqlite3.connect(str(p)).close()
-    monkeypatch.setattr("services.db.TRADER_DB", p)
+    monkeypatch.setattr("strategies.support.db.TRADER_DB", p)
     cd.reset_throttle()
     yield p
 
@@ -448,7 +448,7 @@ def test_reader_functions_tolerate_missing_table(tmp_path, monkeypatch):
     """A pristine DB without cd_* tables → readers auto-create + return []."""
     p = tmp_path / "fresh.db"
     sqlite3.connect(str(p)).close()
-    monkeypatch.setattr("services.db.TRADER_DB", p)
+    monkeypatch.setattr("strategies.support.db.TRADER_DB", p)
     assert cd.latest_oi() == []
     assert cd.latest_liquidations() == []
     assert cd.latest_dvol("BTC") == []

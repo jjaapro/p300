@@ -1,11 +1,11 @@
-"""Unit tests for services.margin_sim — pure-function margin/liquidation engine."""
+"""Unit tests for strategies.support.margin_sim — pure-function margin/liquidation engine."""
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from services.margin_sim import (
+from strategies.support.margin_sim import (
     FUNDING_HOURS_UTC,
     FundingSettlement,
     MarginMode,

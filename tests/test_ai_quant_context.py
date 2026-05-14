@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pytest
 
-from services import clock
+from strategies.support import clock
 from strategies.sleeves.ai_quant import context as ctx_mod
 
 
@@ -148,8 +148,8 @@ def fixture_dbs(tmp_path, monkeypatch):
     dash = tmp_path / "dashboard.db"
     _seed_trader_db(trader)
     _seed_dash_db(dash)
-    monkeypatch.setattr("services.db.TRADER_DB", trader)
-    monkeypatch.setattr("services.db.DASH_DB", dash)
+    monkeypatch.setattr("strategies.support.db.TRADER_DB", trader)
+    monkeypatch.setattr("strategies.support.db.DASH_DB", dash)
     clock.set_simulated_now(datetime(2026, 5, 8, 12, 0, tzinfo=timezone.utc))
     yield {"trader": trader, "dash": dash}
 
@@ -253,7 +253,7 @@ def test_market_section_errors_when_too_few_candles(tmp_path, monkeypatch):
         con.commit()
     finally:
         con.close()
-    monkeypatch.setattr("services.db.TRADER_DB", p)
+    monkeypatch.setattr("strategies.support.db.TRADER_DB", p)
     clock.set_simulated_now(datetime(2026, 5, 1, tzinfo=timezone.utc))
     section = ctx_mod._market_section("BTC")
     assert "error" in section

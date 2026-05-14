@@ -5,7 +5,7 @@ Computes Sharpe, win rate, and max drawdown over three windows (YTD, 30D,
 Pure read-side over `variant_daily_returns` and `trades`; no side effects.
 
 Intended uses:
-  - Standalone CLI: `python -m services.strategy_health --variant <id>`
+  - Standalone CLI: `python -m strategies.support.strategy_health --variant <id>`
   - Startup banner in run.py / dashboard widget
   - Future: trip a circuit-breaker when rolling Sharpe falls below a
     threshold (initiative #1 from the risk-management gap analysis).
@@ -22,7 +22,7 @@ import sqlite3
 from dataclasses import dataclass
 from datetime import date, datetime, timedelta, timezone
 
-from services import clock, db
+from strategies.support import clock, db
 
 
 # ─── Metric primitives ──────────────────────────────────────────────────────
@@ -487,7 +487,7 @@ def build_report(variant_id: str, capital_usdt: float | None = None,
     portfolio block. Default ``'live_computed'`` for the live bot;
     ``'replay'`` lets the same tool inspect a backtest variant."""
     if capital_usdt is None:
-        from services import trade_db
+        from strategies.support import trade_db
         capital_usdt = float(trade_db.get_config("paper_account_usdt") or 10000)
     windows = resolve_windows(end_date=end_date)
     portfolio = [portfolio_metrics(variant_id, w, source=source,

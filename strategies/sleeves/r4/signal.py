@@ -9,7 +9,7 @@ sized off ``strategies.support.jplus_inputs.today_inputs()``:
   r4_eth_v2_try_fire -> JPLUS_R4_ETH_V2   (Wed+Fri wk1-2, 04:00 → 14:00 UTC, ETH)
 
 All handlers:
-  - use ``services.price_feed.get_current_price`` for live execution price
+  - use ``strategies.support.price_feed.get_current_price`` for live execution price
     (latest closed 1m bar; ~30s lag from instant);
   - open trades via ``services.trades.open_shadow_trade`` with
     ``scheduled_exit_dt`` set so ``variant_engine._close_due_shadows``
@@ -24,7 +24,8 @@ import logging
 import sqlite3
 from datetime import timedelta
 
-from services import clock, db, price_feed, trades
+from services import trades
+from strategies.support import clock, db, price_feed
 
 from .config import (
     STRATEGY_R4_BTC, STRATEGY_R4_ETH,

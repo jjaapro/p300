@@ -25,7 +25,7 @@ import math
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
-from services import db
+from strategies.support import db
 
 # clock import is done lazily inside load_daily so this module can still be
 # imported by scripts that don't need the services package.
@@ -50,7 +50,7 @@ def load_daily(symbol: str = "BTC") -> list[tuple[str, dict]]:
     """
     if symbol != "BTC":
         raise NotImplementedError(f"regime_classifier only supports BTC, got {symbol}")
-    from services import clock  # lazy — avoid import cycles at module init
+    from strategies.support import clock  # lazy — avoid import cycles at module init
     upper_ts = clock.now_ts()
     today = datetime.fromtimestamp(upper_ts, tz=timezone.utc).date().isoformat()
     con = sqlite3.connect(str(db.TRADER_DB))

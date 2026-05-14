@@ -16,7 +16,7 @@ import pytest
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
-from services import clock  # noqa: E402
+from strategies.support import clock  # noqa: E402
 
 
 @pytest.fixture(autouse=True)

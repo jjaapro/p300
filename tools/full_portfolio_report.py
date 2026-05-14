@@ -6,7 +6,7 @@ factor, CAGR, Sharpe — for one variant — with BTC buy-and-hold side-
 by-side.
 
 Reads daily returns straight from ``trades`` via
-``services.strategy_health.trades_daily_returns`` (the canonical
+``strategies.support.strategy_health.trades_daily_returns`` (the canonical
 realized-PnL path). Core sub-sleeves and tactical sleeves contribute
 to one variant's trades table uniformly, so there is no longer a
 "combined" variant — pass --variant whichever one you want to report.
@@ -28,7 +28,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
-from services import db, strategy_health  # noqa: E402
+from strategies.support import db, strategy_health  # noqa: E402
 
 
 def load_daily_returns(variant_id: str, capital: float
@@ -94,7 +94,7 @@ def accumulate_equity(capital: float,
     pre-2026-05-13 implementation compounded these (``eq *= (1 + r/100)``)
     which applied Jensen's gap to non-compounding returns — over-reporting
     total return and shrinking MDD. See AUDIT_2026_05_13 and the matching
-    helpers in ``services.strategy_health``."""
+    helpers in ``strategies.support.strategy_health``."""
     out = []
     eq = capital
     for d, r in rets_pct:

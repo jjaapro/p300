@@ -32,7 +32,7 @@ from typing import Any
 
 import pytest
 
-from services import clock
+from strategies.support import clock
 from strategies.sleeves.ai_quant import journal
 
 
@@ -93,8 +93,8 @@ def e2e_setup(tmp_path, monkeypatch):
     """Common end-to-end fixture used by every test in this file."""
     dash_db = tmp_path / "dashboard.db"
     _create_dash_db(dash_db)
-    monkeypatch.setattr("services.db.DASH_DB", dash_db)
-    monkeypatch.setattr("services.trade_db.DB_PATH", dash_db)
+    monkeypatch.setattr("strategies.support.db.DASH_DB", dash_db)
+    monkeypatch.setattr("strategies.support.trade_db.DB_PATH", dash_db)
     monkeypatch.setenv("AI_QUANT_ENABLED", "true")
     monkeypatch.setenv("AI_QUANT_DAILY_COST_CAP_USD", "10.0")
     # Stub the data sources — context bundle, baseline chart, live price.

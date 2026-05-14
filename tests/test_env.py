@@ -1,11 +1,11 @@
-"""Tests for services.env.load_env_file."""
+"""Tests for strategies.support.env.load_env_file."""
 from __future__ import annotations
 
 import os
 
 import pytest
 
-from services import env as env_mod
+from strategies.support import env as env_mod
 
 
 def test_load_env_file_sets_unset_keys(tmp_path, monkeypatch):
@@ -75,6 +75,6 @@ def test_load_env_file_default_path_is_repo_root(monkeypatch):
     """Calling with no args reads from the repo's top-level .env."""
     # We can't write into the real repo root in a test; just assert the
     # default path resolution lands on the right file.
-    from services.env import DEFAULT_ENV_PATH
+    from strategies.support.env import DEFAULT_ENV_PATH
     assert DEFAULT_ENV_PATH.name == ".env"
     assert DEFAULT_ENV_PATH.parent.name == "p300"

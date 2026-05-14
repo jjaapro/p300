@@ -16,7 +16,7 @@ import argparse
 import sqlite3
 from datetime import date
 from pathlib import Path
-from services import db
+from strategies.support import db
 
 REPO = Path(__file__).resolve().parent.parent
 def main(argv=None):

@@ -66,7 +66,8 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent
 sys.path.insert(0, str(REPO))
 
-from services import trade_db, variant_engine, variant_registry  # noqa: E402
+from services import variant_engine
+from strategies.support import trade_db, variant_registry  # noqa: E402
 
 log = logging.getLogger("p300")
 
@@ -116,10 +117,10 @@ def _ensure_variant_registered() -> None:
 def _print_open_trades() -> None:
     """Show every open shadow trade across enabled variants at startup so
     the operator can see what positions the bot is inheriting (e.g. from a
-    prior session). Reads via ``services.db.DASH_DB`` so a sim-mode
+    prior session). Reads via ``strategies.support.db.DASH_DB`` so a sim-mode
     redirection of that constant is honoured here too."""
     import sqlite3
-    from services import db as _db_mod
+    from strategies.support import db as _db_mod
     db_path = _db_mod.DASH_DB
     if not db_path.exists():
         log.info("=== open shadow trades: dashboard.db missing ===")
@@ -161,7 +162,7 @@ def _print_health_report() -> None:
     Wrapped in try/except so any metric-side bug can't block the bot's
     main loop from coming up. The report prints once at startup only."""
     try:
-        from services.strategy_health import build_report, format_report
+        from strategies.support.strategy_health import build_report, format_report
         report = build_report(VARIANT_ID)
         for line in format_report(report).splitlines():
             log.info(line)
@@ -218,7 +219,7 @@ def _parse_iso_utc(s: str) -> datetime:
 def _run_live_loop(args, log) -> int:
     """Wall-clock-driven live loop. Runs until _stop is set or, with
     --once, after a single tick."""
-    from services import clock as _clock
+    from strategies.support import clock as _clock
     if args.feed and not args.once:
         if not args.skip_gap_fix:
             log.info("=== startup gap fix ===")
@@ -259,11 +260,11 @@ def _run_sim_loop(args, log) -> int:
     --sim-tick-seconds per tick from --start to --end (inclusive). No
     wall-clock sleep; runs as fast as the dispatch can. The bot's
     trading logic is identical to live mode; only the data source
-    (services.db.{TRADER,DASH}_DB redirected at startup) and clock
-    differ. The loop primitive lives in services.sim_loop so
+    (strategies.support.db.{TRADER,DASH}_DB redirected at startup) and clock
+    differ. The loop primitive lives in strategies.support.sim_loop so
     backtest_runner.py can reuse the same clock-advance logic with
     its own per-tick callback."""
-    from services import sim_loop
+    from strategies.support import sim_loop
     start = _parse_iso_utc(args.start)
     end = _parse_iso_utc(args.end)
     log.info(
@@ -353,25 +354,25 @@ def main(argv: list[str] | None = None) -> int:
     )
 
     # ── Sim-mode DB redirect (must run BEFORE init_db / variant lookup) ──
-    # Module-attribute mutation of services.db propagates everywhere
+    # Module-attribute mutation of strategies.support.db propagates everywhere
     # because every consumer reads ``db.DASH_DB`` / ``db.TRADER_DB`` at
     # call time, not import time. Confirmed by audit: no
-    # ``from services.db import DASH_DB`` patterns exist.
+    # ``from strategies.support.db import DASH_DB`` patterns exist.
     if args.mode == "sim":
-        from services import db as _db_mod
+        from strategies.support import db as _db_mod
         _db_mod.TRADER_DB = Path(args.trader_db).resolve()
         _db_mod.DASH_DB = Path(args.dash_db).resolve()
         log.info(
-            f"=== sim mode === redirected services.db.TRADER_DB="
-            f"{_db_mod.TRADER_DB} services.db.DASH_DB={_db_mod.DASH_DB}"
+            f"=== sim mode === redirected strategies.support.db.TRADER_DB="
+            f"{_db_mod.TRADER_DB} strategies.support.db.DASH_DB={_db_mod.DASH_DB}"
         )
-        from services import clock as _clock
+        from strategies.support import clock as _clock
         _clock.set_simulated_now(_parse_iso_utc(args.start))
 
     # Load .env so ANTHROPIC_API_KEY, COINALYZE_API_KEY etc. are available
     # to sleeves and fetchers without requiring a shell export. Existing env
     # values are preserved (an explicit `export` still wins).
-    from services.env import load_env_file
+    from strategies.support.env import load_env_file
     load_env_file()
 
     # init schemas (idempotent)

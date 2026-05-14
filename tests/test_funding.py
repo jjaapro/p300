@@ -1,4 +1,4 @@
-"""services.funding — single source of truth for perp funding-rate access."""
+"""strategies.support.funding — single source of truth for perp funding-rate access."""
 from __future__ import annotations
 
 import sqlite3
@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from services import funding
+from strategies.support import funding
 
 
 # ─── Shared fixtures ─────────────────────────────────────────────────────────
@@ -36,7 +36,8 @@ def funding_db(tmp_path, monkeypatch):
                     (ts, r, r, r, r))
     con.commit()
     con.close()
-    from services import db as _db_mod; monkeypatch.setattr(_db_mod, "TRADER_DB", db)
+    from strategies.support import db as _db_mod
+    monkeypatch.setattr(_db_mod, "TRADER_DB", db)
     return db
 
 
@@ -71,7 +72,8 @@ def _build_hourly_db(tmp_path, monkeypatch, day_count: int,
                         (ts, rate, rate, rate, rate))
     con.commit()
     con.close()
-    from services import db as _db_mod; monkeypatch.setattr(_db_mod, "TRADER_DB", db)
+    from strategies.support import db as _db_mod
+    monkeypatch.setattr(_db_mod, "TRADER_DB", db)
     return db
 
 
@@ -195,7 +197,8 @@ def test_daily_sums_pct_drops_incomplete_days_by_default(tmp_path, monkeypatch):
         con.execute("INSERT INTO cd_funding_rate VALUES (?,?,?,?,?)",
                     (ts, r, r, r, r))
     con.commit(); con.close()
-    from services import db as _db_mod; monkeypatch.setattr(_db_mod, "TRADER_DB", db)
+    from strategies.support import db as _db_mod
+    monkeypatch.setattr(_db_mod, "TRADER_DB", db)
 
     since = int(base.timestamp())
     until = since + 3 * 86400
@@ -278,7 +281,7 @@ def eth_funding_db(tmp_path, monkeypatch):
                     (ts, r, r, r, r))
     con.commit()
     con.close()
-    from services import db as _db_mod
+    from strategies.support import db as _db_mod
     monkeypatch.setattr(_db_mod, "TRADER_DB", db_path)
     return db_path
 

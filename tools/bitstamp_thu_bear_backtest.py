@@ -151,8 +151,8 @@ def load_daily(symbol: str, start_iso: str, end_iso: str) -> list[dict]:
 
 # ─── EMA on daily closes ─────────────────────────────────────────────────────
 
-# Indicator math lives in services.indicators (single source of truth).
-from services.indicators import ema as calc_ema  # noqa: F401
+# Indicator math lives in strategies.support.indicators (single source of truth).
+from strategies.support.indicators import ema as calc_ema  # noqa: F401
 
 
 # ─── Strategy walk ───────────────────────────────────────────────────────────

@@ -59,7 +59,7 @@ def refresh_xml() -> bool:
     No-op in sim mode — sim runs against pre-populated cached data and
     must never hit the network. Returns False so the caller treats it
     as 'no fresh fetch this cycle'."""
-    from services import clock
+    from strategies.support import clock
     if clock.is_simulated():
         return False
     end = datetime.now(timezone.utc).strftime("%Y-%m-%d")

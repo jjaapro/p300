@@ -32,8 +32,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Iterable
 
-from services import clock
-from services import db
+from strategies.support import clock
+from strategies.support import db
 
 log = logging.getLogger("dashboard.trade_adjustments")
 

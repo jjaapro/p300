@@ -41,8 +41,8 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
-from services import clock
-from services import db
+from strategies.support import clock
+from strategies.support import db
 
 log = logging.getLogger("p300.fomc")
 
@@ -270,7 +270,7 @@ def tick_observer() -> dict:
 
     Returns a small status dict for logging.
     """
-    from services import price_feed
+    from strategies.support import price_feed
 
     now = clock.now_utc()
     fomc_date = next_fomc_date(now, lookahead_days=60)
@@ -376,7 +376,7 @@ def _sweep_stuck_opens(variant_id: str) -> int:
     price) gets caught on the very next minute, not at end-of-window.
     Returns number closed."""
     import sqlite3
-    from services.price_feed import get_current_price
+    from strategies.support.price_feed import get_current_price
     now = clock.now_utc()
     con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
@@ -421,7 +421,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
 
     Returns a status dict with the same shape as other sleeves.
     """
-    from services.price_feed import get_current_price
+    from strategies.support.price_feed import get_current_price
 
     now = clock.now_utc()
     # Always sweep stuck opens first — independent of next_fomc_date so a

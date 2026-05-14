@@ -12,7 +12,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from services import clock
+from strategies.support import clock
 from strategies.sleeves.ai_quant.chart import render_chart
 
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
@@ -88,7 +88,7 @@ def fixture_db(tmp_path, monkeypatch):
     """Synthetic trader.db with 200 days of fake BTC data; clock pinned to 2026-05-01."""
     p = tmp_path / "trader.db"
     _seed_fixture_db(p)
-    monkeypatch.setattr("services.db.TRADER_DB", p)
+    monkeypatch.setattr("strategies.support.db.TRADER_DB", p)
     clock.set_simulated_now(datetime(2026, 5, 1, 12, 0, tzinfo=timezone.utc))
     yield p
 
@@ -186,7 +186,7 @@ def test_render_chart_raises_when_no_candles_available(tmp_path, monkeypatch):
         con.commit()
     finally:
         con.close()
-    monkeypatch.setattr("services.db.TRADER_DB", p)
+    monkeypatch.setattr("strategies.support.db.TRADER_DB", p)
     clock.set_simulated_now(datetime(2026, 5, 1, tzinfo=timezone.utc))
     with pytest.raises(RuntimeError, match="no candles"):
         render_chart(timeframe="1d", lookback_bars=30)

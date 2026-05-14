@@ -1,4 +1,4 @@
-"""services.indicators — pure technical-indicator math.
+"""strategies.support.indicators — pure technical-indicator math.
 
 EMA was previously tested via tests/test_regime.py (which still passes via
 the ema_calc alias re-export). The tests below cover the canonical entry
@@ -10,7 +10,7 @@ import math
 
 import pytest
 
-from services.indicators import adx, ema
+from strategies.support.indicators import adx, ema
 
 
 # ─── ema ─────────────────────────────────────────────────────────────────────
@@ -119,7 +119,7 @@ def test_adx_matches_known_reference_values_on_synthetic_window():
 
 
 def test_indicators_module_matches_legacy_aliases():
-    """Cross-check: the canonical ``services.indicators.ema`` produces the
+    """Cross-check: the canonical ``strategies.support.indicators.ema`` produces the
     same output as the legacy ``ema_calc`` re-export in jplus.regime, and
     the alias-import is in fact the same callable (proves the aliasing
     works for the existing call sites without any hidden divergence)."""

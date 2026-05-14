@@ -11,7 +11,7 @@ T are derived strictly from data available at yesterday's UTC close.
 """
 from __future__ import annotations
 
-from services import clock
+from strategies.support import clock
 from strategies.support.jplus_inputs import (
     REGIME_WEIGHTS_FULL,
     _cap_core_weights,

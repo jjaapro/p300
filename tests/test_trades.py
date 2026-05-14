@@ -6,7 +6,8 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from services import clock, trades
+from services import trades
+from strategies.support import clock
 
 
 # ─── compute_perp_close (pure function) ──────────────────────────────────────
@@ -81,9 +82,9 @@ def test_compute_size_zero_returns_zero_pnl_pct_safely():
 
 
 def test_compute_applies_funding_when_requested(monkeypatch):
-    """When apply_funding=True, the funding_pct from services.funding is
+    """When apply_funding=True, the funding_pct from strategies.support.funding is
     included in pnl. We stub the funding module to avoid DB dependency."""
-    from services import funding
+    from strategies.support import funding
     monkeypatch.setattr(funding, "accrued_pct", lambda *a, **k: -1.5)
     e_dt, x_dt = _entry_exit_dts(hours=24)
     out = trades.compute_perp_close(
@@ -101,7 +102,7 @@ def test_compute_applies_funding_when_requested(monkeypatch):
 def test_compute_funding_swallowed_on_typeerror(monkeypatch):
     """If funding lookup raises (e.g. malformed dates), funding_pct must
     fall back to 0.0 rather than propagating the exception."""
-    from services import funding
+    from strategies.support import funding
     def _broken(*a, **k): raise TypeError("simulated bad date")
     monkeypatch.setattr(funding, "accrued_pct", _broken)
     e_dt, x_dt = _entry_exit_dts()
@@ -164,13 +165,13 @@ def test_compute_zero_slippage_preserves_legacy_behavior():
 
 @pytest.fixture
 def trades_db(tmp_path, monkeypatch):
-    """Tmp dashboard.db with a single open trade. Patches services.db.DASH_DB
-    to point at it (services.db owns the canonical path; services.trades reads
+    """Tmp dashboard.db with a single open trade. Patches strategies.support.db.DASH_DB
+    to point at it (strategies.support.db owns the canonical path; services.trades reads
     it via attribute lookup so this single patch reaches everyone). Uses
-    services.trade_db.init_db so the fixture always matches production schema
+    strategies.support.trade_db.init_db so the fixture always matches production schema
     (including trade_adjustments)."""
     db = tmp_path / "dashboard.db"
-    from services import trade_db, db as _db_mod
+    from strategies.support import trade_db, db as _db_mod
     monkeypatch.setattr(trade_db, "DB_PATH", db)
     monkeypatch.setattr(_db_mod, "DASH_DB", db)
     trade_db.init_db()
@@ -225,7 +226,7 @@ def test_persist_close_unknown_id_returns_none(trades_db):
 
 def test_close_perp_trade_end_to_end(trades_db, monkeypatch):
     """Drives the full close pipeline: read row, compute, persist, log."""
-    from services import funding
+    from strategies.support import funding
     monkeypatch.setattr(funding, "accrued_pct", lambda *a, **k: 0.0)
     clock.set_simulated_now(datetime(2024, 1, 1, 1, 0, tzinfo=timezone.utc))
     try:
@@ -265,7 +266,7 @@ def test_close_perp_trade_unknown_id_silent(trades_db):
 
 def test_close_carry_trade_uses_funding_minus_fees(trades_db, monkeypatch):
     """CARRY: P&L = funding collected − (cost_pct + slippage_pct) — no price PnL."""
-    from services import funding
+    from strategies.support import funding
     monkeypatch.setattr(funding, "accrued_pct", lambda *a, **k: 0.50)
     clock.set_simulated_now(datetime(2024, 1, 1, 1, 0, tzinfo=timezone.utc))
     try:
@@ -289,7 +290,7 @@ def test_close_carry_trade_uses_funding_minus_fees(trades_db, monkeypatch):
 
 def test_close_carry_trade_default_slippage_reduces_pnl(trades_db, monkeypatch):
     """Default CARRY_SLIPPAGE_PCT=0.04 is deducted alongside the 20bp fee."""
-    from services import funding
+    from strategies.support import funding
     monkeypatch.setattr(funding, "accrued_pct", lambda *a, **k: 0.50)
     clock.set_simulated_now(datetime(2024, 1, 1, 1, 0, tzinfo=timezone.utc))
     try:
@@ -328,7 +329,7 @@ def empty_trades_db(tmp_path, monkeypatch):
     """Tmp dashboard.db with the trades schema but no rows. For testing the
     open path."""
     db = tmp_path / "dashboard.db"
-    from services import trade_db, db as _db_mod
+    from strategies.support import trade_db, db as _db_mod
     monkeypatch.setattr(trade_db, "DB_PATH", db)
     monkeypatch.setattr(_db_mod, "DASH_DB", db)
     trade_db.init_db()
@@ -338,7 +339,7 @@ def empty_trades_db(tmp_path, monkeypatch):
 def _stub_paper_account_default(monkeypatch):
     """Make trade_db.get_config('paper_account_usdt') return a known value
     so the test doesn't depend on whatever's in dashboard.db's config table."""
-    from services import trade_db
+    from strategies.support import trade_db
     monkeypatch.setattr(trade_db, "get_config",
                          lambda key: 10000.0 if key == "paper_account_usdt" else None)
 
@@ -448,7 +449,7 @@ def multi_strategy_db(tmp_path, monkeypatch):
     """Tmp dashboard.db with several open + closed trades across strategies
     and assets. Used to exercise the get_open_trades filter combinations."""
     fixture_db = tmp_path / "dashboard.db"
-    from services import trade_db, db as _db_mod
+    from strategies.support import trade_db, db as _db_mod
     monkeypatch.setattr(trade_db, "DB_PATH", fixture_db)
     monkeypatch.setattr(_db_mod, "DASH_DB", fixture_db)
     trade_db.init_db()

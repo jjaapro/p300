@@ -47,7 +47,7 @@ def refresh() -> bool:
     """Download full F&G history (~3000 days) and write to JSON_PATH.
     Cheap (<200KB). Idempotent. Returns True on success.
     No-op (returns False) in sim mode — sim must not hit the network."""
-    from services import clock
+    from strategies.support import clock
     if clock.is_simulated():
         return False
     req = Request(API_URL, headers={"User-Agent": "p300/1.0"})

@@ -26,8 +26,9 @@ import logging
 from datetime import datetime, timezone, timedelta
 from typing import Any
 
-from services import clock, db, trade_db, trades, variant_registry
-from services.price_feed import _get_current_price
+from services import trades
+from strategies.support import clock, db, trade_db, variant_registry
+from strategies.support.price_feed import _get_current_price
 
 log = logging.getLogger("dashboard.variant_engine")
 
@@ -497,10 +498,10 @@ def get_variant_equity_series(variant_id: str) -> list[dict]:
       - default 'trades' → accumulate pnl_usdt across closed trades for this variant
 
     Starts equity from variant.capital_usdt (or paper_account_usdt fallback).
-    Uses ``services.db.DASH_DB`` so a sim-mode DB redirection propagates here.
+    Uses ``strategies.support.db.DASH_DB`` so a sim-mode DB redirection propagates here.
     """
     import sqlite3
-    from services import db as _db_mod
+    from strategies.support import db as _db_mod
     db_path = str(_db_mod.DASH_DB)
     v = variant_registry.get_variant(variant_id)
     if v is None:

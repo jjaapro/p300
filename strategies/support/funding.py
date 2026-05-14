@@ -1,4 +1,4 @@
-"""services.funding — single source of truth for perp funding-rate access.
+"""strategies.support.funding — single source of truth for perp funding-rate access.
 
 Replaces three separate per-caller implementations that previously lived in:
   services/funding_util.py:accrued_funding_pct           (point lookup over a window)
@@ -37,7 +37,7 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 
-from services import db
+from strategies.support import db
 
 log = logging.getLogger("dashboard.funding")
 

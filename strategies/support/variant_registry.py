@@ -17,13 +17,13 @@ from pathlib import Path
 from typing import Any
 
 def _con() -> sqlite3.Connection:
-    """Open a connection to the dashboard DB. Reads ``services.db.DASH_DB``
+    """Open a connection to the dashboard DB. Reads ``strategies.support.db.DASH_DB``
     at call time so a sim-mode redirection (``run.py --mode sim`` mutates
     that constant at startup) propagates here. The previous module-local
     ``DB_PATH = .../dashboard.db`` shadowed the redirection, causing
     sim runs to read variant config from the live DB while writing
     trades to the sim DB."""
-    from services import db as _db_mod
+    from strategies.support import db as _db_mod
     con = sqlite3.connect(str(_db_mod.DASH_DB))
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA journal_mode=WAL")
@@ -172,7 +172,7 @@ def _record_event(variant_id: str, event_type: str, actor: str,
         # history) rather than wall time. Live runs are unaffected —
         # clock.now_utc() returns datetime.now(timezone.utc) when no
         # simulated clock is set.
-        from services import clock
+        from strategies.support import clock
         con = _con()
         con.execute(
             "INSERT INTO variant_events (timestamp, variant_id, event_type, actor, "

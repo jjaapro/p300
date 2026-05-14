@@ -1,4 +1,4 @@
-"""services.clock — simulated-now infrastructure.
+"""strategies.support.clock — simulated-now infrastructure.
 
 Verifies:
   - Default mode returns real UTC now (within tolerance)
@@ -12,7 +12,7 @@ from __future__ import annotations
 import time
 from datetime import datetime, timezone
 
-from services import clock
+from strategies.support import clock
 
 
 def test_live_mode_returns_close_to_real_now():

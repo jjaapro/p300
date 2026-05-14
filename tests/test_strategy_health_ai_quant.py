@@ -1,4 +1,4 @@
-"""Tests for AI_QUANT integration in services.strategy_health.
+"""Tests for AI_QUANT integration in strategies.support.strategy_health.
 
 The general windowed-metric primitives (Sharpe, MDD, etc.) are tested in
 test_strategy_health.py. This file covers only the AI_QUANT-specific
@@ -22,7 +22,7 @@ from pathlib import Path
 
 import pytest
 
-from services import clock, strategy_health
+from strategies.support import clock, strategy_health
 from strategies.sleeves.ai_quant import journal
 from strategies.sleeves.ai_quant.decision import DecisionResult
 
@@ -66,8 +66,8 @@ def _seed_minimal_dash(p: Path) -> None:
 def dash_db(tmp_path, monkeypatch):
     p = tmp_path / "dashboard.db"
     _seed_minimal_dash(p)
-    monkeypatch.setattr("services.db.DASH_DB", p)
-    monkeypatch.setattr("services.trade_db.DB_PATH", p)
+    monkeypatch.setattr("strategies.support.db.DASH_DB", p)
+    monkeypatch.setattr("strategies.support.trade_db.DB_PATH", p)
     # Pin clock so resolve_windows is deterministic.
     clock.set_simulated_now(datetime(2026, 5, 8, 12, 0, tzinfo=timezone.utc))
     yield p

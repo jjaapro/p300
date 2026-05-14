@@ -40,8 +40,8 @@ import sqlite3
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-from services import clock
-from services import db
+from strategies.support import clock
+from strategies.support import db
 
 log = logging.getLogger("dashboard.thu_bear_service")
 
@@ -193,8 +193,8 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     tick of Friday EXIT_HOUR:xx UTC (= 01:xx, matching Pine), or immediately
     on stop-loss hit.
     """
-    from services.price_feed import _get_current_price
-    from services.risk_config import effective_price_move_sl_pct
+    from strategies.support.price_feed import _get_current_price
+    from strategies.support.risk_config import effective_price_move_sl_pct
 
     now = clock.now_utc()
     today = now.strftime("%Y-%m-%d")
@@ -222,7 +222,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     open_by_asset: dict[str, list[dict]] = {
         asset: _get_open_thu_bear_trades(variant["id"], asset) for asset in assets
     }
-    from services.sleeves import is_sl_hit
+    from strategies.support.sleeves import is_sl_hit
     for asset, opens in open_by_asset.items():
         if not opens:
             continue

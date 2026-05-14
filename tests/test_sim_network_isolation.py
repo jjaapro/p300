@@ -23,7 +23,7 @@ from unittest.mock import patch
 
 import pytest
 
-from services import clock
+from strategies.support import clock
 
 
 @pytest.fixture

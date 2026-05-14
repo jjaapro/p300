@@ -22,7 +22,7 @@ import sqlite3
 from collections import defaultdict
 from datetime import date, timedelta
 from pathlib import Path
-from services import db
+from strategies.support import db
 
 REPO = Path(__file__).resolve().parent.parent
 def load_trades(variant_id: str) -> list[dict]:

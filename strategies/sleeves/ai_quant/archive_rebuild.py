@@ -31,7 +31,7 @@ _REPO = Path(__file__).resolve().parents[3]
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
-from services import db  # noqa: E402
+from strategies.support import db  # noqa: E402
 from strategies.sleeves.ai_quant import archive  # noqa: E402
 
 

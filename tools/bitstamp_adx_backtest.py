@@ -156,10 +156,10 @@ def load_bitstamp_daily(symbol: str, warmup_start: str, end_date: str,
 
 # ─── Indicators (verbatim port of services/adx_service.py) ───────────────────
 
-# Indicator math lives in services.indicators (single source of truth).
+# Indicator math lives in strategies.support.indicators (single source of truth).
 # Local aliases preserve the original calc_* names so the rest of this script
 # (and any in-file documentation referencing them) keeps working unchanged.
-from services.indicators import ema as calc_ema, adx as calc_adx  # noqa: F401
+from strategies.support.indicators import ema as calc_ema, adx as calc_adx  # noqa: F401
 
 
 # ─── Strategy walk-forward ───────────────────────────────────────────────────

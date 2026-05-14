@@ -14,7 +14,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from services import clock
+from strategies.support import clock
 from strategies.sleeves.ai_quant import journal
 from strategies.sleeves.ai_quant.decision import DecisionResult
 
@@ -25,7 +25,7 @@ def fixture_db(tmp_path, monkeypatch):
     first call. Clock pinned to 2026-05-08 12:00 UTC."""
     p = tmp_path / "dashboard.db"
     sqlite3.connect(str(p)).close()
-    monkeypatch.setattr("services.db.DASH_DB", p)
+    monkeypatch.setattr("strategies.support.db.DASH_DB", p)
     clock.set_simulated_now(datetime(2026, 5, 8, 12, 0, tzinfo=timezone.utc))
     yield p
 
@@ -105,12 +105,12 @@ def test_ensure_schema_migrates_legacy_table_without_defer_until(fixture_db):
 
 
 def test_trade_db_init_db_creates_ai_quant_decisions_table(tmp_path, monkeypatch):
-    """Production wiring: services.trade_db.init_db is the canonical
+    """Production wiring: strategies.support.trade_db.init_db is the canonical
     schema entry point. Re-run it on a fresh DB and confirm the AI_QUANT
     table is among the tables created."""
     p = tmp_path / "dashboard.db"
-    monkeypatch.setattr("services.trade_db.DB_PATH", p)
-    from services import trade_db
+    monkeypatch.setattr("strategies.support.trade_db.DB_PATH", p)
+    from strategies.support import trade_db
     trade_db.init_db()
     con = sqlite3.connect(str(p))
     try:

@@ -5,7 +5,7 @@ from trader.db, using services/clock.py to present a simulated "now" to
 each module so DB queries never see future bars. No signal logic is
 reimplemented — the strategy code under test is literally the same code
 that runs live. The clock-advance loop is shared with run.py --mode sim
-via services.sim_loop.
+via strategies.support.sim_loop.
 
 Usage:
   python backtest_runner.py --start 2023-01-01 --end 2026-04-15
@@ -16,7 +16,7 @@ Output:
   - Closed trades in dashboard.db tagged strategy_variant='p300..._replay'
     (NEVER contaminates the live variant's data).
   - NAV is computed from the trade ledger via
-    services.strategy_health.trades_daily_returns. No variant_daily_returns
+    strategies.support.strategy_health.trades_daily_returns. No variant_daily_returns
     rows are written — Phase 5 made reporting tools trades-based.
   - Console report: total / annualized / Sharpe / MDD / trade count / per-sleeve PnL.
 """
@@ -36,9 +36,10 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent
 sys.path.insert(0, str(REPO))
 
-from services import clock, sim_loop, trade_db, variant_engine, variant_registry  # noqa: E402
-from services.price_feed import _get_current_price  # noqa: E402
-from services import db, strategy_health
+from services import variant_engine
+from strategies.support import clock, sim_loop, trade_db, variant_registry  # noqa: E402
+from strategies.support.price_feed import _get_current_price  # noqa: E402
+from strategies.support import db, strategy_health
 
 log = logging.getLogger("p300.backtest")
 
@@ -202,7 +203,7 @@ def check_liquidations_for_variant(variant_id: str, now_utc: datetime) -> int:
     <= 1 are skipped inside the adapter (no liquidation possible).
     Returns count force-closed.
     """
-    from services.margin_check import check_liquidations_for_variant as _check_liq
+    from strategies.support.margin_check import check_liquidations_for_variant as _check_liq
 
     events = _check_liq(variant_id, now_utc)
     if not events:
@@ -327,7 +328,7 @@ def build_daily_nav(variant_id: str, capital: float, start: datetime,
     """Calendar-complete daily NAV series from the trades ledger.
 
     Uses the canonical trades-based realized-PnL path
-    (services.strategy_health.trades_daily_returns). Equity is rebuilt
+    (strategies.support.strategy_health.trades_daily_returns). Equity is rebuilt
     here as ``capital + cumulative daily PnL`` so the per-row equity_usdt
     matches the user's mental model of "starting bankroll plus what the
     bot earned by date d." Empty days are zero-filled."""

@@ -4,7 +4,7 @@
 cached JSON files written by sentiment_index_service / fed_funds_service /
 polymarket_service and returns a single JSON-serializable dict the LLM
 will see. Pure read-only and replay-safe — every clock read goes through
-`services.clock.now_utc()`.
+`strategies.support.clock.now_utc()`.
 
 Each section is wrapped so a missing or stale data source produces
 ``{"error": "..."}`` rather than blowing up the whole bundle. The sleeve
@@ -22,17 +22,15 @@ from datetime import datetime, timedelta, timezone
 from typing import Callable
 
 from services import (
-    clock,
     coindesk_fetcher,
-    db,
     fed_funds_service,
     news_fetcher,
     polymarket_service,
-    price_feed,
     sentiment_index_service,
 )
+from strategies.support import clock, db, price_feed
 from . import cvd as ai_cvd
-from services.indicators import adx, ema
+from strategies.support.indicators import adx, ema
 
 log = logging.getLogger("p300.ai_quant.context")
 
@@ -516,7 +514,7 @@ def _portfolio_section(variant_id: str, asset: str) -> dict:
         live_price = _safe_live_price(asset)
         live_pnl_pct = None
         if entry and live_price:
-            from services.sleeves import live_pnl_pct as _live_pnl
+            from strategies.support.sleeves import live_pnl_pct as _live_pnl
             live_pnl_pct = round(_live_pnl(t["direction"], entry, live_price), 2)
         own_pos = {
             "trade_id": t["id"],

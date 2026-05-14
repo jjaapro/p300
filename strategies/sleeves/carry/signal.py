@@ -27,8 +27,8 @@ import sqlite3
 from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
-from services import clock
-from services import db
+from strategies.support import clock
+from strategies.support import db
 
 log = logging.getLogger("dashboard.carry_service")
 
@@ -44,7 +44,7 @@ def _load_recent_daily_funding(days: int = 30) -> list[dict]:
 
     Daily funding is the sum of the 3 settlement rates per day (00/08/16 UTC)
     as a percentage of notional; only complete days are returned. Funding
-    aggregation is delegated to ``services.funding.daily_sums_pct`` which is
+    aggregation is delegated to ``strategies.support.funding.daily_sums_pct`` which is
     the single source of truth for funding access — see commit 2ca7cdc for
     the bug class that motivated the consolidation.
 
@@ -52,7 +52,7 @@ def _load_recent_daily_funding(days: int = 30) -> list[dict]:
     a generic funding concern). Today is excluded because the day's funding
     settlements may not all be in yet.
     """
-    from services import funding
+    from strategies.support import funding
     upper_ts = clock.now_ts()
     since_ts = upper_ts - (days + 2) * 86400
 

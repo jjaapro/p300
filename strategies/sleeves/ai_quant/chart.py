@@ -34,8 +34,8 @@ import mplfinance as mpf  # noqa: E402
 import pandas as pd  # noqa: E402
 from matplotlib.ticker import MaxNLocator  # noqa: E402
 
-from services import clock, db
-from services.indicators import ema
+from strategies.support import clock, db
+from strategies.support.indicators import ema
 
 _TF_SECONDS = {"1h": 3600, "4h": 4 * 3600, "1d": 86400}
 _ALLOWED_INDICATORS = {

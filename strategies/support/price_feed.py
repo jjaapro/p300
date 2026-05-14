@@ -27,8 +27,8 @@ import logging
 import sqlite3
 from pathlib import Path
 
-from services import clock
-from services import db
+from strategies.support import clock
+from strategies.support import db
 
 log = logging.getLogger("dashboard.price_feed")
 

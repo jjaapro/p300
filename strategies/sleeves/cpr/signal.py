@@ -31,8 +31,8 @@ from pathlib import Path
 
 import numpy as np
 
-from services import clock
-from services import db
+from strategies.support import clock
+from strategies.support import db
 
 log = logging.getLogger(__name__)
 
@@ -110,14 +110,14 @@ def _load_daily_closes(asset: str) -> tuple[list[str], np.ndarray, np.ndarray, n
 def _load_funding_daily() -> dict[str, float]:
     """Daily mean funding rate (decimal fraction) for BTC, bounded by clock.
 
-    Cached per UTC day. Delegates to ``services.funding.daily_means_rate``
+    Cached per UTC day. Delegates to ``strategies.support.funding.daily_means_rate``
     which is the single source of truth for funding access.
     """
     global _funding_map_cache
     day_key = clock.now_utc().strftime("%Y-%m-%d")
     if _funding_map_cache and _funding_map_cache[0] == day_key:
         return _funding_map_cache[1]
-    from services import funding
+    from strategies.support import funding
     out = funding.daily_means_rate("BTC", clock.now_ts())
     _funding_map_cache = (day_key, out)
     return out
@@ -284,7 +284,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
       assets   — list, default ['BTC','ETH']
       leverage — per-sleeve leverage (provided as _effective_leverage)
     """
-    from services.price_feed import _get_current_price
+    from strategies.support.price_feed import _get_current_price
 
     params = sleeve_cfg.get("params") or {}
     assets = params.get("assets", ["BTC", "ETH"])
@@ -370,7 +370,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
 
         # Cross-sleeve BTC-long cap — shared with PDO_RETOUCH.
         if asset == "BTC":
-            from services.risk_caps import btc_long_cap_allows
+            from strategies.support.risk_caps import btc_long_cap_allows
             if not btc_long_cap_allows(variant, per_asset_alloc):
                 results.append({"asset": asset, "status": "btc_cap_block"})
                 continue

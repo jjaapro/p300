@@ -15,7 +15,7 @@ from __future__ import annotations
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parent.parent / "data" / "dashboard.db"
+DB_PATH = Path(__file__).resolve().parents[2] / "data" / "dashboard.db"
 
 
 def _con() -> sqlite3.Connection:

@@ -30,8 +30,8 @@ from pathlib import Path
 
 import numpy as np
 
-from services import clock
-from services import db
+from strategies.support import clock
+from strategies.support import db
 
 log = logging.getLogger(__name__)
 
@@ -252,7 +252,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     Idempotent per (variant, asset, day) — one trade per day max.
     Hourly-granular touch detection (service expected to tick at <=1h cadence).
     """
-    from services.price_feed import _get_current_price
+    from strategies.support.price_feed import _get_current_price
 
     params = sleeve_cfg.get("params") or {}
     assets = params.get("assets", ["BTC", "ETH"])
@@ -346,7 +346,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
 
         # Cross-sleeve BTC-long cap (max_net_btc) — pre-leverage % of capital.
         if asset == "BTC":
-            from services.risk_caps import btc_long_cap_allows
+            from strategies.support.risk_caps import btc_long_cap_allows
             if not btc_long_cap_allows(variant, per_asset_alloc):
                 results.append({"asset": asset, "status": "btc_cap_block"})
                 continue

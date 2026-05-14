@@ -1,4 +1,4 @@
-"""services.indicators — pure technical-indicator math (no I/O, no DB).
+"""strategies.support.indicators — pure technical-indicator math (no I/O, no DB).
 
 Single source of truth for the bar-level indicators used across sleeves,
 validators, and backtests. Replaces four byte-identical EMA copies and two

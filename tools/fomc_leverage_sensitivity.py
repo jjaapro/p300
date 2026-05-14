@@ -19,7 +19,7 @@ import argparse
 import random
 import sqlite3
 from pathlib import Path
-from services import db
+from strategies.support import db
 
 REPO = Path(__file__).resolve().parent.parent
 def load_trades(variant_id: str) -> list[dict]:

@@ -60,7 +60,7 @@ from typing import Callable
 
 import feedparser
 
-from services import db
+from strategies.support import db
 
 log = logging.getLogger("p300.news_fetcher")
 
@@ -250,7 +250,7 @@ def refresh(
             stub returning canned rows.
         sources: override SOURCES (testing or A/B).
     """
-    from services import clock
+    from strategies.support import clock
     if clock.is_simulated():
         return 0
     global _last_refresh_ts
@@ -311,7 +311,7 @@ def query(
     # here caused the news cutoff to drift past inserted headlines whenever
     # the simulated date didn't match wall-clock (every test, and every
     # backtest).
-    from services import clock as _clock
+    from strategies.support import clock as _clock
     cutoff = _clock.now_ts() - hours * 3600
     sql = (
         "SELECT url_hash, source, published_utc, fetched_utc, title, url, "

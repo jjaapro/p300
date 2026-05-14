@@ -32,8 +32,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 
-from services import clock
-from services import db
+from strategies.support import clock
+from strategies.support import db
 
 log = logging.getLogger("dashboard.trades")
 
@@ -147,7 +147,7 @@ def open_shadow_trade(*, variant: dict, sleeve_name: str,
       size_usdt = capital × (allocation_pct / 100) × leverage
       qty = size_usdt / entry_price  (clamped to 0 if entry_price <= 0)
     """
-    from services import trade_db
+    from strategies.support import trade_db
     capital = float(variant.get("capital_usdt") or
                     trade_db.get_config("paper_account_usdt") or 10000)
     size_usdt = capital * (allocation_pct / 100.0) * leverage
@@ -180,7 +180,7 @@ def open_shadow_trade(*, variant: dict, sleeve_name: str,
               qty, leverage, size_usdt, entry_price))
         # Implicit OPEN event in the adjustment ledger. Idempotency-safe:
         # a duplicate INSERT (e.g. retry after partial commit) becomes a no-op.
-        from services.trade_adjustments import record_adjustment, EV_OPEN
+        from strategies.support.trade_adjustments import record_adjustment, EV_OPEN
         record_adjustment(
             trade_id=tid, event_type=EV_OPEN,
             event_time=now_iso,
@@ -258,7 +258,7 @@ def compute_perp_close(*, direction: str,
     funding_pct = 0.0
     if apply_funding:
         try:
-            from services import funding as _funding
+            from strategies.support import funding as _funding
             funding_pct = _funding.accrued_pct(asset, entry_dt, exit_dt, direction)
         except (TypeError, ValueError):
             funding_pct = 0.0
@@ -322,7 +322,7 @@ def persist_close(trade_id: str, exit_price: float, exit_time_iso: str,
             WHERE id=? AND status='open'
         """, (exit_time_iso, exit_price, cumulative_pnl, pnl_pct, notes_suffix,
               cumulative_pnl, trade_id))
-        from services.trade_adjustments import record_adjustment, EV_CLOSE
+        from strategies.support.trade_adjustments import record_adjustment, EV_CLOSE
         # Sign of qty_delta is the closing-trade direction: closing a LONG
         # sells (-qty), closing a SHORT buys (+qty).
         direction = (row["direction"] or "").upper()
@@ -412,7 +412,7 @@ def close_perp_trade(trade_id: str, exit_price: float, reason: str,
                   components.pnl_usdt, components.pnl_pct, notes,
                   fee_usdt=components.cost_usdt)
 
-    from services.trade_db import format_close_summary
+    from strategies.support.trade_db import format_close_summary
     log.info(f"[{sleeve_name.lower()}] " + format_close_summary(
         trade_id=trade_id, asset=row["asset"], direction=row["direction"],
         entry_price=float(row["entry_price"]), exit_price=float(exit_price),
@@ -428,7 +428,7 @@ def close_carry_trade(trade_id: str, exit_price: float, reason: str,
 
     P&L is collected funding minus (round-trip fees + slippage) on both legs.
     Price PnL is assumed zero (delta-neutral). The short-perp leg's funding
-    accrual is computed as ``services.funding.accrued_pct(BTC, entry, now, "SHORT")``.
+    accrual is computed as ``strategies.support.funding.accrued_pct(BTC, entry, now, "SHORT")``.
 
     ``cost_pct`` covers exchange fees on the synthetic position (4 fills);
     ``slippage_pct`` covers bid-ask spread + impact. The two are tracked
@@ -452,7 +452,7 @@ def close_carry_trade(trade_id: str, exit_price: float, reason: str,
         entry_dt = entry_dt.replace(tzinfo=timezone.utc)
 
     try:
-        from services import funding as _funding
+        from strategies.support import funding as _funding
         funding_pct = _funding.accrued_pct("BTC", entry_dt, now, "SHORT")
     except (TypeError, ValueError):
         funding_pct = 0.0
@@ -469,7 +469,7 @@ def close_carry_trade(trade_id: str, exit_price: float, reason: str,
                   pnl_usdt, net_pct, notes,
                   fee_usdt=fee_carry)
 
-    from services.trade_db import format_close_summary
+    from strategies.support.trade_db import format_close_summary
     log.info("[carry] " + format_close_summary(
         trade_id=trade_id, asset="BTC", direction="DELTA_NEUTRAL",
         entry_price=float(row["entry_price"]), exit_price=float(exit_price),
@@ -498,7 +498,7 @@ def apply_scale(trade_id: str, *, new_qty: float, price: float,
     Vol-target leverage is unchanged by this event — use
     ``apply_leverage_adjust`` for that.
     """
-    from services.trade_adjustments import (record_adjustment,
+    from strategies.support.trade_adjustments import (record_adjustment,
                                               EV_SCALE_UP, EV_SCALE_DOWN)
     con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
@@ -584,7 +584,7 @@ def apply_leverage_adjust(trade_id: str, *, new_leverage: float,
     change the collateral required. We track the implied margin movement as
     ``margin_delta_usdt = notional × (1/old_lev − 1/new_lev)``.
     """
-    from services.trade_adjustments import record_adjustment, EV_LEVERAGE_ADJUST
+    from strategies.support.trade_adjustments import record_adjustment, EV_LEVERAGE_ADJUST
     con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     try:
@@ -639,7 +639,7 @@ def apply_flip(trade_id: str, *, new_direction: str, price: float,
     trade. ``parent_position_id`` on the new trade references the closed
     one. Returns the new trade_id, or None if the original was not open.
     """
-    from services.trade_adjustments import record_adjustment, EV_FLIP, EV_OPEN
+    from strategies.support.trade_adjustments import record_adjustment, EV_FLIP, EV_OPEN
     new_direction = new_direction.upper()
     if new_direction not in ("LONG", "SHORT"):
         raise ValueError(f"new_direction must be LONG or SHORT, got {new_direction!r}")

@@ -38,9 +38,9 @@ from datetime import datetime, timedelta
 REGIMES = ("strong_bull", "mild_bull", "uncertain", "bear")
 
 
-# EMA lives in services.indicators (single source of truth). Re-exported under
+# EMA lives in strategies.support.indicators (single source of truth). Re-exported under
 # the legacy name `ema_calc` so callers in this package keep working.
-from services.indicators import ema as ema_calc  # noqa: F401, E402
+from strategies.support.indicators import ema as ema_calc  # noqa: F401, E402
 
 
 def classify_day(

@@ -1,7 +1,7 @@
 """Persistence layer for AI_QUANT decisions.
 
 Writes to the ai_quant_decisions table in dashboard.db. Schema lives in
-services.trade_db.init_db() but this module also has _ensure_schema() so
+strategies.support.trade_db.init_db() but this module also has _ensure_schema() so
 it works against test fixtures that haven't called init_db.
 
 Single-row-per-(variant, day) is NOT enforced at the schema level — the
@@ -18,7 +18,7 @@ import sqlite3
 from datetime import datetime, timezone
 from typing import Any
 
-from services import clock, db
+from strategies.support import clock, db
 
 log = logging.getLogger("p300.ai_quant.journal")
 

@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from services import clock
+from strategies.support import clock
 from strategies.support import jplus_inputs as simulate
 from studies.jplus_analytic import simulate as analytic_sim
 

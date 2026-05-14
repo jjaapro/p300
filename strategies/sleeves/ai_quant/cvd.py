@@ -21,7 +21,7 @@ from __future__ import annotations
 import sqlite3
 from datetime import datetime, timezone
 
-from services import clock, db
+from strategies.support import clock, db
 
 
 def load_hourly_cvd(since_ts: int, until_ts: int

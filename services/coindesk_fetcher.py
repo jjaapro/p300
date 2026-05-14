@@ -37,7 +37,7 @@ from typing import Any, Callable
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from services import db
+from strategies.support import db
 
 log = logging.getLogger("p300.coindesk_fetcher")
 
@@ -291,7 +291,7 @@ def refresh(
 
     Per-feed failures are isolated — one outage doesn't sink the rest.
     No-op (returns {}) in sim mode — sim must not hit the network."""
-    from services import clock
+    from strategies.support import clock
     if clock.is_simulated():
         return {}
     global _last_refresh_ts

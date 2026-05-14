@@ -32,7 +32,7 @@ from pathlib import Path
 
 import pytest
 
-from services import db
+from strategies.support import db
 
 
 LIVE_VARIANT = "p300_aggressive_v2_v1_0"
@@ -58,7 +58,7 @@ def live_db_ro():
     """Read-only connection to data/dashboard.db. Skip the whole module
     if the live DB doesn't exist (e.g. a CI runner without bootstrapped
     data). The path resolves dynamically so a future Phase 1 sim-mode
-    redirection of services.db.DASH_DB also redirects this fixture —
+    redirection of strategies.support.db.DASH_DB also redirects this fixture —
     useful when the same suite is run against a sim DB."""
     p = Path(db.DASH_DB)
     if not p.exists():
@@ -140,7 +140,7 @@ def test_closed_pnl_sum_matches_strategy_health(live_db_ro):
         (LIVE_VARIANT, lo, hi),
     ).fetchone()[0])
 
-    from services import strategy_health
+    from strategies.support import strategy_health
     rets_pct = strategy_health._trades_daily_returns(
         LIVE_VARIANT, lo, hi, capital
     )

@@ -38,7 +38,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from services import clock
+from strategies.support import clock
 from . import chart, context as ctx_mod, prompt, tools as tools_mod
 
 log = logging.getLogger("p300.ai_quant.decision")
@@ -407,7 +407,7 @@ def main(argv: list[str] | None = None) -> int:
                         format="%(asctime)s %(levelname)s %(name)s %(message)s")
     # Load .env so ANTHROPIC_API_KEY / AI_QUANT_MODEL / etc. are picked up
     # without requiring an explicit shell export. Existing env values win.
-    from services.env import load_env_file
+    from strategies.support.env import load_env_file
     load_env_file()
 
     if args.print_context:

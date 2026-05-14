@@ -1,4 +1,4 @@
-"""services.sleeves — small runtime helpers shared across sleeve dispatchers.
+"""strategies.support.sleeves — small runtime helpers shared across sleeve dispatchers.
 
 This module is the home for cross-sleeve runtime utilities that have proven
 worth de-duplicating empirically. It is **not** a base class for sleeves —

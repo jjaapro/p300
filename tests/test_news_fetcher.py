@@ -60,7 +60,7 @@ def fixture_db(tmp_path, monkeypatch):
     Resets the in-process throttle so refresh() will actually run."""
     p = tmp_path / "trader.db"
     sqlite3.connect(str(p)).close()
-    monkeypatch.setattr("services.db.TRADER_DB", p)
+    monkeypatch.setattr("strategies.support.db.TRADER_DB", p)
     news_fetcher.reset_throttle()
     yield p
 
@@ -456,7 +456,7 @@ def test_query_empty_when_table_does_not_exist_yet(tmp_path, monkeypatch):
     """Pristine DB (no schema yet): query() must auto-create and return []."""
     p = tmp_path / "fresh.db"
     sqlite3.connect(str(p)).close()
-    monkeypatch.setattr("services.db.TRADER_DB", p)
+    monkeypatch.setattr("strategies.support.db.TRADER_DB", p)
     assert news_fetcher.query(hours=24) == []
 
 

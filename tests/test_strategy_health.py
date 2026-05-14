@@ -1,4 +1,4 @@
-"""services.strategy_health — windowed portfolio + per-sleeve metrics.
+"""strategies.support.strategy_health — windowed portfolio + per-sleeve metrics.
 
 Tests cover the pure-function primitives (Sharpe, MDD, expectancy,
 profit factor, hold-time) plus a small DB-backed integration check for
@@ -15,7 +15,7 @@ from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
-from services import strategy_health as sh
+from strategies.support import strategy_health as sh
 
 
 # ─── Pure metric primitives ─────────────────────────────────────────────────
@@ -108,7 +108,7 @@ def test_hold_hours_invalid_returns_none():
 def test_resolve_windows_default_end_date_is_yesterday(monkeypatch):
     """Default ``end_date`` should be yesterday by clock — the simulator
     doesn't emit today's row."""
-    from services import clock as clock_mod
+    from strategies.support import clock as clock_mod
     fake_now = datetime(2026, 7, 15, 12, 0, tzinfo=timezone.utc)
     clock_mod.set_simulated_now(fake_now)
     try:
@@ -163,7 +163,7 @@ def synthetic_db(tmp_path, monkeypatch):
     path live. If the read-side helpers themselves are retired, this
     fixture's variant_daily_returns block can follow."""
     fixture_db = tmp_path / "dashboard.db"
-    from services import trade_db, db as _db_mod
+    from strategies.support import trade_db, db as _db_mod
     monkeypatch.setattr(trade_db, "DB_PATH", fixture_db)
     monkeypatch.setattr(_db_mod, "DASH_DB", fixture_db)
     trade_db.init_db()
@@ -293,7 +293,7 @@ def test_trades_daily_returns_includes_jplus_strategies(tmp_path, monkeypatch):
     the trades-only model because each trade's pnl_usdt is its own
     fee-net realized P&L."""
     fixture_db = tmp_path / "dashboard.db"
-    from services import trade_db, db as _db_mod
+    from strategies.support import trade_db, db as _db_mod
     monkeypatch.setattr(trade_db, "DB_PATH", fixture_db)
     monkeypatch.setattr(_db_mod, "DASH_DB", fixture_db)
     trade_db.init_db()
@@ -327,7 +327,7 @@ def test_trades_daily_returns_includes_jplus_strategies(tmp_path, monkeypatch):
 
 def test_trades_daily_returns_returns_empty_when_no_trades(tmp_path, monkeypatch):
     fixture_db = tmp_path / "dashboard.db"
-    from services import trade_db, db as _db_mod
+    from strategies.support import trade_db, db as _db_mod
     monkeypatch.setattr(trade_db, "DB_PATH", fixture_db)
     monkeypatch.setattr(_db_mod, "DASH_DB", fixture_db)
     trade_db.init_db()

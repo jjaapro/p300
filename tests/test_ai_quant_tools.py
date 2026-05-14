@@ -178,8 +178,8 @@ def fixture_db(tmp_path, monkeypatch):
         con.commit()
     finally:
         con.close()
-    monkeypatch.setattr("services.db.TRADER_DB", p)
-    from services import clock
+    monkeypatch.setattr("strategies.support.db.TRADER_DB", p)
+    from strategies.support import clock
     clock.set_simulated_now(datetime(2026, 5, 1, 12, 0, tzinfo=timezone.utc))
     yield p
 

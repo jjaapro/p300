@@ -10,7 +10,8 @@ import logging
 import sqlite3
 from datetime import datetime
 
-from services import clock, db, price_feed, trades
+from services import trades
+from strategies.support import clock, db, price_feed
 
 from .config import STRATEGY_ETH_DAILY
 

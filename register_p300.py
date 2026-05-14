@@ -39,7 +39,7 @@ import sys
 from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(__file__))
-from services import trade_db, variant_registry  # noqa: E402,F401
+from strategies.support import trade_db, variant_registry  # noqa: E402,F401
 
 VARIANT_ID = "p300_aggressive_v2_v1_0"
 

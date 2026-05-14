@@ -195,14 +195,14 @@ def test_self_sweep_closes_past_exit_trade(tmp_path, monkeypatch):
     silently skipped a trade and the position leaked to end-of-window."""
     import sqlite3
     from datetime import datetime, timezone
-    from services import clock, price_feed
+    from strategies.support import clock, price_feed
     from strategies.sleeves.fomc import signal as fomc_service
 
     # Build minimal trades table at tmp path via canonical init_db so
     # schema additions (current_qty, trade_adjustments, etc.) are picked up
     # automatically.
     db = tmp_path / "dashboard.db"
-    from services import trade_db, db as _db_mod
+    from strategies.support import trade_db, db as _db_mod
     monkeypatch.setattr(trade_db, "DB_PATH", db)
     monkeypatch.setattr(_db_mod, "DASH_DB", db)
     trade_db.init_db()
@@ -227,7 +227,7 @@ def test_self_sweep_closes_past_exit_trade(tmp_path, monkeypatch):
     # Stub price + funding feeds (DASH_DB already monkeypatched above).
 
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 43000.0)
-    from services import funding
+    from strategies.support import funding
     monkeypatch.setattr(funding, "accrued_pct", lambda *a, **k: 0.0)
 
     # Set clock past exit_time, then sweep
@@ -254,11 +254,11 @@ def test_self_sweep_no_op_before_exit_time(tmp_path, monkeypatch):
     """Sweep should NOT close a trade whose exit_time is still in the future."""
     import sqlite3
     from datetime import datetime, timezone
-    from services import clock, price_feed
+    from strategies.support import clock, price_feed
     from strategies.sleeves.fomc import signal as fomc_service
 
     db = tmp_path / "dashboard.db"
-    from services import trade_db, db as _db_mod
+    from strategies.support import trade_db, db as _db_mod
     monkeypatch.setattr(trade_db, "DB_PATH", db)
     monkeypatch.setattr(_db_mod, "DASH_DB", db)
     trade_db.init_db()
@@ -299,13 +299,14 @@ def test_close_due_shadows_skips_disabled_variants(tmp_path, monkeypatch):
     the variant's enabled flag — corrupting backtest results."""
     import sqlite3
     from datetime import datetime, timezone
-    from services import clock, variant_engine, price_feed
+    from services import variant_engine
+    from strategies.support import clock, price_feed
 
     # Build dashboard.db at tmp path with two variants and one trade each.
     # trade_db.init_db creates the trades schema (and trade_adjustments);
     # the variants table is hand-rolled because it lives in variant_registry.
     db = tmp_path / "dashboard.db"
-    from services import trade_db, db as _db_mod
+    from strategies.support import trade_db, db as _db_mod
     monkeypatch.setattr(trade_db, "DB_PATH", db)
     monkeypatch.setattr(_db_mod, "DASH_DB", db)
     trade_db.init_db()

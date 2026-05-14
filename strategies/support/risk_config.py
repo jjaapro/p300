@@ -28,7 +28,7 @@ Switch via env var at runtime (so a single code path supports both without
 rebuilding). Default unchanged from the original implementation.
 
 Usage in a SL branch:
-    from services.risk_config import effective_price_move_sl_pct
+    from strategies.support.risk_config import effective_price_move_sl_pct
     sl_thresh = effective_price_move_sl_pct(stop_loss_pct, leverage)
     if live_pnl_pct <= -sl_thresh:
         ...close...

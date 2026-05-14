@@ -25,7 +25,7 @@ import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
-from services import clock
+from strategies.support import clock
 
 log = logging.getLogger("dashboard.adx_service")
 
@@ -88,10 +88,10 @@ def _load_btc_daily_candles(limit_days: int = 200) -> list[dict]:
     return out
 
 
-# EMA + ADX math lives in services.indicators (single source of truth across
+# EMA + ADX math lives in strategies.support.indicators (single source of truth across
 # the live service, bitstamp validators, and the JPLUS regime classifier).
-from services.indicators import ema, adx
-from services import db
+from strategies.support.indicators import ema, adx
+from strategies.support import db
 
 
 # ─── Signal evaluation ──────────────────────────────────────────────────────
@@ -256,8 +256,8 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     Idempotent: caller may invoke every minute; this function will only act
     on the first tick of a new day when a signal changes.
     """
-    from services.price_feed import _get_current_price
-    from services.risk_config import effective_price_move_sl_pct
+    from strategies.support.price_feed import _get_current_price
+    from strategies.support.risk_config import effective_price_move_sl_pct
 
     alloc_pct = float(sleeve_cfg.get("weight_pct", 0.0))
     params = sleeve_cfg.get("params") or {}
@@ -288,7 +288,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     # Even though the invariant is single-open, we sweep the full set so a
     # stray leaked trade from a prior-version run gets cleaned up instead of
     # ignored forever.
-    from services.sleeves import is_sl_hit
+    from strategies.support.sleeves import is_sl_hit
     current_price = _get_current_price("BTC") or sig["close"]
     still_open: list[dict] = []
     for tr in open_trades:

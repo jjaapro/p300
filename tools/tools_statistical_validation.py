@@ -16,7 +16,7 @@ Default target: p300_aggressive_v2_v1_0 (live SHADOW variant).
 Output is plain text organized by section. Writes nothing to the DB.
 
 Data source: closed trades in ``trades`` (via
-``services.strategy_health.trades_daily_returns``). Pre-2026-05-13 this
+``strategies.support.strategy_health.trades_daily_returns``). Pre-2026-05-13 this
 tool read from ``variant_daily_returns WHERE source='replay'``, but
 that table is no longer written by any production path after the
 trade-emitter migration (Phase 3-5). See AUDIT_2026_05_13.
@@ -30,7 +30,7 @@ import sqlite3
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
-from services import db, strategy_health
+from strategies.support import db, strategy_health
 
 REPO = Path(__file__).resolve().parent.parent
 
@@ -67,7 +67,7 @@ def load_returns(variant_id: str) -> list[tuple[str, float]]:
 
     Aggregates closed-trade pnl_usdt by exit date and divides by the
     variant's capital — same math as
-    ``services.strategy_health.trades_daily_returns``. The series is
+    ``strategies.support.strategy_health.trades_daily_returns``. The series is
     zero-filled across the calendar window so Sharpe / MDD / rolling
     stats see flat days, not gaps."""
     window = _variant_trade_window(variant_id)
