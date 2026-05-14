@@ -43,26 +43,58 @@ p300/
 
 ---
 
-## Migration notes
+## Migration status (2026-05-14)
 
-### Decisions captured
+### Phase 1 — structural restructure (DONE)
+
+21 commits since the pre-restructure checkpoint `1e2e2d0`. Everything
+mechanical from the proposal is shipped:
+
+| Step | Commit | Summary |
+|---|---|---|
+| Checkpoint | `1e2e2d0` | Proposal.md + BACKLOG.md captured |
+| 1 — Scaffold | `c4b52c1` | Empty `strategies/`, `studies/`, `data/{archives,csvs,databases}`, `tests/{unit,integrated}` |
+| 2 — ADX pilot | `ffce7b8` | First sleeve in the new layout |
+| 3 — Tactical sleeves | `e8efe58`, `d2e9aee`, `9ee39ad`, `ebde133`, `a55145d` | THU_BEAR, CPR, PDO, CARRY, FOMC |
+| 4 — AI_QUANT | `27dfbe9` | 15-file sleeve (incl. `chart_cli.py`, `archive_rebuild.py`) |
+| 5 — J+ live handlers | `de0d6c0` | `services/jplus_live.py` split into `strategies/sleeves/{r4,ema,eth_daily}/` |
+| 6a — J+ sleeve math | `c235f59` | `jplus/r4.py` + `jplus/ema_sleeve.py` → sleeve folders |
+| 6b — J+ shared math | `e94638e` | `voltarget`, `gate`, `regime_jplus` → `strategies/support/` |
+| 6c.1 — data loaders | `7097fb1` | `jplus/data.py` → `data/loaders.py` |
+| 6c.2 — simulate split | `1630fbb` | `today_inputs` → `support/jplus_inputs.py`; `simulate()` → `studies/jplus_analytic/`; `jplus/` deleted |
+| 6d — services utils | `03948bc` | 16 modules → `strategies/support/` |
+| 6e — data fetchers | `2ef120b` | 5 services + `binance_feed.py` → `data/sources/` |
+| 6f — tactical regime | `8762e1e` | `regime_classifier.py` → `support/regime_tactical.py` |
+| 7 — trades.py | `7a22857` | `services/trades.py` → `strategies/trades.py` |
+| 8 — tools/ split | `f7422c9` | 22 files redistributed across `studies/{notebooks,reports,simulation}/` |
+| 9a — orchestrator rename | `0daba61` | `variant_engine.py` → `strategies/orchestrator.py`; `services/` deleted |
+
+Tests passing across the touched suites (~384 at the last full sweep,
+excluding one test that needs the optional `anthropic` package).
+
+### Phase 2 — deferred work
+
+See [BACKLOG.md](BACKLOG.md) for full scope, dependencies, and risk
+notes on each item. Brief index:
+
+| Item | Type | Risk | Why deferred |
+|---|---|---|---|
+| `check_liquidations_for_variant` extraction | Mechanical refactor | Low | Removes a `orchestrator → backtest_runner` layer inversion; small + isolated. |
+| `.ipynb` conversion of `studies/notebooks/*.py` | Mechanical / cosmetic | None | User flagged as low priority during the proposal. |
+| `run.py` → `bot.py` redesign | Mechanical + scope | Low | Drops `--mode sim` (splits to `studies/simulation/sim.py`), always-on feed, drops `tools/p300_run.ps1`. Wasn't part of "build the orchestrator". |
+| Real orchestrator architecture | **Design + impl** | Medium | Cross-sleeve allocation, ML gating, portfolio vol target, margin enforcement, conflict resolution, signal aggregation. Multiple design questions; warrants its own focused effort. |
+| `SHADOW` → `paper` rename | Code + DB migration | Medium | Touches live paper-trade rows in `dashboard.db`. Needs careful migration order. |
+| DB consolidation (`trader.db` + `dashboard.db` → `prod.db`) | DB migration | Medium | Hot DBs; needs schema design + migration script. |
+| Doc sweep (PORTFOLIO / README / MANUAL / OPERATIONS) | Doc rewrite | Low | User flagged "messy and hard to read" — readability rewrite, not just path-fix. Last so all paths settle first. |
+
+### Phase 1 decisions captured
+
 - `bot.py` runs paper or live only — no `--test` mode. Distinction is a trade tag in `prod.db`, not a runtime flag.
 - `strategies/trades.py` (execution layer) sits next to `orchestrator.py`; orchestrator drives it.
 - `strategies/support/` holds shared services (regime, ml_gate, voltarget, margin sim, price feed, cost model) usable by any sleeve.
 - No more Core/Tactical split — all sleeves are equal under the orchestrator. Regime weighting and ML gating apply to every sleeve.
-- `tools/` directory is removed entirely:
-  - Sleeve-specific tools → into the sleeve folder (e.g. `tools/ai_quant_archive_rebuild.py` → `strategies/sleeves/ai_quant/archive_rebuild.py`; `tools/render_ai_chart.py` → `strategies/sleeves/ai_quant/chart.py`).
-  - Report generators → `studies/reports/` (e.g. `tools/ai_quant_preview.py` → `studies/reports/generate_ai_quant_report.py`).
-  - Backtests / calibrations / validations → `studies/notebooks/` as `.ipynb` (literal conversion; lower priority — move scripts first, convert later).
-  - `tools/build_sim_trader_db.py` → folds into `studies/simulation/sim.py` setup.
-  - `tools/p300_run.ps1` → dropped; `bot.py` handles console output filtering itself.
-- `SHADOW` terminology dropped everywhere; replaced by `paper` / `live` trade tag.
-- **Uniform sleeve internal layout**: every sleeve has at minimum `signal.py` + `config.py` + `README.md` + `__init__.py`. Sleeve-specific extras (e.g. `chart.py`, `archive_rebuild.py`, sleeve-specific data fetchers) sit alongside. Unit tests live under `tests/unit/<sleeve>/`, not inside the sleeve folder.
-- **`prod.db` is one SQLite file** holding everything paper+live: market data tables, `trades`, observers/journals. Today's `trader.db` + `dashboard.db` consolidate into it.
+- `tools/` directory removed entirely; redistributed by purpose.
+- `SHADOW` terminology to be dropped everywhere; replaced by `paper` / `live` trade tag. **(Code rewrite is phase 2.)**
+- **Uniform sleeve internal layout**: every sleeve has at minimum `signal.py` + `config.py` + `README.md` + `__init__.py`. Sleeve-specific extras (e.g. `chart.py`, `archive_rebuild.py`, sleeve-specific data fetchers) sit alongside. Unit tests at `tests/unit/<sleeve>/`, not inside the sleeve folder.
+- **`prod.db` is one SQLite file** holding everything paper+live: market data tables, `trades`, observers/journals. Today's `trader.db` + `dashboard.db` consolidate into it. **(Phase 2.)**
 - **Orchestrator tick cadence: 1 minute.** Lowest timeframe used is 1m candles, so the loop wakes once per minute after the bar closes.
-
-### Still open
-- **`register_p300.py`** — variant concept likely collapses into orchestrator config; confirm during the orchestrator-skeleton commit.
-- **DB consolidation** (`trader.db` + `dashboard.db` → `prod.db`) — schema migration; downstream commit, not Day 1 of the folder restructure.
-- **Migration order** — proposed ~5 commits using `git mv` to preserve history: (1) introduce orchestrator skeleton, (2) collapse `services/` + `jplus/` into `strategies/sleeves/` + `support/`, (3) move `services/trades.py` → `strategies/trades.py`, (4) split `tools/` per the rules above, (5) `SHADOW` → `paper` rename. DB consolidation is a 6th step after the folder restructure stabilizes.
-- **Doc cleanup** — PORTFOLIO.md, README.md, MANUAL.md, OPERATIONS.md will get a focused refactor at the END of the restructure. User flagged them as "messy and hard to read" (2026-05-14). All path links to `services/*` files in those docs are intentionally left stale during the move steps and fixed in one sweep at the end alongside the readability rewrite. AUDIT_*.md files are historical records and are left alone.
