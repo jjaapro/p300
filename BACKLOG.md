@@ -208,6 +208,8 @@ commit and probably multi-session. A reasonable sub-decomposition:
   orchestrator. Sleeves read their weight from the orchestrator at tick
   time instead of from `sleeve_cfg.weight_pct`. The J+ family already
   reads dynamic weights via `today_inputs()` — generalize that pattern.
+  Detailed design in [P2.4a design notes](#p24a-design-notes-2026-05-14)
+  below.
 - **P2.4b** — Define a gating interface; refactor THU_BEAR V4 / FOMC
   composite / R4 vol-gate to register against it; document expected
   walk-forward CV protocol for new gates.
@@ -216,6 +218,163 @@ commit and probably multi-session. A reasonable sub-decomposition:
 - **P2.4d** — Margin headroom check; deferral policy.
 - **P2.4e** — Cross-sleeve conflict resolver.
 - **P2.4f** — Signal aggregator.
+
+### P2.4a design notes (2026-05-14)
+
+**Today's allocation surface — two parallel code paths.**
+
+1. *Tactical sleeves* (S-003 / S-078 / S-096 / PDO / CPR / FOMC /
+   AI_QUANT) read `sleeve_cfg["weight_pct"]` at dispatch time. The
+   numbers are static constants in `register_p300.py` composition:
+   `{15, 8, 6, 9, 5, 5, 2}`. Regime-independent.
+2. *J+ sub-sleeves* (six entries: `JPLUS_R4_BTC` / `_ETH` / `_V2_BTC` /
+   `_V2_ETH` / `EMA_BTC` / `ETH_DAILY`) keep `weight_pct=0` placeholder
+   and instead pull regime-weighted sizing from
+   `strategies.support.jplus_inputs.today_inputs()` at trade-open time.
+   The actual table is `REGIME_WEIGHTS_FULL` in `jplus_inputs.py`
+   keyed by `strong_bull` / `mild_bull` / `uncertain` / `bear`.
+
+There are **two regime vocabularies in the repo**:
+
+- `regime_jplus.classify_day` — used by J+ family. Modes:
+  `strong_bull` / `mild_bull` / `uncertain` / `bear`.
+- `regime_tactical.classify_regime` — used by tactical gating logic
+  (e.g. PDO's regime threshold, THU_BEAR's V4 filter). Modes:
+  `bull_trend` / `bear_trend` / `chop` / `sell_off`.
+
+This split is the first thing the design has to resolve.
+
+**Proposed shape.**
+
+```
+strategies/support/allocation.py
+  REGIME_VOCAB: {"strong_bull", "mild_bull", "uncertain", "bear"}
+  # Single source of truth, reused from regime_jplus. Tactical
+  # classifier stays where it is for sleeve-internal gates; the
+  # allocator only needs ONE regime label per tick.
+
+  WEIGHT_TABLE: dict[strategy_id, dict[regime, float]]
+    "S-003":           {strong_bull: 0.15, mild_bull: 0.15, uncertain: 0.15, bear: 0.15},
+    "S-078":           {... 0.08 across all regimes ...},
+    "S-096":           {... 0.06 across all regimes ...},
+    "PDO-L-RF":        {... 0.09 across all regimes ...},
+    "CPR":             {... 0.05 across all regimes ...},
+    "FOMC":            {... 0.05 across all regimes ...},
+    "AI_QUANT":        {... 0.02 across all regimes ...},
+    "JPLUS_R4_BTC":    {strong_bull: 0.15 × scale, mild_bull: 0.20 × scale, ...},
+    "JPLUS_R4_ETH":    {...},
+    ...
+    # J+ rows are CORE_ALLOC_CAP-scaled (already done by
+    # _cap_core_weights today; the table caches the scaled values
+    # so the orchestrator doesn't re-run the cap each tick).
+
+  def current_regime(now_utc: datetime | None = None) -> str:
+      # Wraps regime_jplus.classify_day for today's date.
+
+  def get_weight_pct(strategy_id: str, regime: str | None = None) -> float:
+      # regime=None -> look up current_regime(). Returns the pre-leverage
+      # allocation fraction as a percent (e.g. 0.15 -> 15.0). Returns
+      # 0.0 for unknown strategy_id with a one-shot warning.
+```
+
+**Orchestrator integration.**
+
+`strategies.orchestrator._tick_composition` already injects
+`_effective_leverage` into each `sleeve_cfg` before dispatch
+(see `_resolve_sleeve_leverage`). Add a parallel
+`_effective_weight_pct` injection:
+
+```python
+def _resolve_sleeve_weight(spec, sleeve, regime) -> float:
+    from strategies.support import allocation
+    sid = sleeve.get("strategy_id")
+    if sid:
+        w = allocation.get_weight_pct(sid, regime)
+        if w is not None:
+            return w
+    return float(sleeve.get("weight_pct", 0.0))   # static fallback
+```
+
+In `_tick_composition`, compute `regime = allocation.current_regime()`
+once per tick and pass it into the resolver. Each sleeve_cfg copy gets
+both `_effective_leverage` and `_effective_weight_pct`.
+
+**Sleeve migration (one at a time).**
+
+Each tactical sleeve changes:
+
+```python
+- alloc_pct = float(sleeve_cfg.get("weight_pct", 0.0))
++ alloc_pct = float(
++     sleeve_cfg.get("_effective_weight_pct",
++                    sleeve_cfg.get("weight_pct", 0.0)))
+```
+
+The fallback to `weight_pct` keeps unmigrated sleeves working during
+the rollout, and keeps unit tests that build sleeve_cfg dicts manually
+green without touching them.
+
+Migration order (mirrors structural-restructure rhythm):
+
+1. ADX (pilot, smallest blast radius)
+2. CARRY, THU_BEAR, PDO, CPR, FOMC (5 tactical, one commit each)
+3. AI_QUANT (special: conviction-scales INSIDE the weight cap; the
+   refactor here is purely "swap source of the cap", logic unchanged)
+4. J+ sub-sleeves last. Today's J+ handlers pull weight from
+   `today_inputs()` directly. The migration here is to have them call
+   `allocation.get_weight_pct()` which delegates back to the cached
+   `today_inputs()` table — so the math is identical; only the routing
+   changes.
+
+**Parity contract.**
+
+A new test `tests/test_allocation_parity.py` asserts: for each of the
+4 regimes × 13 sleeves, `allocation.get_weight_pct(sleeve, regime)`
+matches what the current dispatch resolves to with the same inputs.
+Built before any sleeve is migrated; stays green across the whole
+rollout.
+
+For tactical sleeves the assertion is trivial (weight is regime-
+independent). For J+ sleeves the assertion runs `today_inputs()` with
+a fixed `now_utc` per regime and compares the resulting weight ×
+inner-R4-lev to `get_weight_pct() × _resolve_sleeve_leverage()`.
+
+**Open questions.**
+
+- **Should tactical sleeves stay regime-independent, or get tuned per
+  regime as part of P2.4a?** Current proposal: hold the static rows
+  for now (`weight_independent_of_regime=True`). Per-regime tactical
+  tuning is a separate decision that needs walk-forward CV first.
+  Calibrating that is closer to P2.4b's gating work than to P2.4a's
+  allocation refactor.
+- **Where does `CORE_ALLOC_CAP=0.50` get enforced?** Today it's a
+  scaling pass inside `today_inputs()`. Options: (a) bake the cap into
+  the WEIGHT_TABLE rows directly so the table is pre-capped (loses the
+  "raw" view useful for debugging); (b) keep the cap as a runtime pass
+  inside `allocation.get_weight_pct` (matches today; cap can be tuned
+  without changing the table). Current proposal: (b).
+- **What about gross cap (50/50 Core/Tactical pre-leverage; per
+  feedback memory 2026-05-12)?** A symmetric tactical cap exists in
+  policy but not in code (today's static tactical row sums to exactly
+  0.50). The new table should make the cap explicit:
+  `TACTICAL_ALLOC_CAP = 0.50`, applied symmetrically. Captures the
+  policy in code instead of relying on the constants summing right.
+- **Where do `register_p300.py` composition entries go after migration?**
+  The `weight_pct` field becomes informational (or removed). The
+  `params` and `_effective_leverage` paths stay. Composition still
+  exists to enumerate which sleeves dispatch; only the WEIGHT comes
+  from the new table. We could keep `weight_pct` as a redundant
+  pre-migration sanity check then remove in a follow-up.
+
+**Risk assessment.**
+
+Low-medium. Behavior-preservation parity tests are cheap and concrete
+(specific numeric assertions per regime). The change touches every
+sleeve's dispatch, but each sleeve's edit is one line. The biggest
+risk is mis-classifying which regime applies at tick time — current
+classifier is "today as of last full day" (J+ pattern), not "right
+now", so an off-by-one regime selection at the day boundary needs an
+explicit test.
 
 ### Dependencies
 
