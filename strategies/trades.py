@@ -19,9 +19,9 @@ Architecture:
                             price-PnL component.
 
 Each sleeve's legacy ``_close_X_shadow`` is a thin wrapper that just sets
-the sleeve-name parameter (kept so backtest_runner._load_close_fn doesn't
-need to change). The bug-fix surface for every shadow close is now this
-one module.
+the sleeve-name parameter (kept so
+``strategies.support.margin_check._load_close_fn`` doesn't need to change).
+The bug-fix surface for every shadow close is now this one module.
 """
 from __future__ import annotations
 

@@ -1,7 +1,16 @@
-"""Adapter between backtest_runner.py and strategies.support.margin_sim.
+"""Margin / liquidation check and force-close orchestration.
 
-Builds margin-simulator inputs from the SHADOW trade record + trader.db
-price/funding data, runs the simulator, returns liquidation events.
+Two responsibilities live here:
+
+1. **Math** — :func:`check_liquidations_for_variant` builds margin-simulator
+   inputs from the SHADOW trade record + trader.db price/funding data, runs
+   the simulator, returns liquidation events. Pure read-only.
+
+2. **Orchestration** — :func:`force_close_liquidations` walks every open
+   shadow trade for a variant, calls the math, then per-event invokes the
+   sleeve's close function at the liquidation price/time. This is what the
+   live tick (``orchestrator._check_liquidations_all_variants``) and the
+   backtest tick (``backtest_runner.run._tick``) both call.
 
 Phase 2 scope:
   - Per-trade isolated check for all leveraged sleeves (leverage > 1).
@@ -18,12 +27,13 @@ Skipped for v1 (Phase 2.5+ if needed):
 """
 from __future__ import annotations
 
+import logging
 import sqlite3
 from datetime import datetime, timezone
 from functools import lru_cache
 from typing import Optional
 
-from strategies.support import db
+from strategies.support import clock, db
 from strategies.support.margin_sim import (
     FundingSettlement,
     LiquidationEvent,
@@ -35,6 +45,8 @@ from strategies.support.margin_sim import (
     SpotLeg,
     simulate_position_path,
 )
+
+log = logging.getLogger("p300.margin_check")
 
 
 # CARRY's perp leg is SHORT delta-neutral; the trade record's direction='LONG'
@@ -292,3 +304,71 @@ def check_liquidations_for_variant(
         if liq is not None:
             out.append((t, liq))
     return out
+
+
+# ─── Force-close orchestration ────────────────────────────────────────────────
+
+def _load_close_fn(strategy: str):
+    """Return the sleeve-specific close function (which applies fees/funding).
+    Falls back to None for unknown strategies — caller logs and skips."""
+    if strategy == "ADX":
+        from strategies.sleeves.adx.signal import _close_adx_shadow
+        return _close_adx_shadow
+    if strategy == "CARRY":
+        from strategies.sleeves.carry.signal import _close_carry_shadow
+        return _close_carry_shadow
+    if strategy == "THU_BEAR":
+        from strategies.sleeves.thu_bear.signal import _close_thu_bear_shadow
+        return _close_thu_bear_shadow
+    if strategy == "PDO_RETOUCH":
+        from strategies.sleeves.pdo.signal import _close_pdo_shadow
+        return _close_pdo_shadow
+    if strategy == "CPR":
+        from strategies.sleeves.cpr.signal import _close_cpr_shadow
+        return _close_cpr_shadow
+    if strategy == "FOMC":
+        from strategies.sleeves.fomc.signal import _close_fomc_shadow
+        return _close_fomc_shadow
+    return None
+
+
+def force_close_liquidations(variant_id: str, now_utc: datetime) -> int:
+    """Walk open shadow trades for this variant; for any leveraged trade
+    whose margin trajectory would have breached maintenance margin between
+    its entry and now_utc, force-close it via the sleeve's close function
+    at the liquidation price/time.
+
+    Tags forced-closes via the sleeve's close ``reason`` argument with
+    ``'forced_exit:liquidation'`` so they're identifiable in the trades table.
+
+    Always-on in backtest mode (per project decision). Trades at leverage
+    <= 1 are skipped inside :func:`check_liquidations_for_variant` (no
+    liquidation possible). Returns count force-closed.
+    """
+    events = check_liquidations_for_variant(variant_id, now_utc)
+    if not events:
+        return 0
+    n = 0
+    for trade, liq in events:
+        close_fn = _load_close_fn(trade["strategy"])
+        if close_fn is None:
+            log.warning(f"[liq] no close_fn for {trade['strategy']!r} "
+                        f"({trade['id']}) — liquidation event ignored")
+            continue
+        # Set the simulated clock to the liquidation time so the close
+        # function records actual_exit_time correctly.
+        prior = clock._simulated_now if hasattr(clock, '_simulated_now') else None
+        clock.set_simulated_now(liq.liq_time)
+        try:
+            close_fn(trade["id"], liq.liq_price, "forced_exit:liquidation")
+            n += 1
+            log.warning(f"[liq] {trade['id']} {trade['strategy']} {trade['asset']} "
+                        f"force-closed at {liq.liq_time.isoformat()} "
+                        f"px={liq.liq_price:.2f} ({liq.reason})")
+        except Exception:
+            log.exception(f"[liq] close_fn raised for {trade['id']} during "
+                          f"liquidation force-close — trade may be inconsistent")
+        finally:
+            # Restore prior clock; the main loop will set it back per-tick anyway.
+            clock.set_simulated_now(prior)
+    return n

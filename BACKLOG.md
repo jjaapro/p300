@@ -18,10 +18,16 @@ Items are roughly ordered by dependency: independent / cheap items first,
 design-heavy items in the middle, doc sweep last because it depends on
 everything else settling.
 
-## P2.1 — Extract `check_liquidations_for_variant` to `support/`
+## P2.1 — Extract `check_liquidations_for_variant` to `support/` ✅
 
 **Captured:** 2026-05-14 (deferred step 6g).
-**Status:** ready to pick up; small + isolated.
+**Status:** completed 2026-05-14. The orchestration wrapper now lives in
+`strategies/support/margin_check.py` as `force_close_liquidations(variant_id,
+now_utc)`; the pre-existing math function keeps the
+`check_liquidations_for_variant` name. `_load_close_fn` moved alongside it.
+`backtest_runner.py` (three call sites) and `strategies/orchestrator.py` (one
+call site) import from the new location. The layer inversion is gone and
+all 530 tests pass.
 
 ### Motivation
 

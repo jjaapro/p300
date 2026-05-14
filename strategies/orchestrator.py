@@ -420,22 +420,23 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
 def _check_liquidations_all_variants(now_utc) -> int:
     """Per-tick liquidation sweep across every active shadow variant.
 
-    Reuses ``backtest_runner.check_liquidations_for_variant`` — the same
-    function the research replay runs — so live SHADOW, ``run.py --mode
-    sim``, and the backtest path all evaluate margin trajectories with
-    identical logic. Each open SHADOW trade whose entry→now path would
-    have breached maintenance margin gets force-closed via the sleeve's
-    close function with reason ``forced_exit:liquidation``.
+    Reuses ``strategies.support.margin_check.force_close_liquidations`` —
+    the same orchestration wrapper the research replay runs — so live
+    SHADOW, ``run.py --mode sim``, and the backtest path all evaluate
+    margin trajectories with identical logic. Each open SHADOW trade
+    whose entry→now path would have breached maintenance margin gets
+    force-closed via the sleeve's close function with reason
+    ``forced_exit:liquidation``.
 
     Wrapped in try/except per-variant so a single misbehaving variant
     cannot abort the tick. Returns total trades force-closed across all
     variants this tick (logged as a warning if non-zero)."""
+    from strategies.support.margin_check import force_close_liquidations
     total = 0
     shadows = variant_registry.get_active_shadows()
     for v in shadows:
         try:
-            from backtest_runner import check_liquidations_for_variant
-            total += check_liquidations_for_variant(v["id"], now_utc)
+            total += force_close_liquidations(v["id"], now_utc)
         except Exception as e:
             log.exception(f"[liq {v['id']}] check raised: {e}")
     if total > 0:

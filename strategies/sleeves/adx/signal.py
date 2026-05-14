@@ -236,7 +236,8 @@ def _open_adx_shadow(variant: dict, direction: str, entry_price: float,
 
 def _close_adx_shadow(trade_id: str, exit_price: float, reason: str) -> None:
     """Sleeve close — delegates to strategies.trades.close_perp_trade. Kept as a
-    thin wrapper so backtest_runner._load_close_fn can resolve it by sleeve."""
+    thin wrapper so ``strategies.support.margin_check._load_close_fn`` can
+    resolve it by sleeve."""
     from strategies.trades import close_perp_trade
     close_perp_trade(trade_id, exit_price, reason, sleeve_name="ADX",
                      cost_bp_rt=COST_BP_RT, apply_funding=True)

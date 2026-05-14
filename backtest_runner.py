@@ -38,6 +38,10 @@ sys.path.insert(0, str(REPO))
 
 from strategies import orchestrator
 from strategies.support import clock, sim_loop, trade_db, variant_registry  # noqa: E402
+from strategies.support.margin_check import (  # noqa: E402
+    _load_close_fn,
+    force_close_liquidations,
+)
 from strategies.support.price_feed import _get_current_price  # noqa: E402
 from strategies.support import db, strategy_health
 
@@ -140,30 +144,6 @@ def ensure_replay_variant(variant_id: str, reset: bool = False) -> dict:
 
 # ─── Scheduled-exit close, variant-scoped ─────────────────────────────────────
 
-def _load_close_fn(strategy: str):
-    """Return the sleeve-specific close function (which applies fees/funding).
-    Falls back to the engine's simple close for unknown strategies."""
-    if strategy == "ADX":
-        from strategies.sleeves.adx.signal import _close_adx_shadow
-        return _close_adx_shadow
-    if strategy == "CARRY":
-        from strategies.sleeves.carry.signal import _close_carry_shadow
-        return _close_carry_shadow
-    if strategy == "THU_BEAR":
-        from strategies.sleeves.thu_bear.signal import _close_thu_bear_shadow
-        return _close_thu_bear_shadow
-    if strategy == "PDO_RETOUCH":
-        from strategies.sleeves.pdo.signal import _close_pdo_shadow
-        return _close_pdo_shadow
-    if strategy == "CPR":
-        from strategies.sleeves.cpr.signal import _close_cpr_shadow
-        return _close_cpr_shadow
-    if strategy == "FOMC":
-        from strategies.sleeves.fomc.signal import _close_fomc_shadow
-        return _close_fomc_shadow
-    return None
-
-
 def mark_remaining_at_end(variant_id: str) -> int:
     """Force-close any trades still open at end of backtest, at the current
     clock's price. Uses each sleeve's own close (fees + funding applied).
@@ -187,50 +167,6 @@ def mark_remaining_at_end(variant_id: str) -> int:
         if close_fn is not None:
             close_fn(t["id"], price, "end_of_backtest_window")
             n += 1
-    return n
-
-
-def check_liquidations_for_variant(variant_id: str, now_utc: datetime) -> int:
-    """Walk open shadow trades for this variant; for any leveraged trade
-    whose margin trajectory would have breached maintenance margin between
-    its entry and now_utc, force-close it via the sleeve's close function
-    at the liquidation price/time.
-
-    Tags forced-closes via the sleeve's close `reason` argument with
-    'forced_exit:liquidation' so they're identifiable in the trades table.
-
-    Always-on in backtest mode (per project decision). Trades at leverage
-    <= 1 are skipped inside the adapter (no liquidation possible).
-    Returns count force-closed.
-    """
-    from strategies.support.margin_check import check_liquidations_for_variant as _check_liq
-
-    events = _check_liq(variant_id, now_utc)
-    if not events:
-        return 0
-    n = 0
-    for trade, liq in events:
-        close_fn = _load_close_fn(trade["strategy"])
-        if close_fn is None:
-            log.warning(f"[liq] no close_fn for {trade['strategy']!r} "
-                        f"({trade['id']}) — liquidation event ignored")
-            continue
-        # Set the simulated clock to the liquidation time so the close
-        # function records actual_exit_time correctly.
-        prior = clock._simulated_now if hasattr(clock, '_simulated_now') else None
-        clock.set_simulated_now(liq.liq_time)
-        try:
-            close_fn(trade["id"], liq.liq_price, "forced_exit:liquidation")
-            n += 1
-            log.warning(f"[liq] {trade['id']} {trade['strategy']} {trade['asset']} "
-                        f"force-closed at {liq.liq_time.isoformat()} "
-                        f"px={liq.liq_price:.2f} ({liq.reason})")
-        except Exception:
-            log.exception(f"[liq] close_fn raised for {trade['id']} during "
-                          f"liquidation force-close — trade may be inconsistent")
-        finally:
-            # Restore prior clock; the main loop will set it back per-tick anyway.
-            clock.set_simulated_now(prior)
     return n
 
 
@@ -427,7 +363,7 @@ def run(start: datetime, end: datetime, interval_hours: int,
         # Liquidation checks run BEFORE scheduled-exit checks so a liquidated
         # trade can't be re-counted as a scheduled close. Always-on per
         # project decision (v1 of the margin/liquidation simulator).
-        counters["liquidated"] += check_liquidations_for_variant(
+        counters["liquidated"] += force_close_liquidations(
             variant["id"], cur)
         counters["closed_scheduled"] += close_due_for_variant(
             variant["id"], cur)
