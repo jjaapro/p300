@@ -290,16 +290,16 @@ def test_self_sweep_no_op_before_exit_time(tmp_path, monkeypatch):
     assert n == 0, "should not close trades whose exit_time is in the future"
 
 
-# ─── variant_engine._close_due_shadows scoping ───────────────────────────────
+# ─── orchestrator._close_due_shadows scoping ───────────────────────────────
 
 def test_close_due_shadows_skips_disabled_variants(tmp_path, monkeypatch):
-    """Regression test: variant_engine._close_due_shadows must only touch
+    """Regression test: orchestrator._close_due_shadows must only touch
     trades belonging to ENABLED variants. The live bot used to close replay
     backtest trades because they were SHADOW + status=open, regardless of
     the variant's enabled flag — corrupting backtest results."""
     import sqlite3
     from datetime import datetime, timezone
-    from services import variant_engine
+    from strategies import orchestrator
     from strategies.support import clock, price_feed
 
     # Build dashboard.db at tmp path with two variants and one trade each.
@@ -342,7 +342,7 @@ def test_close_due_shadows_skips_disabled_variants(tmp_path, monkeypatch):
     con.commit()
     con.close()
 
-    import services.variant_engine as ve
+    import strategies.orchestrator as ve
     import strategies.trades as svc_trades
 
     closed_ids: list[str] = []

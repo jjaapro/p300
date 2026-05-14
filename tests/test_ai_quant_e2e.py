@@ -1,4 +1,4 @@
-"""End-to-end test: drive a full AI_QUANT day through variant_engine.
+"""End-to-end test: drive a full AI_QUANT day through orchestrator.
 
 What's exercised:
 
@@ -17,7 +17,7 @@ What's exercised:
   7. P-300's register_p300 spec includes AI_QUANT in its composition.
 
 This is the integration safety net: any break in the chain (sleeve
-registration / journal idempotency / variant_engine dispatch / register
+registration / journal idempotency / orchestrator dispatch / register
 config / backtest skip) surfaces here.
 """
 from __future__ import annotations
@@ -194,7 +194,7 @@ def _decision_response(direction: str, conviction: int = 65,
 # ─── Helpers ────────────────────────────────────────────────────────────────
 
 def _build_p300_variant(client: ScriptedClient | None = None) -> dict:
-    """Construct a variant dict shaped like what variant_engine.tick reads.
+    """Construct a variant dict shaped like what orchestrator.tick reads.
     The composition pulls in just AI_QUANT for these tests so other sleeves
     don't fire during the test (their gates would all be off anyway, but
     keeping the composition tight removes accidental coupling)."""
@@ -206,7 +206,7 @@ def _build_p300_variant(client: ScriptedClient | None = None) -> dict:
                 {"strategy_id": "AI_QUANT", "weight_pct": 2.0,
                  "params": {"asset": "BTC", "leverage": 3.0,
                              "stop_loss_pct": 10.0, "deterministic": False},
-                 # Test-only injection: tests hand the variant_engine
+                 # Test-only injection: tests hand the orchestrator
                  # dispatch a sleeve_cfg that already carries the mock
                  # client. _tick_composition adds _effective_leverage.
                  "_anthropic_client": client,
@@ -231,27 +231,27 @@ def _ai_quant_trades(dash_db: Path, *, only_open: bool = False) -> list[dict]:
 
 
 def _dispatch_via_variant_engine(variant: dict) -> list[dict]:
-    """Drive the AI_QUANT sleeve through variant_engine's _tick_composition.
+    """Drive the AI_QUANT sleeve through orchestrator's _tick_composition.
 
     Returns a list of (strategy_id, status_dict) for every sleeve that
     fired this tick — filtered to AI_QUANT only since that's what these
     tests care about.
 
     We call the dispatcher directly via STRATEGY_DISPATCH rather than
-    variant_engine._tick_composition because the latter requires a fully
+    orchestrator._tick_composition because the latter requires a fully
     seeded `variants` row in the DB. The lookup we exercise here is the
     one that proves AI_QUANT IS registered in STRATEGY_DISPATCH at all.
     """
-    from services import variant_engine
-    variant_engine._load_dispatch()
-    fn = variant_engine.STRATEGY_DISPATCH.get("AI_QUANT")
+    from strategies import orchestrator
+    orchestrator._load_dispatch()
+    fn = orchestrator.STRATEGY_DISPATCH.get("AI_QUANT")
     assert fn is not None, "AI_QUANT must be registered in STRATEGY_DISPATCH"
     statuses = []
     for sleeve in variant["spec"]["composition"]:
         if sleeve.get("strategy_id") != "AI_QUANT":
             continue
         cfg = dict(sleeve)
-        cfg["_effective_leverage"] = variant_engine._resolve_sleeve_leverage(
+        cfg["_effective_leverage"] = orchestrator._resolve_sleeve_leverage(
             variant["spec"], sleeve)
         statuses.append(("AI_QUANT", fn(variant, cfg)))
     return statuses
@@ -262,10 +262,10 @@ def _dispatch_via_variant_engine(variant: dict) -> list[dict]:
 def test_strategy_dispatch_includes_ai_quant():
     """Sanity: the dispatch registry has the new sleeve. Exact assertion
     so a missed import would surface here."""
-    from services import variant_engine
-    variant_engine._load_dispatch()
-    assert "AI_QUANT" in variant_engine.STRATEGY_DISPATCH
-    fn = variant_engine.STRATEGY_DISPATCH["AI_QUANT"]
+    from strategies import orchestrator
+    orchestrator._load_dispatch()
+    assert "AI_QUANT" in orchestrator.STRATEGY_DISPATCH
+    fn = orchestrator.STRATEGY_DISPATCH["AI_QUANT"]
     assert callable(fn)
     # And it's the right callable, not some old test patch
     from strategies.sleeves.ai_quant import signal as ai_quant_service
@@ -425,9 +425,9 @@ def test_backtest_runner_skips_non_deterministic_sleeves(monkeypatch):
 
     # Inject a fake AI_QUANT dispatcher into STRATEGY_DISPATCH so we
     # could detect a leak. If backtest_runner calls it, the test fails.
-    from services import variant_engine
-    variant_engine._load_dispatch()
-    monkeypatch.setitem(variant_engine.STRATEGY_DISPATCH, "AI_QUANT", fake_dispatcher)
+    from strategies import orchestrator
+    orchestrator._load_dispatch()
+    monkeypatch.setitem(orchestrator.STRATEGY_DISPATCH, "AI_QUANT", fake_dispatcher)
 
     # Also a non-skipping deterministic sleeve so we know dispatch IS
     # working in general
@@ -435,7 +435,7 @@ def test_backtest_runner_skips_non_deterministic_sleeves(monkeypatch):
         fired.append(sleeve_cfg.get("strategy_id", "?"))
         return {"status": "test"}
 
-    monkeypatch.setitem(variant_engine.STRATEGY_DISPATCH, "DET_TEST", detector)
+    monkeypatch.setitem(orchestrator.STRATEGY_DISPATCH, "DET_TEST", detector)
 
     variant = {
         "id": "v",

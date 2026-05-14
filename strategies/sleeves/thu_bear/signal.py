@@ -183,7 +183,7 @@ def _close_thu_bear_shadow(trade_id: str, exit_price: float, reason: str) -> Non
 # ─── Public tick ─────────────────────────────────────────────────────────────
 
 def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
-    """Evaluate S-096 signals for this variant. Called per-minute by variant_engine.
+    """Evaluate S-096 signals for this variant. Called per-minute by orchestrator.
 
     Parameters via sleeve_cfg.params:
       stop_loss_pct   — hard floor on per-trade loss (positive %, default 5.0)

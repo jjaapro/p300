@@ -30,7 +30,7 @@ Composite rule:
   TRADE otherwise
 
 Mode: FULLY DISPATCHED tactical sleeve (promoted from observer 2026-04-30).
-Opens shadow trades via the standard variant_engine dispatch path. The
+Opens shadow trades via the standard orchestrator dispatch path. The
 fomc_observer table still records every decision for audit purposes.
 """
 from __future__ import annotations
@@ -254,7 +254,7 @@ def _record_exit_price(fomc_date: str, price: float) -> None:
         con.close()
 
 
-# ─── Tick (called by variant_engine each minute) ─────────────────────────────
+# ─── Tick (called by orchestrator each minute) ─────────────────────────────
 
 def tick_observer() -> dict:
     """Observer tick — runs every minute alongside the variant engine.
@@ -322,7 +322,7 @@ def tick_observer() -> dict:
 
 # ─── Reporting ───────────────────────────────────────────────────────────────
 
-# ─── Trade-mode dispatcher (used by variant_engine + backtest_runner) ────────
+# ─── Trade-mode dispatcher (used by orchestrator + backtest_runner) ────────
 
 
 def _open_fomc_long(variant: dict, asset: str, entry_price: float,
@@ -412,7 +412,7 @@ def _sweep_stuck_opens(variant_id: str) -> int:
 
 
 def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
-    """Sleeve interface — called once per tick by variant_engine and the
+    """Sleeve interface — called once per tick by orchestrator and the
     replay runner. Trades BTC long T-10h to T+0.5h on FOMC days that pass
     the regime filter.
 

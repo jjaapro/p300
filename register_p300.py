@@ -45,7 +45,7 @@ VARIANT_ID = "p300_aggressive_v2_v1_0"
 
 
 def build_spec() -> dict:
-    """Composition-format spec consumed by services/variant_engine.py.
+    """Composition-format spec consumed by services/orchestrator.py.
 
     Composition lists all sleeves with live dispatch code in this repo,
     including the ported Core J+ regime-gated portfolio. Daily Core returns
@@ -98,7 +98,7 @@ def build_spec() -> dict:
             # weight_pct=0 here is a placeholder — actual sizing comes from
             # strategies.support.jplus_inputs.today_inputs() at trade-open time (regime
             # weight × inner R4 lev × vol-target lev). The four entries
-            # exist purely so variant_engine dispatches them per tick.
+            # exist purely so orchestrator dispatches them per tick.
             {"strategy_id": "JPLUS_R4_BTC", "weight_pct": 0.0,
              "params": {"asset": "BTC"},
              "note": "Core J+ R4 BTC: Mon/Wed wk1-2 06:00→18:00 UTC. Sized "

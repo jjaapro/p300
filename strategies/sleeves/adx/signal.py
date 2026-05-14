@@ -262,7 +262,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     alloc_pct = float(sleeve_cfg.get("weight_pct", 0.0))
     params = sleeve_cfg.get("params") or {}
     stop_loss_pct = float(params.get("stop_loss_pct", 10.0))
-    # Per-sleeve leverage injected by variant_engine._tick_composition.
+    # Per-sleeve leverage injected by orchestrator._tick_composition.
     # Defaults to 1.0 when called outside the composition tick (tests, etc.).
     leverage = float(sleeve_cfg.get("_effective_leverage", 1.0))
     # Translate the configured SL through the active semantic (price-move vs

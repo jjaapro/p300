@@ -30,7 +30,7 @@ from strategies import trades
 from strategies.support import clock, db, trade_db, variant_registry
 from strategies.support.price_feed import _get_current_price
 
-log = logging.getLogger("dashboard.variant_engine")
+log = logging.getLogger("dashboard.orchestrator")
 
 
 # ─── Spec resolution ─────────────────────────────────────────────────────────
@@ -50,7 +50,7 @@ def resolve_effective_spec(variant: dict) -> dict:
         return spec  # orphan overlay — treat as full_portfolio
     parent = variant_registry.get_variant(parent_id)
     if parent is None:
-        log.warning(f"[variant_engine] overlay {variant['id']} points to missing parent {parent_id}")
+        log.warning(f"[orchestrator] overlay {variant['id']} points to missing parent {parent_id}")
         return spec
     effective = dict(parent.get("spec") or {})
     # Stash modifiers for downstream use

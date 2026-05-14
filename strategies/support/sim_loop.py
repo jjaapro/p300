@@ -6,7 +6,7 @@ under a fake clock. The shared primitive lives here so the two
 callers stay structurally identical; only their per-tick callbacks
 differ:
 
-  - run.py passes ``variant_engine.tick`` (all-variants tick, like live).
+  - run.py passes ``orchestrator.tick`` (all-variants tick, like live).
   - backtest_runner.py passes a closure that runs its variant-scoped
     liquidation check + close-due check + tick_replay_variant + a
     progress log.
@@ -20,7 +20,7 @@ no DB writes. It just advances the clock and yields control.
 production callers wrap their tick_fn differently and that
 inconsistency is intentional:
 
-- **run.py --mode sim**: wraps ``variant_engine.tick`` in
+- **run.py --mode sim**: wraps ``orchestrator.tick`` in
   try/except + log.exception so a single bad tick does not abort a
   long sim. Operator semantics — "keep going, surface errors in the
   log."
@@ -66,7 +66,7 @@ def run_sim(start: datetime,
         end: final simulated UTC datetime (inclusive).
         step_seconds: simulated-clock advance per tick.
         tick_fn: callable taking the current simulated datetime; runs
-            whatever the caller wants per tick (variant_engine.tick,
+            whatever the caller wants per tick (orchestrator.tick,
             backtest_runner's liquidation+close+dispatch sequence, etc.).
             Exceptions are NOT caught here — let the caller decide.
         stop_event: optional threading.Event; loop exits early when set

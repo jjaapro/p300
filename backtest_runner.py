@@ -36,7 +36,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent
 sys.path.insert(0, str(REPO))
 
-from services import variant_engine
+from strategies import orchestrator
 from strategies.support import clock, sim_loop, trade_db, variant_registry  # noqa: E402
 from strategies.support.price_feed import _get_current_price  # noqa: E402
 from strategies.support import db, strategy_health
@@ -289,9 +289,9 @@ def close_due_for_variant(variant_id: str, now_utc: datetime) -> int:
 
 def tick_replay_variant(variant: dict) -> None:
     """Dispatch all sleeves in the replay variant's composition for the
-    current simulated clock. Mirrors variant_engine._tick_composition but
+    current simulated clock. Mirrors orchestrator._tick_composition but
     scoped to a single variant so we don't accidentally tick live data."""
-    variant_engine._load_dispatch()
+    orchestrator._load_dispatch()
     spec = variant.get("spec") or {}
     composition = spec.get("composition") or []
     for sleeve in composition:
@@ -309,12 +309,12 @@ def tick_replay_variant(variant: dict) -> None:
         # is the only honest evaluation for those sleeves.
         if (sleeve.get("params") or {}).get("deterministic") is False:
             continue
-        dispatcher = variant_engine.STRATEGY_DISPATCH.get(strategy_id)
+        dispatcher = orchestrator.STRATEGY_DISPATCH.get(strategy_id)
         if dispatcher is None:
             continue
         sleeve_with_k = dict(sleeve)
         sleeve_with_k["_effective_leverage"] = \
-            variant_engine._resolve_sleeve_leverage(spec, sleeve)
+            orchestrator._resolve_sleeve_leverage(spec, sleeve)
         try:
             dispatcher(variant, sleeve_with_k)
         except Exception:

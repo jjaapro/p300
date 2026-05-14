@@ -1,6 +1,6 @@
 """AI_QUANT sleeve — live shadow service.
 
-Fires once per UTC day at 00:05–00:15. Every minute the variant_engine
+Fires once per UTC day at 00:05–00:15. Every minute the orchestrator
 calls try_fire_for_variant; we short-circuit cheaply on the four gates
 (kill-switch / time-window / per-day-already-fired / daily-cost-cap)
 before any LLM call. On the one tick of the day that passes all four,
@@ -117,7 +117,7 @@ def _compute_defer_until_utc(now: datetime, retry_in_hours: float) -> int:
 # ─── Sizing helpers ─────────────────────────────────────────────────────────
 
 def _resolve_leverage(sleeve_cfg: dict) -> float:
-    """variant_engine._resolve_sleeve_leverage adds _effective_leverage onto
+    """orchestrator._resolve_sleeve_leverage adds _effective_leverage onto
     sleeve_cfg before dispatch; fall back to params.leverage if not present."""
     eff = sleeve_cfg.get("_effective_leverage")
     if eff is not None:

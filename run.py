@@ -66,7 +66,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent
 sys.path.insert(0, str(REPO))
 
-from services import variant_engine
+from strategies import orchestrator
 from strategies.support import trade_db, variant_registry  # noqa: E402
 
 log = logging.getLogger("p300")
@@ -241,7 +241,7 @@ def _run_live_loop(args, log) -> int:
         t0 = time.time()
         now = _clock.now_utc()
         try:
-            variant_engine.tick()
+            orchestrator.tick()
             log.info(f"tick ok ({(time.time() - t0) * 1000:.0f}ms @ {now.isoformat()})")
         except Exception as e:
             log.exception(f"tick error: {e}")
@@ -275,7 +275,7 @@ def _run_sim_loop(args, log) -> int:
 
     def _tick(cur):
         try:
-            variant_engine.tick()
+            orchestrator.tick()
         except Exception as e:
             log.exception(f"sim tick error at {cur.isoformat()}: {e}")
 

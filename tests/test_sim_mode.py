@@ -29,7 +29,7 @@ from pathlib import Path
 
 import pytest
 
-from services import variant_engine
+from strategies import orchestrator
 from strategies.support import sim_loop
 
 REPO = Path(__file__).resolve().parent.parent
@@ -127,7 +127,7 @@ def test_sim_fires_r4_btc_on_known_monday(
     start = datetime(2024, 6, 3, 5, 59, 0, tzinfo=timezone.utc)
     end = datetime(2024, 6, 3, 6, 1, 0, tzinfo=timezone.utc)
     n = sim_loop.run_sim(start, end, 60,
-                          lambda cur: variant_engine.tick())
+                          lambda cur: orchestrator.tick())
     assert n == 3, f"expected 3 ticks (05:59, 06:00, 06:01), got {n}"
 
     rows = _trades(sim_dashboard_db)
@@ -156,7 +156,7 @@ def test_sim_does_not_touch_live_dashboard_db(
     sim_loop.run_sim(
         datetime(2024, 6, 3, 5, 59, 0, tzinfo=timezone.utc),
         datetime(2024, 6, 3, 6, 5, 0, tzinfo=timezone.utc),
-        60, lambda cur: variant_engine.tick(),
+        60, lambda cur: orchestrator.tick(),
     )
 
     after = _md5(LIVE_DASH_DB)
@@ -175,7 +175,7 @@ def test_sim_and_backtest_runner_produce_identical_jplus_trades(
 
     Run both paths against the same sim dashboard.db at 1h ticks over a
     full Mon 06:00→18:00 UTC R4_BTC window. The live variant fires
-    under variant_engine.tick (run.py path); a __replay_parity variant
+    under orchestrator.tick (run.py path); a __replay_parity variant
     fires under backtest_runner.tick_replay_variant. Compare the
     JPLUS_R4_BTC trades by (asset, direction, entry_time, exit_time,
     entry_price, size_usdt) — these must match exactly.
@@ -194,10 +194,10 @@ def test_sim_and_backtest_runner_produce_identical_jplus_trades(
 
     # run.py path — ticks 'p300_aggressive_v2_v1_0' (enabled=1).
     sim_loop.run_sim(start, end, 3600,
-                      lambda cur: variant_engine.tick())
+                      lambda cur: orchestrator.tick())
 
     # backtest_runner path — registers a __replay_parity variant
-    # (enabled=0; never touched by variant_engine.tick) and runs it
+    # (enabled=0; never touched by orchestrator.tick) and runs it
     # scoped via tick_replay_variant.
     import io
     import contextlib
@@ -246,7 +246,7 @@ def test_sim_run_is_idempotent_for_same_window(
     start = datetime(2024, 6, 3, 5, 59, 0, tzinfo=timezone.utc)
     end = datetime(2024, 6, 3, 6, 5, 0, tzinfo=timezone.utc)
     runner = lambda: sim_loop.run_sim(
-        start, end, 60, lambda cur: variant_engine.tick()
+        start, end, 60, lambda cur: orchestrator.tick()
     )
 
     runner()

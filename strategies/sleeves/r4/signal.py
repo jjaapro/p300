@@ -12,7 +12,7 @@ All handlers:
   - use ``strategies.support.price_feed.get_current_price`` for live execution price
     (latest closed 1m bar; ~30s lag from instant);
   - open trades via ``strategies.trades.open_shadow_trade`` with
-    ``scheduled_exit_dt`` set so ``variant_engine._close_due_shadows``
+    ``scheduled_exit_dt`` set so ``orchestrator._close_due_shadows``
     closes them at the right time;
   - are idempotent per UTC day via the ``trades`` table existence check.
 
@@ -64,7 +64,7 @@ def _has_trade_for_day(variant_id: str, strategy: str, day_iso: str) -> bool:
 
 def r4_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     """Open R4_BTC LONG at 06:00 UTC on Mon wk1-2, scheduled to close at
-    18:00 UTC same day. ``variant_engine._close_due_shadows`` handles the
+    18:00 UTC same day. ``orchestrator._close_due_shadows`` handles the
     close via ``scheduled_exit_dt``.
 
     Mon-only since 2026-05-08 — Wednesdays moved to ``r4_btc_v2_try_fire``

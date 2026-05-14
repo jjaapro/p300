@@ -216,13 +216,13 @@ def check_dispatch_wired() -> None:
     spec = json.loads(row[0])
     strategy_ids = [s["strategy_id"] for s in spec.get("composition", [])
                     if s.get("strategy_id")]
-    from services import variant_engine
-    variant_engine._load_dispatch()
+    from strategies import orchestrator
+    orchestrator._load_dispatch()
     for sid in strategy_ids:
-        if sid in variant_engine.STRATEGY_DISPATCH:
+        if sid in orchestrator.STRATEGY_DISPATCH:
             _ok(sid, "dispatch wired")
         else:
-            _fail(sid, "NOT in STRATEGY_DISPATCH — check services/variant_engine.py", 4)
+            _fail(sid, "NOT in STRATEGY_DISPATCH — check services/orchestrator.py", 4)
 
 
 def check_warmup_sufficiency() -> None:
