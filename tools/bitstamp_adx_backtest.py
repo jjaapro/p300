@@ -248,7 +248,7 @@ def run_strategy(candles: list[dict], start_date: str,
                 was_low_state = True
             entry_armed = was_low_state and adx[i] >= ADX_HIGH_THRESH
         elif mode == "service":
-            from services import adx_service
+            from strategies.sleeves.adx import signal as adx_service
             sig = adx_service._current_signal(candles[: i + 1])
             entry_armed = bool(sig and sig["entry_sig"])
         else:

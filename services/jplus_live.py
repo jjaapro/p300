@@ -1,7 +1,7 @@
 """Real-time live entry handlers for Core J+ sub-sleeves.
 
 Each handler matches the ``try_fire_for_variant(variant, sleeve_cfg) -> dict``
-contract used by the tactical stack (services/adx_service.py,
+contract used by the tactical stack (strategies/sleeves/adx/signal.py,
 services/fomc_service.py, etc.) so ``services.variant_engine`` can
 dispatch the same way it dispatches FOMC/ADX/CPR/etc.
 

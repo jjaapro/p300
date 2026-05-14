@@ -68,7 +68,7 @@ def _load_btc_daily_candles(n_days: int = _DAILY_LOOKBACK_DAYS) -> list[dict]:
     """BTC daily candles aggregated from cd_spot_binance 1h, newest last.
 
     Drops the still-forming bucket so all returned candles are CLOSED
-    (matches the convention used by adx_service)."""
+    (matches the convention used by the ADX sleeve)."""
     upper = clock.now_ts()
     since = upper - n_days * 86400
     con = sqlite3.connect(str(db.TRADER_DB))

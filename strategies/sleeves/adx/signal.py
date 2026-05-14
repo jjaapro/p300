@@ -29,40 +29,10 @@ from services import clock
 
 log = logging.getLogger("dashboard.adx_service")
 
-# S-003 canonical parameters (match backtest_adx_regime.py defaults)
-ADX_PERIOD = 14
-ADX_LOW_THRESH = 20.0
-ADX_HIGH_THRESH = 25.0
-EMA_LEN = 50
-# Trend filter EMA length. Set to 0 to disable.
-# Filter rule (asymmetric — LONGs only, since 2026-05-04):
-#   LONG  requires close > EMA(N) AND close > EMA(50);
-#   SHORT has no trend filter (close < EMA(50) is the only direction gate).
-# Bitstamp BTC/USD walk-forward 2018-2024 in-sample optimum tied at 150/160
-# with the symmetric filter (+1181% with SL=12% vs +747% baseline). The
-# 2026-05-04 funding-aware backtest_runner replay over 2023-09 → 2026-05
-# showed the symmetric variant losing $1,121 vs no-filter because counter-
-# trend SHORTs in bull markets earn perp funding AND often pay off on price
-# (e.g. 2025-02-22 +15.93%, 2025-10-11 +29.63%, 2026-01-21 +20.04%, all
-# net of funding). LONG-only filter keeps the bull-market whipsaw protection
-# the symmetric variant was designed for (e.g. 2026-04-26 LONG at $78,660
-# with close < EMA(150) $79,325).
-TREND_EMA_LEN = 150
-WARMUP_BARS = max(ADX_PERIOD * 3, EMA_LEN + 1, TREND_EMA_LEN + 1)
-
-# State-machine version of was_low (matches the Pine reference exactly).
-# Replaces a rolling 20-bar lookback variant that shipped originally — that
-# version had two pathologies: (a) flip-flop in chop, since the lookback
-# stayed armed for ~20 bars after every <20 reading and re-fired on each
-# direction change, and (b) it BLOCKED legitimate flips during sustained
-# trends because once 20 bars passed without an ADX<20 reading, no entry
-# could fire. Bitstamp 8.7y backtest: rolling-lookback +175% / DD -89.6%
-# vs stateful +924% / DD -40.1% (both with 10% SL). See
-# bitstamp_adx_backtest.py for the calibration vs the TradingView Pine
-# reference. — 2026-05-01.
-
-# Round-trip transaction cost (5bp each leg on BTC perps — taker estimate).
-COST_BP_RT = 10.0
+from .config import (
+    ADX_PERIOD, ADX_LOW_THRESH, ADX_HIGH_THRESH,
+    EMA_LEN, TREND_EMA_LEN, WARMUP_BARS, COST_BP_RT,
+)
 
 # Dedup the trend-filter-block log message — the daily signal is stable for
 # the whole UTC day, so without this dedup we'd log the same block 1440

@@ -143,7 +143,7 @@ def _load_close_fn(strategy: str):
     """Return the sleeve-specific close function (which applies fees/funding).
     Falls back to the engine's simple close for unknown strategies."""
     if strategy == "ADX":
-        from services.adx_service import _close_adx_shadow
+        from strategies.sleeves.adx.signal import _close_adx_shadow
         return _close_adx_shadow
     if strategy == "CARRY":
         from services.carry_service import _close_carry_shadow

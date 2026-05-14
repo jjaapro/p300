@@ -13,7 +13,7 @@ loaders (not synthetic fixtures). It's slow-ish (~15s) but runs once.
 
 Coverage:
   - jplus.simulate (Core J+, 50% portfolio weight)
-  - services.adx_service._current_signal (S-003 ADX, 15%)
+  - strategies.sleeves.adx.signal._current_signal (S-003 ADX, 15%)
   - regime_classifier.classify_regime (gates S-096 Thu Bear, 6%)
   - services.carry_service._load_recent_daily_funding (S-078 Carry, 12%)
   - services.cpr_service._load_daily_closes (CPR, 8%)
@@ -102,7 +102,7 @@ def test_simulate_on_tiny_window_doesnt_crash():
 def test_adx_signal_no_lookahead(early_clock, late_clock):
     """ADX _current_signal must produce identical results at two different
     clock positions for dates available to both."""
-    from services.adx_service import _load_btc_daily_candles, _current_signal
+    from strategies.sleeves.adx.signal import _load_btc_daily_candles, _current_signal
 
     clock.set_simulated_now(early_clock)
     early_candles = _load_btc_daily_candles(limit_days=400)
