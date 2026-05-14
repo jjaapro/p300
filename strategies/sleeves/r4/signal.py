@@ -106,7 +106,14 @@ def r4_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     if weight <= 0:
         return {"status": "regime_zero_weight", "mode": ti["mode"]}
 
-    inner_lev = R4_INNER_LEV_GATED if ti["gated"] else R4_INNER_LEV_UNGATED
+    # P2.4b: orchestrator-injected gate, ti["gated"] fallback for tests.
+    # The R4 gate modulates inner leverage: ungated mult=1.0 -> 2.5x;
+    # gated mult=0.4 -> 1.0x (mirrors R4_INNER_LEV_GATED / _UNGATED).
+    eff_gate = sleeve_cfg.get("_effective_gate")
+    if eff_gate is not None:
+        inner_lev = R4_INNER_LEV_UNGATED * eff_gate.leverage_mult
+    else:
+        inner_lev = R4_INNER_LEV_GATED if ti["gated"] else R4_INNER_LEV_UNGATED
     stacked_lev = inner_lev * float(ti["lev"])
 
     price = price_feed.get_current_price("BTC")
@@ -175,7 +182,12 @@ def r4_eth_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     if weight <= 0:
         return {"status": "regime_zero_weight", "mode": ti["mode"]}
 
-    inner_lev = R4_INNER_LEV_GATED if ti["gated"] else R4_INNER_LEV_UNGATED
+    # P2.4b: orchestrator-injected gate, ti["gated"] fallback for tests.
+    eff_gate = sleeve_cfg.get("_effective_gate")
+    if eff_gate is not None:
+        inner_lev = R4_INNER_LEV_UNGATED * eff_gate.leverage_mult
+    else:
+        inner_lev = R4_INNER_LEV_GATED if ti["gated"] else R4_INNER_LEV_UNGATED
     stacked_lev = inner_lev * float(ti["lev"])
 
     price = price_feed.get_current_price("ETH")
@@ -246,7 +258,12 @@ def _r4_v2_try_fire(variant: dict, asset: str, strategy: str,
     if weight <= 0:
         return {"status": "regime_zero_weight", "mode": ti["mode"]}
 
-    inner_lev = R4_INNER_LEV_GATED if ti["gated"] else R4_INNER_LEV_UNGATED
+    # P2.4b: orchestrator-injected gate, ti["gated"] fallback for tests.
+    eff_gate = sleeve_cfg.get("_effective_gate")
+    if eff_gate is not None:
+        inner_lev = R4_INNER_LEV_UNGATED * eff_gate.leverage_mult
+    else:
+        inner_lev = R4_INNER_LEV_GATED if ti["gated"] else R4_INNER_LEV_UNGATED
     stacked_lev = inner_lev * float(ti["lev"])
 
     price = price_feed.get_current_price(asset)

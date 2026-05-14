@@ -402,11 +402,13 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
     the 60% core sleeve) are skipped here to avoid double-firing — they run
     in their own right as separate enabled variants.
 
-    Per-sleeve leverage and per-regime weight (for migrated sleeves) are
-    resolved here and injected into the sleeve_cfg as ``_effective_leverage``
-    and ``_effective_weight_pct``. Downstream sleeves multiply leverage into
-    size_usdt and write to trade.leverage; weight feeds allocation_pct."""
-    from strategies.support import allocation
+    Per-sleeve leverage, per-regime weight, and gate decision (for migrated
+    sleeves) are resolved here and injected into the sleeve_cfg as
+    ``_effective_leverage`` / ``_effective_weight_pct`` / ``_effective_gate``.
+    Downstream sleeves multiply leverage into size_usdt and write to
+    trade.leverage; weight feeds allocation_pct; gate.leverage_mult further
+    modulates leverage; gate.fire=False is a hard entry block."""
+    from strategies.support import allocation, gating
     _load_dispatch()
     spec = variant.get("spec") or {}
     composition = spec.get("composition") or []
@@ -424,11 +426,12 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
             continue
         if not strategy_id:
             continue
-        # Resolve and inject per-sleeve leverage + regime-aware weight
+        # Resolve and inject per-sleeve leverage + regime-aware weight + gate
         # (non-destructive copy).
         sleeve_with_k = dict(sleeve)
         sleeve_with_k["_effective_leverage"] = _resolve_sleeve_leverage(spec, sleeve)
         sleeve_with_k["_effective_weight_pct"] = _resolve_sleeve_weight(sleeve, regime)
+        sleeve_with_k["_effective_gate"] = gating.get_decision(strategy_id, regime, now_utc)
         sleeve = sleeve_with_k
         dispatcher = STRATEGY_DISPATCH.get(strategy_id)
         if dispatcher is None:

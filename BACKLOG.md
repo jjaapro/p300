@@ -213,6 +213,15 @@ commit and probably multi-session. A reasonable sub-decomposition:
 - **P2.4b** — Define a gating interface; refactor THU_BEAR V4 / FOMC
   composite / R4 vol-gate to register against it; document expected
   walk-forward CV protocol for new gates.
+  *Pilot shipped 2026-05-15: `strategies/support/gating.py` holds the
+  `GateDecision` dataclass + `GATE_REGISTRY`. R4 vol-gate registered
+  for the 4 R4 sleeves; orchestrator injects `_effective_gate` per
+  dispatch alongside `_effective_weight_pct` / `_effective_leverage`.
+  R4 handlers consume `gate.leverage_mult` for inner leverage. THU_BEAR
+  V4 + FOMC composite migration pending — they refactor into gate
+  functions returning `GateDecision(fire=False, reason=...)` for the
+  block path. Walk-forward CV protocol for new gates is still
+  unwritten.*
 - **P2.4c** — Portfolio vol-target: replace the J+-only vol-target with
   a portfolio-level scalar applied to every sleeve's notional.
 - **P2.4d** — Margin headroom check; deferral policy.
