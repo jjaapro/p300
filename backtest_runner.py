@@ -149,7 +149,7 @@ def _load_close_fn(strategy: str):
         from services.carry_service import _close_carry_shadow
         return _close_carry_shadow
     if strategy == "THU_BEAR":
-        from services.thu_bear_service import _close_thu_bear_shadow
+        from strategies.sleeves.thu_bear.signal import _close_thu_bear_shadow
         return _close_thu_bear_shadow
     if strategy == "PDO_RETOUCH":
         from services.pdo_retouch_service import _close_pdo_shadow

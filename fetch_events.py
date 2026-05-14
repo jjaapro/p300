@@ -12,7 +12,7 @@ Maintenance:
   Annually, when the Fed and BLS publish next year's release schedule,
   append new rows to FOMC_DECISIONS and CPI_DATES below and re-run.
 
-Read by [services/thu_bear_service.py] (event-day filter) and the regime
+Read by [strategies/sleeves/thu_bear/signal.py] (event-day filter) and the regime
 classifier (no-trade-on-FOMC rule). Failing closed when this table is
 empty disables those filters — health.py will pass but THU_BEAR will
 not fire.

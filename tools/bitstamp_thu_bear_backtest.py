@@ -1,11 +1,11 @@
 """S-096 Thu Bear V4 backtest on Bitstamp BTCUSD 1H — Pine parity validator.
 
-Replays services/thu_bear_service.pine against Bitstamp's official OHLC feed
+Replays strategies/sleeves/thu_bear/signal.pine against Bitstamp's official OHLC feed
 (same data TradingView's BITSTAMP:BTCUSD chart shows). Compares its trade
 list and equity curve against TV's strategy-tester export to verify that
 Pine and the Python port produce identical results — bar-for-bar.
 
-This script is a Pine port, NOT a wrapper around services/thu_bear_service.py.
+This script is a Pine port, NOT a wrapper around strategies/sleeves/thu_bear/signal.py.
 The live service uses the FRED-driven `scheduled_events` calendar and exits
 at 23:00 UTC; the Pine script uses dom-based CPI/NFP/OPEX approximation and
 exits at Fri 00:00 UTC. To validate Pine parity we must replicate Pine.
@@ -39,7 +39,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 
-# Pine inputs (mirrored verbatim from services/thu_bear_service.pine)
+# Pine inputs (mirrored verbatim from strategies/sleeves/thu_bear/signal.pine)
 REGIME_EMA_LEN = 50
 SL_PCT = 5.0
 ENTRY_HOUR_UTC = 0

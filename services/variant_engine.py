@@ -303,14 +303,15 @@ def _load_dispatch():
     global STRATEGY_DISPATCH
     if STRATEGY_DISPATCH:
         return
-    from services import (thu_bear_service, carry_service,
+    from services import (carry_service,
                                      pdo_retouch_service, cpr_service,
                                      jplus_live, fomc_service,
                                      ai_quant_service)
     from strategies.sleeves.adx import signal as adx_sleeve
+    from strategies.sleeves.thu_bear import signal as thu_bear_sleeve
     STRATEGY_DISPATCH = {
         "S-003":           adx_sleeve.try_fire_for_variant,
-        "S-096":           thu_bear_service.try_fire_for_variant,
+        "S-096":           thu_bear_sleeve.try_fire_for_variant,
         "S-078":           carry_service.try_fire_for_variant,
         "PDO-L-RF":        pdo_retouch_service.try_fire_for_variant,
         "CPR":             cpr_service.try_fire_for_variant,

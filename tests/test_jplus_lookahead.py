@@ -18,7 +18,7 @@ Coverage:
   - services.carry_service._load_recent_daily_funding (S-078 Carry, 12%)
   - services.cpr_service._load_daily_closes (CPR, 8%)
   - services.pdo_retouch_service._btc_30d_return_pct (PDO, 4%)
-  - services.thu_bear_service._get_regime_for_prev_day (Thu Bear, 6%)
+  - strategies.sleeves.thu_bear.signal._get_regime_for_prev_day (Thu Bear, 6%)
   - services.fomc_service.evaluate (FOMC, 5%)
 """
 from __future__ import annotations
@@ -262,8 +262,8 @@ def test_thu_bear_regime_lookup_no_lookahead():
     regime label at two different clock positions, both well after the target
     Thursday. The cache is keyed per UTC day so we clear it between clocks to
     force a fresh regime_map load each time."""
-    import services.thu_bear_service as tb
-    from services.thu_bear_service import _get_regime_for_prev_day
+    from strategies.sleeves.thu_bear import signal as tb
+    from strategies.sleeves.thu_bear.signal import _get_regime_for_prev_day
 
     target_thursday = datetime(2024, 5, 9, 0, tzinfo=timezone.utc)
     t1 = datetime(2024, 6, 1, tzinfo=timezone.utc)
