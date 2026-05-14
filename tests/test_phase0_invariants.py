@@ -160,7 +160,7 @@ def test_today_inputs_returns_complete_weights():
     """today_inputs() must return a dict whose 'weights' key has all six
     sub-sleeve weight keys. Catches simulator-import or warmup regressions
     that would silently make the J+ live handlers exit with no_inputs."""
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     ti = core_sim.today_inputs()
     assert ti is not None, (
         "today_inputs() returned None — simulator warmup failed (likely "

@@ -10,7 +10,7 @@ Tactical sleeves (50%):
   S-003 ADX, S-078 Carry, S-096 V4 Thu Bear, PDO-L-RF, CPR, FOMC.
 
 Core J+ sub-sleeves (50%, sized per-tick from
-``jplus.simulate.today_inputs()``):
+``strategies.support.jplus_inputs.today_inputs()``):
   JPLUS_R4_BTC, JPLUS_R4_ETH, JPLUS_R4_BTC_V2, JPLUS_R4_ETH_V2,
   JPLUS_EMA_BTC, JPLUS_ETH_DAILY.
 
@@ -177,7 +177,7 @@ def _print_today_inputs_snapshot() -> None:
     sanity check on startup ("what regime are we in, are R4 sleeves
     going to fire today, what's the vol-target leverage")."""
     try:
-        from jplus import simulate as core_sim
+        from strategies.support import jplus_inputs as core_sim
         ti = core_sim.today_inputs()
         if ti is None:
             log.warning("today_inputs snapshot: simulator returned None "

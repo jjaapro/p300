@@ -1,19 +1,19 @@
-"""Daily simulator — composes regime, R4, EMA sleeve, vol-target, and the
-rule-based R4 gate into a daily return series for the Core J+ portfolio.
+"""J+ live decision inputs — regime, vol-target leverage, R4 gate, EMA
+position, and per-regime sub-sleeve weights for "today".
 
-Ported from upstream `validate_s100_vt50_jplus.simulate_full_jplus` with:
-  - ML gate replaced by rule-based gate (`jplus.gate`) using T-1 data only.
-  - GOLD overlay dropped; crypto-side return is taken at full weight.
-  - Data loaders all clock-bounded via `services.clock`.
+Public entrypoint: ``today_inputs()``. Called by the live entry handlers
+in ``strategies/sleeves/{r4,ema,eth_daily}/signal.py`` to size positions
+at trade-open time, using only data available through yesterday's close.
 
-Produces: {date_iso: daily_return_pct} — where return is NET (includes the
-regime-allocation weighting, EMA sleeve contribution, R4 intraday windows
-gated by the volatility rule, per-day leverage from the vol target).
+The heavy lifting is in ``_run_decision_loop()``, which walks the full
+historical series (BTC daily/hourly, ETH daily/hourly, LS ratio) and
+produces both today's inputs AND the per-day series consumed by
+``studies/jplus_analytic/simulate.py`` (the analytic backtest that
+re-uses this engine for offline research).
 
-Pre-leverage (1x) returns are tracked for the vol-target feedback loop.
-
-Look-ahead safety: all decision inputs for date T (regime, leverage, gate,
-EMA position) are derived from data available strictly through T-1.
+Look-ahead safety: every input for date T is derived strictly from data
+available at yesterday's UTC close (regime, EMA cross, R4 gate, vol-
+target all use T-1 windows by construction).
 """
 from __future__ import annotations
 
@@ -282,45 +282,6 @@ def _run_decision_loop() -> tuple[dict[str, dict], dict]:
     return out, final_state
 
 
-def simulate(start_date: str | None = None, end_date: str | None = None) -> dict[str, dict]:
-    """Run the J+ regime-gate simulator over the available history.
-
-    Args:
-      start_date: ISO string; only dates ≥ this are emitted. Default: no floor.
-      end_date:   ISO string; only dates ≤ this are emitted. Default: no ceiling
-                  (uses data up to the current clock).
-
-    Returns:
-      {date_iso: {
-          "return_pct": float,   net daily return in percent
-          "mode": str,           regime classification
-          "lev": float,          vol-target leverage applied today
-          "r1x_pct": float,      pre-leverage 1x return in percent
-          "gated": bool,         whether the rule-based gate fired today
-          "ema_p": int,          EMA sleeve position (+1/-1/0)
-      }}
-    """
-    out, _state = _run_decision_loop()
-
-    # Cap at strictly BEFORE the clock's UTC date. A daily close on the clock
-    # date itself would mix fully-formed bars from before the clock with the
-    # single hourly bar that sits AT the clock, giving a non-reproducible
-    # "partial daily close." Excluding the clock date keeps the return series
-    # look-ahead-safe AND deterministic across clock positions.
-    clock_date = clock.now_utc().date().isoformat()
-    out = {k: v for k, v in out.items() if k < clock_date}
-
-    # Apply optional date filters.
-    if start_date or end_date:
-        keys = sorted(out.keys())
-        if start_date:
-            keys = [k for k in keys if k >= start_date]
-        if end_date:
-            keys = [k for k in keys if k <= end_date]
-        out = {k: out[k] for k in keys}
-    return out
-
-
 def today_inputs() -> dict | None:
     """Decision inputs (regime mode, vol-target leverage, R4 gate, EMA
     position, sub-sleeve weights) for the CURRENT UTC date, derived from
@@ -393,54 +354,3 @@ def today_inputs() -> dict | None:
         "weights": weights,
         "weights_prev": weights_prev,
     }
-
-
-def apply_r4_fees(series: dict[str, dict], fee_bp_rt: float = 10.0) -> None:
-    """Subtract R4 round-trip fees from each day's ``return_pct``, in place.
-
-    The simulator emits GROSS R4 window returns; trade-event ledger
-    paths charge the round-trip fee at trade close. Offline-research
-    consumers of ``return_pct`` that want fee-net analytic series
-    (e.g. parameter sweeps that compare against legacy backtest
-    numbers) re-apply the same fee model via this helper.
-
-    The fee in % of capital terms for one R4 fire =
-        capped_regime_weight × r4_inner_lev × vol_target_lev × (fee_bp/10000) × 100
-
-    where ``r4_inner_lev`` is 1.0 if the gate fired today, else 2.5.
-    Weights are looked up via ``_cap_core_weights(REGIME_WEIGHTS_FULL[mode])``
-    — the same capped values the simulator loop and ``today_inputs()``
-    use, NOT raw REGIME_WEIGHTS_FULL. Pre-2026-05-13 a separate inline
-    duplicate of the raw weight table (``_REGIME_R4_WEIGHTS``) was used
-    here, which charged fees on the raw 40%-of-capital R4_ETH position
-    while the simulator's gross P&L was sized at the capped 14.8% — the
-    helper subtracted 2-3× too much in fees. See AUDIT_2026_05_13.
-
-    No runtime path calls this. Live (and sim) fees come from the
-    trade-event ledger, which is the canonical P&L source. This helper
-    exists only for offline research that wants the analytic fee-net
-    return series alongside ``simulate()`` output.
-    """
-    fee_frac = fee_bp_rt / 10000.0
-    # Pre-compute capped weights per regime once — same source of truth
-    # as the simulator loop (avoids drift between the two).
-    _capped: dict[str, dict[str, float]] = {
-        mode: _cap_core_weights(REGIME_WEIGHTS_FULL[mode])
-        for mode in REGIME_WEIGHTS_FULL
-    }
-    for rec in series.values():
-        weights = _capped.get(rec.get("mode", ""), {})
-        gated = bool(rec.get("gated", False))
-        r4_lev = 1.0 if gated else 2.5
-        lev = float(rec.get("lev", 1.0))
-        fee_pct = 0.0
-        if rec.get("r4_btc_fired"):
-            fee_pct += weights.get("r4_btc", 0.0) * r4_lev * lev * fee_frac * 100.0
-        if rec.get("r4_eth_fired"):
-            fee_pct += weights.get("r4_eth", 0.0) * r4_lev * lev * fee_frac * 100.0
-        if rec.get("r4_btc_v2_fired"):
-            fee_pct += weights.get("r4_btc_v2", 0.0) * r4_lev * lev * fee_frac * 100.0
-        if rec.get("r4_eth_v2_fired"):
-            fee_pct += weights.get("r4_eth_v2", 0.0) * r4_lev * lev * fee_frac * 100.0
-        rec["return_pct"] = float(rec["return_pct"]) - fee_pct
-        rec["r4_fees_pct"] = fee_pct

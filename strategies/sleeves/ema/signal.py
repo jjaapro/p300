@@ -1,7 +1,7 @@
 """EMA(BTC) live entry handler — continuous position with weekly-cross flips.
 
 Per-tick reconciliation: open / hold / scale / flip / close based on
-``jplus.simulate.today_inputs().ema_p`` and the regime-weighted sizing
+``strategies.support.jplus_inputs.today_inputs().ema_p`` and the regime-weighted sizing
 target. See README.md for the state-machine table.
 """
 from __future__ import annotations
@@ -80,7 +80,7 @@ def ema_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     now = clock.now_utc()
     today_iso = now.date().isoformat()
 
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     ti = core_sim.today_inputs()
     if ti is None:
         return {"status": "no_inputs"}

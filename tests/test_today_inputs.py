@@ -14,7 +14,8 @@ from datetime import datetime, timezone
 import pytest
 
 from services import clock
-from jplus import simulate
+from strategies.support import jplus_inputs as simulate
+from studies.jplus_analytic import simulate as analytic_sim
 
 
 @pytest.mark.slow
@@ -95,7 +96,7 @@ def test_today_inputs_consistent_with_simulator_recent_state():
         # moment late enough that 2026-05-04 is "yesterday" for both
         # paths. simulate() emits rows < clock_date; today_inputs uses
         # data through yesterday.
-        sim_out = simulate.simulate(end_date=target_iso)
+        sim_out = analytic_sim.simulate(end_date=target_iso)
     finally:
         clock.set_simulated_now(None)
     # 2026-05-04 should be in the simulator output (it's < 2026-05-05

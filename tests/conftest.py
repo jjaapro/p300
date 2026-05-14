@@ -12,7 +12,7 @@ from pathlib import Path
 
 import pytest
 
-# Repo root on path so "from jplus import ..." etc. work regardless of CWD.
+# Repo root on path so "from strategies import ..." etc. work regardless of CWD.
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO))
 

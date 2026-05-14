@@ -1,7 +1,7 @@
 """S-099 R4 live entry handlers.
 
 Four handlers, one per dispatch key, all calendar-driven LONG entries
-sized off ``jplus.simulate.today_inputs()``:
+sized off ``strategies.support.jplus_inputs.today_inputs()``:
 
   r4_btc_try_fire    -> JPLUS_R4_BTC      (Mon wk1-2, 06:00 → 18:00 UTC)
   r4_eth_try_fire    -> JPLUS_R4_ETH      (Tue → Wed wk1-2, 20:00 → 20:00 UTC)
@@ -71,7 +71,7 @@ def r4_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
 
     Sizing: ``capital × weights['r4_btc'] × inner_lev × vol_lev`` where
     inner_lev is 2.5× (or 1.0× if the gate fired) and vol_lev is the
-    vol-target leverage. All from ``jplus.simulate.today_inputs()``.
+    vol-target leverage. All from ``strategies.support.jplus_inputs.today_inputs()``.
 
     Returns a status dict — see in-code branches for status keys.
     """
@@ -91,7 +91,7 @@ def r4_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     if _has_trade_for_day(variant["id"], STRATEGY_R4_BTC, today_iso):
         return {"status": "already_open"}
 
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     ti = core_sim.today_inputs()
     if ti is None:
         return {"status": "no_inputs"}
@@ -158,7 +158,7 @@ def r4_eth_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     if _has_trade_for_day(variant["id"], STRATEGY_R4_ETH, today_iso):
         return {"status": "already_open"}
 
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     ti = core_sim.today_inputs()
     if ti is None:
         return {"status": "no_inputs"}
@@ -221,7 +221,7 @@ def _r4_v2_try_fire(variant: dict, asset: str, strategy: str,
     if _has_trade_for_day(variant["id"], strategy, today_iso):
         return {"status": "already_open"}
 
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     ti = core_sim.today_inputs()
     if ti is None:
         return {"status": "no_inputs"}

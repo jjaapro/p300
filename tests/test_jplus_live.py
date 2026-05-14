@@ -55,7 +55,7 @@ def _today_inputs_stub(mode="uncertain", lev=2.0, gated=False, ema_p=-1,
     means stubs that don't pass them explicitly behave like "today is a
     fresh cross / regime entry" — which is what most existing tests want.
     Tests for the cold-start guard pass them explicitly."""
-    from jplus import simulate
+    from strategies.support import jplus_inputs as simulate
     if ema_p_prev is None:
         ema_p_prev = -ema_p if ema_p != 0 else 0
     if mode_prev is None:
@@ -145,7 +145,7 @@ def test_r4_btc_opens_on_monday_within_window(live_env, monkeypatch):
     """Mon wk1-2 between 06:00 and 18:00 with valid inputs and price → opens.
     Verify trade fields: strategy, asset, direction, sizing math, exit_time."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
                          lambda: _today_inputs_stub(mode="uncertain", lev=2.0,
@@ -185,7 +185,7 @@ def test_r4_btc_opens_on_monday_within_window(live_env, monkeypatch):
 def test_r4_btc_idempotent_within_window(live_env, monkeypatch):
     """Calling the handler twice in the same window opens exactly one trade."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
                          lambda: _today_inputs_stub(mode="uncertain", lev=2.0))
@@ -211,7 +211,7 @@ def test_r4_btc_skips_when_regime_zero_weight(live_env, monkeypatch):
     """In bear regime weights['r4_btc'] = 0 → handler returns
     ``regime_zero_weight`` without opening."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
                          lambda: _today_inputs_stub(mode="bear", lev=1.5))
@@ -228,7 +228,7 @@ def test_r4_btc_no_inputs_returns_status(live_env, monkeypatch):
     """If today_inputs() returns None (cold DB), handler reports
     ``no_inputs`` without crashing."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
     monkeypatch.setattr(core_sim, "today_inputs", lambda: None)
     clock.set_simulated_now(datetime(2026, 5, 4, 6, 1, tzinfo=timezone.utc))
@@ -242,7 +242,7 @@ def test_r4_btc_no_inputs_returns_status(live_env, monkeypatch):
 def test_r4_btc_no_price_returns_status(live_env, monkeypatch):
     """Stale data → price_feed returns None → handler reports ``no_price``."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: None)
     monkeypatch.setattr(core_sim, "today_inputs",
                          lambda: _today_inputs_stub(mode="uncertain", lev=2.0))
@@ -258,7 +258,7 @@ def test_r4_btc_inner_lev_collapses_when_gated(live_env, monkeypatch):
     """When today_inputs.gated=True, inner_lev is 1.0× instead of 2.5×.
     Stacked leverage should equal vol_lev directly."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
                          lambda: _today_inputs_stub(mode="uncertain", lev=2.0,
@@ -310,7 +310,7 @@ def test_r4_eth_opens_tue_20_with_exit_wed_20(live_env, monkeypatch):
     """Tue 2026-05-05 20:01 UTC (next-day Wed=05-06 day=6 ≤14) opens with
     scheduled_exit_dt at Wed 20:00 UTC."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
     monkeypatch.setattr(core_sim, "today_inputs",
                          lambda: _today_inputs_stub(mode="uncertain", lev=2.0))
@@ -331,7 +331,7 @@ def test_r4_eth_opens_tue_20_with_exit_wed_20(live_env, monkeypatch):
     assert row["asset"] == "ETH"
     assert row["direction"] == "LONG"
     # uncertain raw r4_eth=0.40, capped by CORE_ALLOC_CAP/1.35 → 0.1481
-    from jplus import simulate as _sim
+    from strategies.support import jplus_inputs as _sim
     expected_w = _sim._cap_core_weights(_sim.REGIME_WEIGHTS_FULL["uncertain"])["r4_eth"]
     assert row["size_usdt"] == pytest.approx(CAPITAL_USDT * expected_w * 5.0)
     # Exit at Wed 2026-05-06 20:00 UTC
@@ -341,7 +341,7 @@ def test_r4_eth_opens_tue_20_with_exit_wed_20(live_env, monkeypatch):
 def test_r4_eth_idempotent_within_window(live_env, monkeypatch):
     """Two calls on the same Tuesday after 20:00 produce one trade."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
     monkeypatch.setattr(core_sim, "today_inputs",
                          lambda: _today_inputs_stub(mode="uncertain", lev=2.0))
@@ -365,7 +365,7 @@ def test_r4_eth_idempotent_within_window(live_env, monkeypatch):
 def test_r4_eth_bear_regime_skips(live_env, monkeypatch):
     """In bear regime weights['r4_eth'] = 0 → handler skips."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
     monkeypatch.setattr(core_sim, "today_inputs",
                          lambda: _today_inputs_stub(mode="bear", lev=1.5))
@@ -384,7 +384,7 @@ def test_ema_btc_opens_when_no_position(live_env, monkeypatch):
     """No open EMA_BTC + ema_p=+1 → OPEN LONG. Sized at
     capital × weight × lev / price."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
                          lambda: _today_inputs_stub(mode="uncertain", lev=2.0,
@@ -415,7 +415,7 @@ def test_ema_btc_opens_when_no_position(live_env, monkeypatch):
 def test_ema_btc_opens_short_when_ema_p_negative(live_env, monkeypatch):
     """ema_p=-1 → SHORT direction."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
                          lambda: _today_inputs_stub(mode="uncertain", lev=2.0,
@@ -437,7 +437,7 @@ def test_ema_btc_opens_short_when_ema_p_negative(live_env, monkeypatch):
 def test_ema_btc_no_position_when_ema_p_zero(live_env, monkeypatch):
     """ema_p=0 (warmup edge) → no_position_needed; nothing opened."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
                          lambda: _today_inputs_stub(mode="uncertain", lev=2.0,
@@ -454,7 +454,7 @@ def test_ema_btc_flips_on_direction_change(live_env, monkeypatch):
     """Existing LONG + ema_p flips to -1 → FLIP event; new trade opens
     with parent_position_id linkage."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
     # Day 1: open LONG.
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -499,7 +499,7 @@ def test_ema_btc_idempotent_within_same_day(live_env, monkeypatch):
     """Second tick on the same UTC day after the first SCALE/LEV_ADJ
     triggers no-op — UNIQUE constraint on adjustment events."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     # Pre-stage an open EMA_BTC trade with non-matching qty/lev so the
     # first call would emit SCALE+LEVERAGE_ADJUST.
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
@@ -535,7 +535,7 @@ def test_ema_btc_idempotent_within_same_day(live_env, monkeypatch):
 def test_eth_daily_no_action_in_uncertain(live_env, monkeypatch):
     """Uncertain regime weight=0 + nothing open → no_position_needed."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
     monkeypatch.setattr(core_sim, "today_inputs",
                          lambda: _today_inputs_stub(mode="uncertain", lev=2.0))
@@ -550,7 +550,7 @@ def test_eth_daily_no_action_in_uncertain(live_env, monkeypatch):
 def test_eth_daily_opens_in_strong_bull(live_env, monkeypatch):
     """Strong_bull → eth_daily weight=0.20, lev=3 (cap), opens LONG."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
     monkeypatch.setattr(core_sim, "today_inputs",
                          lambda: _today_inputs_stub(mode="strong_bull",
@@ -578,7 +578,7 @@ def test_eth_daily_opens_in_strong_bull(live_env, monkeypatch):
 def test_eth_daily_closes_when_regime_exits_bull(live_env, monkeypatch):
     """Open in mild_bull → regime flips to uncertain → CLOSE."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
     monkeypatch.setattr(core_sim, "today_inputs",
                          lambda: _today_inputs_stub(mode="mild_bull", lev=2.5))
@@ -616,7 +616,7 @@ def test_ema_btc_cold_start_skips_when_yesterday_matches_today(live_env, monkeyp
     so the handler must wait for the next cross instead of cold-opening
     at today's price (the SJ-3140 phantom-entry bug)."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
                          lambda: _today_inputs_stub(mode="uncertain", lev=2.0,
@@ -640,7 +640,7 @@ def test_ema_btc_opens_on_fresh_cross_after_cold_start(live_env, monkeypatch):
     weekly EMA flips — handler opens. Confirms the guard releases on
     the next genuine cross, not just on any later tick."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
 
     # Day 1: mid-signal cold start — no open.
@@ -678,7 +678,7 @@ def test_eth_daily_cold_start_skips_when_yesterday_already_bull(live_env, monkey
     """Variant cold-starts mid-bull-regime — handler must wait for the
     next regime exit + reentry rather than chasing into a trend."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
     monkeypatch.setattr(core_sim, "today_inputs",
                          lambda: _today_inputs_stub(mode="strong_bull", lev=3.0,
@@ -703,7 +703,7 @@ def test_eth_daily_opens_on_fresh_bull_entry_after_cold_start(live_env, monkeypa
     open (not bull). Day 4 regime re-enters bull from non-bull — handler
     opens."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
 
     # Day 1: cold-start mid-bull — guard trips.
@@ -823,7 +823,7 @@ def test_r4_btc_v2_opens_on_wednesday_within_window(live_env, monkeypatch):
     """Wed wk1-2, 04:00-14:00 UTC, valid inputs → opens BTC LONG.
     Sizing: capital × weights['r4_btc_v2'] × inner_lev × vol_lev."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 80_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
                          lambda: _today_inputs_stub(mode="uncertain", lev=2.0,
@@ -860,7 +860,7 @@ def test_r4_btc_v2_opens_on_wednesday_within_window(live_env, monkeypatch):
 def test_r4_btc_v2_opens_on_friday_within_window(live_env, monkeypatch):
     """Friday is the second V2 firing day."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 80_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
                          lambda: _today_inputs_stub(mode="uncertain", lev=2.0))
@@ -875,7 +875,7 @@ def test_r4_btc_v2_opens_on_friday_within_window(live_env, monkeypatch):
 def test_r4_btc_v2_idempotent_within_window(live_env, monkeypatch):
     """Two ticks in the same window must not double-open."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 80_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
                          lambda: _today_inputs_stub(mode="uncertain", lev=2.0))
@@ -893,7 +893,7 @@ def test_r4_btc_v2_idempotent_within_window(live_env, monkeypatch):
 def test_r4_btc_v2_skips_in_bear_regime(live_env, monkeypatch):
     """bear regime weight = 0 → no open."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 80_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
                          lambda: _today_inputs_stub(mode="bear", lev=1.5))
@@ -911,7 +911,7 @@ def test_r4_btc_v2_skips_in_bear_regime(live_env, monkeypatch):
 def test_r4_eth_v2_opens_on_wednesday_within_window(live_env, monkeypatch):
     """Confirm the ETH V2 sleeve fires on Wed and writes an ETH trade."""
     from services import price_feed
-    from jplus import simulate as core_sim
+    from strategies.support import jplus_inputs as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
     monkeypatch.setattr(core_sim, "today_inputs",
                          lambda: _today_inputs_stub(mode="uncertain", lev=2.0))

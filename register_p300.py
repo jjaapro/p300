@@ -13,8 +13,8 @@
 #     JPLUS_R4_ETH_V2  — Wed/Fri wk1-2 04→14 UTC, ETH long
 #     JPLUS_EMA_BTC    — continuous BTC long/short on weekly EMA cross
 #     JPLUS_ETH_DAILY  — continuous ETH long while regime ∈ bull
-#   Sizing comes from jplus.simulate.today_inputs() (regime-capped weights
-#   ≤ CORE_ALLOC_CAP = 0.50, since 2026-05-12).
+#   Sizing comes from strategies.support.jplus_inputs.today_inputs() (regime-
+#   capped weights ≤ CORE_ALLOC_CAP = 0.50, since 2026-05-12).
 #
 #   Tactical (50%):
 #     S-003 ADX         — 15%, k=5x
@@ -96,7 +96,7 @@ def build_spec() -> dict:
                      "so concurrent notional remains within the 2.25x gross target."},
             # Core J+ sub-sleeves dispatched as live tactical-style entries.
             # weight_pct=0 here is a placeholder — actual sizing comes from
-            # jplus.simulate.today_inputs() at trade-open time (regime
+            # strategies.support.jplus_inputs.today_inputs() at trade-open time (regime
             # weight × inner R4 lev × vol-target lev). The four entries
             # exist purely so variant_engine dispatches them per tick.
             {"strategy_id": "JPLUS_R4_BTC", "weight_pct": 0.0,
@@ -272,7 +272,7 @@ def register(dash_db: str | None = None) -> None:
         "Polymarket + F&G filtered, 100% in-sample win rate). The "
         "umbrella JPLUS-CORE composition entry was removed 2026-05-10 "
         "along with the simulator-driven daily-return accrual; the "
-        "analytic simulator (jplus.simulate.simulate) remains as a "
+        "analytic simulator (studies.jplus_analytic.simulate.simulate) remains as a "
         "research-only tool, not on any runtime path."
     )
     cur.execute("""

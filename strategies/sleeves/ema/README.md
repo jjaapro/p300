@@ -9,7 +9,7 @@ crossover. Active in every regime (positive weight in all four).
   buckets). `ema_p = +1` while LONG, `-1` while SHORT, `0` during warmup.
 - Position state is computed by [math.py](math.py) (the weekly aggregation
   + EMA(5/21) crossover) and surfaced each tick via
-  [jplus.simulate.today_inputs()](../../../jplus/simulate.py).
+  [strategies.support.jplus_inputs.today_inputs()](../../support/jplus_inputs.py).
 - **Entry**: at the **next weekly candle's open** after a cross is detected
   (strict T+1, no same-bar entry).
 - **Exit**: at the **next weekly candle's open** after the reverse cross.

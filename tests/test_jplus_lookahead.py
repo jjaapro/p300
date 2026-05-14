@@ -28,7 +28,7 @@ from datetime import datetime, timezone
 import pytest
 
 from services import clock
-from jplus import simulate
+from studies.jplus_analytic import simulate
 
 
 @pytest.mark.slow
