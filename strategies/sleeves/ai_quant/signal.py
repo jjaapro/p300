@@ -31,7 +31,7 @@ import os
 from datetime import datetime, timedelta
 from typing import Any
 
-from services import trades
+from strategies import trades
 from strategies.support import clock, price_feed
 from . import (
     chart,

@@ -11,7 +11,7 @@ sized off ``strategies.support.jplus_inputs.today_inputs()``:
 All handlers:
   - use ``strategies.support.price_feed.get_current_price`` for live execution price
     (latest closed 1m bar; ~30s lag from instant);
-  - open trades via ``services.trades.open_shadow_trade`` with
+  - open trades via ``strategies.trades.open_shadow_trade`` with
     ``scheduled_exit_dt`` set so ``variant_engine._close_due_shadows``
     closes them at the right time;
   - are idempotent per UTC day via the ``trades`` table existence check.
@@ -24,7 +24,7 @@ import logging
 import sqlite3
 from datetime import timedelta
 
-from services import trades
+from strategies import trades
 from strategies.support import clock, db, price_feed
 
 from .config import (

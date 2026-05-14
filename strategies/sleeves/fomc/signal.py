@@ -328,12 +328,12 @@ def tick_observer() -> dict:
 def _open_fomc_long(variant: dict, asset: str, entry_price: float,
                      allocation_pct: float, leverage: float,
                      reason: dict, exit_iso: str) -> str:
-    """Open a FOMC LONG shadow trade — delegates to services.trades.open_shadow_trade.
+    """Open a FOMC LONG shadow trade — delegates to strategies.trades.open_shadow_trade.
 
     FOMC is the one sleeve that uses ``reason["phase"]`` (not "regime") as
     the regime-column value, so we pass it explicitly via regime_value.
     """
-    from services.trades import open_shadow_trade
+    from strategies.trades import open_shadow_trade
     exit_dt = datetime.fromisoformat(exit_iso)
     return open_shadow_trade(
         variant=variant, sleeve_name="FOMC",
@@ -345,8 +345,8 @@ def _open_fomc_long(variant: dict, asset: str, entry_price: float,
 
 
 def _close_fomc_shadow(trade_id: str, exit_price: float, reason: str) -> None:
-    """Sleeve close — delegates to services.trades.close_perp_trade."""
-    from services.trades import close_perp_trade
+    """Sleeve close — delegates to strategies.trades.close_perp_trade."""
+    from strategies.trades import close_perp_trade
     close_perp_trade(trade_id, exit_price, reason, sleeve_name="FOMC",
                      cost_bp_rt=COST_BP_RT, slippage_bp_rt=SLIPPAGE_BP_RT,
                      apply_funding=True)

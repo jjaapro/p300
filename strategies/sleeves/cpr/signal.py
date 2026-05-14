@@ -234,8 +234,8 @@ def _evaluate_today(asset: str) -> dict | None:
 # ─── DB helpers ──────────────────────────────────────────────────────────────
 
 def _get_open_cpr_trades(variant_id: str, asset: str) -> list[dict]:
-    """CPR is multi-asset; delegates to services.trades.get_open_trades."""
-    from services.trades import get_open_trades
+    """CPR is multi-asset; delegates to strategies.trades.get_open_trades."""
+    from strategies.trades import get_open_trades
     return get_open_trades(variant_id, "CPR", asset=asset)
 
 
@@ -254,10 +254,10 @@ def _cpr_action_today(variant_id: str, asset: str, today_utc: str) -> bool:
 def _open_cpr_shadow(variant: dict, asset: str, entry_price: float,
                      target: float, stop: float, allocation_pct: float,
                      leverage: float, reason: dict) -> str:
-    """Open a CPR shadow trade — delegates to services.trades.open_shadow_trade.
+    """Open a CPR shadow trade — delegates to strategies.trades.open_shadow_trade.
     target/stop are folded into the reason dict (stored in trades.notes JSON)
     so post-hoc inspection can reconstruct the level structure of the entry."""
-    from services.trades import open_shadow_trade
+    from strategies.trades import open_shadow_trade
     exit_dt = clock.now_utc() + timedelta(days=TIME_STOP_DAYS)
     return open_shadow_trade(
         variant=variant, sleeve_name="CPR",
@@ -269,8 +269,8 @@ def _open_cpr_shadow(variant: dict, asset: str, entry_price: float,
 
 
 def _close_cpr_shadow(trade_id: str, exit_price: float, reason: str) -> None:
-    """Sleeve close — delegates to services.trades.close_perp_trade."""
-    from services.trades import close_perp_trade
+    """Sleeve close — delegates to strategies.trades.close_perp_trade."""
+    from strategies.trades import close_perp_trade
     close_perp_trade(trade_id, exit_price, reason, sleeve_name="CPR",
                      cost_bp_rt=COST_BP_RT, apply_funding=True)
 

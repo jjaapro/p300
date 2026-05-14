@@ -203,8 +203,8 @@ def _current_signal(candles: list[dict]) -> dict | None:
 # ─── DB helpers (variant-scoped) ─────────────────────────────────────────────
 
 def _get_open_adx_trades(variant_id: str) -> list[dict]:
-    """ADX is BTC-only; delegates to services.trades.get_open_trades."""
-    from services.trades import get_open_trades
+    """ADX is BTC-only; delegates to strategies.trades.get_open_trades."""
+    from strategies.trades import get_open_trades
     return get_open_trades(variant_id, "ADX")
 
 
@@ -223,9 +223,9 @@ def _adx_trade_exists_today(variant_id: str, today_utc: str) -> bool:
 def _open_adx_shadow(variant: dict, direction: str, entry_price: float,
                      asset: str, allocation_pct: float, reason: dict,
                      leverage: float = 1.0) -> str:
-    """Open an S-003 shadow trade — delegates to services.trades.open_shadow_trade.
+    """Open an S-003 shadow trade — delegates to strategies.trades.open_shadow_trade.
     ADX exits on signal (ADX < 20) so no scheduled exit_time is set."""
-    from services.trades import open_shadow_trade
+    from strategies.trades import open_shadow_trade
     return open_shadow_trade(
         variant=variant, sleeve_name="ADX",
         asset=asset, direction=direction,
@@ -235,9 +235,9 @@ def _open_adx_shadow(variant: dict, direction: str, entry_price: float,
 
 
 def _close_adx_shadow(trade_id: str, exit_price: float, reason: str) -> None:
-    """Sleeve close — delegates to services.trades.close_perp_trade. Kept as a
+    """Sleeve close — delegates to strategies.trades.close_perp_trade. Kept as a
     thin wrapper so backtest_runner._load_close_fn can resolve it by sleeve."""
-    from services.trades import close_perp_trade
+    from strategies.trades import close_perp_trade
     close_perp_trade(trade_id, exit_price, reason, sleeve_name="ADX",
                      cost_bp_rt=COST_BP_RT, apply_funding=True)
 

@@ -174,8 +174,8 @@ def _get_hourly_bar_for_today(asset: str) -> dict | None:
 # ─── DB helpers ──────────────────────────────────────────────────────────────
 
 def _get_open_pdo_trades(variant_id: str, asset: str) -> list[dict]:
-    """PDO_RETOUCH is multi-asset; delegates to services.trades.get_open_trades."""
-    from services.trades import get_open_trades
+    """PDO_RETOUCH is multi-asset; delegates to strategies.trades.get_open_trades."""
+    from strategies.trades import get_open_trades
     return get_open_trades(variant_id, "PDO_RETOUCH", asset=asset)
 
 
@@ -203,7 +203,7 @@ def _pdo_action_for_bar_day(variant_id: str, asset: str,
 def _open_pdo_shadow(variant: dict, asset: str, entry_price: float,
                      allocation_pct: float, leverage: float,
                      hold_hours: int, reason: dict) -> str:
-    """Open a PDO_RETOUCH shadow trade — delegates to services.trades.open_shadow_trade.
+    """Open a PDO_RETOUCH shadow trade — delegates to strategies.trades.open_shadow_trade.
 
     Scheduled exit: Pine's ``else if newDay`` closes at the close of the
     first 1H bar of the day AFTER bar_day (= bar_day+1 at 01:00 UTC),
@@ -211,7 +211,7 @@ def _open_pdo_shadow(variant: dict, asset: str, entry_price: float,
     derived from ``now`` so trades fired at bar_day+1's 00:00 UTC (against
     bar_day's last-hour bar) get the next-bar exit, not a 25h DayEnd.
     """
-    from services.trades import open_shadow_trade
+    from strategies.trades import open_shadow_trade
     now = clock.now_utc()
     bar_day_start = _bar_day_start(now)
     day_after_01_utc = bar_day_start + timedelta(days=1, hours=1)
@@ -226,7 +226,7 @@ def _open_pdo_shadow(variant: dict, asset: str, entry_price: float,
 
 
 def _close_pdo_shadow(trade_id: str, exit_price: float, reason: str) -> None:
-    """Sleeve close — delegates to services.trades.close_perp_trade.
+    """Sleeve close — delegates to strategies.trades.close_perp_trade.
 
     No funding modeling: PDO BTC holds are scheduled-24h, ETH 4h. A
     24h window crosses 3 funding settlements at ~5bp each (~5-15bp
@@ -235,7 +235,7 @@ def _close_pdo_shadow(trade_id: str, exit_price: float, reason: str) -> None:
     AUDIT_2026_05_04 "PDO intraday" rationale. The asymmetry is bounded
     and should be quantified vs the strict-funding alternative once
     enough live PDO trades have accumulated."""
-    from services.trades import close_perp_trade
+    from strategies.trades import close_perp_trade
     close_perp_trade(trade_id, exit_price, reason, sleeve_name="PDO_RETOUCH",
                      cost_bp_rt=COST_BP_RT, apply_funding=False)
 

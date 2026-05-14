@@ -143,8 +143,8 @@ def _evaluate_today(records: list[dict]) -> dict | None:
 # ─── DB helpers (variant-scoped) ─────────────────────────────────────────────
 
 def _get_open_carry_trades(variant_id: str) -> list[dict]:
-    """CARRY is BTC-only; delegates to services.trades.get_open_trades."""
-    from services.trades import get_open_trades
+    """CARRY is BTC-only; delegates to strategies.trades.get_open_trades."""
+    from strategies.trades import get_open_trades
     return get_open_trades(variant_id, "CARRY")
 
 
@@ -162,11 +162,11 @@ def _carry_action_today(variant_id: str, today_utc: str) -> bool:
 
 def _open_carry_shadow(variant: dict, entry_price: float, allocation_pct: float,
                        reason: dict, leverage: float = 1.0) -> str:
-    """Open a CARRY shadow trade — delegates to services.trades.open_shadow_trade.
+    """Open a CARRY shadow trade — delegates to strategies.trades.open_shadow_trade.
     CARRY is delta-neutral (long-spot + short-perp); the trades.direction
     column stores 'LONG' as the spot-leg notation. Carry exits when funding
     flips negative for ``EXIT_NEG_DAYS`` consecutive days, not on a schedule."""
-    from services.trades import open_shadow_trade
+    from strategies.trades import open_shadow_trade
     return open_shadow_trade(
         variant=variant, sleeve_name="CARRY",
         asset="BTC", direction="LONG",
@@ -176,10 +176,10 @@ def _open_carry_shadow(variant: dict, entry_price: float, allocation_pct: float,
 
 
 def _close_carry_shadow(trade_id: str, exit_price: float, reason: str) -> None:
-    """Sleeve close — delegates to services.trades.close_carry_trade. CARRY is
+    """Sleeve close — delegates to strategies.trades.close_carry_trade. CARRY is
     delta-neutral, so its close has no price-PnL component (just funding
     collected − fees on both legs)."""
-    from services.trades import close_carry_trade
+    from strategies.trades import close_carry_trade
     close_carry_trade(trade_id, exit_price, reason, cost_pct=ENTRY_EXIT_COST_PCT)
 
 

@@ -150,18 +150,18 @@ def _thu_bear_trade_today(variant_id: str, today_utc: str, asset: str) -> dict |
 
 
 def _get_open_thu_bear_trades(variant_id: str, asset: str) -> list[dict]:
-    """THU_BEAR is multi-asset; delegates to services.trades.get_open_trades."""
-    from services.trades import get_open_trades
+    """THU_BEAR is multi-asset; delegates to strategies.trades.get_open_trades."""
+    from strategies.trades import get_open_trades
     return get_open_trades(variant_id, "THU_BEAR", asset=asset)
 
 
 def _open_thu_bear_shadow(variant: dict, asset: str, entry_price: float,
                          allocation_pct: float, reason: dict,
                          leverage: float = 1.0) -> str:
-    """Open a THU_BEAR shadow trade — delegates to services.trades.open_shadow_trade.
+    """Open a THU_BEAR shadow trade — delegates to strategies.trades.open_shadow_trade.
     Scheduled exit: Friday 01:00 UTC (matches Pine reference). The engine's
     close-due loop picks this up as a fallback if our own EXIT_HOUR tick misses."""
-    from services.trades import open_shadow_trade
+    from strategies.trades import open_shadow_trade
     now = clock.now_utc()
     exit_dt = (now + timedelta(days=1)).replace(
         hour=EXIT_HOUR, minute=0, second=0, microsecond=0)
@@ -174,8 +174,8 @@ def _open_thu_bear_shadow(variant: dict, asset: str, entry_price: float,
 
 
 def _close_thu_bear_shadow(trade_id: str, exit_price: float, reason: str) -> None:
-    """Sleeve close — delegates to services.trades.close_perp_trade."""
-    from services.trades import close_perp_trade
+    """Sleeve close — delegates to strategies.trades.close_perp_trade."""
+    from strategies.trades import close_perp_trade
     close_perp_trade(trade_id, exit_price, reason, sleeve_name="THU_BEAR",
                      cost_bp_rt=COST_BP_RT, apply_funding=True)
 

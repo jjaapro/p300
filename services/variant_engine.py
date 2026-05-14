@@ -26,7 +26,7 @@ import logging
 from datetime import datetime, timezone, timedelta
 from typing import Any
 
-from services import trades
+from strategies import trades
 from strategies.support import clock, db, trade_db, variant_registry
 from strategies.support.price_feed import _get_current_price
 

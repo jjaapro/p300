@@ -1,4 +1,4 @@
-"""services.trades — close mechanics for shadow trades."""
+"""strategies.trades — close mechanics for shadow trades."""
 from __future__ import annotations
 
 import sqlite3
@@ -6,7 +6,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from services import trades
+from strategies import trades
 from strategies.support import clock
 
 
@@ -166,7 +166,7 @@ def test_compute_zero_slippage_preserves_legacy_behavior():
 @pytest.fixture
 def trades_db(tmp_path, monkeypatch):
     """Tmp dashboard.db with a single open trade. Patches strategies.support.db.DASH_DB
-    to point at it (strategies.support.db owns the canonical path; services.trades reads
+    to point at it (strategies.support.db owns the canonical path; strategies.trades reads
     it via attribute lookup so this single patch reaches everyone). Uses
     strategies.support.trade_db.init_db so the fixture always matches production schema
     (including trade_adjustments)."""

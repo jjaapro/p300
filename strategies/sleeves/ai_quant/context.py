@@ -492,7 +492,7 @@ def _dvol_section(asset: str) -> dict:
 def _portfolio_section(variant_id: str, asset: str) -> dict:
     # Local import to keep this module importable in test contexts that
     # don't seed dashboard.db.
-    from services import trades
+    from strategies import trades
 
     own = trades.get_open_trades(variant_id, "AI_QUANT", asset)
     own_pos: dict | None = None

@@ -343,7 +343,7 @@ def test_close_due_shadows_skips_disabled_variants(tmp_path, monkeypatch):
     con.close()
 
     import services.variant_engine as ve
-    import services.trades as svc_trades
+    import strategies.trades as svc_trades
 
     closed_ids: list[str] = []
     def fake_close(trade_id, exit_price, reason, sleeve_name, **kwargs):

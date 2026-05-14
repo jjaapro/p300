@@ -15,7 +15,7 @@ event_type)`` — re-running the J+ emitter for the same UTC day never
 duplicates events.
 
 This module is the single write surface for the adjustment ledger. The
-``services.trades`` lifecycle helpers (open / scale / close) delegate
+``strategies.trades`` lifecycle helpers (open / scale / close) delegate
 their event-recording side to functions here so the trades-table mutation
 and the adjustment-row insert always happen in the same transaction.
 
@@ -101,7 +101,7 @@ def record_adjustment(
     idempotent retry.
 
     If ``con`` is supplied the caller controls the transaction (used by the
-    lifecycle helpers in ``services.trades`` so the adjustment lands atomic
+    lifecycle helpers in ``strategies.trades`` so the adjustment lands atomic
     with the trades-table mutation). Otherwise opens / commits / closes its
     own connection.
     """

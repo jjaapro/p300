@@ -1,4 +1,4 @@
-"""services.trades — single source of truth for shadow-trade close mechanics.
+"""strategies.trades — single source of truth for shadow-trade close mechanics.
 
 Replaces 6 near-identical ``_close_X_shadow`` implementations across the
 sleeve services. Each implementation read the trade row, computed price PnL
