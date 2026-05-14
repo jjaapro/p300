@@ -121,7 +121,7 @@ def _get_regime_for_prev_day(today_utc: datetime) -> str | None:
     today_key = today_utc.strftime("%Y-%m-%d")
     if _regime_map_cache_day != today_key:
         try:
-            from regime_classifier import regime_map
+            from strategies.support.regime_tactical import regime_map
             _regime_map_cache = {
                 "BTC": regime_map("BTC"),
             }

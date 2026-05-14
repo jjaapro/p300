@@ -134,7 +134,7 @@ def test_adx_signal_no_lookahead(early_clock, late_clock):
 def test_regime_classifier_no_lookahead(early_clock, late_clock):
     """regime_classifier.classify_regime must produce identical labels at two
     different clock positions for all common dates."""
-    from regime_classifier import classify_regime
+    from strategies.support.regime_tactical import classify_regime
 
     clock.set_simulated_now(early_clock)
     early = {r["date"]: r for r in classify_regime("BTC")}

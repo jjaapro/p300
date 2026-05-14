@@ -14,7 +14,7 @@ from unittest.mock import patch
 
 import pytest
 
-from regime_classifier import (
+from strategies.support.regime_tactical import (
     _sma,
     _rolling_rv_annualized,
     _rolling_pct_rank,
@@ -106,7 +106,7 @@ def _make_bars(closes: list[float], start="2022-01-01") -> list[tuple[str, dict]
     return bars
 
 
-@patch("regime_classifier.load_daily")
+@patch("strategies.support.regime_tactical.load_daily")
 def test_bull_trend_on_sustained_uptrend(mock_ld):
     n = 500
     closes = [100.0 * (1 + 0.002 * i) for i in range(n)]
@@ -119,7 +119,7 @@ def test_bull_trend_on_sustained_uptrend(mock_ld):
     assert bull_count > len(labels) * 0.5
 
 
-@patch("regime_classifier.load_daily")
+@patch("strategies.support.regime_tactical.load_daily")
 def test_bear_trend_on_sustained_downtrend(mock_ld):
     n = 500
     # -0.15% daily → slope exceeds 0.5% chop band within MA window
@@ -133,7 +133,7 @@ def test_bear_trend_on_sustained_downtrend(mock_ld):
     assert bear_count > len(labels) * 0.3
 
 
-@patch("regime_classifier.load_daily")
+@patch("strategies.support.regime_tactical.load_daily")
 def test_chop_on_flat_market(mock_ld):
     n = 500
     closes = [100.0 + 0.01 * ((-1) ** i) for i in range(n)]
@@ -145,7 +145,7 @@ def test_chop_on_flat_market(mock_ld):
     assert chop_count > len(labels) * 0.5
 
 
-@patch("regime_classifier.load_daily")
+@patch("strategies.support.regime_tactical.load_daily")
 def test_sell_off_on_volatile_crash(mock_ld):
     n = 500
     # Calm period then violent drop
@@ -158,14 +158,14 @@ def test_sell_off_on_volatile_crash(mock_ld):
     assert "sell_off" in labels
 
 
-@patch("regime_classifier.load_daily")
+@patch("strategies.support.regime_tactical.load_daily")
 def test_empty_bars_returns_empty(mock_ld):
     mock_ld.return_value = []
     result = classify_regime("BTC")
     assert result == []
 
 
-@patch("regime_classifier.load_daily")
+@patch("strategies.support.regime_tactical.load_daily")
 def test_all_labels_are_valid(mock_ld):
     n = 500
     closes = [100.0 * (1 + 0.003 * i) for i in range(250)]
