@@ -21,7 +21,7 @@ hard-coded ``_PRICING`` table. Rates are approximate; treat the value as
 a tracking aid, not a billing authority.
 
 Persistence (writing the decision to ``ai_quant_decisions`` and emitting
-trades) lives in services.ai_quant_service — this module is pure
+trades) lives in strategies.sleeves.ai_quant.signal — this module is pure
 orchestration and can be exercised end-to-end via the CLI without
 touching dashboard.db.
 """
@@ -39,7 +39,7 @@ from pathlib import Path
 from typing import Any
 
 from services import clock
-from services.ai_quant import chart, context as ctx_mod, prompt, tools as tools_mod
+from . import chart, context as ctx_mod, prompt, tools as tools_mod
 
 log = logging.getLogger("p300.ai_quant.decision")
 

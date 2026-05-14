@@ -85,7 +85,7 @@ def save_decision(
     *,
     variant_id: str,
     asset: str,
-    decision_result: Any,  # services.ai_quant.decision.DecisionResult
+    decision_result: Any,  # strategies.sleeves.ai_quant.decision.DecisionResult
     context_bundle: dict | None = None,
     trade_action: str = "noop",
     defer_until_utc: int | None = None,
@@ -178,7 +178,7 @@ def save_decision(
     # this file is a human-browsable mirror for monitoring decision
     # quality. A failure here must never poison the durable DB row.
     try:
-        from services.ai_quant import archive
+        from . import archive
         archive.write_archive_md(row_id=row_id, row={
             "id": row_id,
             "decision_utc": decision_ts,

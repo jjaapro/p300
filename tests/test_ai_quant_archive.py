@@ -1,4 +1,4 @@
-"""Tests for services.ai_quant.archive — the per-decision .md mirror.
+"""Tests for strategies.sleeves.ai_quant.archive — the per-decision .md mirror.
 
 Coverage:
 - Filename pattern (date-prefixed, sortable, includes row id).
@@ -19,8 +19,8 @@ from datetime import datetime, timezone
 import pytest
 
 from services import clock
-from services.ai_quant import archive, journal
-from services.ai_quant.decision import DecisionResult
+from strategies.sleeves.ai_quant import archive, journal
+from strategies.sleeves.ai_quant.decision import DecisionResult
 
 
 @pytest.fixture

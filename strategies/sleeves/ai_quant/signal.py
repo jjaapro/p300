@@ -32,30 +32,20 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from services import clock, price_feed, trades
-from services.ai_quant import (
+from . import (
     chart,
     context as ctx_mod,
     decision as decision_mod,
     journal,
 )
+from .config import (
+    SLEEVE_NAME, DEFAULT_ASSET,
+    ENTRY_WINDOW_HOURS_UTC, ENTRY_WINDOW_START_MIN, ENTRY_WINDOW_END_MIN,
+    DEFAULT_DAILY_COST_CAP_USD, MIN_CONVICTION_FOR_TRADE,
+    MAX_DEFERS_PER_DAY, DEFER_LATEST_HOUR, DEFER_LATEST_MIN,
+)
 
 log = logging.getLogger("p300.ai_quant_service")
-
-SLEEVE_NAME = "AI_QUANT"
-DEFAULT_ASSET = "BTC"
-ENTRY_WINDOW_HOURS_UTC = 0          # window opens at 00:00 UTC
-ENTRY_WINDOW_START_MIN = 5          # 00:05
-ENTRY_WINDOW_END_MIN = 15           # 00:15 (inclusive)
-DEFAULT_DAILY_COST_CAP_USD = 5.0
-MIN_CONVICTION_FOR_TRADE = 30
-# Defer feature: max defers per UTC day before the defer tool is stripped
-# from the next API call, forcing a LONG/SHORT/FLAT commitment.
-MAX_DEFERS_PER_DAY = 3
-# Latest absolute clock-time a deferred re-fire may land on within today's
-# UTC date. Past this, defer targets are clamped down so they still execute
-# today (avoids the next-day's 00:05 window swallowing the deferred call).
-DEFER_LATEST_HOUR = 23
-DEFER_LATEST_MIN = 55
 
 
 # ─── Gates ──────────────────────────────────────────────────────────────────

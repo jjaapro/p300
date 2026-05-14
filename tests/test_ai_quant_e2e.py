@@ -33,7 +33,7 @@ from typing import Any
 import pytest
 
 from services import clock
-from services.ai_quant import journal
+from strategies.sleeves.ai_quant import journal
 
 
 # ─── Fixture: full DB stack + monkeypatched data sources ────────────────────
@@ -100,12 +100,12 @@ def e2e_setup(tmp_path, monkeypatch):
     # Stub the data sources — context bundle, baseline chart, live price.
     # (Each has its own dedicated test file; here we exercise wiring.)
     monkeypatch.setattr(
-        "services.ai_quant_service.ctx_mod.build_context", _stub_context)
+        "strategies.sleeves.ai_quant.signal.ctx_mod.build_context", _stub_context)
     monkeypatch.setattr(
-        "services.ai_quant_service.chart.render_chart",
+        "strategies.sleeves.ai_quant.signal.chart.render_chart",
         lambda **kw: _DUMMY_PNG)
     monkeypatch.setattr(
-        "services.ai_quant_service.price_feed.get_current_price",
+        "strategies.sleeves.ai_quant.signal.price_feed.get_current_price",
         lambda asset: 80_000.0)
     yield {"dash_db": dash_db}
 
@@ -268,7 +268,7 @@ def test_strategy_dispatch_includes_ai_quant():
     fn = variant_engine.STRATEGY_DISPATCH["AI_QUANT"]
     assert callable(fn)
     # And it's the right callable, not some old test patch
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     assert fn is ai_quant_service.try_fire_for_variant
 
 
@@ -554,7 +554,7 @@ def test_defer_clamped_to_2355_when_request_would_cross_midnight(e2e_setup):
     # behavior assuming the call did fire. We exercise it via a fresh
     # defer-row injection so the bypass_entry_window path activates.
     # Simpler: just call _compute_defer_until_utc directly to assert clamp.
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     now = clock.now_utc()
     ts = ai_quant_service._compute_defer_until_utc(now, 5.0)
     target = datetime.fromtimestamp(ts, tz=timezone.utc)

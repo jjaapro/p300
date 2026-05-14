@@ -1,4 +1,4 @@
-"""Tests for services.ai_quant.journal.
+"""Tests for strategies.sleeves.ai_quant.journal.
 
 Cover: schema bootstrap is idempotent, save_decision persists every
 DecisionResult field correctly (including ERROR rows when the model
@@ -15,8 +15,8 @@ from datetime import datetime, timezone
 import pytest
 
 from services import clock
-from services.ai_quant import journal
-from services.ai_quant.decision import DecisionResult
+from strategies.sleeves.ai_quant import journal
+from strategies.sleeves.ai_quant.decision import DecisionResult
 
 
 @pytest.fixture

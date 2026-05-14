@@ -19,7 +19,7 @@ configurable safety floor (default 48h for OI / liquidations, 14d for
 DVOL). Use `backfill()` for the one-time deeper history pull.
 
 Reader functions (`latest_oi`, `latest_liquidations`, `latest_dvol`)
-are exposed so services.ai_quant.context can read recent rows without
+are exposed so strategies.sleeves.ai_quant.context can read recent rows without
 re-implementing SQL.
 
 CoinDesk Data API has a generous free quota that resets daily; at our

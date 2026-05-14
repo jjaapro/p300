@@ -1,4 +1,4 @@
-"""Tests for services.ai_quant.decision.run_decision.
+"""Tests for strategies.sleeves.ai_quant.decision.run_decision.
 
 The Anthropic client is mocked: every test scripts a sequence of
 "messages.stream" responses and asserts the orchestrator drives the
@@ -12,7 +12,7 @@ from typing import Any
 
 import pytest
 
-from services.ai_quant import decision, tools as tools_mod
+from strategies.sleeves.ai_quant import decision, tools as tools_mod
 
 
 # ─── Mock SDK objects ───────────────────────────────────────────────────────
@@ -250,7 +250,7 @@ def test_run_decision_multiple_tool_uses_in_one_turn_all_dispatched():
     ])
     # The dispatcher's render_chart needs a working chart — patch it to a stub
     # that returns benign content so the test doesn't require a seeded DB.
-    import services.ai_quant.tools as t
+    from strategies.sleeves.ai_quant import tools as t
     orig_render = t._handle_render_chart
     orig_news = t._handle_query_news
     t._handle_render_chart = lambda inp, **k: [{"type": "text", "text": "fake chart"}]
@@ -307,7 +307,7 @@ def test_run_decision_hits_max_turns_when_model_never_submits():
         for i in range(5)
     ]
     client = MockClient(scripted)
-    import services.ai_quant.tools as t
+    from strategies.sleeves.ai_quant import tools as t
     orig = t._handle_render_chart
     t._handle_render_chart = lambda inp, **k: [{"type": "text", "text": "fake"}]
     try:
@@ -350,7 +350,7 @@ def test_run_decision_no_api_key_returns_graceful_error(monkeypatch):
 def test_run_decision_dispatcher_error_returns_string_to_model_and_continues():
     """If a tool handler raises, we send the error back as the tool_result
     so the model can correct course, rather than abandoning the turn."""
-    from services.ai_quant import tools as t
+    from strategies.sleeves.ai_quant import tools as t
 
     class FlakyChart:
         def __init__(self):
@@ -556,7 +556,7 @@ def test_effort_persists_across_multi_turn_loop(monkeypatch):
             stop_reason="tool_use",
         ),
     ])
-    import services.ai_quant.tools as t
+    from strategies.sleeves.ai_quant import tools as t
     orig = t._handle_render_chart
     t._handle_render_chart = lambda inp, **k: [{"type": "text", "text": "stub"}]
     try:
@@ -585,7 +585,7 @@ def test_system_prompt_contains_fact_check_protocol():
     """The fact-check section must be in the system prompt verbatim so
     the LLM sees it on every turn (and a regression doesn't quietly
     drop it)."""
-    from services.ai_quant import prompt as prompt_mod
+    from strategies.sleeves.ai_quant import prompt as prompt_mod
     sys_text = prompt_mod.SYSTEM_PROMPT
     assert "FACT-CHECK PROTOCOL" in sys_text
     # Anchored-claim language present
@@ -603,7 +603,7 @@ def test_system_prompt_enumerates_three_anchor_sources():
     All three must be explicit in the prompt so the model doesn't
     downweight news-anchored claims (the failure mode that prompted
     the protocol revision)."""
-    from services.ai_quant import prompt as prompt_mod
+    from strategies.sleeves.ai_quant import prompt as prompt_mod
     sys_text = prompt_mod.SYSTEM_PROMPT.lower()
     # Bundle field anchoring
     assert "bundle field" in sys_text or "bundle." in sys_text
@@ -619,7 +619,7 @@ def test_system_prompt_calls_out_ema_ordering_check_specifically():
     when EMA50 was $5,696 below EMA150 — a directly self-contradicting
     claim. The prompt must call out the EMA-ordering check by name so
     future runs verify it explicitly before claiming a cross."""
-    from services.ai_quant import prompt as prompt_mod
+    from strategies.sleeves.ai_quant import prompt as prompt_mod
     sys_text = prompt_mod.SYSTEM_PROMPT
     # The literal section header
     assert "EMA-ORDERING CHECK" in sys_text
@@ -633,7 +633,7 @@ def test_system_prompt_lists_bundle_quantitative_window_limits():
     in N years'), it needs to know which windows the bundle's quant
     fields actually cover so it doesn't invent reach beyond them.
     Pin the four window declarations explicitly."""
-    from services.ai_quant import prompt as prompt_mod
+    from strategies.sleeves.ai_quant import prompt as prompt_mod
     sys_text = prompt_mod.SYSTEM_PROMPT.lower()
     # All four windows the context bundle actually carries
     assert "funding 7d" in sys_text
@@ -646,7 +646,7 @@ def test_system_prompt_includes_concrete_examples_block():
     """The prompt teaches by example: anchored vs unanchored. The
     examples block is the single highest-leverage few lines for
     calibrating the model's claim-anchoring style."""
-    from services.ai_quant import prompt as prompt_mod
+    from strategies.sleeves.ai_quant import prompt as prompt_mod
     sys_text = prompt_mod.SYSTEM_PROMPT
     # Examples block uses ✓ / ✗ markers
     assert "✓" in sys_text
@@ -662,7 +662,7 @@ def test_system_prompt_clarifies_exit_conditions_are_daily_resolution():
     exit_conditions are evaluated by the MODEL on its next daily call,
     not by the runtime intra-day, and must be at daily resolution.
     """
-    from services.ai_quant import prompt as prompt_mod
+    from strategies.sleeves.ai_quant import prompt as prompt_mod
     sys_text = prompt_mod.SYSTEM_PROMPT.lower()
     # The contract: NOT a standing-order monitor
     assert "does not evaluate" in sys_text or "does not monitor" in sys_text \

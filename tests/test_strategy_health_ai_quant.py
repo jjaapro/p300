@@ -23,8 +23,8 @@ from pathlib import Path
 import pytest
 
 from services import clock, strategy_health
-from services.ai_quant import journal
-from services.ai_quant.decision import DecisionResult
+from strategies.sleeves.ai_quant import journal
+from strategies.sleeves.ai_quant.decision import DecisionResult
 
 
 # ─── Fixture: dashboard.db with trades + ai_quant_decisions schemas ────────

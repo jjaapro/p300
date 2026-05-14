@@ -127,7 +127,7 @@ def init_db() -> None:
     # the row from blowing up; tool_calls_json is the full per-call
     # audit. trade_action is set by the sleeve after reconciliation
     # ('opened:SJ-1234' / 'closed:SJ-1234' / 'flipped:SJ-1234' / 'noop' /
-    # 'error'). See services.ai_quant.journal for the writer.
+    # 'error'). See strategies.sleeves.ai_quant.journal for the writer.
     con.execute("""
         CREATE TABLE IF NOT EXISTS ai_quant_decisions (
             id INTEGER PRIMARY KEY AUTOINCREMENT,

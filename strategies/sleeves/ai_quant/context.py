@@ -31,7 +31,7 @@ from services import (
     price_feed,
     sentiment_index_service,
 )
-from services.ai_quant import cvd as ai_cvd
+from . import cvd as ai_cvd
 from services.indicators import adx, ema
 
 log = logging.getLogger("p300.ai_quant.context")

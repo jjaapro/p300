@@ -303,13 +303,14 @@ def _load_dispatch():
     global STRATEGY_DISPATCH
     if STRATEGY_DISPATCH:
         return
-    from services import (jplus_live, ai_quant_service)
+    from services import jplus_live
     from strategies.sleeves.adx import signal as adx_sleeve
     from strategies.sleeves.thu_bear import signal as thu_bear_sleeve
     from strategies.sleeves.cpr import signal as cpr_sleeve
     from strategies.sleeves.pdo import signal as pdo_sleeve
     from strategies.sleeves.carry import signal as carry_sleeve
     from strategies.sleeves.fomc import signal as fomc_sleeve
+    from strategies.sleeves.ai_quant import signal as ai_quant_sleeve
     STRATEGY_DISPATCH = {
         "S-003":           adx_sleeve.try_fire_for_variant,
         "S-096":           thu_bear_sleeve.try_fire_for_variant,
@@ -329,7 +330,7 @@ def _load_dispatch():
         # AI_QUANT — discretionary LLM trader. Default-off via
         # AI_QUANT_ENABLED env so the dispatch is wired but no API
         # cost is incurred until the user explicitly opts in.
-        "AI_QUANT":        ai_quant_service.try_fire_for_variant,
+        "AI_QUANT":        ai_quant_sleeve.try_fire_for_variant,
     }
 
 

@@ -1,4 +1,4 @@
-"""Tests for services.ai_quant.context.
+"""Tests for strategies.sleeves.ai_quant.context.
 
 Strategy: seed two synthetic SQLite fixtures (trader.db and dashboard.db)
 with just enough rows to exercise each section of build_context, plus
@@ -20,7 +20,7 @@ from pathlib import Path
 import pytest
 
 from services import clock
-from services.ai_quant import context as ctx_mod
+from strategies.sleeves.ai_quant import context as ctx_mod
 
 
 # ─── Fixtures ───────────────────────────────────────────────────────────────

@@ -39,7 +39,7 @@ if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
 from services import clock, db  # noqa: E402
-from services.ai_quant import archive, chart, context as ctx_mod, decision as decision_mod  # noqa: E402
+from strategies.sleeves.ai_quant import archive, chart, context as ctx_mod, decision as decision_mod  # noqa: E402
 from services.env import load_env_file  # noqa: E402
 
 DEFAULT_VARIANT = "p300_aggressive_v2_v1_0"
@@ -67,7 +67,7 @@ def _preview_filename(*, decision_date: str, variant_id: str, asset: str,
 def _result_to_row(*, result, variant_id: str, asset: str,
                    decision_ts: int, decision_date: str) -> dict:
     """Map DecisionResult to the dict shape archive._render_markdown expects.
-    Mirrors journal.save_decision's archive call (services/ai_quant/journal.py:150)
+    Mirrors journal.save_decision's archive call (strategies/sleeves/ai_quant/journal.py:150)
     but stamps id='PREVIEW' and trade_action with the preview marker."""
     payload = result.decision or {}
     usage = result.usage or {}

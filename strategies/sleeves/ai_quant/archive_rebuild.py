@@ -4,15 +4,15 @@ Use cases:
 - Backfill the archive when the table already has rows from before the
   archive feature shipped.
 - Re-render every file after changing the markdown template in
-  ``services.ai_quant.archive._render_markdown``.
+  ``strategies.sleeves.ai_quant.archive._render_markdown``.
 - Rebuild after a clean checkout where ``data/ai_quant_archive/`` was
   not committed.
 
 Usage:
-    py tools/ai_quant_archive_rebuild.py             # all rows
-    py tools/ai_quant_archive_rebuild.py --variant p300_aggressive_v2_v1_0
-    py tools/ai_quant_archive_rebuild.py --since 2026-05-01
-    py tools/ai_quant_archive_rebuild.py --dry-run
+    py strategies/sleeves/ai_quant/archive_rebuild.py             # all rows
+    py strategies/sleeves/ai_quant/archive_rebuild.py --variant p300_aggressive_v2_v1_0
+    py strategies/sleeves/ai_quant/archive_rebuild.py --since 2026-05-01
+    py strategies/sleeves/ai_quant/archive_rebuild.py --dry-run
 
 Existing files for the same row id are overwritten — the row id is in
 the filename, so there's no risk of writing to a different decision's
@@ -26,13 +26,13 @@ import sqlite3
 import sys
 from pathlib import Path
 
-# Allow ``py tools/ai_quant_archive_rebuild.py`` from the repo root.
-_REPO = Path(__file__).resolve().parent.parent
+# Allow ``py strategies/sleeves/ai_quant/archive_rebuild.py`` from the repo root.
+_REPO = Path(__file__).resolve().parents[3]
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
 from services import db  # noqa: E402
-from services.ai_quant import archive  # noqa: E402
+from strategies.sleeves.ai_quant import archive  # noqa: E402
 
 
 def _build_query(variant: str | None, since: str | None) -> tuple[str, list]:

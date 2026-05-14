@@ -1,4 +1,4 @@
-"""Tests for services.ai_quant_service.try_fire_for_variant.
+"""Tests for strategies.sleeves.ai_quant.signal.try_fire_for_variant.
 
 Coverage strategy:
   - Four gate tests (kill switch / time window / already-fired / cost cap)
@@ -26,8 +26,8 @@ from typing import Any
 import pytest
 
 from services import clock
-from services.ai_quant import journal
-from services.ai_quant.decision import DecisionResult
+from strategies.sleeves.ai_quant import journal
+from strategies.sleeves.ai_quant.decision import DecisionResult
 
 
 # ─── Common fixture ─────────────────────────────────────────────────────────
@@ -111,11 +111,11 @@ def fixture(tmp_path, monkeypatch):
     clock.set_simulated_now(datetime(2026, 5, 8, 0, 6, tzinfo=timezone.utc))
     # Stub context + chart + live price — none of these tests care about
     # the actual content; they care about the orchestration logic.
-    monkeypatch.setattr("services.ai_quant_service.ctx_mod.build_context",
+    monkeypatch.setattr("strategies.sleeves.ai_quant.signal.ctx_mod.build_context",
                          lambda v, a: _stub_context_bundle())
-    monkeypatch.setattr("services.ai_quant_service.chart.render_chart",
+    monkeypatch.setattr("strategies.sleeves.ai_quant.signal.chart.render_chart",
                          lambda **kw: _DUMMY_PNG)
-    monkeypatch.setattr("services.ai_quant_service.price_feed.get_current_price",
+    monkeypatch.setattr("strategies.sleeves.ai_quant.signal.price_feed.get_current_price",
                          lambda asset: 80_000.0)
     yield {"dash_db": dash_db}
 
@@ -222,7 +222,7 @@ def _sleeve_cfg(weight_pct: float = 5.0, leverage: float = 3.0,
 
 def test_gate_kill_switch_off_returns_disabled_without_api(fixture, monkeypatch):
     monkeypatch.delenv("AI_QUANT_ENABLED", raising=False)
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     client = MockClient([])  # would raise if any call is made
     out = ai_quant_service.try_fire_for_variant(_variant(),
                                                   _sleeve_cfg(client=client))
@@ -232,7 +232,7 @@ def test_gate_kill_switch_off_returns_disabled_without_api(fixture, monkeypatch)
 
 def test_gate_kill_switch_explicit_false_returns_disabled(fixture, monkeypatch):
     monkeypatch.setenv("AI_QUANT_ENABLED", "false")
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     out = ai_quant_service.try_fire_for_variant(_variant(), _sleeve_cfg())
     assert out["status"] == "disabled"
 
@@ -252,7 +252,7 @@ def test_gate_time_window(hh, mm, expected, fixture):
     """Outside the window short-circuits; inside the window proceeds (and
     fails only because no client is wired — we just assert NOT off_window)."""
     clock.set_simulated_now(datetime(2026, 5, 8, hh, mm, tzinfo=timezone.utc))
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     out = ai_quant_service.try_fire_for_variant(
         _variant(),
         _sleeve_cfg(client=MockClient([_scripted_decision("FLAT")])),
@@ -280,7 +280,7 @@ def test_gate_already_fired_today_short_circuits(fixture):
         trade_action="error",
     )
     clock.set_simulated_now(datetime(2026, 5, 8, 0, 12, tzinfo=timezone.utc))
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     client = MockClient([])
     out = ai_quant_service.try_fire_for_variant(_variant(),
                                                   _sleeve_cfg(client=client))
@@ -296,7 +296,7 @@ def test_gate_cost_cap_hit_short_circuits(fixture, monkeypatch):
     get_today_decision to None — leaving the cost-sum lookup intact."""
     monkeypatch.setenv("AI_QUANT_DAILY_COST_CAP_USD", "0.01")
     monkeypatch.setattr(
-        "services.ai_quant_service.journal.get_today_decision",
+        "strategies.sleeves.ai_quant.signal.journal.get_today_decision",
         lambda variant_id: None,
     )
     # Seed a today's row contributing $5.00 of cost via the production
@@ -310,7 +310,7 @@ def test_gate_cost_cap_hit_short_circuits(fixture, monkeypatch):
         ),
         trade_action="error",
     )
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     client = MockClient([])
     out = ai_quant_service.try_fire_for_variant(_variant(),
                                                   _sleeve_cfg(client=client))
@@ -323,7 +323,7 @@ def test_gate_cost_cap_hit_short_circuits(fixture, monkeypatch):
 # ─── Reconciliation: empty position ────────────────────────────────────────
 
 def test_reconcile_no_position_flat_is_noop(fixture):
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     client = MockClient([_scripted_decision("FLAT", conviction=0)])
     out = ai_quant_service.try_fire_for_variant(_variant(),
                                                   _sleeve_cfg(client=client))
@@ -339,7 +339,7 @@ def test_reconcile_no_position_flat_is_noop(fixture):
 
 
 def test_reconcile_no_position_long_high_conviction_opens(fixture):
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     client = MockClient([_scripted_decision("LONG", conviction=70)])
     out = ai_quant_service.try_fire_for_variant(_variant(),
                                                   _sleeve_cfg(client=client))
@@ -364,7 +364,7 @@ def test_reconcile_no_position_long_high_conviction_opens(fixture):
 
 
 def test_reconcile_no_position_short_opens(fixture):
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     client = MockClient([_scripted_decision("SHORT", conviction=80)])
     out = ai_quant_service.try_fire_for_variant(_variant(),
                                                   _sleeve_cfg(client=client))
@@ -382,7 +382,7 @@ def test_reconcile_no_position_short_opens(fixture):
 def test_reconcile_low_conviction_treated_as_flat_no_trade(fixture):
     """Conviction below MIN_CONVICTION_FOR_TRADE (30) is FLAT regardless
     of the model's stated direction."""
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     client = MockClient([_scripted_decision("LONG", conviction=29)])
     out = ai_quant_service.try_fire_for_variant(_variant(),
                                                   _sleeve_cfg(client=client))
@@ -397,7 +397,7 @@ def test_reconcile_low_conviction_treated_as_flat_no_trade(fixture):
 
 def test_reconcile_conviction_floor_boundary_30_does_open(fixture):
     """Conviction=30 (the threshold) should pass the floor and open."""
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     client = MockClient([_scripted_decision("LONG", conviction=30)])
     out = ai_quant_service.try_fire_for_variant(_variant(),
                                                   _sleeve_cfg(client=client))
@@ -432,7 +432,7 @@ def _seed_open_trade(dash_db, *, direction: str, variant_id: str = "p300_test_va
 
 def test_reconcile_long_position_long_decision_holds(fixture):
     _seed_open_trade(fixture["dash_db"], direction="LONG")
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     client = MockClient([_scripted_decision("LONG", conviction=80)])
     out = ai_quant_service.try_fire_for_variant(_variant(),
                                                   _sleeve_cfg(client=client))
@@ -449,7 +449,7 @@ def test_reconcile_long_position_long_decision_holds(fixture):
 
 def test_reconcile_long_position_flat_closes(fixture):
     _seed_open_trade(fixture["dash_db"], direction="LONG")
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     client = MockClient([_scripted_decision("FLAT", conviction=0)])
     out = ai_quant_service.try_fire_for_variant(_variant(),
                                                   _sleeve_cfg(client=client))
@@ -466,7 +466,7 @@ def test_reconcile_long_position_flat_closes(fixture):
 
 def test_reconcile_long_position_short_decision_flips(fixture):
     _seed_open_trade(fixture["dash_db"], direction="LONG")
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     client = MockClient([_scripted_decision("SHORT", conviction=70)])
     out = ai_quant_service.try_fire_for_variant(_variant(),
                                                   _sleeve_cfg(client=client))
@@ -490,7 +490,7 @@ def test_reconcile_long_position_short_decision_flips(fixture):
 def test_reconcile_short_position_long_decision_flips(fixture):
     """Mirror of the LONG→SHORT case."""
     _seed_open_trade(fixture["dash_db"], direction="SHORT", tid="SJ-B001")
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     client = MockClient([_scripted_decision("LONG", conviction=70)])
     out = ai_quant_service.try_fire_for_variant(_variant(),
                                                   _sleeve_cfg(client=client))
@@ -499,7 +499,7 @@ def test_reconcile_short_position_long_decision_flips(fixture):
 
 def test_reconcile_short_position_flat_closes(fixture):
     _seed_open_trade(fixture["dash_db"], direction="SHORT", tid="SJ-B002")
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     client = MockClient([_scripted_decision("FLAT", conviction=0)])
     out = ai_quant_service.try_fire_for_variant(_variant(),
                                                   _sleeve_cfg(client=client))
@@ -510,10 +510,10 @@ def test_reconcile_short_position_flat_closes(fixture):
 
 def test_reconcile_skip_open_when_live_price_missing(fixture, monkeypatch):
     monkeypatch.setattr(
-        "services.ai_quant_service.price_feed.get_current_price",
+        "strategies.sleeves.ai_quant.signal.price_feed.get_current_price",
         lambda asset: None,
     )
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     client = MockClient([_scripted_decision("LONG", conviction=70)])
     out = ai_quant_service.try_fire_for_variant(_variant(),
                                                   _sleeve_cfg(client=client))
@@ -530,10 +530,10 @@ def test_reconcile_skip_open_when_live_price_missing(fixture, monkeypatch):
 def test_reconcile_skip_close_when_live_price_missing(fixture, monkeypatch):
     _seed_open_trade(fixture["dash_db"], direction="LONG")
     monkeypatch.setattr(
-        "services.ai_quant_service.price_feed.get_current_price",
+        "strategies.sleeves.ai_quant.signal.price_feed.get_current_price",
         lambda asset: None,
     )
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     client = MockClient([_scripted_decision("FLAT", conviction=0)])
     out = ai_quant_service.try_fire_for_variant(_variant(),
                                                   _sleeve_cfg(client=client))
@@ -546,8 +546,8 @@ def test_context_build_failure_records_error_row_no_trade(fixture, monkeypatch):
     def boom(_v, _a):
         raise RuntimeError("synthetic context blowup")
 
-    monkeypatch.setattr("services.ai_quant_service.ctx_mod.build_context", boom)
-    from services import ai_quant_service
+    monkeypatch.setattr("strategies.sleeves.ai_quant.signal.ctx_mod.build_context", boom)
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     out = ai_quant_service.try_fire_for_variant(_variant(),
                                                   _sleeve_cfg(client=MockClient([])))
     assert out["status"] == "decision_error"
@@ -563,8 +563,8 @@ def test_chart_render_failure_records_error_row_no_trade(fixture, monkeypatch):
     def boom(**_kw):
         raise RuntimeError("chart died")
 
-    monkeypatch.setattr("services.ai_quant_service.chart.render_chart", boom)
-    from services import ai_quant_service
+    monkeypatch.setattr("strategies.sleeves.ai_quant.signal.chart.render_chart", boom)
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     out = ai_quant_service.try_fire_for_variant(_variant(),
                                                   _sleeve_cfg(client=MockClient([])))
     assert out["status"] == "decision_error"
@@ -576,7 +576,7 @@ def test_chart_render_failure_records_error_row_no_trade(fixture, monkeypatch):
 
 def test_decision_api_failure_records_error_row_no_trade(fixture):
     """run_decision returns a DecisionResult with decision=None on API errors."""
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     client = MockClient([RuntimeError("Anthropic 500")])
     out = ai_quant_service.try_fire_for_variant(_variant(),
                                                   _sleeve_cfg(client=client))
@@ -598,7 +598,7 @@ def test_decision_api_failure_records_error_row_no_trade(fixture):
 # ─── Persistence: journal row mirrors the trade action ─────────────────────
 
 def test_journal_row_records_opened_trade_id(fixture):
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     client = MockClient([_scripted_decision("LONG", conviction=60)])
     out = ai_quant_service.try_fire_for_variant(_variant(),
                                                   _sleeve_cfg(client=client))
@@ -611,7 +611,7 @@ def test_journal_row_records_opened_trade_id(fixture):
 
 def test_journal_row_records_flipped_action_with_both_ids(fixture):
     _seed_open_trade(fixture["dash_db"], direction="LONG", tid="SJ-OLD")
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     client = MockClient([_scripted_decision("SHORT", conviction=80)])
     out = ai_quant_service.try_fire_for_variant(_variant(),
                                                   _sleeve_cfg(client=client))
@@ -632,7 +632,7 @@ def test_journal_row_records_flipped_action_with_both_ids(fixture):
 def test_sizing_allocation_pct_matches_conviction_weight_product(
     fixture, conviction, weight, expected_alloc,
 ):
-    from services import ai_quant_service
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
     client = MockClient([_scripted_decision("LONG", conviction=conviction)])
     out = ai_quant_service.try_fire_for_variant(
         _variant(), _sleeve_cfg(weight_pct=weight, client=client),
@@ -652,7 +652,7 @@ def test_sizing_allocation_pct_matches_conviction_weight_product(
 # ─── Pure helpers (no DB needed) ───────────────────────────────────────────
 
 def test_effective_direction_drops_low_conviction_to_flat():
-    from services import ai_quant_service as svc
+    from strategies.sleeves.ai_quant import signal as svc
     assert svc._effective_direction(
         {"direction": "LONG", "conviction_0_100": 29}) == "FLAT"
     assert svc._effective_direction(
@@ -664,14 +664,14 @@ def test_effective_direction_drops_low_conviction_to_flat():
 
 
 def test_allocation_pct_caps_at_weight():
-    from services import ai_quant_service as svc
+    from strategies.sleeves.ai_quant import signal as svc
     assert svc._allocation_pct_for(50, 4.0) == pytest.approx(2.0)
     assert svc._allocation_pct_for(150, 4.0) == pytest.approx(4.0)  # clamp
     assert svc._allocation_pct_for(-10, 4.0) == pytest.approx(0.0)
 
 
 def test_resolve_leverage_prefers_effective_then_params():
-    from services import ai_quant_service as svc
+    from strategies.sleeves.ai_quant import signal as svc
     assert svc._resolve_leverage(
         {"_effective_leverage": 2.5, "params": {"leverage": 5.0}}) == 2.5
     assert svc._resolve_leverage({"params": {"leverage": 5.0}}) == 5.0

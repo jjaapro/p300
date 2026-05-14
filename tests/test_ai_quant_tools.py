@@ -1,4 +1,4 @@
-"""Tests for services.ai_quant.tools.
+"""Tests for strategies.sleeves.ai_quant.tools.
 
 Cover: tool-definition shape (Anthropic API contract), dispatcher routing,
 handler outputs (chart returns image content block, news returns JSON,
@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 import pytest
 
 from services import news_fetcher
-from services.ai_quant import tools
+from strategies.sleeves.ai_quant import tools
 
 
 # ─── Tool definitions ───────────────────────────────────────────────────────

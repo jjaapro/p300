@@ -122,7 +122,7 @@ def build_spec() -> dict:
              "params": {"asset": "ETH"},
              "note": "Core J+ ETH daily continuous in bull regimes only."},
             # AI_QUANT — discretionary LLM trader. Off-by-default via the
-            # AI_QUANT_ENABLED env var (services/ai_quant_service.py
+            # AI_QUANT_ENABLED env var (strategies/sleeves/ai_quant/signal.py
             # checks it and short-circuits to status='disabled' otherwise).
             # Set to 2.0% as a phase-1 experiment cap; raise to 5.0% only
             # after 60+ days of forward shadow PnL net of API cost. The

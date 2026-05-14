@@ -27,7 +27,7 @@ import logging
 from typing import Any, Callable
 
 from services import news_fetcher
-from services.ai_quant import chart
+from . import chart
 
 log = logging.getLogger("p300.ai_quant.tools")
 

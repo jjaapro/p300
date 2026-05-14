@@ -1,9 +1,9 @@
-"""CLI front-end to services.ai_quant.chart.render_chart for visual sanity-checking.
+"""CLI front-end to strategies.sleeves.ai_quant.chart.render_chart for visual sanity-checking.
 
 Examples:
-    python tools/render_ai_chart.py --out c:/tmp/sample.png
-    python tools/render_ai_chart.py --timeframe 4h --lookback 120 --out c:/tmp/4h.png
-    python tools/render_ai_chart.py --no-funding --no-lsr --out c:/tmp/price_only.png
+    python strategies/sleeves/ai_quant/chart_cli.py --out c:/tmp/sample.png
+    python strategies/sleeves/ai_quant/chart_cli.py --timeframe 4h --lookback 120 --out c:/tmp/4h.png
+    python strategies/sleeves/ai_quant/chart_cli.py --no-funding --no-lsr --out c:/tmp/price_only.png
 
 The CLI takes no DB-mutating actions; it only reads from data/trader.db.
 """
@@ -14,11 +14,11 @@ import sys
 from pathlib import Path
 
 # Allow running from repo root without installing the package.
-_REPO = Path(__file__).resolve().parent.parent
+_REPO = Path(__file__).resolve().parents[3]
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
-from services.ai_quant.chart import render_chart
+from strategies.sleeves.ai_quant.chart import render_chart
 
 
 def main(argv: list[str] | None = None) -> int:

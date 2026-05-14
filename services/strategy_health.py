@@ -429,7 +429,7 @@ class AIQuantWindowStats:
 
 def ai_quant_window_stats(variant_id: str, window: Window) -> AIQuantWindowStats:
     """Aggregate ai_quant_decisions rows for the variant in [window]. The
-    table is created on demand by services.ai_quant.journal._ensure_schema,
+    table is created on demand by strategies.sleeves.ai_quant.journal._ensure_schema,
     so we tolerate a missing table (returns all-zeros) for environments
     that have never run the AI_QUANT sleeve."""
     con = sqlite3.connect(str(db.DASH_DB))

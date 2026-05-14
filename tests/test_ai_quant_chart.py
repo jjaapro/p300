@@ -1,4 +1,4 @@
-"""Smoke tests for services.ai_quant.chart.render_chart.
+"""Smoke tests for strategies.sleeves.ai_quant.chart.render_chart.
 
 Builds a synthetic trader.db fixture and asserts the renderer produces a
 valid non-empty PNG. Doesn't snapshot the bytes (mplfinance/matplotlib
@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 import pytest
 
 from services import clock
-from services.ai_quant.chart import render_chart
+from strategies.sleeves.ai_quant.chart import render_chart
 
 PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 
