@@ -530,6 +530,15 @@ FOMC is **time-disjoint** from THU_BEAR (FOMC is always Tue/Wed, THU_BEAR is Thu
 and effectively-disjoint from everything else (< 0.5% pairwise). Adding FOMC at
 10× leverage raises mean concurrent notional by < 0.3% of capital.
 
+> **Staleness note.** This matrix is the 2.66y in-sample baseline that
+> feeds §6 and predates two compositional changes: the V2 R4 sleeves
+> added 2026-05-08 (`JPLUS_R4_BTC_V2`, `JPLUS_R4_ETH_V2`) and AI_QUANT
+> moved inside the 50% tactical cap on 2026-05-12. Re-running the
+> overlap calculation against the current composition would shift the
+> Core column (V2 sleeves correlate with V1 R4 by construction) and
+> add an AI_QUANT row. Leaving the table as-is to keep §6's pairing
+> consistent; treat it as the v6 baseline, not the current state.
+
 ---
 
 ## 6. Portfolio-level performance summary (v6 simulation, all-spot signals)
@@ -540,23 +549,33 @@ read spot data (`cd_spot_binance`, `btc_1m`), aligned with TradingView's
 default BTCUSDT 1D feed. Earlier v1–v5 numbers used perp data and are
 superseded; do not compare side-by-side.
 
-> **The numbers below were generated pre-2026-05-13 with the
-> compound-equity defect** ([AUDIT_2026_05_13](AUDIT_2026_05_13.md)):
-> `full_portfolio_report.compound_equity` walked daily returns as
-> `eq *= (1 + r/100)`, applying Jensen's gap to returns that were
-> arithmetic-on-fixed-capital. The fix is summation (commit history,
-> 2026-05-13). Re-running today on the same trade ledger produces:
-> - Total return: roughly 1–2pp lower per year of window (~3–5pp over
->   the 2.66-year run, dominated by σ²/2 on the high-vol Core sleeve).
-> - CAGR: slightly lower (same direction).
-> - MDD: slightly *larger* (compounding flatters drawdowns on positive
->   drift).
+> **The numbers below cannot be regenerated cleanly from current code**
+> ([AUDIT_2026_05_13](AUDIT_2026_05_13.md)). They predate every fix
+> from the 2026-05-13 audit cluster, several of which materially affect
+> the backtest output even against the same trade ledger:
+> - **Jensen's-gap (compound-equity) defect** (commit `b2449f8`) —
+>   pre-fix totals were inflated by ~nσ²/2; expect total return ~3–5pp
+>   lower over the 2.66y run, CAGR slightly lower, MDD slightly *larger*
+>   (compounding flatters drawdowns on positive drift).
+> - **Slippage model** (`4261c48`) — every directional close now charges
+>   +5bp/RT (10bp for FOMC); expect per-trade returns dragged 5–10bp.
+> - **Core 50% cap** (`43b9c45`) — R4_ETH at 14.8% capped vs 40% raw etc.
+>   Pre-cap Core was effectively running at ~1.35× the documented
+>   exposure in `uncertain` regime; that gross was reflected in the §6
+>   table and will shrink on re-run.
+> - **EMA_BTC / ETH_DAILY funding + fees** (`5bf734f`) — both sleeves
+>   now charge funding on multi-week perp holds (~4.5%/yr) plus fee +
+>   slippage; previously zero on all three.
+> - **Liquidation simulator in live + sim** (`477933f`) and **margin
+>   haircut 0.95→0.50** (`b9cad06`) — high-leverage SHADOW trades that
+>   would have been wiped in reality now show up as forced closes.
 >
 > Treat the +485.7% / +121.1% / +294.8% / -15.7% figures below as
-> directionally informative but **not exact**. They will be regenerated
-> in the next backtest refresh; until then, the *live* SHADOW
-> trade-ledger metrics (which now run on the corrected math) are the
-> ground truth for forward operation.
+> historically-informative but **not exact, not currently reproducible,
+> and overstated in the same direction as every fix above**. They will
+> be regenerated in the next backtest refresh; until then, the *live*
+> SHADOW trade-ledger metrics (which now run on all the corrected
+> models) are the ground truth for forward operation.
 
 > The Core columns below are the analytic output of
 > [`jplus.simulate.simulate()`](jplus/simulate.py), which has been
@@ -658,7 +677,15 @@ were affected by the data-source switch.
 
 7. **Sharpe / MDD numbers are not deflated for multiple-testing.** No
    bootstrap CI, no Monte Carlo, no White's reality check. Treat point
-   estimates as suggestive only.
+   estimates as suggestive only. **Sharpe is also computed with
+   risk-free rate = 0** — `(mean / sd) × √365` in
+   [services/strategy_health.py](services/strategy_health.py),
+   [backtest_runner.py](backtest_runner.py),
+   [tools/full_portfolio_report.py](tools/full_portfolio_report.py), and
+   [tools/tools_statistical_validation.py](tools/tools_statistical_validation.py).
+   At a 4–5% Fed funds rate, that overstates Sharpe by ~0.5–0.7
+   depending on series volatility. The crypto convention is rf=0; we
+   follow it but note the gap for cross-asset comparisons.
 
 8. **Daily-NAV MDD understates intraday DD at 5–10× leverage** in stress
    regimes. Factor this into any risk claim — the -17.4% combined max DD

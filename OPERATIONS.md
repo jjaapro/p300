@@ -50,7 +50,7 @@ python register_p300.py
 # 4. Sanity
 python health.py
 python run.py --once          # single tick; should complete in <30s
-python -m pytest tests/ -q    # ~518 tests should pass (some slow sim
+python -m pytest tests/ -q    # ~490 tests should pass (some slow sim
                               # tests run end-to-end against data/trader.db
                               # — they skip if the DB is missing)
 ```

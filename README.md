@@ -317,7 +317,7 @@ p300/
 │   │                              #   decision loop, journal, archive (.md mirror)
 │   ├── strategy_health.py         # realized-PnL aggregation (trades_daily_returns)
 │   └── sim_loop.py                # deterministic clock-advance loop primitive
-└── tests/                         # ~518 tests incl. look-ahead canary, sim e2e, network-isolation
+└── tests/                         # ~490 tests incl. look-ahead canary, sim e2e, network-isolation
 ```
 
 ## Data the services need

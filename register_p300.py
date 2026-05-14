@@ -1,26 +1,34 @@
-# Register P-300 Aggressive 2.0 1.0 — full port (Path A Phase 3/4).
+# Register P-300 Aggressive 2.0 — full live composition.
 #
 # The upstream `trader` research repo's backtest results are considered
 # compromised; this registration does NOT seed any daily returns and does
 # NOT claim any Sharpe / CAGR / MDD figures. Performance is measured by
-# the replay + live-NAV the bot itself produces.
+# the replay + live SHADOW trade-ledger the bot itself produces.
 #
 # What this variant runs live (SHADOW mode only):
-#   JPLUS-CORE        — 50% of capital, 2.5x inner leverage, regime-gated
-#                         (port of upstream Core J+ minus ML gate minus GOLD
-#                          — see jplus/ package; uses daily-return accrual,
-#                          not discrete trades)
-#   S-003 ADX         — 15% of capital, k=5x
-#   S-078 Carry       —  8%, k=5x
-#   S-096 V4 Thu Bear —  6%, k=5x
-#   PDO-L-RF          — 11% (BTC+ETH), k=1x
-#   CPR               —  5% (BTC+ETH), k=1x
-#   FOMC              —  5%, k=10x (BTC long T-10h to T+0.5h, regime+
-#                                      sentiment filtered)
+#   Core J+ (50%) — six sub-sleeves dispatched per-tick like tactical:
+#     JPLUS_R4_BTC     — Mon wk1-2 06→18 UTC, BTC long, 2.5× inner × vol-lev
+#     JPLUS_R4_ETH     — Tue 20→Wed 20 UTC, ETH long, 2.5× inner × vol-lev
+#     JPLUS_R4_BTC_V2  — Wed/Fri wk1-2 04→14 UTC, BTC long
+#     JPLUS_R4_ETH_V2  — Wed/Fri wk1-2 04→14 UTC, ETH long
+#     JPLUS_EMA_BTC    — continuous BTC long/short on weekly EMA cross
+#     JPLUS_ETH_DAILY  — continuous ETH long while regime ∈ bull
+#   Sizing comes from jplus.simulate.today_inputs() (regime-capped weights
+#   ≤ CORE_ALLOC_CAP = 0.50, since 2026-05-12).
 #
-# Live dispatch: JPLUS-CORE contributes to variant_daily_returns (source=
-# 'live_computed'). The 6 tactical sleeves emit phantom trades to `trades`.
-# Combined NAV = 0.50 × core + 0.50 × tactical (no cash reserve).
+#   Tactical (50%):
+#     S-003 ADX         — 15%, k=5x
+#     S-078 Carry       —  8%, k=5x (delta-neutral)
+#     S-096 V4 Thu Bear —  6%, k=5x
+#     PDO-L-RF          —  9% (BTC+ETH), k=1x  (trimmed 11→9 on 2026-05-12)
+#     CPR               —  5% (BTC+ETH), k=1x
+#     FOMC              —  5%, k=10x (BTC long T-10h to T+0.5h)
+#     AI_QUANT          —  2%, k=3x (inside the 50% tactical cap; default-OFF)
+#
+# Live dispatch: every sleeve (Core sub-sleeves + tactical) emits trades
+# to the `trades` table. The umbrella JPLUS-CORE that wrote daily-return
+# rows to variant_daily_returns was removed in the 2026-05-10 trade-emitter
+# migration; realized PnL from the ledger is the only PnL.
 #
 # Variant ID: p300_aggressive_v2_v1_0
 
