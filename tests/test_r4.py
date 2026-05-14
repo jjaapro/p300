@@ -1,18 +1,18 @@
-"""jplus.r4 — R4 BTC (Mon 06→18), R4 ETH (Tue20→Wed20), R4 V2
-(Wed+Fri 04→14, both BTC and ETH) returns.
+"""strategies.sleeves.r4.math — R4 BTC (Mon 06→18), R4 ETH (Tue20→Wed20),
+R4 V2 (Wed+Fri 04→14, both BTC and ETH) returns.
 
 Fixtures are hand-built (date, hour) → (open, close) dicts covering
   - V1 Mon-only wk1-2 firing (post-2026-05-08; previously Mon+Wed)
   - V2 Wed+Fri wk1-2 firing
   - Skip conditions (wrong day, wrong week, missing exit bar)
   - Sign of return (rise vs fall)
-  - Gross-only (fees deducted at trade-emit time, not in r4.py)
+  - Gross-only (fees deducted at trade-emit time, not in math.py)
 """
 from __future__ import annotations
 
 import pytest
 
-from jplus import r4
+from strategies.sleeves.r4 import math as r4
 
 
 # ─── R4 BTC ─────────────────────────────────────────────────────────────────

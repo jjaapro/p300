@@ -1,7 +1,7 @@
 # S-099 R4 — Calendar-driven intraday LONG, 4 variants
 
-Four calendar-trigger sleeves that share signal math (`jplus/r4.py`) but
-fire on different days, assets, and windows. Each variant has its own
+Four calendar-trigger sleeves that share signal math ([math.py](math.py))
+but fire on different days, assets, and windows. Each variant has its own
 allocation, leverage, and regime weight — the orchestrator dispatches
 them as separate entries in the strategy registry.
 
@@ -68,5 +68,10 @@ point of the inner-lev multiplier sharing across all four.
 - [config.py](config.py) — strategy keys, inner-lev multipliers, entry/exit hours
 - `__init__.py` — package marker
 
-Shared math `jplus/r4.py` (windowed-return computation) stays in `jplus/`
-until restructure step 6 (shared modules → `strategies/support/`).
+- [math.py](math.py) — windowed-return computation (used by signal.py for
+  scheduling and by `studies/jplus_analytic/simulate.py` for analytic
+  backtests).
+
+Inputs builder (`jplus/simulate.today_inputs`) and shared support modules
+(`regime`, `voltarget`, `gate`) are still in `jplus/` — they move to
+`strategies/support/` in restructure step 6b/6c.

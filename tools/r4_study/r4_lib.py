@@ -10,7 +10,7 @@ Window definition:
   - Exit at (date_iso + offset_days, exit_hour) using that bar's OPEN.
   - Filter by weekday set (Mon=0..Sun=6) and by a day-of-month predicate.
 
-This matches the convention in jplus/r4.py where the live R4 strategies
+This matches the convention in strategies/sleeves/r4/math.py where the live R4 strategies
 use the open of the entry hour as the fill and the open of the exit
 hour as the close-out (NOT the close of either bar).
 

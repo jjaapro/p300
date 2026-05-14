@@ -22,13 +22,14 @@ Modules:
   regime.py       4-state regime classifier (strong_bull / mild_bull /
                   uncertain / bear) with LS circuit breaker + peak-DD
                   override. All inputs strictly T-1.
-  r4.py           R4 BTC (Mon+Wed wk1-2, 06→18 UTC) and R4 ETH (Tue 20 →
-                  Wed 20 UTC, wk1-2) hourly-window return computations.
-  ema_sleeve.py   EMA(5/21) weekly crossover on BTC → long/short/flat
-                  position map.
   voltarget.py    30d realized vol → per-day leverage cap, scaled so the
                   strategy targets 50% annualised vol, floored at 0.5x.
   gate.py         Rule-based R4 de-lever trigger from strictly T-1 data.
   simulate.py     Daily orchestrator: composes all sleeves + gate + vol-
                   target into a {date: daily_return_pct} map.
+
+R4 windowed-return math (was jplus/r4.py) and EMA(5/21) weekly crossover
+math (was jplus/ema_sleeve.py) moved out 2026-05-14 to the sleeve folders
+they belong to: ``strategies/sleeves/r4/math.py`` and
+``strategies/sleeves/ema/math.py``.
 """

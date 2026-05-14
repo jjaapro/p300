@@ -7,8 +7,9 @@ crossover. Active in every regime (positive weight in all four).
 
 - **EMA(5) vs EMA(21) on weekly BTC closes** (BTC hourly aggregated to 168h
   buckets). `ema_p = +1` while LONG, `-1` while SHORT, `0` during warmup.
-- Position state lives in [jplus/ema_sleeve.py](../../../jplus/ema_sleeve.py)
-  and is read each tick via [jplus.simulate.today_inputs()](../../../jplus/simulate.py).
+- Position state is computed by [math.py](math.py) (the weekly aggregation
+  + EMA(5/21) crossover) and surfaced each tick via
+  [jplus.simulate.today_inputs()](../../../jplus/simulate.py).
 - **Entry**: at the **next weekly candle's open** after a cross is detected
   (strict T+1, no same-bar entry).
 - **Exit**: at the **next weekly candle's open** after the reverse cross.
@@ -61,5 +62,8 @@ perp it actually trades. See [AUDIT_2026_05_13.md](../../../AUDIT_2026_05_13.md)
 - [config.py](config.py) — strategy key
 - `__init__.py` — package marker
 
-Signal math (`jplus/ema_sleeve.py`) and inputs builder
-(`jplus/simulate.today_inputs`) stay in `jplus/` until restructure step 6.
+- [math.py](math.py) — weekly aggregation + EMA(5/21) crossover signal computation.
+
+Inputs builder (`jplus/simulate.today_inputs`) and shared support modules
+(`regime`, `voltarget`) are still in `jplus/` — they move to
+`strategies/support/` in restructure step 6b/6c.

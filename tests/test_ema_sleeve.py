@@ -1,4 +1,4 @@
-"""jplus.ema_sleeve — weekly aggregation + EMA(5/21) crossover position map.
+"""strategies.sleeves.ema.math — weekly aggregation + EMA(5/21) crossover position map.
 
 Properties under test:
   - Weekly aggregation produces 168h-bucketed candles (first-bucket open,
@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from jplus import ema_sleeve
+from strategies.sleeves.ema import math as ema_sleeve
 
 
 def _mk_hourly(n_bars: int, base_price: float = 50_000.0, start_ts: int = 1577836800):

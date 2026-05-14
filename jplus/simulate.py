@@ -20,7 +20,9 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 from services import clock
-from jplus import data, ema_sleeve, gate, r4, regime, voltarget
+from jplus import data, gate, regime, voltarget
+from strategies.sleeves.r4 import math as r4
+from strategies.sleeves.ema import math as ema_sleeve
 
 
 R4_EXTRA_LEV_UNGATED = 2.5
@@ -164,7 +166,7 @@ def _run_decision_loop() -> tuple[dict[str, dict], dict]:
 
         # R4 flags and per-trade returns (intraday windows).
         # V1 R4_BTC: Mon-only since 2026-05-08 (was Mon+Wed). V2 captures
-        # Wed+Fri at 04→14 — see jplus/r4.py and tools/r4_study/.
+        # Wed+Fri at 04→14 — see strategies/sleeves/r4/math.py and tools/r4_study/.
         dt = btc_d[d]["dt"]
         is_r4_b = dt.weekday() == 0 and dt.day <= 14
         is_r4_e = dt.weekday() == 2 and dt.day <= 14
