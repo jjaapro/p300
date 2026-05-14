@@ -1,7 +1,7 @@
 """Shared library for the R4 calendar-window study.
 
 Loads BTC + ETH hourly bars from trader.db and computes
-parameterized window returns. Each script in tools/r4_study/ imports
+parameterized window returns. Each script in studies/notebooks/r4_study/ imports
 from here so the data path / return semantics stay consistent.
 
 Window definition:
@@ -24,7 +24,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-DB = Path(__file__).resolve().parents[2] / "data" / "trader.db"
+DB = Path(__file__).resolve().parents[3] / "data" / "trader.db"
 
 WEEKDAY_NAMES = ("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
 

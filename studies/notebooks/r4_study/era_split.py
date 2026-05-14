@@ -15,7 +15,7 @@ profitable post-2019. Wed+Fri wk1-2 04->14 was already +0.53%/trade
 in the pre-Binance era and is era-stable.
 
 Run:
-    python tools/r4_study/era_split.py
+    python studies/notebooks/r4_study/era_split.py
 """
 from __future__ import annotations
 

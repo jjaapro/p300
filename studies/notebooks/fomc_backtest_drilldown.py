@@ -18,7 +18,7 @@ from datetime import date
 from pathlib import Path
 from strategies.support import db
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[2]
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--tag", required=True)

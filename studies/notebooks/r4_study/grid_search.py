@@ -17,7 +17,7 @@ data. Treat the leaderboard as hypothesis-generation, not a backtest
 result. Pair with walk_forward.py for OOS sanity.
 
 Run:
-    python tools/r4_study/grid_search.py
+    python studies/notebooks/r4_study/grid_search.py
 """
 from __future__ import annotations
 

@@ -15,7 +15,7 @@ Design notes:
   separate fixture needed.
 - ``write_archive_md`` is best-effort: any exception is logged and
   swallowed. The DB row is durable; the file is regenerable. See
-  ``tools/ai_quant_archive_rebuild.py`` for backfill / re-render.
+  ``strategies/sleeves/ai_quant/archive_rebuild.py`` for backfill / re-render.
 - Row ids appear in the filename so a same-day retry (ERROR row followed
   by a successful row on a later tick) doesn't collide.
 """

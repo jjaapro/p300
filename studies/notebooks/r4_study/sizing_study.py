@@ -35,7 +35,7 @@ of post-ETF expectancies." Treat the EXPECT result as a generous
 upper bound, not a forecast.
 
 Run:
-    python tools/r4_study/sizing_study.py
+    python studies/notebooks/r4_study/sizing_study.py
 """
 from __future__ import annotations
 

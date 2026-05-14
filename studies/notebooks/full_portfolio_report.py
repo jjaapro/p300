@@ -12,7 +12,7 @@ to one variant's trades table uniformly, so there is no longer a
 "combined" variant — pass --variant whichever one you want to report.
 
 Usage:
-  python tools/full_portfolio_report.py \\
+  python studies/notebooks/full_portfolio_report.py \\
       --variant p300_aggressive_v2_v1_0 \\
       --capital 10000
 """
@@ -25,7 +25,7 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(REPO))
 
 from strategies.support import db, strategy_health  # noqa: E402

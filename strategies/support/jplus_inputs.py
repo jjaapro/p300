@@ -168,7 +168,7 @@ def _run_decision_loop() -> tuple[dict[str, dict], dict]:
 
         # R4 flags and per-trade returns (intraday windows).
         # V1 R4_BTC: Mon-only since 2026-05-08 (was Mon+Wed). V2 captures
-        # Wed+Fri at 04→14 — see strategies/sleeves/r4/math.py and tools/r4_study/.
+        # Wed+Fri at 04→14 — see strategies/sleeves/r4/math.py and studies/notebooks/r4_study/.
         dt = btc_d[d]["dt"]
         is_r4_b = dt.weekday() == 0 and dt.day <= 14
         is_r4_e = dt.weekday() == 2 and dt.day <= 14

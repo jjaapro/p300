@@ -68,7 +68,7 @@ def r4_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     close via ``scheduled_exit_dt``.
 
     Mon-only since 2026-05-08 — Wednesdays moved to ``r4_btc_v2_try_fire``
-    at the era-stable 04:00→14:00 window. See tools/r4_study/findings.md.
+    at the era-stable 04:00→14:00 window. See studies/notebooks/r4_study/findings.md.
 
     Sizing: ``capital × weights['r4_btc'] × inner_lev × vol_lev`` where
     inner_lev is 2.5× (or 1.0× if the gate fired) and vol_lev is the
@@ -205,7 +205,7 @@ def r4_eth_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
 def _r4_v2_try_fire(variant: dict, asset: str, strategy: str,
                     weight_key: str) -> dict:
     """Shared live entry path for R4_BTC_V2 / R4_ETH_V2. Wed+Fri wk1-2,
-    04:00 UTC entry, 14:00 UTC scheduled exit. See tools/r4_study/."""
+    04:00 UTC entry, 14:00 UTC scheduled exit. See studies/notebooks/r4_study/."""
     now = clock.now_utc()
     today_iso = now.date().isoformat()
 

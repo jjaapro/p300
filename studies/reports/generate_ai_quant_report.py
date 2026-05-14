@@ -20,11 +20,11 @@ What it DOES do: makes one real Anthropic API call against your
 and tool usage). The cost is printed at the end.
 
 Usage:
-    python tools/ai_quant_preview.py
-    python tools/ai_quant_preview.py --asset BTC
-    python tools/ai_quant_preview.py --no-web         # disable web_search/web_fetch
-    python tools/ai_quant_preview.py --print-context  # dump context bundle, no API call
-    python tools/ai_quant_preview.py --out path.md    # override output path
+    python studies/reports/generate_ai_quant_report.py
+    python studies/reports/generate_ai_quant_report.py --asset BTC
+    python studies/reports/generate_ai_quant_report.py --no-web         # disable web_search/web_fetch
+    python studies/reports/generate_ai_quant_report.py --print-context  # dump context bundle, no API call
+    python studies/reports/generate_ai_quant_report.py --out path.md    # override output path
 """
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ import logging
 import sys
 from pathlib import Path
 
-_REPO = Path(__file__).resolve().parent.parent
+_REPO = Path(__file__).resolve().parents[2]
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 

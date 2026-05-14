@@ -16,7 +16,7 @@ from pathlib import Path
 CSV_PATH = Path(r"C:\Users\TJ5\Downloads\PDO-L-RF_BINANCE_BTCUSDT_2026-05-11_fecc0.csv")
 # Fallback to data/ if Downloads path doesn't exist
 if not CSV_PATH.exists():
-    CSV_PATH = Path(__file__).resolve().parents[1] / "data" / "PDO-L-RF_BINANCE_BTCUSDT_2026-05-11_fecc0.csv"
+    CSV_PATH = Path(__file__).resolve().parents[2] / "data" / "PDO-L-RF_BINANCE_BTCUSDT_2026-05-11_fecc0.csv"
 
 
 def parse_csv(path: Path) -> list[dict]:
@@ -124,7 +124,7 @@ def main() -> None:
 
     # Now compare entry timestamps to find which my trades TV missed
     print("=== Entry timestamp comparison ===")
-    py_csv = Path(__file__).resolve().parents[1] / "data" / "pdo_tv_validate_trades.csv"
+    py_csv = Path(__file__).resolve().parents[2] / "data" / "pdo_tv_validate_trades.csv"
     py_entries: set[str] = set()
     with py_csv.open(encoding="utf-8") as f:
         reader = csv.DictReader(f)

@@ -56,5 +56,5 @@ entirely the missed last-hour move).
 - [config.py](config.py) — calibration constants (regime filter, V4 events, hours)
 - `__init__.py` — package marker
 
-Validation: `tools/bitstamp_thu_bear_backtest.py` (to move to
-`studies/notebooks/` in restructure step 8).
+Validation: `studies/notebooks/bitstamp_thu_bear_backtest.py` (moved
+from `tools/` in restructure step 8 — pending `.ipynb` conversion).

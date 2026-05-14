@@ -28,7 +28,7 @@ Two operating modes:
       --dash-db /tmp/sim_dash.db      # SIM: deterministic loop, same
                                       # dispatch logic, separate DBs.
                                       # Build trader-sim with
-                                      # tools/build_sim_trader_db.py.
+                                      # studies/simulation/build_sim_trader_db.py.
 
 Prerequisites (one-shot bootstrap):
   python bootstrap.py           # build data/trader.db from scratch
@@ -320,7 +320,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--trader-db", type=str, default=None,
                     help="Path to the sim trader.db (market data source). "
                          "Required with --mode sim. Build with "
-                         "tools/build_sim_trader_db.py.")
+                         "studies/simulation/build_sim_trader_db.py.")
     ap.add_argument("--dash-db", type=str, default=None,
                     help="Path to the sim dashboard.db (variant + trade ledger "
                          "destination). Required with --mode sim. Pre-register "

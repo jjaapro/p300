@@ -21,6 +21,6 @@ R4_ETH_EXIT_HOUR = 20
 
 # V2 R4_{BTC,ETH}_V2 — Wed+Fri wk1-2, 04:00 → 14:00 UTC (10h hold). The
 # era-stable cell from the 2026-05-08 grid search; see
-# tools/r4_study/findings.md for the selection methodology.
+# studies/notebooks/r4_study/findings.md for the selection methodology.
 R4_V2_ENTRY_HOUR = 4
 R4_V2_EXIT_HOUR = 14

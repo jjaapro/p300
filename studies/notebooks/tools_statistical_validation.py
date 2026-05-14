@@ -32,7 +32,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from strategies.support import db, strategy_health
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[2]
 
 
 def load_variant_capital(variant_id: str) -> float:

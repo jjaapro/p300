@@ -9,7 +9,7 @@ Decay typical: 30-50% of in-sample mean is the rule of thumb. Configs
 that retain a t-stat above ~+2 OOS are the surviving signals.
 
 Run:
-    python tools/r4_study/walk_forward.py
+    python studies/notebooks/r4_study/walk_forward.py
 """
 from __future__ import annotations
 

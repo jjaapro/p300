@@ -6,7 +6,7 @@ informative around the Binance-perp launch (mid-2019) and the spot-ETF
 launch (Q1 2024).
 
 Run:
-    python tools/r4_study/year_breakdown.py
+    python studies/notebooks/r4_study/year_breakdown.py
 """
 from __future__ import annotations
 

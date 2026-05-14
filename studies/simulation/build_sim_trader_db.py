@@ -1,7 +1,7 @@
 """Build a sim trader.db from a date-range slice of a real trader.db.
 
 Usage:
-    python tools/build_sim_trader_db.py \\
+    python studies/simulation/build_sim_trader_db.py \\
         --start 2024-01-01 --end 2024-12-31 \\
         --output data/trader_sim_2024.db
 

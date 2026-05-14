@@ -21,7 +21,7 @@ import sqlite3
 from pathlib import Path
 from strategies.support import db
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[2]
 def load_trades(variant_id: str) -> list[dict]:
     con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row

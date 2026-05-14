@@ -14,7 +14,7 @@ Verifies three properties that, together, anchor the sim mode contract:
 
 Requires ``data/trader.db`` and ``data/dashboard.db`` to exist; tests
 skip if they're absent (e.g. fresh CI checkout). The sim trader.db is
-built once per module via ``tools/build_sim_trader_db.py`` to amortize
+built once per module via ``studies/simulation/build_sim_trader_db.py`` to amortize
 its ~5s cost.
 """
 from __future__ import annotations
@@ -40,7 +40,7 @@ LIVE_VARIANT = "p300_aggressive_v2_v1_0"
 
 @pytest.fixture(scope="module")
 def sim_trader_db(tmp_path_factory):
-    """Build a sim trader.db slice via tools/build_sim_trader_db.py.
+    """Build a sim trader.db slice via studies/simulation/build_sim_trader_db.py.
     1-week window + default 400d warmup so today_inputs() has enough
     history for the regime / vol-target / EMA warmup."""
     if not LIVE_TRADER_DB.exists():

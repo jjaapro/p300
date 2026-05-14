@@ -1,6 +1,6 @@
 """R4 intraday windows — direct port from upstream `backtest_variant_j`,
 extended 2026-05-08 with V2 sleeves following the calendar-window study
-in tools/r4_study/.
+in studies/notebooks/r4_study/.
 
 R4 BTC (J+ window — Mon-only since 2026-05-08; was Mon+Wed):
   Entry: 06:00 UTC
@@ -31,7 +31,7 @@ R4 BTC V2 (added 2026-05-08):
   Fires: Wednesdays and Fridays, weeks 1-2 of month (day ≤ 14)
   Return: (open_bar_14 - open_bar_04) / open_bar_04  minus 10bp RT cost
   Rationale: era-stable across pre-Binance-perp / Binance / post-ETF
-  (full-sample t=+4.6, see tools/r4_study/findings.md).
+  (full-sample t=+4.6, see studies/notebooks/r4_study/findings.md).
 
 R4 ETH V2 (added 2026-05-08):
   Entry: 04:00 UTC
@@ -94,7 +94,7 @@ def r4_btc_v2_returns(
 ) -> dict[str, float]:
     """R4 BTC V2: 04:00 → 14:00 UTC on Wed+Fri wk1-2 (10h hold).
 
-    Era-stable BTC alpha cell — see tools/r4_study/ era split. The 04:00
+    Era-stable BTC alpha cell — see studies/notebooks/r4_study/ era split. The 04:00
     entry captures the EU-session lead-in better than 06:00 on Wed/Fri
     specifically.
     """

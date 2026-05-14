@@ -1,7 +1,7 @@
 """Parameter sweep + diagnostics for the PDO_RETOUCH TV-fidelity probe.
 
 Investigates the 121-vs-172 trade-count gap between our Python replication
-(tools/pdo_tv_validate.py) and the user's TradingView run.
+(studies/notebooks/pdo_tv_validate.py) and the user's TradingView run.
 """
 from __future__ import annotations
 
@@ -10,7 +10,7 @@ from collections import Counter
 from datetime import datetime, timezone
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[1]
+REPO = Path(__file__).resolve().parents[2]
 TRADER_DB = REPO / "data" / "trader.db"
 
 HOLD_BARS = 24
