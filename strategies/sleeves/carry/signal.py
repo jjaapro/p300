@@ -32,12 +32,9 @@ from services import db
 
 log = logging.getLogger("dashboard.carry_service")
 
-# S-078 V2 filtered canonical params (match backtest_tail_harvester)
-FR_WINDOW_DAYS = 7
-FR_ENTRY_THRESHOLD = 0.0
-EXIT_NEG_DAYS = 3
-# Round-trip costs: 5bp spot + 5bp perp per leg, both sides = 20bp total
-ENTRY_EXIT_COST_PCT = 0.20   # 20bp as percent
+from .config import (
+    FR_WINDOW_DAYS, FR_ENTRY_THRESHOLD, EXIT_NEG_DAYS, ENTRY_EXIT_COST_PCT,
+)
 
 
 # ─── Funding rate loading ────────────────────────────────────────────────────

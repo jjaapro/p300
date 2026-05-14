@@ -2,7 +2,7 @@
 
 Replaces three separate per-caller implementations that previously lived in:
   services/funding_util.py:accrued_funding_pct           (point lookup over a window)
-  services/carry_service.py:_load_recent_daily_funding   (daily sum)
+  strategies/sleeves/carry/signal.py:_load_recent_daily_funding   (daily sum)
   strategies/sleeves/cpr/signal.py:_load_funding_daily   (daily mean)
 
 All three had their own SQL against cd_funding_rate / cd_funding_rate_eth.
@@ -148,7 +148,7 @@ def daily_sums_pct(asset: str, since_ts: int, until_ts: int,
     all 3 settlements (00:00 / 08:00 / 16:00 UTC); incomplete days are dropped
     unless ``complete_only=False``.
 
-    Used by carry_service for daily basis evaluation (which combines this
+    Used by the CARRY sleeve for daily basis evaluation (which combines this
     with spot/perp price closes).
     """
     table = _table_for(asset)

@@ -146,7 +146,7 @@ def _load_close_fn(strategy: str):
         from strategies.sleeves.adx.signal import _close_adx_shadow
         return _close_adx_shadow
     if strategy == "CARRY":
-        from services.carry_service import _close_carry_shadow
+        from strategies.sleeves.carry.signal import _close_carry_shadow
         return _close_carry_shadow
     if strategy == "THU_BEAR":
         from strategies.sleeves.thu_bear.signal import _close_thu_bear_shadow

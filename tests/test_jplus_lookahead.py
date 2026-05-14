@@ -15,7 +15,7 @@ Coverage:
   - jplus.simulate (Core J+, 50% portfolio weight)
   - strategies.sleeves.adx.signal._current_signal (S-003 ADX, 15%)
   - regime_classifier.classify_regime (gates S-096 Thu Bear, 6%)
-  - services.carry_service._load_recent_daily_funding (S-078 Carry, 12%)
+  - strategies.sleeves.carry.signal._load_recent_daily_funding (S-078 Carry, 12%)
   - strategies.sleeves.cpr.signal._load_daily_closes (CPR, 8%)
   - strategies.sleeves.pdo.signal._btc_30d_return_pct (PDO, 4%)
   - strategies.sleeves.thu_bear.signal._get_regime_for_prev_day (Thu Bear, 6%)
@@ -170,7 +170,7 @@ def test_carry_funding_no_lookahead(early_clock, late_clock):
     """Carry _load_recent_daily_funding must produce identical bars on common
     dates at two different clock positions. Uses days=400 to force overlap
     (default 30d would give zero overlap a year apart)."""
-    from services.carry_service import _load_recent_daily_funding
+    from strategies.sleeves.carry.signal import _load_recent_daily_funding
 
     clock.set_simulated_now(early_clock)
     early = {r["date"]: r for r in _load_recent_daily_funding(days=400)}
