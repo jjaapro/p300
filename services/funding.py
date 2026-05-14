@@ -3,7 +3,7 @@
 Replaces three separate per-caller implementations that previously lived in:
   services/funding_util.py:accrued_funding_pct           (point lookup over a window)
   services/carry_service.py:_load_recent_daily_funding   (daily sum)
-  services/cpr_service.py:_load_funding_daily            (daily mean)
+  strategies/sleeves/cpr/signal.py:_load_funding_daily   (daily mean)
 
 All three had their own SQL against cd_funding_rate / cd_funding_rate_eth.
 Two of the three had the 8x-inflation bug found 2026-05-04 (fixed in commit
@@ -184,7 +184,7 @@ def daily_means_rate(asset: str, until_ts: int) -> dict[str, float]:
     — useful as a feature for ML/percentile work where the absolute unit
     is irrelevant; just keeps proportionality.
 
-    Used by cpr_service.
+    Used by the CPR sleeve.
     """
     table = _table_for(asset)
     if table is None:

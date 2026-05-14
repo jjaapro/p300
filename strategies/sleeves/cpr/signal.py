@@ -36,11 +36,10 @@ from services import db
 
 log = logging.getLogger(__name__)
 
-COST_BP_RT = 10.0
-STOP_PCT = 0.05
-TIME_STOP_DAYS = 15
-PCTILE_WINDOW = 180
-PCTILE_THRESHOLD = 0.20
+from .config import (
+    COST_BP_RT, STOP_PCT, TIME_STOP_DAYS,
+    PCTILE_WINDOW, PCTILE_THRESHOLD,
+)
 
 
 # ─── Data loaders ─────────────────────────────────────────────────────────────

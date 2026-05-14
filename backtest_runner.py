@@ -155,7 +155,7 @@ def _load_close_fn(strategy: str):
         from services.pdo_retouch_service import _close_pdo_shadow
         return _close_pdo_shadow
     if strategy == "CPR":
-        from services.cpr_service import _close_cpr_shadow
+        from strategies.sleeves.cpr.signal import _close_cpr_shadow
         return _close_cpr_shadow
     if strategy == "FOMC":
         from services.fomc_service import _close_fomc_shadow

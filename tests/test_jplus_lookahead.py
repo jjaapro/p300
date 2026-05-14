@@ -16,7 +16,7 @@ Coverage:
   - strategies.sleeves.adx.signal._current_signal (S-003 ADX, 15%)
   - regime_classifier.classify_regime (gates S-096 Thu Bear, 6%)
   - services.carry_service._load_recent_daily_funding (S-078 Carry, 12%)
-  - services.cpr_service._load_daily_closes (CPR, 8%)
+  - strategies.sleeves.cpr.signal._load_daily_closes (CPR, 8%)
   - services.pdo_retouch_service._btc_30d_return_pct (PDO, 4%)
   - strategies.sleeves.thu_bear.signal._get_regime_for_prev_day (Thu Bear, 6%)
   - services.fomc_service.evaluate (FOMC, 5%)
@@ -202,7 +202,7 @@ def test_cpr_daily_closes_no_lookahead(early_clock, late_clock):
     are 4 months apart to guarantee meaningful overlap. CPR caches per
     (asset, UTC-day), so we clear the cache between clocks to actually
     exercise the loader path."""
-    from services.cpr_service import _daily_closes_cache, _load_daily_closes
+    from strategies.sleeves.cpr.signal import _daily_closes_cache, _load_daily_closes
 
     _daily_closes_cache.clear()
     clock.set_simulated_now(early_clock)
