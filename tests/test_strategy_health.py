@@ -154,7 +154,14 @@ def test_fmt_hold_switches_to_days_after_24h():
 def synthetic_db(tmp_path, monkeypatch):
     """Tmp dashboard.db with hand-rolled trades + variant_daily_returns
     rows for a synthetic variant. Patches DASH_DB so the strategy_health
-    module reads from this fixture instead of production."""
+    module reads from this fixture instead of production.
+
+    Note (2026-05-13 audit): no production path writes to
+    variant_daily_returns after the trade-emitter migration (Phase 3-5);
+    the test still exercises the read-side helpers
+    (portfolio_metrics with source='replay') and keeps the schema/code
+    path live. If the read-side helpers themselves are retired, this
+    fixture's variant_daily_returns block can follow."""
     fixture_db = tmp_path / "dashboard.db"
     from services import trade_db, db as _db_mod
     monkeypatch.setattr(trade_db, "DB_PATH", fixture_db)

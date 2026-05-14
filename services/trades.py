@@ -59,8 +59,13 @@ DEFAULT_SLIPPAGE_BP_RT = 5.0
 # at the spot/perp basis, not market orders.
 CARRY_SLIPPAGE_PCT = 0.04
 
-# Distant-future sentinel for "open-ended" trades (CARRY, ADX) — written to
-# the exit_time column so the engine's close_due loop never matches them.
+# Distant-future sentinel for "open-ended" trades (CARRY, ADX, JPLUS_EMA_BTC,
+# JPLUS_ETH_DAILY) — written to the exit_time column so the engine's
+# close_due loop never matches them. Chosen as a sentinel rather than NULL
+# because the exit_time column is NOT NULL in the legacy schema; the
+# 2099 date is the conventional "obviously not a real exit" marker. An
+# operator running `SELECT * FROM trades ORDER BY exit_time DESC LIMIT 10`
+# will see 2099 rows — those are still-open trades, not anomalies.
 _NO_SCHEDULED_EXIT_ISO = "2099-12-31T00:00:00+00:00"
 
 

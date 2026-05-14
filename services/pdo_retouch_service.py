@@ -227,7 +227,14 @@ def _open_pdo_shadow(variant: dict, asset: str, entry_price: float,
 
 def _close_pdo_shadow(trade_id: str, exit_price: float, reason: str) -> None:
     """Sleeve close — delegates to services.trades.close_perp_trade.
-    No funding modeling: PDO holds are intraday so the accrual is negligible."""
+
+    No funding modeling: PDO BTC holds are scheduled-24h, ETH 4h. A
+    24h window crosses 3 funding settlements at ~5bp each (~5-15bp
+    impact in either direction); skipping it is a deliberate
+    conservative-and-rough simplification, documented in
+    AUDIT_2026_05_04 "PDO intraday" rationale. The asymmetry is bounded
+    and should be quantified vs the strict-funding alternative once
+    enough live PDO trades have accumulated."""
     from services.trades import close_perp_trade
     close_perp_trade(trade_id, exit_price, reason, sleeve_name="PDO_RETOUCH",
                      cost_bp_rt=10.0, apply_funding=False)
