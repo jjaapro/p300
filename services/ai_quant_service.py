@@ -74,26 +74,51 @@ def _in_entry_window(now=None) -> bool:
 
 
 def _daily_cost_cap_usd() -> float:
+    """Read the daily API-cost cap (USD) from the env, with sanity bounds.
+
+    Default is $5/day. A typo like "50" instead of "5.0" would have sailed
+    through pre-2026-05-14 as $50/day (10× the intent); bound to a [0.01,
+    50] range to catch that class of mistake while still allowing a
+    deliberate ramp toward the 5% sleeve allocation."""
     raw = os.environ.get("AI_QUANT_DAILY_COST_CAP_USD")
     if not raw:
         return DEFAULT_DAILY_COST_CAP_USD
     try:
-        return float(raw)
+        v = float(raw)
     except ValueError:
+        log.warning(f"[ai_quant] AI_QUANT_DAILY_COST_CAP_USD={raw!r} not "
+                    f"parseable — using default ${DEFAULT_DAILY_COST_CAP_USD}/day")
         return DEFAULT_DAILY_COST_CAP_USD
+    if not 0.01 <= v <= 50.0:
+        log.warning(f"[ai_quant] AI_QUANT_DAILY_COST_CAP_USD={v} outside "
+                    f"sane range [0.01, 50] — using default "
+                    f"${DEFAULT_DAILY_COST_CAP_USD}/day (suspected typo)")
+        return DEFAULT_DAILY_COST_CAP_USD
+    return v
 
 
 def _compute_defer_until_utc(now: datetime, retry_in_hours: float) -> int:
     """Convert the model's relative retry_in_hours to an absolute unix-ts,
     clamped so the deferred call still lands on today's UTC date (≤ 23:55).
     Past 23:55 the runtime would lose the deferred slot to the next day's
-    00:05 entry window, so we cap aggressively rather than spill over."""
+    00:05 entry window, so we cap aggressively rather than spill over.
+
+    Logs a warning when the clamp fires — the model is told the defer
+    fired but the realized defer is shorter than requested, which can
+    mislead retrospective review (and any future decision_history that
+    surfaces the model's prior-decision retry expectations)."""
     target = now + timedelta(hours=retry_in_hours)
     end_of_day = now.replace(
         hour=DEFER_LATEST_HOUR, minute=DEFER_LATEST_MIN,
         second=0, microsecond=0,
     )
     if target > end_of_day:
+        clamped_hours = (end_of_day - now).total_seconds() / 3600.0
+        log.warning(
+            f"[ai_quant] defer clamped: model asked retry_in_hours="
+            f"{retry_in_hours:.2f}, capped to {clamped_hours:.2f}h "
+            f"(≤ 23:55 UTC same day)"
+        )
         target = end_of_day
     return int(target.timestamp())
 

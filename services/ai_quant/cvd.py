@@ -47,14 +47,22 @@ def load_hourly_cvd(since_ts: int, until_ts: int
     return [(int(t), float(b), float(s), float(c)) for t, b, s, c in rows]
 
 
-def daily_cvd_series(since_ts: int, until_ts: int) -> list[dict]:
+def daily_cvd_series(since_ts: int, until_ts: int,
+                      drop_today: bool = False) -> list[dict]:
     """Aggregate hourly perp CVD into UTC-day buckets in [since_ts, until_ts].
 
-    The bucket containing ``clock.now_ts()`` is included even if partial —
-    the daily-decision sleeve reads this just before its decision call and
-    expects a snapshot of today so far. Returns a list of dicts sorted by
-    date, each carrying ``cvd_btc``, ``buy_btc``, ``sell_btc``,
-    ``volume_btc``, and ``close`` (last hourly close in that day).
+    Returns a list of dicts sorted by date, each carrying ``cvd_btc``,
+    ``buy_btc``, ``sell_btc``, ``volume_btc``, and ``close`` (last hourly
+    close in that day).
+
+    ``drop_today`` controls whether the partial UTC bucket containing
+    ``clock.now_ts()`` is included. ``cvd_summary`` passes ``True`` so
+    the ``latest_daily_*`` fields it exports always reflect a CLOSED
+    day — matching ``services/ai_quant/context.py``'s daily-OHLC drop
+    pattern (lines 89-93). At the current 00:05-00:15 UTC fire window
+    the partial bucket is empty anyway, but the option future-proofs
+    against the fire window shifting later (see AUDIT_2026_05_13).
+    Direct callers who want intraday-so-far can leave the default.
     """
     rows = load_hourly_cvd(since_ts, until_ts)
     by_day: dict[str, dict] = {}
@@ -67,8 +75,11 @@ def daily_cvd_series(since_ts: int, until_ts: int) -> list[dict]:
         if ts >= slot["last_ts"]:
             slot["close"] = close
             slot["last_ts"] = ts
+    today = clock.now_utc().strftime("%Y-%m-%d") if drop_today else None
     out: list[dict] = []
     for d in sorted(by_day):
+        if d == today:
+            continue
         s = by_day[d]
         out.append({
             "date": d,
@@ -122,7 +133,11 @@ def cvd_summary(lookback_days: int = 60) -> dict:
     vol_24h = sum(b + s for t, b, s, _c in hourly if t >= cutoff_24h)
     vol_7d = sum(b + s for t, b, s, _c in hourly if t >= cutoff_7d)
 
-    series = daily_cvd_series(since, until)
+    # drop_today=True so latest_daily_* always reflects a closed UTC day —
+    # the z-score window then compares closed day against closed days, not
+    # a partial day against full ones. 24h/7d rolling sums above use the
+    # raw hourly stream and are unaffected.
+    series = daily_cvd_series(since, until, drop_today=True)
     add_cvd_zscore(series)
     latest = series[-1] if series else None
 
