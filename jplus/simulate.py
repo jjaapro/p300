@@ -321,7 +321,7 @@ def today_inputs() -> dict | None:
     """Decision inputs (regime mode, vol-target leverage, R4 gate, EMA
     position, sub-sleeve weights) for the CURRENT UTC date, derived from
     data through yesterday's close. The live entry handlers in
-    ``services/jplus_live.py`` call this at trade-open time to size their
+    ``strategies/sleeves/{r4,ema,eth_daily}/signal.py`` call this at trade-open time to size their
     positions without waiting for today's daily close.
 
     Returns ``None`` if there isn't enough warmup data to classify regime

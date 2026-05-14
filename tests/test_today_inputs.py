@@ -1,7 +1,7 @@
 """Tests for ``jplus.simulate.today_inputs()`` — the per-day decision
 inputs (regime mode, vol-target leverage, R4 gate, EMA position, sub-
 sleeve weights) used by the live entry handlers in
-``services/jplus_live.py``.
+``strategies/sleeves/{r4,ema,eth_daily}/signal.py``.
 
 These tests use the real ``data/trader.db`` so the assertions exercise
 the same data path the live bot does. Tagged ``slow`` because they pull

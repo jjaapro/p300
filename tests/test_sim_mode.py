@@ -238,7 +238,7 @@ def test_sim_run_is_idempotent_for_same_window(
     monkeypatch, sim_trader_db, sim_dashboard_db,
 ):
     """Re-running the same sim window must not duplicate trades. Per-UTC-
-    day idempotency in jplus_live._has_trade_for_day and tactical sleeves'
+    day idempotency in r4._has_trade_for_day and tactical sleeves'
     own checks make this safe — used by sim-resume after a crash."""
     _redirect_dbs(monkeypatch, sim_trader_db, sim_dashboard_db)
 

@@ -1,11 +1,19 @@
-"""Tests for the live entry handlers in services/jplus_live.
+"""Tests for the J+ live entry handlers.
 
-Covers calendar gating, idempotency, sizing math, and the OPEN/CLOSE
-event timing for R4_BTC and R4_ETH (Phase 2). Continuous-position
-handlers (EMA_BTC, ETH_DAILY) arrive in Phase 3.
+Covers calendar gating, idempotency, sizing math, and OPEN/CLOSE event
+timing across the four R4 variants plus the two continuous-position
+handlers (EMA_BTC, ETH_DAILY).
 
 Each test sets a synthetic clock, monkey-patches price_feed and
 today_inputs, and asserts the resulting trades-table state.
+
+The handlers live in three sleeve folders since restructure step 5:
+  strategies/sleeves/r4/        — 4 R4 variants
+  strategies/sleeves/ema/       — EMA_BTC
+  strategies/sleeves/eth_daily/ — ETH_DAILY
+The ``jplus_live`` namespace below collects them under one accessor so
+the existing per-test calls (``jplus_live.r4_btc_try_fire(...)`` etc.)
+don't have to fan out across N imports.
 """
 from __future__ import annotations
 
@@ -15,6 +23,20 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from services import clock
+
+from strategies.sleeves.r4 import signal as _r4_signal
+from strategies.sleeves.ema import signal as _ema_signal
+from strategies.sleeves.eth_daily import signal as _eth_daily_signal
+
+
+class jplus_live:  # noqa: N801 — test-only convenience namespace
+    """Test-only accessor matching the pre-restructure ``services.jplus_live`` shape."""
+    r4_btc_try_fire = staticmethod(_r4_signal.r4_btc_try_fire)
+    r4_eth_try_fire = staticmethod(_r4_signal.r4_eth_try_fire)
+    r4_btc_v2_try_fire = staticmethod(_r4_signal.r4_btc_v2_try_fire)
+    r4_eth_v2_try_fire = staticmethod(_r4_signal.r4_eth_v2_try_fire)
+    ema_btc_try_fire = staticmethod(_ema_signal.ema_btc_try_fire)
+    eth_daily_try_fire = staticmethod(_eth_daily_signal.eth_daily_try_fire)
 
 
 CAPITAL_USDT = 10_000.0
@@ -75,7 +97,6 @@ def _variant() -> dict:
 
 def test_r4_btc_skips_on_tuesday(live_env, monkeypatch):
     """Calendar gate: Tuesdays return ``not_calendar_day`` and don't open."""
-    from services import jplus_live
     clock.set_simulated_now(datetime(2026, 5, 5, 6, 1, tzinfo=timezone.utc))  # Tue
     try:
         result = jplus_live.r4_btc_try_fire(_variant(), {})
@@ -92,7 +113,6 @@ def test_r4_btc_skips_on_tuesday(live_env, monkeypatch):
 
 def test_r4_btc_skips_when_day_over_14(live_env, monkeypatch):
     """Calendar gate: day-of-month > 14 returns ``not_wk_1_2``."""
-    from services import jplus_live
     clock.set_simulated_now(datetime(2026, 5, 18, 6, 1, tzinfo=timezone.utc))  # Mon, day=18
     try:
         result = jplus_live.r4_btc_try_fire(_variant(), {})
@@ -103,7 +123,6 @@ def test_r4_btc_skips_when_day_over_14(live_env, monkeypatch):
 
 def test_r4_btc_skips_before_06_00(live_env, monkeypatch):
     """Time gate: returns ``before_open_window`` if hour < 6."""
-    from services import jplus_live
     clock.set_simulated_now(datetime(2026, 5, 4, 5, 30, tzinfo=timezone.utc))  # Mon 05:30
     try:
         result = jplus_live.r4_btc_try_fire(_variant(), {})
@@ -114,7 +133,6 @@ def test_r4_btc_skips_before_06_00(live_env, monkeypatch):
 
 def test_r4_btc_skips_after_18_00(live_env, monkeypatch):
     """Time gate: returns ``after_close_window`` if hour >= 18."""
-    from services import jplus_live
     clock.set_simulated_now(datetime(2026, 5, 4, 18, 1, tzinfo=timezone.utc))
     try:
         result = jplus_live.r4_btc_try_fire(_variant(), {})
@@ -126,7 +144,7 @@ def test_r4_btc_skips_after_18_00(live_env, monkeypatch):
 def test_r4_btc_opens_on_monday_within_window(live_env, monkeypatch):
     """Mon wk1-2 between 06:00 and 18:00 with valid inputs and price → opens.
     Verify trade fields: strategy, asset, direction, sizing math, exit_time."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -166,7 +184,7 @@ def test_r4_btc_opens_on_monday_within_window(live_env, monkeypatch):
 
 def test_r4_btc_idempotent_within_window(live_env, monkeypatch):
     """Calling the handler twice in the same window opens exactly one trade."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -192,7 +210,7 @@ def test_r4_btc_idempotent_within_window(live_env, monkeypatch):
 def test_r4_btc_skips_when_regime_zero_weight(live_env, monkeypatch):
     """In bear regime weights['r4_btc'] = 0 → handler returns
     ``regime_zero_weight`` without opening."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -209,7 +227,7 @@ def test_r4_btc_skips_when_regime_zero_weight(live_env, monkeypatch):
 def test_r4_btc_no_inputs_returns_status(live_env, monkeypatch):
     """If today_inputs() returns None (cold DB), handler reports
     ``no_inputs`` without crashing."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
     monkeypatch.setattr(core_sim, "today_inputs", lambda: None)
@@ -223,7 +241,7 @@ def test_r4_btc_no_inputs_returns_status(live_env, monkeypatch):
 
 def test_r4_btc_no_price_returns_status(live_env, monkeypatch):
     """Stale data → price_feed returns None → handler reports ``no_price``."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: None)
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -239,7 +257,7 @@ def test_r4_btc_no_price_returns_status(live_env, monkeypatch):
 def test_r4_btc_inner_lev_collapses_when_gated(live_env, monkeypatch):
     """When today_inputs.gated=True, inner_lev is 1.0× instead of 2.5×.
     Stacked leverage should equal vol_lev directly."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -259,7 +277,6 @@ def test_r4_btc_inner_lev_collapses_when_gated(live_env, monkeypatch):
 
 def test_r4_eth_skips_on_monday(live_env, monkeypatch):
     """Calendar gate: only Tuesdays."""
-    from services import jplus_live
     clock.set_simulated_now(datetime(2026, 5, 4, 20, 1, tzinfo=timezone.utc))  # Mon
     try:
         result = jplus_live.r4_eth_try_fire(_variant(), {})
@@ -271,7 +288,6 @@ def test_r4_eth_skips_on_monday(live_env, monkeypatch):
 def test_r4_eth_skips_when_next_day_over_14(live_env, monkeypatch):
     """Tue 2026-05-12 → next-day Wed 2026-05-13 day=13 ≤14 ✓ but Tue
     2026-05-19 → next-day Wed 2026-05-20 day=20 >14 → reject."""
-    from services import jplus_live
     clock.set_simulated_now(datetime(2026, 5, 19, 20, 1, tzinfo=timezone.utc))  # Tue, day=19
     try:
         result = jplus_live.r4_eth_try_fire(_variant(), {})
@@ -282,7 +298,6 @@ def test_r4_eth_skips_when_next_day_over_14(live_env, monkeypatch):
 
 def test_r4_eth_skips_before_20_00(live_env, monkeypatch):
     """Time gate: hour < 20 → before_open_window."""
-    from services import jplus_live
     clock.set_simulated_now(datetime(2026, 5, 5, 19, 30, tzinfo=timezone.utc))  # Tue 19:30
     try:
         result = jplus_live.r4_eth_try_fire(_variant(), {})
@@ -294,7 +309,7 @@ def test_r4_eth_skips_before_20_00(live_env, monkeypatch):
 def test_r4_eth_opens_tue_20_with_exit_wed_20(live_env, monkeypatch):
     """Tue 2026-05-05 20:01 UTC (next-day Wed=05-06 day=6 ≤14) opens with
     scheduled_exit_dt at Wed 20:00 UTC."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -325,7 +340,7 @@ def test_r4_eth_opens_tue_20_with_exit_wed_20(live_env, monkeypatch):
 
 def test_r4_eth_idempotent_within_window(live_env, monkeypatch):
     """Two calls on the same Tuesday after 20:00 produce one trade."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -349,7 +364,7 @@ def test_r4_eth_idempotent_within_window(live_env, monkeypatch):
 
 def test_r4_eth_bear_regime_skips(live_env, monkeypatch):
     """In bear regime weights['r4_eth'] = 0 → handler skips."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -368,7 +383,7 @@ def test_r4_eth_bear_regime_skips(live_env, monkeypatch):
 def test_ema_btc_opens_when_no_position(live_env, monkeypatch):
     """No open EMA_BTC + ema_p=+1 → OPEN LONG. Sized at
     capital × weight × lev / price."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -399,7 +414,7 @@ def test_ema_btc_opens_when_no_position(live_env, monkeypatch):
 
 def test_ema_btc_opens_short_when_ema_p_negative(live_env, monkeypatch):
     """ema_p=-1 → SHORT direction."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -421,7 +436,7 @@ def test_ema_btc_opens_short_when_ema_p_negative(live_env, monkeypatch):
 
 def test_ema_btc_no_position_when_ema_p_zero(live_env, monkeypatch):
     """ema_p=0 (warmup edge) → no_position_needed; nothing opened."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -438,7 +453,7 @@ def test_ema_btc_no_position_when_ema_p_zero(live_env, monkeypatch):
 def test_ema_btc_flips_on_direction_change(live_env, monkeypatch):
     """Existing LONG + ema_p flips to -1 → FLIP event; new trade opens
     with parent_position_id linkage."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
     # Day 1: open LONG.
@@ -483,7 +498,7 @@ def test_ema_btc_flips_on_direction_change(live_env, monkeypatch):
 def test_ema_btc_idempotent_within_same_day(live_env, monkeypatch):
     """Second tick on the same UTC day after the first SCALE/LEV_ADJ
     triggers no-op — UNIQUE constraint on adjustment events."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     # Pre-stage an open EMA_BTC trade with non-matching qty/lev so the
     # first call would emit SCALE+LEVERAGE_ADJUST.
@@ -519,7 +534,7 @@ def test_ema_btc_idempotent_within_same_day(live_env, monkeypatch):
 
 def test_eth_daily_no_action_in_uncertain(live_env, monkeypatch):
     """Uncertain regime weight=0 + nothing open → no_position_needed."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -534,7 +549,7 @@ def test_eth_daily_no_action_in_uncertain(live_env, monkeypatch):
 
 def test_eth_daily_opens_in_strong_bull(live_env, monkeypatch):
     """Strong_bull → eth_daily weight=0.20, lev=3 (cap), opens LONG."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -562,7 +577,7 @@ def test_eth_daily_opens_in_strong_bull(live_env, monkeypatch):
 
 def test_eth_daily_closes_when_regime_exits_bull(live_env, monkeypatch):
     """Open in mild_bull → regime flips to uncertain → CLOSE."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -600,7 +615,7 @@ def test_ema_btc_cold_start_skips_when_yesterday_matches_today(live_env, monkeyp
     matched today's: the cross fired before this variant was emitting,
     so the handler must wait for the next cross instead of cold-opening
     at today's price (the SJ-3140 phantom-entry bug)."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -624,7 +639,7 @@ def test_ema_btc_opens_on_fresh_cross_after_cold_start(live_env, monkeypatch):
     """Day 1 mid-signal (yesterday matches today) — no open. Day 2 the
     weekly EMA flips — handler opens. Confirms the guard releases on
     the next genuine cross, not just on any later tick."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 70_000.0)
 
@@ -662,7 +677,7 @@ def test_ema_btc_opens_on_fresh_cross_after_cold_start(live_env, monkeypatch):
 def test_eth_daily_cold_start_skips_when_yesterday_already_bull(live_env, monkeypatch):
     """Variant cold-starts mid-bull-regime — handler must wait for the
     next regime exit + reentry rather than chasing into a trend."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -687,7 +702,7 @@ def test_eth_daily_opens_on_fresh_bull_entry_after_cold_start(live_env, monkeypa
     no open (yesterday is now bull too). Day 3 regime exits → still no
     open (not bull). Day 4 regime re-enters bull from non-bull — handler
     opens."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
 
@@ -739,7 +754,6 @@ def test_eth_daily_opens_on_fresh_bull_entry_after_cold_start(live_env, monkeypa
 def test_r4_btc_v1_skips_on_wednesday(live_env, monkeypatch):
     """Post-2026-05-08, R4_BTC fires Mondays only — Wednesdays are
     R4_BTC_V2's territory. Verify the V1 handler skips Wed."""
-    from services import jplus_live
     clock.set_simulated_now(datetime(2026, 5, 6, 6, 1, tzinfo=timezone.utc))  # Wed
     try:
         result = jplus_live.r4_btc_try_fire(_variant(), {})
@@ -759,7 +773,6 @@ def test_r4_btc_v1_skips_on_wednesday(live_env, monkeypatch):
 
 def test_r4_btc_v2_skips_on_monday(live_env, monkeypatch):
     """V2 fires Wed+Fri only. Monday is V1's day."""
-    from services import jplus_live
     clock.set_simulated_now(datetime(2026, 5, 4, 4, 1, tzinfo=timezone.utc))  # Mon
     try:
         result = jplus_live.r4_btc_v2_try_fire(_variant(), {})
@@ -769,7 +782,6 @@ def test_r4_btc_v2_skips_on_monday(live_env, monkeypatch):
 
 
 def test_r4_btc_v2_skips_on_thursday(live_env, monkeypatch):
-    from services import jplus_live
     clock.set_simulated_now(datetime(2026, 5, 7, 4, 1, tzinfo=timezone.utc))  # Thu
     try:
         result = jplus_live.r4_btc_v2_try_fire(_variant(), {})
@@ -780,7 +792,6 @@ def test_r4_btc_v2_skips_on_thursday(live_env, monkeypatch):
 
 def test_r4_btc_v2_skips_when_day_over_14(live_env, monkeypatch):
     """wk1-2 filter: day > 14 returns ``not_wk_1_2``."""
-    from services import jplus_live
     # 2026-05-15 is a Friday but day=15 (out of wk1-2)
     clock.set_simulated_now(datetime(2026, 5, 15, 4, 1, tzinfo=timezone.utc))
     try:
@@ -791,7 +802,6 @@ def test_r4_btc_v2_skips_when_day_over_14(live_env, monkeypatch):
 
 
 def test_r4_btc_v2_skips_before_04_00(live_env, monkeypatch):
-    from services import jplus_live
     clock.set_simulated_now(datetime(2026, 5, 6, 3, 30, tzinfo=timezone.utc))  # Wed 03:30
     try:
         result = jplus_live.r4_btc_v2_try_fire(_variant(), {})
@@ -801,7 +811,6 @@ def test_r4_btc_v2_skips_before_04_00(live_env, monkeypatch):
 
 
 def test_r4_btc_v2_skips_after_14_00(live_env, monkeypatch):
-    from services import jplus_live
     clock.set_simulated_now(datetime(2026, 5, 6, 14, 1, tzinfo=timezone.utc))  # Wed 14:01
     try:
         result = jplus_live.r4_btc_v2_try_fire(_variant(), {})
@@ -813,7 +822,7 @@ def test_r4_btc_v2_skips_after_14_00(live_env, monkeypatch):
 def test_r4_btc_v2_opens_on_wednesday_within_window(live_env, monkeypatch):
     """Wed wk1-2, 04:00-14:00 UTC, valid inputs → opens BTC LONG.
     Sizing: capital × weights['r4_btc_v2'] × inner_lev × vol_lev."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 80_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -850,7 +859,7 @@ def test_r4_btc_v2_opens_on_wednesday_within_window(live_env, monkeypatch):
 
 def test_r4_btc_v2_opens_on_friday_within_window(live_env, monkeypatch):
     """Friday is the second V2 firing day."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 80_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -865,7 +874,7 @@ def test_r4_btc_v2_opens_on_friday_within_window(live_env, monkeypatch):
 
 def test_r4_btc_v2_idempotent_within_window(live_env, monkeypatch):
     """Two ticks in the same window must not double-open."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 80_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -883,7 +892,7 @@ def test_r4_btc_v2_idempotent_within_window(live_env, monkeypatch):
 
 def test_r4_btc_v2_skips_in_bear_regime(live_env, monkeypatch):
     """bear regime weight = 0 → no open."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 80_000.0)
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -901,7 +910,7 @@ def test_r4_btc_v2_skips_in_bear_regime(live_env, monkeypatch):
 
 def test_r4_eth_v2_opens_on_wednesday_within_window(live_env, monkeypatch):
     """Confirm the ETH V2 sleeve fires on Wed and writes an ETH trade."""
-    from services import jplus_live, price_feed
+    from services import price_feed
     from jplus import simulate as core_sim
     monkeypatch.setattr(price_feed, "get_current_price", lambda _a: 3_500.0)
     monkeypatch.setattr(core_sim, "today_inputs",
@@ -927,7 +936,6 @@ def test_r4_eth_v2_opens_on_wednesday_within_window(live_env, monkeypatch):
 
 
 def test_r4_eth_v2_skips_on_thursday(live_env, monkeypatch):
-    from services import jplus_live
     clock.set_simulated_now(datetime(2026, 5, 7, 4, 1, tzinfo=timezone.utc))  # Thu
     try:
         result = jplus_live.r4_eth_v2_try_fire(_variant(), {})

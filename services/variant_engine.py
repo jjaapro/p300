@@ -303,7 +303,6 @@ def _load_dispatch():
     global STRATEGY_DISPATCH
     if STRATEGY_DISPATCH:
         return
-    from services import jplus_live
     from strategies.sleeves.adx import signal as adx_sleeve
     from strategies.sleeves.thu_bear import signal as thu_bear_sleeve
     from strategies.sleeves.cpr import signal as cpr_sleeve
@@ -311,6 +310,9 @@ def _load_dispatch():
     from strategies.sleeves.carry import signal as carry_sleeve
     from strategies.sleeves.fomc import signal as fomc_sleeve
     from strategies.sleeves.ai_quant import signal as ai_quant_sleeve
+    from strategies.sleeves.r4 import signal as r4_sleeve
+    from strategies.sleeves.ema import signal as ema_sleeve
+    from strategies.sleeves.eth_daily import signal as eth_daily_sleeve
     STRATEGY_DISPATCH = {
         "S-003":           adx_sleeve.try_fire_for_variant,
         "S-096":           thu_bear_sleeve.try_fire_for_variant,
@@ -321,12 +323,12 @@ def _load_dispatch():
         # Core J+ sub-sleeves — live entry handlers (Phases 1-3 of the
         # live-execution refactor). Each opens its own discrete trades
         # at the calendar/signal moment with the live price.
-        "JPLUS_R4_BTC":    jplus_live.r4_btc_try_fire,
-        "JPLUS_R4_ETH":    jplus_live.r4_eth_try_fire,
-        "JPLUS_R4_BTC_V2": jplus_live.r4_btc_v2_try_fire,
-        "JPLUS_R4_ETH_V2": jplus_live.r4_eth_v2_try_fire,
-        "JPLUS_EMA_BTC":   jplus_live.ema_btc_try_fire,
-        "JPLUS_ETH_DAILY": jplus_live.eth_daily_try_fire,
+        "JPLUS_R4_BTC":    r4_sleeve.r4_btc_try_fire,
+        "JPLUS_R4_ETH":    r4_sleeve.r4_eth_try_fire,
+        "JPLUS_R4_BTC_V2": r4_sleeve.r4_btc_v2_try_fire,
+        "JPLUS_R4_ETH_V2": r4_sleeve.r4_eth_v2_try_fire,
+        "JPLUS_EMA_BTC":   ema_sleeve.ema_btc_try_fire,
+        "JPLUS_ETH_DAILY": eth_daily_sleeve.eth_daily_try_fire,
         # AI_QUANT — discretionary LLM trader. Default-off via
         # AI_QUANT_ENABLED env so the dispatch is wired but no API
         # cost is incurred until the user explicitly opts in.

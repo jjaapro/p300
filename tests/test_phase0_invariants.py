@@ -20,7 +20,7 @@ Three invariants:
 
 3. **`today_inputs()` smoke.** Returns a dict with all six sub-sleeve
    weight keys. Catches simulator import / warmup regressions that
-   would silently make jplus_live handlers fail with `no_inputs`.
+   would silently make the J+ live handlers fail with `no_inputs`.
 
 If a later phase intentionally changes one of these, update the
 baseline in the same commit so the change is visible in review.
@@ -159,7 +159,7 @@ def test_closed_pnl_sum_matches_strategy_health(live_db_ro):
 def test_today_inputs_returns_complete_weights():
     """today_inputs() must return a dict whose 'weights' key has all six
     sub-sleeve weight keys. Catches simulator-import or warmup regressions
-    that would silently make jplus_live handlers exit with no_inputs."""
+    that would silently make the J+ live handlers exit with no_inputs."""
     from jplus import simulate as core_sim
     ti = core_sim.today_inputs()
     assert ti is not None, (
