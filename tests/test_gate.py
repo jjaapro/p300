@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import math
 
-from jplus import gate
+from strategies.support import gate
 
 
 def _mk_dates(n: int, start="2020-01-01") -> list[str]:

@@ -8,7 +8,7 @@ import math
 
 import pytest
 
-from jplus import regime
+from strategies.support import regime_jplus as regime
 
 
 def _mk_dates(n: int, start="2020-01-01") -> list[str]:

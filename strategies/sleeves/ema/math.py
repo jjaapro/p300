@@ -30,7 +30,7 @@ from __future__ import annotations
 import math
 from datetime import datetime, timedelta, timezone
 
-from jplus.regime import ema_calc
+from strategies.support.regime_jplus import ema_calc
 
 # Historically 0.001 (0.1% round-trip), but never actually applied —
 # the simulator's c_ema computation in jplus/simulate.py uses raw

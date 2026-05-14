@@ -20,7 +20,9 @@ from __future__ import annotations
 from datetime import datetime, timedelta, timezone
 
 from services import clock
-from jplus import data, gate, regime, voltarget
+from jplus import data
+from strategies.support import gate, voltarget
+from strategies.support import regime_jplus as regime
 from strategies.sleeves.r4 import math as r4
 from strategies.sleeves.ema import math as ema_sleeve
 
@@ -77,7 +79,7 @@ def _gate_for_today(bc: list[float]) -> bool:
     should de-lever R4 today (high-vol regime by the same trailing-30d-vs-
     365d-75th-percentile rule)."""
     import math
-    from jplus.gate import (VOL_WINDOW, VOL_RANK_WINDOW, VOL_RANK_THRESHOLD,
+    from strategies.support.gate import (VOL_WINDOW, VOL_RANK_WINDOW, VOL_RANK_THRESHOLD,
                               _rolling_vol_annualized)
     if len(bc) < VOL_WINDOW + 1:
         return False

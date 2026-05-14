@@ -14,7 +14,7 @@ import math
 
 import pytest
 
-from jplus import voltarget
+from strategies.support import voltarget
 
 
 def test_warmup_returns_min_one_cap():

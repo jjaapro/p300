@@ -65,7 +65,7 @@ def test_today_inputs_lev_within_regime_cap():
     """Vol-target leverage is regime-capped via ``H_CAPS`` in
     ``jplus.voltarget``. Whatever regime today_inputs returns, the lev
     should fall in [LEV_FLOOR, H_CAPS[mode]]."""
-    from jplus import voltarget
+    from strategies.support import voltarget
     clock.set_simulated_now(datetime(2026, 5, 6, 12, tzinfo=timezone.utc))
     try:
         ti = simulate.today_inputs()

@@ -123,7 +123,7 @@ def test_indicators_module_matches_legacy_aliases():
     same output as the legacy ``ema_calc`` re-export in jplus.regime, and
     the alias-import is in fact the same callable (proves the aliasing
     works for the existing call sites without any hidden divergence)."""
-    from jplus.regime import ema_calc as legacy_ema
+    from strategies.support.regime_jplus import ema_calc as legacy_ema
     vals = [10.0, 20.0, 30.0, 40.0, 50.0, 60.0]
     out_canonical = ema(vals, period=3)
     out_legacy = legacy_ema(vals, period=3)

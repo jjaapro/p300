@@ -19,17 +19,17 @@ explicitly NOT `_mlgate_` to avoid misrepresenting what's running.
 Modules:
   data.py         Data loaders (BTC/ETH hourly + daily, LS ratio), all
                   bounded by services.clock for look-ahead safety.
-  regime.py       4-state regime classifier (strong_bull / mild_bull /
-                  uncertain / bear) with LS circuit breaker + peak-DD
-                  override. All inputs strictly T-1.
-  voltarget.py    30d realized vol → per-day leverage cap, scaled so the
-                  strategy targets 50% annualised vol, floored at 0.5x.
-  gate.py         Rule-based R4 de-lever trigger from strictly T-1 data.
   simulate.py     Daily orchestrator: composes all sleeves + gate + vol-
                   target into a {date: daily_return_pct} map.
 
-R4 windowed-return math (was jplus/r4.py) and EMA(5/21) weekly crossover
-math (was jplus/ema_sleeve.py) moved out 2026-05-14 to the sleeve folders
-they belong to: ``strategies/sleeves/r4/math.py`` and
-``strategies/sleeves/ema/math.py``.
+Migration log (restructure 2026-05-14):
+  r4.py        -> strategies/sleeves/r4/math.py        (step 6a)
+  ema_sleeve.py -> strategies/sleeves/ema/math.py      (step 6a)
+  regime.py    -> strategies/support/regime_jplus.py   (step 6b)
+  voltarget.py -> strategies/support/voltarget.py      (step 6b)
+  gate.py      -> strategies/support/gate.py           (step 6b)
+  simulate.py  -> split in step 6c: today_inputs() to
+                  strategies/support/jplus_inputs.py; the analytic
+                  simulate() function to studies/jplus_analytic/.
+  data.py      -> studies/jplus_analytic/data.py       (step 6c)
 """
