@@ -19,7 +19,7 @@ Coverage:
   - strategies.sleeves.cpr.signal._load_daily_closes (CPR, 8%)
   - strategies.sleeves.pdo.signal._btc_30d_return_pct (PDO, 4%)
   - strategies.sleeves.thu_bear.signal._get_regime_for_prev_day (Thu Bear, 6%)
-  - services.fomc_service.evaluate (FOMC, 5%)
+  - strategies.sleeves.fomc.signal.evaluate (FOMC, 5%)
 """
 from __future__ import annotations
 
@@ -294,7 +294,7 @@ def test_fomc_evaluate_past_meeting_clock_stable():
     polymarket proxy for pre-2026). Re-evaluating at a later clock must
     yield the same decision and inputs — anything else means a service is
     leaking present-day state into a past-date lookup."""
-    from services.fomc_service import evaluate
+    from strategies.sleeves.fomc.signal import evaluate
 
     fomc_date = "2024-12-18"  # past, pre-2026 -> ex-post polymarket proxy
 

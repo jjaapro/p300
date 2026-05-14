@@ -158,7 +158,7 @@ def _load_close_fn(strategy: str):
         from strategies.sleeves.cpr.signal import _close_cpr_shadow
         return _close_cpr_shadow
     if strategy == "FOMC":
-        from services.fomc_service import _close_fomc_shadow
+        from strategies.sleeves.fomc.signal import _close_fomc_shadow
         return _close_fomc_shadow
     return None
 

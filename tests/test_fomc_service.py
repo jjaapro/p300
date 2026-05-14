@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from services import fomc_service
+from strategies.sleeves.fomc import signal as fomc_service
 
 
 # ─── Mock the upstream services via monkeypatch fixture ──────────────────────
@@ -195,7 +195,8 @@ def test_self_sweep_closes_past_exit_trade(tmp_path, monkeypatch):
     silently skipped a trade and the position leaked to end-of-window."""
     import sqlite3
     from datetime import datetime, timezone
-    from services import clock, fomc_service, price_feed
+    from services import clock, price_feed
+    from strategies.sleeves.fomc import signal as fomc_service
 
     # Build minimal trades table at tmp path via canonical init_db so
     # schema additions (current_qty, trade_adjustments, etc.) are picked up
@@ -253,7 +254,8 @@ def test_self_sweep_no_op_before_exit_time(tmp_path, monkeypatch):
     """Sweep should NOT close a trade whose exit_time is still in the future."""
     import sqlite3
     from datetime import datetime, timezone
-    from services import clock, fomc_service, price_feed
+    from services import clock, price_feed
+    from strategies.sleeves.fomc import signal as fomc_service
 
     db = tmp_path / "dashboard.db"
     from services import trade_db, db as _db_mod

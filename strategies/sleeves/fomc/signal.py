@@ -39,7 +39,6 @@ import json
 import logging
 import sqlite3
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from services import clock
@@ -47,14 +46,12 @@ from services import db
 
 log = logging.getLogger("p300.fomc")
 
-REPO = Path(__file__).resolve().parent.parent
 ET = ZoneInfo("America/New_York")
 
-# Trade window (minutes from FOMC announcement)
-ENTRY_OFFSET_MIN = -10 * 60   # T-10h
-EXIT_OFFSET_MIN = 30           # T+0.5h
-# Tolerance for picking up the entry/exit minute; 60s is enough since variant_engine ticks every minute
-WINDOW_TOL_MIN = 1
+from .config import (
+    ENTRY_OFFSET_MIN, EXIT_OFFSET_MIN, WINDOW_TOL_MIN,
+    COST_BP_RT, SLIPPAGE_BP_RT,
+)
 
 
 # ─── Schema ──────────────────────────────────────────────────────────────────
@@ -326,16 +323,6 @@ def tick_observer() -> dict:
 # ─── Reporting ───────────────────────────────────────────────────────────────
 
 # ─── Trade-mode dispatcher (used by variant_engine + backtest_runner) ────────
-
-# Round-trip taker fee estimate (5bp entry + 5bp exit).
-COST_BP_RT = 10.0
-# FOMC slippage override — 10bp RT vs the 5bp default. Rationale: FOMC
-# enters around the announcement bar at 18:00 UTC with 10× leverage,
-# which is when BTC/USDT spread widens and impact is largest. Per
-# AUDIT_2026_05_13 High-tier execution-cost row, the audit range is
-# 5-10bp/RT in normal conditions and "more in volatile windows" — FOMC
-# is the canonical volatile window.
-SLIPPAGE_BP_RT = 10.0
 
 
 def _open_fomc_long(variant: dict, asset: str, entry_price: float,

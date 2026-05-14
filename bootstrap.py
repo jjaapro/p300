@@ -153,8 +153,9 @@ def fetch_fomc_sleeve_inputs() -> None:
     binance_feed loop also refreshes them daily, so a transient miss here
     self-heals on the next live tick."""
     print("\n=== Fetching FOMC sleeve inputs ===")
-    from services import sentiment_index_service, fed_funds_service, polymarket_service, fomc_service
-    fomc_service.init_schema()
+    from services import sentiment_index_service, fed_funds_service, polymarket_service
+    from strategies.sleeves.fomc import signal as fomc_sleeve
+    fomc_sleeve.init_schema()
     print("  fomc_observer table ensured")
     print(f"  fear_greed:    {'ok' if sentiment_index_service.refresh() else 'FAILED'}")
     print(f"  fed_funds:     {'ok' if fed_funds_service.refresh_xml() else 'FAILED'}")
