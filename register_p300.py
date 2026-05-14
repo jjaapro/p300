@@ -353,7 +353,7 @@ def main(argv: list[str] | None = None) -> int:
             "  python register_p300.py\n"
             "      register in data/dashboard.db (default)\n"
             "  python register_p300.py --dash-db /tmp/sim_dash.db\n"
-            "      register in a sim ledger DB for run.py --mode sim\n"
+            "      register in a sim ledger DB for studies/simulation/sim.py\n"
         ),
     )
     ap.add_argument("--dash-db", default=None,

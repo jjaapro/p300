@@ -1,6 +1,6 @@
-"""P-300 Aggressive 2.0 1.0 -- standalone paper-trading bot.
+"""P-300 Aggressive 2.0 — standalone paper-trading bot.
 
-Runs the variant engine on a 60-second loop. Each tick dispatches all
+Runs the orchestrator on a 60-second loop. Each tick dispatches all
 sleeves of the SHADOW variant; sleeves emit phantom trades into the
 ``trades`` table tagged ``execution_mode='SHADOW'`` and
 ``strategy_variant='p300_aggressive_v2_v1_0'``. Realized PnL is the
@@ -18,17 +18,10 @@ AI_QUANT (additive 2%, default-OFF via ``AI_QUANT_ENABLED`` env var).
 
 No real orders are placed on any exchange.
 
-Two operating modes:
-
-  python run.py                       # LIVE (default): wall-clock loop
-                                      # against data/trader.db + data/dashboard.db
-  python run.py --mode sim \\
-      --start 2024-01-01 --end 2024-12-31 \\
-      --trader-db data/trader_sim.db \\
-      --dash-db /tmp/sim_dash.db      # SIM: deterministic loop, same
-                                      # dispatch logic, separate DBs.
-                                      # Build trader-sim with
-                                      # studies/simulation/build_sim_trader_db.py.
+The data feed (``data.sources.binance``) always runs in a background
+thread so the bot is a single-process unit. Console noise from idle
+sleeves (``no_signal`` / ``not_thursday`` / ``tick ok`` / ``[feed]`` /
+etc.) is filtered out by default; pass ``--verbose`` to see everything.
 
 Prerequisites (one-shot bootstrap):
   python bootstrap.py           # build data/trader.db from scratch
@@ -36,15 +29,16 @@ Prerequisites (one-shot bootstrap):
   python register_p300.py       # register variant in data/dashboard.db
 
 Daily operation:
-  python run.py --feed          # single-process: bot + data feed, with
-                                # automatic startup gap-fix so the DB
-                                # self-heals every restart. Recommended
-                                # for unattended paper trading.
-  python run.py                 # bot only, no data feed (assumes you're
-                                # running `python binance_feed.py` separately)
-  python run.py --once          # one tick and exit (smoke test, live only)
-  python run.py --feed --skip-gap-fix
-                                # skip the startup gap pass (fast restart)
+  python bot.py                 # bot + binance_feed, with startup gap-fix
+  python bot.py --once          # one tick and exit (smoke test)
+  python bot.py --skip-gap-fix  # skip the startup gap pass (fast restart)
+  python bot.py --verbose       # show every log line (no noise filter)
+
+Sim mode (research-side, separate entry point):
+  python studies/simulation/sim.py \\
+      --start 2024-01-01 --end 2024-12-31 \\
+      --trader-db data/trader_sim.db \\
+      --dash-db /tmp/sim_dash.db
 
 Inspect state:
   python health.py              # all 8 invariants, exit code reflects state
@@ -56,11 +50,11 @@ from __future__ import annotations
 
 import argparse
 import logging
+import re
 import signal
 import sys
 import threading
 import time
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent
@@ -76,6 +70,52 @@ VARIANT_ID = "p300_aggressive_v2_v1_0"
 _stop = threading.Event()
 
 
+# ─── Console noise filter ─────────────────────────────────────────────────────
+
+# Patterns suppressed by default. Each is a regex matched against the formatted
+# log message. Goal: hide idle/heartbeat lines that fire every tick in steady
+# state so the operator sees only events that actually changed state. Pass
+# ``--verbose`` to disable filtering (e.g. when debugging a sleeve).
+_NOISE_PATTERNS: tuple[str, ...] = (
+    r"already_recorded",         # JPLUS-CORE idempotent re-checks (1439/day)
+    r"no_signal",                # tactical sleeve: no entry condition met
+    r"not_thursday",             # S-096 V4: only fires on Thursdays
+    r"'no_gap'",                 # PDO: no gap-up condition today
+    r"'open_waiting'",           # sleeve has an open trade, waiting for exit
+    r"\[feed\]",                 # binance_feed thread per-tick refresh summary
+    r"tick ok",                  # orchestrator 60s heartbeat
+    r"S-096.*'status': 'ok', 'actions': \[\]",  # S-096 idle (no entry/exit)
+    r"no_upcoming_fomc",         # FOMC dispatcher: no FOMC within 2-day window
+    r"not_tuesday",
+    r"no_position_needed",
+    r"in_sync",
+    r"awaiting_fresh_cross",
+    r"not_calendar_day",
+    r"new rows",
+    r"new headlines",
+    r"off_window",
+    r"before_open_window",
+    r"already_open",
+    r"after_close_window",
+)
+
+
+class _NoiseFilter(logging.Filter):
+    """Drop log records whose message matches any pattern in _NOISE_PATTERNS."""
+
+    def __init__(self) -> None:
+        super().__init__()
+        self._regex = re.compile("|".join(_NOISE_PATTERNS))
+
+    def filter(self, record: logging.LogRecord) -> bool:  # noqa: A003
+        # Drop only INFO; always pass WARNING / ERROR through.
+        if record.levelno >= logging.WARNING:
+            return True
+        return self._regex.search(record.getMessage()) is None
+
+
+# ─── Lifecycle ────────────────────────────────────────────────────────────────
+
 def _signal_handler(signum, frame):
     log.info(f"signal {signum} received — stopping after current tick")
     _stop.set()
@@ -83,7 +123,7 @@ def _signal_handler(signum, frame):
 
 def _feed_thread(interval: int) -> None:
     """Background thread that refreshes Binance data each cycle."""
-    from data.sources import binance as binance_feed  # local import so run.py works even if feed is absent
+    from data.sources import binance as binance_feed
     log.info(f"binance_feed thread starting (interval={interval}s)")
     while not _stop.is_set():
         try:
@@ -204,23 +244,11 @@ def _print_today_inputs_snapshot() -> None:
         log.warning(f"today_inputs snapshot skipped: {e!r}")
 
 
-def _parse_iso_utc(s: str) -> datetime:
-    """Parse an ISO-8601 datetime, defaulting to UTC if naive. Accepts
-    'YYYY-MM-DD' (treated as 00:00 UTC) and full ISO timestamps."""
-    s = s.strip()
-    if len(s) == 10 and s[4] == "-" and s[7] == "-":
-        s = s + "T00:00:00+00:00"
-    dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
-    if dt.tzinfo is None:
-        dt = dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc)
-
-
 def _run_live_loop(args, log) -> int:
     """Wall-clock-driven live loop. Runs until _stop is set or, with
     --once, after a single tick."""
     from strategies.support import clock as _clock
-    if args.feed and not args.once:
+    if not args.once:
         if not args.skip_gap_fix:
             log.info("=== startup gap fix ===")
             from data.sources import binance as binance_feed
@@ -235,8 +263,7 @@ def _run_live_loop(args, log) -> int:
                               daemon=True)
         t.start()
 
-    log.info(f"scheduler loop starting (interval={args.interval}s, "
-             f"feed={'on' if args.feed else 'off'})")
+    log.info(f"scheduler loop starting (interval={args.interval}s)")
     while not _stop.is_set():
         t0 = time.time()
         now = _clock.now_utc()
@@ -255,119 +282,38 @@ def _run_live_loop(args, log) -> int:
     return 0
 
 
-def _run_sim_loop(args, log) -> int:
-    """Deterministic sim loop: advance the simulated clock by
-    --sim-tick-seconds per tick from --start to --end (inclusive). No
-    wall-clock sleep; runs as fast as the dispatch can. The bot's
-    trading logic is identical to live mode; only the data source
-    (strategies.support.db.{TRADER,DASH}_DB redirected at startup) and clock
-    differ. The loop primitive lives in strategies.support.sim_loop so
-    backtest_runner.py can reuse the same clock-advance logic with
-    its own per-tick callback."""
-    from strategies.support import sim_loop
-    start = _parse_iso_utc(args.start)
-    end = _parse_iso_utc(args.end)
-    log.info(
-        f"=== sim loop starting === start={start.isoformat()} "
-        f"end={end.isoformat()} step={args.sim_tick_seconds}s "
-        f"trader_db={args.trader_db} dash_db={args.dash_db}"
-    )
-
-    def _tick(cur):
-        try:
-            orchestrator.tick()
-        except Exception as e:
-            log.exception(f"sim tick error at {cur.isoformat()}: {e}")
-
-    t_wall = time.time()
-    n_ticks = sim_loop.run_sim(start, end, args.sim_tick_seconds, _tick,
-                                 stop_event=_stop)
-    elapsed = time.time() - t_wall
-    log.info(
-        f"=== sim loop complete === ticks={n_ticks} "
-        f"wall_time={elapsed:.1f}s ({n_ticks / max(elapsed, 1e-9):.0f} ticks/s)"
-    )
-    log.info("=== sim post-run health report ===")
-    _print_health_report()
-    return 0
-
-
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="P-300 headless paper-trading bot")
-    ap.add_argument("--mode", choices=("live", "sim"), default="live",
-                    help="Operating mode. 'live' (default): wall-clock loop "
-                         "against the real DBs. 'sim': deterministic loop "
-                         "against the DBs given by --trader-db/--dash-db, "
-                         "advancing a simulated clock from --start to --end.")
+    ap = argparse.ArgumentParser(
+        description="P-300 headless paper-trading bot",
+        epilog=(
+            "For research replays use studies/simulation/sim.py (deterministic "
+            "clock, isolated DBs) or backtest_runner.py (variant replay)."
+        ),
+    )
     ap.add_argument("--interval", type=int, default=60,
-                    help="Live tick interval seconds (default 60). Ignored "
-                         "in --mode sim (use --sim-tick-seconds).")
-    ap.add_argument("--feed", action="store_true",
-                    help="Also run binance_feed in a background thread. "
-                         "Incompatible with --mode sim.")
+                    help="Live tick interval seconds (default 60).")
     ap.add_argument("--once", action="store_true",
-                    help="Run one tick and exit (for live-mode smoke test).")
+                    help="Run one tick and exit (smoke test). Skips the data "
+                         "feed thread and gap-fix.")
     ap.add_argument("--skip-gap-fix", action="store_true",
-                    help="Skip the startup gap-detection pass when --feed is "
-                         "set. Default with --feed is to heal any holes in "
-                         "the kline + funding tables before the live loop.")
-    # ── sim-mode args ─────────────────────────────────────────────────
-    ap.add_argument("--start", type=str, default=None,
-                    help="Sim start (UTC). Required with --mode sim. "
-                         "Accepts 'YYYY-MM-DD' or full ISO-8601.")
-    ap.add_argument("--end", type=str, default=None,
-                    help="Sim end (UTC, inclusive). Required with --mode sim.")
-    ap.add_argument("--trader-db", type=str, default=None,
-                    help="Path to the sim trader.db (market data source). "
-                         "Required with --mode sim. Build with "
-                         "studies/simulation/build_sim_trader_db.py.")
-    ap.add_argument("--dash-db", type=str, default=None,
-                    help="Path to the sim dashboard.db (variant + trade ledger "
-                         "destination). Required with --mode sim. Pre-register "
-                         "the variant via "
-                         "`python register_p300.py --dash-db <path>`.")
-    ap.add_argument("--sim-tick-seconds", type=int, default=60,
-                    help="Simulated-clock advance per tick in seconds "
-                         "(default 60). Lower = finer granularity.")
+                    help="Skip the startup gap-detection pass. Default behavior "
+                         "is to heal any holes in the kline + funding tables "
+                         "before the live loop starts.")
+    ap.add_argument("--verbose", action="store_true",
+                    help="Show every log line. Default filters idle/heartbeat "
+                         "noise (no_signal / tick ok / [feed] / etc.) so the "
+                         "console only shows state changes.")
     args = ap.parse_args(argv)
 
-    # ── Validate mode-specific arg combos ─────────────────────────────
-    if args.mode == "sim":
-        missing = [
-            f for f, v in (
-                ("--start", args.start), ("--end", args.end),
-                ("--trader-db", args.trader_db), ("--dash-db", args.dash_db),
-            ) if not v
-        ]
-        if missing:
-            ap.error(f"--mode sim requires: {', '.join(missing)}")
-        if args.feed:
-            ap.error("--feed is incompatible with --mode sim "
-                     "(sim runs against pre-populated DBs, no live API)")
-        if args.once:
-            ap.error("--once is a live-mode smoke test; use --start/--end "
-                     "with --mode sim")
-
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(name)s] %(levelname)s %(message)s",
-    )
-
-    # ── Sim-mode DB redirect (must run BEFORE init_db / variant lookup) ──
-    # Module-attribute mutation of strategies.support.db propagates everywhere
-    # because every consumer reads ``db.DASH_DB`` / ``db.TRADER_DB`` at
-    # call time, not import time. Confirmed by audit: no
-    # ``from strategies.support.db import DASH_DB`` patterns exist.
-    if args.mode == "sim":
-        from strategies.support import db as _db_mod
-        _db_mod.TRADER_DB = Path(args.trader_db).resolve()
-        _db_mod.DASH_DB = Path(args.dash_db).resolve()
-        log.info(
-            f"=== sim mode === redirected strategies.support.db.TRADER_DB="
-            f"{_db_mod.TRADER_DB} strategies.support.db.DASH_DB={_db_mod.DASH_DB}"
-        )
-        from strategies.support import clock as _clock
-        _clock.set_simulated_now(_parse_iso_utc(args.start))
+    handler = logging.StreamHandler()
+    handler.setFormatter(logging.Formatter(
+        "%(asctime)s [%(name)s] %(levelname)s %(message)s"
+    ))
+    if not args.verbose:
+        handler.addFilter(_NoiseFilter())
+    root = logging.getLogger()
+    root.setLevel(logging.INFO)
+    root.addHandler(handler)
 
     # Load .env so ANTHROPIC_API_KEY, COINALYZE_API_KEY etc. are available
     # to sleeves and fetchers without requiring a shell export. Existing env
@@ -381,14 +327,11 @@ def main(argv: list[str] | None = None) -> int:
     _ensure_variant_registered()
     _print_open_trades()
     _print_today_inputs_snapshot()
-    if args.mode == "live":
-        _print_health_report()
+    _print_health_report()
 
     signal.signal(signal.SIGINT, _signal_handler)
     signal.signal(signal.SIGTERM, _signal_handler)
 
-    if args.mode == "sim":
-        return _run_sim_loop(args, log)
     return _run_live_loop(args, log)
 
 

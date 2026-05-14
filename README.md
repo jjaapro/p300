@@ -95,18 +95,20 @@ python bootstrap.py --skip-coinalyze
 ## Run
 
 ```bash
-# Standalone loop (ticks every 60s)
-python run.py
+# Standalone loop — orchestrator + binance data feed in one process,
+# 60s ticks, console noise filtered. Idle/heartbeat lines (no_signal,
+# tick ok, [feed] etc.) are hidden by default; add --verbose to show
+# every line.
+python bot.py
 
-# Loop + refresh Binance data in the same process
-python run.py --feed
+# Smoke test (one tick and exit; skips the feed thread and gap-fix)
+python bot.py --once
 
-# Smoke test (one tick and exit)
-python run.py --once
+# Fast restart — skip the startup gap-fix pass
+python bot.py --skip-gap-fix
 ```
 
-Keep the Binance data feed running in a second terminal if you prefer a
-separate process:
+If you'd rather drive the feed as a separate process:
 
 ```bash
 python binance_feed.py                # gap-fix pass + loop every 60s
@@ -130,24 +132,23 @@ code path that fires in live.
 ```bash
 # 1. Build a date-range slice of trader.db. The result is self-contained;
 #    sim never reaches back to the source DB or the network.
-python tools/build_sim_trader_db.py \
+python studies/simulation/build_sim_trader_db.py \
     --start 2024-01-01 --end 2024-12-31 \
     --output data/trader_sim_2024.db
 
 # 2. Register the variant in a fresh dashboard sim DB.
 python register_p300.py --dash-db /tmp/sim_dash.db
 
-# 3. Run the bot in sim mode. Inclusive date range; sim-tick-seconds
-#    advances the simulated clock per tick (no wall-clock sleep).
-python run.py --mode sim \
+# 3. Run sim mode. Inclusive date range; --sim-tick-seconds advances
+#    the simulated clock per tick (no wall-clock sleep).
+python studies/simulation/sim.py \
     --start 2024-01-01 --end 2024-12-31 \
     --trader-db data/trader_sim_2024.db \
     --dash-db /tmp/sim_dash.db \
     --sim-tick-seconds 60
 
 # 4. Report the sim run from the trade ledger:
-python tools/full_portfolio_report.py --variant p300_aggressive_v2_v1_0 \
-    --capital 10000   # reads /tmp/sim_dash.db if env var still set
+python studies/notebooks/full_portfolio_report.ipynb  # or run the .ipynb
 ```
 
 ### Choosing `--sim-tick-seconds`
@@ -185,7 +186,7 @@ date. Already-fired trades are no-ops on the re-tick.
 
 ```bash
 # Original run, killed somewhere in mid-2024:
-python run.py --mode sim --start 2024-01-01 --end 2024-12-31 \
+python studies/simulation/sim.py --start 2024-01-01 --end 2024-12-31 \
     --trader-db trader_sim.db --dash-db sim_dash.db
 
 # Find the last completed UTC date in the sim ledger:
@@ -195,7 +196,7 @@ sqlite3 sim_dash.db \
 # ⇒ 2024-07-13
 
 # Resume — re-running 07-13 is safe (idempotent), continues from there:
-python run.py --mode sim --start 2024-07-13 --end 2024-12-31 \
+python studies/simulation/sim.py --start 2024-07-13 --end 2024-12-31 \
     --trader-db trader_sim.db --dash-db sim_dash.db
 ```
 
@@ -203,18 +204,18 @@ The cost of starting a few days before the killpoint is just a few
 hundred no-op tick-and-skip iterations — much cheaper than restarting
 the whole sim from January.
 
-### Which sim tool — `run.py --mode sim` or `backtest_runner.py`?
+### Which sim tool — `studies/simulation/sim.py` or `backtest_runner.py`?
 
 Both drive the live bot under a fake clock via the same
-[services/sim_loop.run_sim](services/sim_loop.py) primitive — but they
-differ in **where output lands** and **which features they layer on
-top**:
+[strategies/support/sim_loop.py](strategies/support/sim_loop.py)
+primitive — but they differ in **where output lands** and **which
+features they layer on top**:
 
-|  | `run.py --mode sim` | `backtest_runner.py` |
+|  | `studies/simulation/sim.py` | `backtest_runner.py` |
 |---|---|---|
 | Output ledger | separate `--dash-db` file | live `data/dashboard.db` (variant id suffixed `__replay[_<tag>]`) |
 | Live data isolation | **complete** — separate trader.db + dashboard.db | shares `data/trader.db` (read) + `data/dashboard.db` (writes to its own variant) |
-| Liquidation simulator | YES (via `variant_engine.tick` since 2026-05-13 — same `check_liquidations_for_variant` path) | YES (`check_liquidations_for_variant`) |
+| Liquidation simulator | YES (via `orchestrator.tick` — same `force_close_liquidations` path) | YES (`force_close_liquidations`) |
 | Mark-to-end-of-window for trades open at end | NO | YES (`mark_remaining_at_end`) |
 | Per-sleeve PnL summary | uses `strategy_health.build_report` | bespoke report block |
 | `--reset` purges prior runs | NO (use a fresh `--dash-db`) | YES |
@@ -222,7 +223,7 @@ top**:
 | `--with-fomc` injects FOMC sleeve mid-run | NO | YES |
 | `--skip <strategy>` excludes one sleeve | NO | YES |
 
-**Pick `run.py --mode sim`** when you want a clean *operator-style*
+**Pick `studies/simulation/sim.py`** when you want a clean *operator-style*
 sim (does the bot work end-to-end on this date range?) with no risk
 of touching the live ledger.
 
@@ -252,7 +253,7 @@ sqlite3 data/dashboard.db "SELECT id, asset, strategy, direction, pnl_pct, actua
 
 ```
 p300/
-├── run.py                         # main loop (foreground)
+├── bot.py                         # main loop (foreground)
 ├── bootstrap.py                   # one-shot data/trader.db builder (no upstream deps)
 ├── binance_feed.py                # keeps Binance tables fresh + on-demand backfills
 ├── fetch_events.py                # rebuilds scheduled_events (FOMC/CPI/NFP/OPEX)

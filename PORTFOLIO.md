@@ -757,29 +757,29 @@ were affected by the data-source switch.
 
 ## 9. Live and sim modes
 
-The bot binary in [`run.py`](run.py) supports two modes that share
+Live trading runs from [`bot.py`](bot.py). Sim mode runs from
+[`studies/simulation/sim.py`](studies/simulation/sim.py). They share
 identical dispatch logic — only the data source and clock differ:
 
-| | LIVE (default) | SIM |
+| | LIVE ([`bot.py`](bot.py)) | SIM ([`studies/simulation/sim.py`](studies/simulation/sim.py)) |
 |---|---|---|
 | Clock | wall clock | simulated, advanced deterministically |
-| Market data | `data/trader.db` (kept fresh by `binance_feed`) | `--trader-db <path>` (built by `tools/build_sim_trader_db.py`) |
+| Market data | `data/trader.db` (kept fresh by `binance_feed`) | `--trader-db <path>` (built by `studies/simulation/build_sim_trader_db.py`) |
 | Trade ledger | `data/dashboard.db` | `--dash-db <path>` (separate file) |
 | External APIs | NY Fed XML, Polymarket, F&G, news | all blocked — sim must be reproducible offline |
-| Loop | wall-clock 60s tick | `services.sim_loop.run_sim` (no sleep) |
+| Loop | wall-clock 60s tick | `strategies.support.sim_loop.run_sim` (no sleep) |
 
 ```
-# Live (current default):
-python run.py
-python run.py --feed         # also runs binance_feed in a thread
+# Live (default; binance_feed runs in-process):
+python bot.py
 
 # Sim — build a sliced trader.db, register the variant in a fresh
 # dashboard sim DB, then run the bot under a fake clock:
-python tools/build_sim_trader_db.py \
+python studies/simulation/build_sim_trader_db.py \
     --start 2024-01-01 --end 2024-12-31 \
     --output data/trader_sim_2024.db
 python register_p300.py --dash-db /tmp/sim_dash.db
-python run.py --mode sim \
+python studies/simulation/sim.py \
     --start 2024-01-01 --end 2024-12-31 \
     --trader-db data/trader_sim_2024.db \
     --dash-db /tmp/sim_dash.db \

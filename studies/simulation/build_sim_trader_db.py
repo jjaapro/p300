@@ -5,9 +5,10 @@ Usage:
         --start 2024-01-01 --end 2024-12-31 \\
         --output data/trader_sim_2024.db
 
-The result is a self-contained SQLite that `python run.py --mode sim`
-reads via --trader-db <path>. No external API is touched at sim time —
-all market data the bot needs comes from this file.
+The result is a self-contained SQLite that
+`python studies/simulation/sim.py` reads via --trader-db <path>. No
+external API is touched at sim time — all market data the bot needs
+comes from this file.
 
 Time-column formats (verified, not assumed):
   - btc_1m / eth_1m use `open_time` in Unix MILLISECONDS.

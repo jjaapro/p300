@@ -4,8 +4,8 @@ Replays each sleeve's LIVE dispatch code against historical market data
 from trader.db, using services/clock.py to present a simulated "now" to
 each module so DB queries never see future bars. No signal logic is
 reimplemented — the strategy code under test is literally the same code
-that runs live. The clock-advance loop is shared with run.py --mode sim
-via strategies.support.sim_loop.
+that runs live. The clock-advance loop is shared with
+studies/simulation/sim.py via strategies.support.sim_loop.
 
 Usage:
   python backtest_runner.py --start 2023-01-01 --end 2026-04-15

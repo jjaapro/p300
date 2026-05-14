@@ -1,8 +1,8 @@
 """Stdlib-only `.env` loader for CLI entry points and the long-running bot.
 
 Multiple tools in this repo (fetch_coinalyze.py historically; now also
-the AI_QUANT decision CLI and run.py) need to pull values from a
-top-level `.env` file at startup. Rather than duplicate the parser
+the AI_QUANT decision CLI and bot.py / sim.py) need to pull values
+from a top-level `.env` file at startup. Rather than duplicate the parser
 across modules, callers import `strategies.support.env.load_env_file()` once at
 their main() / startup boundary.
 
@@ -18,7 +18,7 @@ behavioural change):
   • Silent no-op when the file doesn't exist — testable / portable.
 
 We don't auto-call this on import. CLI tools call it from main(), and
-run.py calls it once at startup. Library code (services that get
+bot.py calls it once at startup. Library code (services that get
 imported by tests) must NOT call it on import — that would mutate
 os.environ during a pytest run.
 """

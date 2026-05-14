@@ -18,8 +18,8 @@ from typing import Any
 
 def _con() -> sqlite3.Connection:
     """Open a connection to the dashboard DB. Reads ``strategies.support.db.DASH_DB``
-    at call time so a sim-mode redirection (``run.py --mode sim`` mutates
-    that constant at startup) propagates here. The previous module-local
+    at call time so a sim-mode redirection (``studies/simulation/sim.py``
+    mutates that constant at startup) propagates here. The previous module-local
     ``DB_PATH = .../dashboard.db`` shadowed the redirection, causing
     sim runs to read variant config from the live DB while writing
     trades to the sim DB."""

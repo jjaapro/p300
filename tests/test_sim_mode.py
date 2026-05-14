@@ -1,4 +1,4 @@
-"""End-to-end test for ``run.py --mode sim``.
+"""End-to-end test for ``studies/simulation/sim.py``.
 
 Verifies three properties that, together, anchor the sim mode contract:
 
@@ -48,7 +48,7 @@ def sim_trader_db(tmp_path_factory):
     out_dir = tmp_path_factory.mktemp("sim_trader")
     out = out_dir / "trader_sim.db"
     result = subprocess.run(
-        [sys.executable, str(REPO / "tools" / "build_sim_trader_db.py"),
+        [sys.executable, str(REPO / "studies" / "simulation" / "build_sim_trader_db.py"),
          "--start", "2024-06-01", "--end", "2024-06-08",
          "--source", str(LIVE_TRADER_DB), "--output", str(out)],
         capture_output=True, text=True, cwd=str(REPO),
@@ -85,7 +85,7 @@ def sim_dashboard_db(tmp_path):
 
 
 def _redirect_dbs(monkeypatch, trader_db: Path, dash_db: Path) -> None:
-    """Mirror what run.py --mode sim does at startup."""
+    """Mirror what studies/simulation/sim.py does at startup."""
     from strategies.support import db as _db_mod
     monkeypatch.setattr(_db_mod, "TRADER_DB", trader_db.resolve())
     monkeypatch.setattr(_db_mod, "DASH_DB", dash_db.resolve())
@@ -168,14 +168,14 @@ def test_sim_does_not_touch_live_dashboard_db(
 def test_sim_and_backtest_runner_produce_identical_jplus_trades(
     monkeypatch, sim_trader_db, sim_dashboard_db,
 ):
-    """Parity: ``run.py --mode sim`` and ``backtest_runner.py`` share the
-    same dispatch (STRATEGY_DISPATCH) and the same clock primitive
-    (strategies.support.sim_loop), so for the same window at the same tick
-    cadence they must produce identical trades.
+    """Parity: ``studies/simulation/sim.py`` and ``backtest_runner.py``
+    share the same dispatch (STRATEGY_DISPATCH) and the same clock
+    primitive (strategies.support.sim_loop), so for the same window at
+    the same tick cadence they must produce identical trades.
 
     Run both paths against the same sim dashboard.db at 1h ticks over a
     full Mon 06:00→18:00 UTC R4_BTC window. The live variant fires
-    under orchestrator.tick (run.py path); a __replay_parity variant
+    under orchestrator.tick (sim.py path); a __replay_parity variant
     fires under backtest_runner.tick_replay_variant. Compare the
     JPLUS_R4_BTC trades by (asset, direction, entry_time, exit_time,
     entry_price, size_usdt) — these must match exactly.
@@ -192,7 +192,7 @@ def test_sim_and_backtest_runner_produce_identical_jplus_trades(
     start = datetime(2024, 6, 3, 6, 0, 0, tzinfo=timezone.utc)
     end = datetime(2024, 6, 3, 18, 0, 0, tzinfo=timezone.utc)
 
-    # run.py path — ticks 'p300_aggressive_v2_v1_0' (enabled=1).
+    # sim.py path — ticks 'p300_aggressive_v2_v1_0' (enabled=1).
     sim_loop.run_sim(start, end, 3600,
                       lambda cur: orchestrator.tick())
 
@@ -228,9 +228,9 @@ def test_sim_and_backtest_runner_produce_identical_jplus_trades(
     assert len(live_r4) == 1, f"live R4_BTC count != 1: {live_r4}"
     assert len(replay_r4) == 1, f"replay R4_BTC count != 1: {replay_r4}"
     assert live_r4[0] == replay_r4[0], (
-        "JPLUS_R4_BTC trade differs between run.py --mode sim and "
+        "JPLUS_R4_BTC trade differs between studies/simulation/sim.py and "
         "backtest_runner — dispatch parity broken:\n"
-        f"  run.py path = {live_r4[0]}\n"
+        f"  sim.py path = {live_r4[0]}\n"
         f"  backtest    = {replay_r4[0]}"
     )
 

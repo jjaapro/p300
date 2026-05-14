@@ -422,10 +422,10 @@ def _check_liquidations_all_variants(now_utc) -> int:
 
     Reuses ``strategies.support.margin_check.force_close_liquidations`` —
     the same orchestration wrapper the research replay runs — so live
-    SHADOW, ``run.py --mode sim``, and the backtest path all evaluate
-    margin trajectories with identical logic. Each open SHADOW trade
-    whose entry→now path would have breached maintenance margin gets
-    force-closed via the sleeve's close function with reason
+    SHADOW, ``studies/simulation/sim.py``, and the backtest path all
+    evaluate margin trajectories with identical logic. Each open SHADOW
+    trade whose entry→now path would have breached maintenance margin
+    gets force-closed via the sleeve's close function with reason
     ``forced_exit:liquidation``.
 
     Wrapped in try/except per-variant so a single misbehaving variant

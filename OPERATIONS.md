@@ -8,14 +8,14 @@
 | What | Command |
 |---|---|
 | One-time setup | `export COINALYZE_API_KEY=...` → `python bootstrap.py` → `python register_p300.py` |
-| Start live loop | `python run.py --feed` |
-| Single tick (test) | `python run.py --once` |
+| Start live loop | `python bot.py` |
+| Single tick (test) | `python bot.py --once` |
 | Health check | `python health.py` |
 | Run replay (research) | `python backtest_runner.py --start 2021-07-01 --end 2026-04-15 --reset --tag YOUR_TAG` |
-| Run sim mode (operator) | `python run.py --mode sim --start <iso> --end <iso> --trader-db <sim.db> --dash-db <sim_dash.db>` |
-| Build sim trader.db | `python tools/build_sim_trader_db.py --start <iso> --end <iso> --output <sim.db>` |
-| Deep metrics report | `python tools/backtest_report.py --variant <variant_id>` |
-| Full-portfolio report | `python tools/full_portfolio_report.py --variant <variant_id>` |
+| Run sim mode (operator) | `python studies/simulation/sim.py --start <iso> --end <iso> --trader-db <sim.db> --dash-db <sim_dash.db>` |
+| Build sim trader.db | `python studies/simulation/build_sim_trader_db.py --start <iso> --end <iso> --output <sim.db>` |
+| Deep metrics report | `studies/notebooks/backtest_report.ipynb` |
+| Full-portfolio report | `studies/notebooks/full_portfolio_report.ipynb` |
 | Unit + integration tests | `python -m pytest tests/` |
 
 See [README.md §"Run in sim mode"](README.md) for the full sim-mode
@@ -49,7 +49,7 @@ python register_p300.py
 
 # 4. Sanity
 python health.py
-python run.py --once          # single tick; should complete in <30s
+python bot.py --once          # single tick; should complete in <30s
 python -m pytest tests/ -q    # ~490 tests should pass (some slow sim
                               # tests run end-to-end against data/trader.db
                               # — they skip if the DB is missing)
@@ -58,13 +58,13 @@ python -m pytest tests/ -q    # ~490 tests should pass (some slow sim
 ## 2. Live operation
 
 ```bash
-# Start the main loop with data feed in the same process
-python run.py --feed
-
-# Or split into two processes
-python binance_feed.py &
-python run.py
+# Start the main loop with data feed in the same process (default)
+python bot.py
 ```
+
+Console noise from idle/heartbeat lines (no_signal, tick ok, [feed]…)
+is filtered out by default. Pass `--verbose` to disable the filter
+when you're debugging a sleeve.
 
 `binance_feed.py` runs a **gap-detection pass at startup** that scans every
 cadence-based table (klines + funding) for missing rows and fetches them
@@ -182,11 +182,11 @@ they start failing, revert the change that caused it.
 
 ### Live loop crashes repeatedly
 ```bash
-python run.py --once 2>&1 | tee /tmp/p300_once.log
+python bot.py --once 2>&1 | tee /tmp/p300_once.log
 ```
 The crash message should point at the offending sleeve or service.
 Per-sleeve errors are already isolated — a whole-loop crash means the
-variant_engine itself or the variant lookup failed, typically due to a
+orchestrator itself or the variant lookup failed, typically due to a
 corrupted dashboard.db variant row. Recovery:
 ```bash
 python register_p300.py    # re-registers idempotently
@@ -197,10 +197,10 @@ python health.py           # confirm fresh registration
 
 Two ways to drive the live bot under a fake clock — see
 [README.md §"Which sim tool"](README.md) for the decision matrix. In
-short: `run.py --mode sim` for clean operator-style sims (separate DB
-file, no live-DB risk), `backtest_runner.py` for research workflow
-(`--tag` for parallel A/B, mark-to-end). Both modes — and live —
-run the liquidation simulator since 2026-05-13.
+short: `studies/simulation/sim.py` for clean operator-style sims
+(separate DB file, no live-DB risk), `backtest_runner.py` for research
+workflow (`--tag` for parallel A/B, mark-to-end). Both modes — and
+live — run the liquidation simulator since 2026-05-13.
 
 ### Research replay with `backtest_runner.py`
 
@@ -214,28 +214,24 @@ the live `data/dashboard.db`. Results live under
 with `enabled=0` so the live engine never touches it; only
 `backtest_runner` ticks it.
 
-After the run, report it:
-```bash
-python tools/backtest_report.py --variant p300_aggressive_v2_v1_0__replay_A
-python tools/full_portfolio_report.py --variant p300_aggressive_v2_v1_0__replay_A
-```
-
-Both tools derive equity curves from the trade ledger via
-`services.strategy_health.trades_daily_returns` — no
+After the run, report it via the notebooks under `studies/notebooks/`
+(`backtest_report.ipynb`, `full_portfolio_report.ipynb`). Both derive
+equity curves from the trade ledger via
+`strategies.support.strategy_health.trades_daily_returns` — no
 `variant_daily_returns` involvement.
 
-### Operator sim with `run.py --mode sim`
+### Operator sim with `studies/simulation/sim.py`
 
 ```bash
 # Build a slice of trader.db for the desired window
-python tools/build_sim_trader_db.py --start 2024-01-01 --end 2024-12-31 \
+python studies/simulation/build_sim_trader_db.py --start 2024-01-01 --end 2024-12-31 \
     --output data/trader_sim_2024.db
 
 # Register the variant in a fresh sim ledger DB
 python register_p300.py --dash-db /tmp/sim_dash.db
 
 # Run the bot under a simulated clock — no contact with the live DBs
-python run.py --mode sim --start 2024-01-01 --end 2024-12-31 \
+python studies/simulation/sim.py --start 2024-01-01 --end 2024-12-31 \
     --trader-db data/trader_sim_2024.db --dash-db /tmp/sim_dash.db \
     --sim-tick-seconds 60
 ```
@@ -256,7 +252,7 @@ P300_STOP_SEMANTICS=margin python backtest_runner.py --start ... --tag B
 ## 6. Variant IDs in `dashboard.db`
 
 ```
-p300_aggressive_v2_v1_0              LIVE variant (what run.py ticks)
+p300_aggressive_v2_v1_0              LIVE variant (what bot.py ticks)
 p300_aggressive_v2_v1_0__replay_<X>  research replays from backtest_runner --tag X
                                      (enabled=0; only backtest_runner ticks them)
 ```
@@ -292,7 +288,7 @@ DELETE FROM variant_daily_returns WHERE variant_id = '<variant_id>';
    and reinserts — never duplicates. Safe to run any time. `--dash-db`
    flag lets you target a sim DB.
 
-4. **Sim/live dispatch parity.** `run.py --mode sim` and
+4. **Sim/live dispatch parity.** `studies/simulation/sim.py` and
    `backtest_runner.py` produce byte-identical J+ sub-sleeve trades
    for the same window at the same tick cadence. Verified by
    `tests/test_sim_mode.py::test_sim_and_backtest_runner_produce_identical_jplus_trades`.

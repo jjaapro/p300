@@ -6,7 +6,7 @@ Pure read-side over `variant_daily_returns` and `trades`; no side effects.
 
 Intended uses:
   - Standalone CLI: `python -m strategies.support.strategy_health --variant <id>`
-  - Startup banner in run.py / dashboard widget
+  - Startup banner in bot.py / dashboard widget
   - Future: trip a circuit-breaker when rolling Sharpe falls below a
     threshold (initiative #1 from the risk-management gap analysis).
 

@@ -94,10 +94,27 @@ None — purely cosmetic. Scripts still run as `.py` until converted.
 
 ---
 
-## P2.3 — `run.py` → `bot.py` redesign
+## P2.3 — `run.py` → `bot.py` redesign ✅
 
 **Captured:** 2026-05-14.
-**Status:** mechanical move + small redesign; touches the bot's entry point.
+**Status:** completed 2026-05-14. `run.py` renamed to `bot.py`; sim mode
+moved to `studies/simulation/sim.py` (separate entry point, same
+`sim_loop.run_sim(orchestrator.tick)` path so dispatch parity holds).
+`--mode sim` flag and its argparse cluster removed from bot.py. Data
+feed is now always-on in-process (the `--feed` flag is gone). Bot console
+filters idle/heartbeat lines (`no_signal` / `tick ok` / `[feed]` etc.)
+via a built-in `_NoiseFilter`; pass `--verbose` to disable. `--once` and
+`--skip-gap-fix` survive. `tools/p300_run.ps1` and the empty `tools/`
+directory are gone — the noise filter inside bot.py subsumes the
+PowerShell wrapper's role. Docstring references across
+`strategies/orchestrator.py`, `strategies/support/{env,strategy_health,
+variant_registry,sim_loop}.py`, `backtest_runner.py`, `register_p300.py`,
+and `studies/simulation/build_sim_trader_db.py` updated. README,
+OPERATIONS, PORTFOLIO command examples and tables updated to point at
+`bot.py` / `studies/simulation/sim.py`. `.claude/settings.json` allowlist
+entries also updated. `tests/test_sim_mode.py` path fix lands here too
+(the pre-existing P2.1-era failure — references to `tools/build_sim_trader_db.py`
+— is now fixed as a side effect).
 
 ### Motivation
 

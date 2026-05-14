@@ -1,12 +1,12 @@
 """Deterministic simulated-clock loop primitive.
 
-Both ``run.py --mode sim`` (operator-facing simulator) and
+Both ``studies/simulation/sim.py`` (operator-facing simulator) and
 ``backtest_runner.py`` (research-replay tool) drive the live bot
 under a fake clock. The shared primitive lives here so the two
 callers stay structurally identical; only their per-tick callbacks
 differ:
 
-  - run.py passes ``orchestrator.tick`` (all-variants tick, like live).
+  - sim.py passes ``orchestrator.tick`` (all-variants tick, like live).
   - backtest_runner.py passes a closure that runs its variant-scoped
     liquidation check + close-due check + tick_replay_variant + a
     progress log.
@@ -20,7 +20,7 @@ no DB writes. It just advances the clock and yields control.
 production callers wrap their tick_fn differently and that
 inconsistency is intentional:
 
-- **run.py --mode sim**: wraps ``orchestrator.tick`` in
+- **studies/simulation/sim.py**: wraps ``orchestrator.tick`` in
   try/except + log.exception so a single bad tick does not abort a
   long sim. Operator semantics — "keep going, surface errors in the
   log."
@@ -70,7 +70,7 @@ def run_sim(start: datetime,
             backtest_runner's liquidation+close+dispatch sequence, etc.).
             Exceptions are NOT caught here — let the caller decide.
         stop_event: optional threading.Event; loop exits early when set
-            (Ctrl-C / SIGTERM in run.py).
+            (Ctrl-C / SIGTERM in bot.py / sim.py).
 
     Returns:
         Number of ticks that executed before the loop exited.
