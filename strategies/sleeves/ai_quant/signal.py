@@ -171,7 +171,12 @@ def _reconcile(
       "flipped:SJ-old->SJ-new"
       "skipped:no_price"
     """
-    weight_pct = float(sleeve_cfg.get("weight_pct", 0.0))
+    # AI_QUANT: weight_pct is the *cap* — conviction (0-100) scales the
+    # actual allocation inside it via _allocation_pct_for. The migration to
+    # _effective_weight_pct just swaps the source of the cap; conviction
+    # scaling stays unchanged.
+    weight_pct = float(sleeve_cfg.get("_effective_weight_pct",
+                                        sleeve_cfg.get("weight_pct", 0.0)))
     leverage = _resolve_leverage(sleeve_cfg)
     eff_direction = _effective_direction(decision_payload)
     conviction = int(decision_payload.get("conviction_0_100") or 0)

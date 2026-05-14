@@ -205,7 +205,8 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     stop_loss_pct = float(params.get("stop_loss_pct", 5.0))
     assets = params.get("assets") or ["BTC", "ETH"]
     version = (params.get("version") or "V3_enhanced").upper()
-    alloc_pct = float(sleeve_cfg.get("weight_pct", 0.0))
+    alloc_pct = float(sleeve_cfg.get("_effective_weight_pct",
+                                       sleeve_cfg.get("weight_pct", 0.0)))
     leverage = float(sleeve_cfg.get("_effective_leverage", 1.0))
     # SL semantic: price_move leaves the configured pct as-is; margin divides
     # by leverage so a 10% margin-loss trigger = 2% price-move at k=5x.

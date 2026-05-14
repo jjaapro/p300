@@ -75,7 +75,13 @@ def eth_daily_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     if ti is None:
         return {"status": "no_inputs"}
 
-    desired_weight = float(ti["weights"]["eth_daily"])
+    # P2.4a: orchestrator-injected allocation, ti["weights"] fallback for tests.
+    eff_w = sleeve_cfg.get("_effective_weight_pct")
+    desired_weight = ((eff_w / 100.0) if eff_w is not None
+                       else float(ti["weights"]["eth_daily"]))
+    # prev_weight intentionally still reads ti["weights_prev"] — needed for
+    # the "first-bull-day, no prior weight" transition; the allocation table
+    # has no notion of yesterday, only today.
     prev_weight = float(ti.get("weights_prev", {}).get("eth_daily", 0.0))
     desired_lev = float(ti["lev"])
     desired_open = desired_weight > 0.0

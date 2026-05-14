@@ -191,7 +191,8 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     Opens / closes a paired CARRY shadow trade based on funding rate regime.
     P&L is computed at close from accumulated funding minus fees.
     """
-    alloc_pct = float(sleeve_cfg.get("weight_pct", 0.0))
+    alloc_pct = float(sleeve_cfg.get("_effective_weight_pct",
+                                       sleeve_cfg.get("weight_pct", 0.0)))
     leverage = float(sleeve_cfg.get("_effective_leverage", 1.0))
 
     records = _load_recent_daily_funding(days=FR_WINDOW_DAYS + EXIT_NEG_DAYS + 7)

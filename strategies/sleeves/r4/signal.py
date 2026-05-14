@@ -97,7 +97,12 @@ def r4_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     if ti is None:
         return {"status": "no_inputs"}
 
-    weight = ti["weights"]["r4_btc"]
+    # P2.4a: orchestrator injects _effective_weight_pct from the
+    # allocation table. Direct callers (tests) pass empty sleeve_cfg —
+    # fall back to ti["weights"] which is the same source the table
+    # mirrors, so parity holds either way.
+    eff_w = sleeve_cfg.get("_effective_weight_pct")
+    weight = (eff_w / 100.0) if eff_w is not None else ti["weights"]["r4_btc"]
     if weight <= 0:
         return {"status": "regime_zero_weight", "mode": ti["mode"]}
 
@@ -164,7 +169,9 @@ def r4_eth_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     if ti is None:
         return {"status": "no_inputs"}
 
-    weight = ti["weights"]["r4_eth"]
+    # P2.4a: orchestrator-injected allocation, ti["weights"] fallback for tests.
+    eff_w = sleeve_cfg.get("_effective_weight_pct")
+    weight = (eff_w / 100.0) if eff_w is not None else ti["weights"]["r4_eth"]
     if weight <= 0:
         return {"status": "regime_zero_weight", "mode": ti["mode"]}
 
@@ -203,9 +210,14 @@ def r4_eth_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
 
 
 def _r4_v2_try_fire(variant: dict, asset: str, strategy: str,
-                    weight_key: str) -> dict:
+                    weight_key: str, sleeve_cfg: dict | None = None) -> dict:
     """Shared live entry path for R4_BTC_V2 / R4_ETH_V2. Wed+Fri wk1-2,
-    04:00 UTC entry, 14:00 UTC scheduled exit. See studies/notebooks/r4_study/."""
+    04:00 UTC entry, 14:00 UTC scheduled exit. See studies/notebooks/r4_study/.
+
+    ``sleeve_cfg`` is the orchestrator dispatch dict; when set, this
+    function reads ``_effective_weight_pct`` from it (P2.4a). Defaults to
+    ``None`` so direct callers (tests) still work."""
+    sleeve_cfg = sleeve_cfg or {}
     now = clock.now_utc()
     today_iso = now.date().isoformat()
 
@@ -227,7 +239,10 @@ def _r4_v2_try_fire(variant: dict, asset: str, strategy: str,
     if ti is None:
         return {"status": "no_inputs"}
 
-    weight = ti["weights"].get(weight_key, 0.0)
+    # P2.4a: orchestrator-injected allocation, ti["weights"] fallback for tests.
+    eff_w = sleeve_cfg.get("_effective_weight_pct")
+    weight = ((eff_w / 100.0) if eff_w is not None
+              else ti["weights"].get(weight_key, 0.0))
     if weight <= 0:
         return {"status": "regime_zero_weight", "mode": ti["mode"]}
 
@@ -267,11 +282,13 @@ def r4_btc_v2_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     """R4_BTC_V2 — Wed+Fri wk1-2 04:00→14:00 UTC."""
     return _r4_v2_try_fire(variant, asset="BTC",
                             strategy=STRATEGY_R4_BTC_V2,
-                            weight_key="r4_btc_v2")
+                            weight_key="r4_btc_v2",
+                            sleeve_cfg=sleeve_cfg)
 
 
 def r4_eth_v2_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     """R4_ETH_V2 — Wed+Fri wk1-2 04:00→14:00 UTC on ETH."""
     return _r4_v2_try_fire(variant, asset="ETH",
                             strategy=STRATEGY_R4_ETH_V2,
-                            weight_key="r4_eth_v2")
+                            weight_key="r4_eth_v2",
+                            sleeve_cfg=sleeve_cfg)

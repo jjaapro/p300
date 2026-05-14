@@ -256,7 +256,8 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
 
     params = sleeve_cfg.get("params") or {}
     assets = params.get("assets", ["BTC", "ETH"])
-    alloc_pct = float(sleeve_cfg.get("weight_pct", 0.0))
+    alloc_pct = float(sleeve_cfg.get("_effective_weight_pct",
+                                       sleeve_cfg.get("weight_pct", 0.0)))
     leverage = float(sleeve_cfg.get("_effective_leverage", 1.0))
     per_asset_alloc = alloc_pct / max(1, len(assets))
 

@@ -221,36 +221,27 @@ commit and probably multi-session. A reasonable sub-decomposition:
 
 ### P2.4a status (2026-05-14)
 
-**Pilot shipped.** `strategies/support/allocation.py` exists with the
-full WEIGHT_TABLE for all 13 sleeves (7 tactical regime-independent,
-6 J+ regime-keyed). Orchestrator (`_tick_composition`) and backtest
-runner (`tick_replay_variant`) classify regime once per tick via
-`allocation.current_regime()` and inject `_effective_weight_pct` into
-each sleeve dispatch alongside `_effective_leverage`. ADX is the
-pilot sleeve — `try_fire_for_variant` reads
-`_effective_weight_pct` with fallback to static `weight_pct`.
-60 parity tests in `tests/test_allocation_parity.py` anchor the
-contract: 7 tactical sleeves × 4 regimes (regime-independent rows),
-6 J+ sleeves × 4 regimes (matches `_cap_core_weights`), plus
-resolver fallback / unknown-sleeve / unknown-regime / cold-boot
-behavior. All 594 tests passing.
+**Complete.** ✅ All 13 sleeves migrated. `strategies/support/allocation.py`
+holds the full WEIGHT_TABLE; orchestrator (`_tick_composition`) and
+backtest runner (`tick_replay_variant`) classify regime once per tick
+via `allocation.current_regime()` and inject `_effective_weight_pct`
+into every sleeve dispatch alongside `_effective_leverage`. Every
+sleeve's `try_fire_for_variant` reads `_effective_weight_pct` with a
+fallback specific to that sleeve's history:
 
-**Remaining sleeves to migrate** (one commit each — same one-line
-edit ADX got, plus parity-test confirmation):
+- **Tactical sleeves** (ADX, CARRY, THU_BEAR, PDO, CPR, FOMC,
+  AI_QUANT) fall back to the static composition ``weight_pct``.
+- **J+ sleeves** (R4_BTC, R4_ETH, R4_BTC_V2, R4_ETH_V2, EMA_BTC,
+  ETH_DAILY) fall back to ``ti["weights"][short_key]`` — the legacy
+  source the allocation table mirrors — so direct test callers that
+  pass empty ``sleeve_cfg`` still work without changes.
 
-- [ ] CARRY (`strategies/sleeves/carry/signal.py`)
-- [ ] THU_BEAR (`strategies/sleeves/thu_bear/signal.py`)
-- [ ] PDO (`strategies/sleeves/pdo/signal.py`)
-- [ ] CPR (`strategies/sleeves/cpr/signal.py`)
-- [ ] FOMC (`strategies/sleeves/fomc/signal.py`)
-- [ ] AI_QUANT (special — `weight_pct` is the cap, conviction scales
-      inside it; swap source of the cap)
-- [ ] J+ family (R4_BTC, R4_ETH, R4_BTC_V2, R4_ETH_V2, EMA_BTC,
-      ETH_DAILY) — these sleeves don't currently read
-      `sleeve_cfg.weight_pct`; they pull from `today_inputs()`
-      directly. Migration here makes them call
-      `allocation.get_weight_pct(strategy_id)` for the size; the
-      number stays the same.
+84 parity tests in `tests/test_allocation_parity.py` anchor the
+contract end-to-end: per-sleeve × per-regime table values match
+register_p300 constants (tactical) and `_cap_core_weights` output
+(J+); resolver fallback paths (regime=None, unknown sleeve, unknown
+regime, no static weight) behave correctly; and the J+ orchestrator-
+injection path matches the legacy `ti["weights"]` path.
 
 ### P2.4a design notes (2026-05-14)
 

@@ -156,3 +156,30 @@ def test_adx_signal_reads_effective_weight_pct(monkeypatch):
     alloc_pct = float(sleeve_cfg.get("_effective_weight_pct",
                                        sleeve_cfg.get("weight_pct", 0.0)))
     assert alloc_pct == pytest.approx(12.34)
+
+
+# ─── J+ parity — orchestrator injection matches the legacy ti["weights"] path ─
+
+@pytest.mark.parametrize("sid, short_key", list(JPLUS_KEYS.items()))
+@pytest.mark.parametrize("regime", allocation.REGIMES)
+def test_jplus_orchestrator_injection_matches_ti_weights(sid, short_key, regime):
+    """For every (J+ sleeve, regime), the allocation table's percentage
+    (what the orchestrator injects into _effective_weight_pct) must equal
+    100 × the capped weight that ti['weights'][short_key] produces today.
+
+    Anchors the test-fallback path each migrated J+ handler now has:
+
+        eff_w = sleeve_cfg.get("_effective_weight_pct")
+        weight = (eff_w / 100.0) if eff_w is not None else ti["weights"][...]
+
+    If the orchestrator-injected value diverges from the ti["weights"]
+    fallback, the two code paths would size trades differently — that's
+    the failure mode this asserts against."""
+    expected_frac = _cap_core_weights(REGIME_WEIGHTS_FULL.get(regime, {})).get(short_key, 0.0)
+    table_pct = allocation.get_weight_pct(sid, regime)
+    assert table_pct is not None
+    # The handler does (table_pct / 100.0). Compare to expected_frac directly.
+    assert table_pct / 100.0 == pytest.approx(expected_frac), (
+        f"{sid} @ {regime}: orchestrator path -> {table_pct / 100.0}, "
+        f"ti['weights'][{short_key!r}] path -> {expected_frac}"
+    )

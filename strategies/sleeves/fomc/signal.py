@@ -483,7 +483,8 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                     f"{now.isoformat()} — skip entry")
         return {"status": "no_price", "fomc_date": fomc_date}
 
-    alloc_pct = float(sleeve_cfg.get("weight_pct", 0.0))
+    alloc_pct = float(sleeve_cfg.get("_effective_weight_pct",
+                                       sleeve_cfg.get("weight_pct", 0.0)))
     leverage = float(sleeve_cfg.get("_effective_leverage", 1.0))
     reason = {
         "trigger": "FOMC_long",
