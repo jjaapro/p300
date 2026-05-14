@@ -219,6 +219,39 @@ commit and probably multi-session. A reasonable sub-decomposition:
 - **P2.4e** — Cross-sleeve conflict resolver.
 - **P2.4f** — Signal aggregator.
 
+### P2.4a status (2026-05-14)
+
+**Pilot shipped.** `strategies/support/allocation.py` exists with the
+full WEIGHT_TABLE for all 13 sleeves (7 tactical regime-independent,
+6 J+ regime-keyed). Orchestrator (`_tick_composition`) and backtest
+runner (`tick_replay_variant`) classify regime once per tick via
+`allocation.current_regime()` and inject `_effective_weight_pct` into
+each sleeve dispatch alongside `_effective_leverage`. ADX is the
+pilot sleeve — `try_fire_for_variant` reads
+`_effective_weight_pct` with fallback to static `weight_pct`.
+60 parity tests in `tests/test_allocation_parity.py` anchor the
+contract: 7 tactical sleeves × 4 regimes (regime-independent rows),
+6 J+ sleeves × 4 regimes (matches `_cap_core_weights`), plus
+resolver fallback / unknown-sleeve / unknown-regime / cold-boot
+behavior. All 594 tests passing.
+
+**Remaining sleeves to migrate** (one commit each — same one-line
+edit ADX got, plus parity-test confirmation):
+
+- [ ] CARRY (`strategies/sleeves/carry/signal.py`)
+- [ ] THU_BEAR (`strategies/sleeves/thu_bear/signal.py`)
+- [ ] PDO (`strategies/sleeves/pdo/signal.py`)
+- [ ] CPR (`strategies/sleeves/cpr/signal.py`)
+- [ ] FOMC (`strategies/sleeves/fomc/signal.py`)
+- [ ] AI_QUANT (special — `weight_pct` is the cap, conviction scales
+      inside it; swap source of the cap)
+- [ ] J+ family (R4_BTC, R4_ETH, R4_BTC_V2, R4_ETH_V2, EMA_BTC,
+      ETH_DAILY) — these sleeves don't currently read
+      `sleeve_cfg.weight_pct`; they pull from `today_inputs()`
+      directly. Migration here makes them call
+      `allocation.get_weight_pct(strategy_id)` for the size; the
+      number stays the same.
+
 ### P2.4a design notes (2026-05-14)
 
 **Today's allocation surface — two parallel code paths.**
@@ -339,32 +372,36 @@ independent). For J+ sleeves the assertion runs `today_inputs()` with
 a fixed `now_utc` per regime and compares the resulting weight ×
 inner-R4-lev to `get_weight_pct() × _resolve_sleeve_leverage()`.
 
-**Open questions.**
+**Decisions (user, 2026-05-14):**
 
-- **Should tactical sleeves stay regime-independent, or get tuned per
-  regime as part of P2.4a?** Current proposal: hold the static rows
-  for now (`weight_independent_of_regime=True`). Per-regime tactical
-  tuning is a separate decision that needs walk-forward CV first.
-  Calibrating that is closer to P2.4b's gating work than to P2.4a's
-  allocation refactor.
-- **Where does `CORE_ALLOC_CAP=0.50` get enforced?** Today it's a
-  scaling pass inside `today_inputs()`. Options: (a) bake the cap into
-  the WEIGHT_TABLE rows directly so the table is pre-capped (loses the
-  "raw" view useful for debugging); (b) keep the cap as a runtime pass
-  inside `allocation.get_weight_pct` (matches today; cap can be tuned
-  without changing the table). Current proposal: (b).
-- **What about gross cap (50/50 Core/Tactical pre-leverage; per
-  feedback memory 2026-05-12)?** A symmetric tactical cap exists in
-  policy but not in code (today's static tactical row sums to exactly
-  0.50). The new table should make the cap explicit:
-  `TACTICAL_ALLOC_CAP = 0.50`, applied symmetrically. Captures the
-  policy in code instead of relying on the constants summing right.
-- **Where do `register_p300.py` composition entries go after migration?**
-  The `weight_pct` field becomes informational (or removed). The
-  `params` and `_effective_leverage` paths stay. Composition still
-  exists to enumerate which sleeves dispatch; only the WEIGHT comes
-  from the new table. We could keep `weight_pct` as a redundant
-  pre-migration sanity check then remove in a follow-up.
+- **Tactical sleeves stay regime-independent for P2.4a.** Per-regime
+  tactical tuning is deferred — "we can do this later at the end of
+  this refactoring or whenever it is proper." Keep today's constants
+  on each row.
+- **`CORE_ALLOC_CAP` via runtime pass (option b).** The cap stays as
+  a runtime scaling pass inside `allocation.get_weight_pct`. The
+  WEIGHT_TABLE rows hold raw values; the cap is applied at lookup
+  time. Cap can be tuned without rewriting the table.
+- **No Core/Tactical split — drop the 50/50 cap policy entirely.**
+  User direction: "All sleeves... truly are no different from each
+  other. I wouldn't split 50/50 anything. I would use orchestrator
+  to define what strategies have highest chance of profiting in
+  different environments (regime, volume, etc.) and adjust allocation
+  dynamically before entry." No `TACTICAL_ALLOC_CAP` constant is
+  added. `CORE_ALLOC_CAP=0.50` survives only as a transitional
+  safety on the J+ family while migration is in flight; orchestrator
+  takes over allocation end-to-end in later sub-tasks (P2.4c–f and
+  follow-ups). See memory [[feedback_no_core_tactical_tiers]].
+- **`register_p300.py` is on the way out.** End state: orchestrator
+  owns sleeve enumeration + allocation + variant registration; the
+  standalone register script disappears entirely (consolidation per
+  lean-tooling preference). For P2.4a specifically: `weight_pct` in
+  composition becomes informational. We keep it during migration as
+  a pre-migration sanity check (the parity test reads it), but it
+  has no behavioral effect once a sleeve switches to
+  `_effective_weight_pct`. The script itself doesn't go away in
+  P2.4a; that consolidation happens after the orchestrator owns
+  everything register_p300 currently sets up.
 
 **Risk assessment.**
 

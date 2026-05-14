@@ -251,7 +251,11 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
 
     variant:    registry row (dict with id, capital_usdt, ...)
     sleeve_cfg: composition entry for this sleeve. Reads:
-                  weight_pct     — allocation weight within the portfolio
+                  _effective_weight_pct — regime-aware allocation injected by
+                                  orchestrator (P2.4a). Falls back to the
+                                  static composition ``weight_pct`` for callers
+                                  that don't go through orchestrator dispatch
+                                  (unit tests, cold-boot warmup).
                   params.stop_loss_pct — hard stop (positive number, e.g. 10.0)
 
     Idempotent: caller may invoke every minute; this function will only act
@@ -260,7 +264,8 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     from strategies.support.price_feed import _get_current_price
     from strategies.support.risk_config import effective_price_move_sl_pct
 
-    alloc_pct = float(sleeve_cfg.get("weight_pct", 0.0))
+    alloc_pct = float(sleeve_cfg.get("_effective_weight_pct",
+                                       sleeve_cfg.get("weight_pct", 0.0)))
     params = sleeve_cfg.get("params") or {}
     stop_loss_pct = float(params.get("stop_loss_pct", 10.0))
     # Per-sleeve leverage injected by orchestrator._tick_composition.

@@ -372,19 +372,48 @@ def _resolve_sleeve_leverage(spec: dict, sleeve: dict) -> float:
         return 1.0
 
 
+def _resolve_sleeve_weight(sleeve: dict, regime: str | None) -> float:
+    """Resolve the per-sleeve, per-regime allocation percentage.
+
+    Priority (first non-None wins):
+      1. strategies.support.allocation.get_weight_pct(strategy_id, regime)
+         — the unified P2.4a table (regime-aware). Only consulted when
+         ``regime`` is non-None; the orchestrator classifies once per
+         tick and passes the result down, so a ``None`` here means
+         "cold-boot warmup, allocation table can't help."
+      2. sleeve['weight_pct'] — the static composition value (migration
+         fallback so unmigrated sleeves and cold-boot warmup still work).
+      3. 0.0 default.
+
+    Mirrors _resolve_sleeve_leverage in pattern (resolver injected via
+    _effective_weight_pct alongside _effective_leverage)."""
+    from strategies.support import allocation
+    sid = sleeve.get("strategy_id")
+    if sid and regime is not None:
+        w = allocation.get_weight_pct(sid, regime)
+        if w is not None:
+            return w
+    return float(sleeve.get("weight_pct", 0.0))
+
+
 def _tick_composition(variant: dict, now_utc: datetime) -> None:
     """Dispatch each sleeve in a full_portfolio composition spec to its live
     service. Portfolio-to-portfolio references (e.g., p100_jplus_v2_0 as
     the 60% core sleeve) are skipped here to avoid double-firing — they run
     in their own right as separate enabled variants.
 
-    Per-sleeve leverage (for levered variants like Aggressive 2.0) is
-    resolved here and injected into the sleeve_cfg as `_effective_leverage`
-    — downstream services multiply it into size_usdt and write to
-    trade.leverage."""
+    Per-sleeve leverage and per-regime weight (for migrated sleeves) are
+    resolved here and injected into the sleeve_cfg as ``_effective_leverage``
+    and ``_effective_weight_pct``. Downstream sleeves multiply leverage into
+    size_usdt and write to trade.leverage; weight feeds allocation_pct."""
+    from strategies.support import allocation
     _load_dispatch()
     spec = variant.get("spec") or {}
     composition = spec.get("composition") or []
+    # Classify regime once per composition pass; ``None`` is OK — sleeves
+    # whose strategy_id isn't in the allocation table (or before warmup is
+    # complete) fall back to their static composition ``weight_pct``.
+    regime = allocation.current_regime(now_utc)
     for sleeve in composition:
         portfolio_id = sleeve.get("portfolio_id")
         strategy_id = sleeve.get("strategy_id")
@@ -395,9 +424,11 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
             continue
         if not strategy_id:
             continue
-        # Resolve and inject per-sleeve leverage (non-destructive copy)
+        # Resolve and inject per-sleeve leverage + regime-aware weight
+        # (non-destructive copy).
         sleeve_with_k = dict(sleeve)
         sleeve_with_k["_effective_leverage"] = _resolve_sleeve_leverage(spec, sleeve)
+        sleeve_with_k["_effective_weight_pct"] = _resolve_sleeve_weight(sleeve, regime)
         sleeve = sleeve_with_k
         dispatcher = STRATEGY_DISPATCH.get(strategy_id)
         if dispatcher is None:

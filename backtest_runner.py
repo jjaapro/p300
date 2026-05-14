@@ -227,9 +227,14 @@ def tick_replay_variant(variant: dict) -> None:
     """Dispatch all sleeves in the replay variant's composition for the
     current simulated clock. Mirrors orchestrator._tick_composition but
     scoped to a single variant so we don't accidentally tick live data."""
+    from strategies.support import allocation
     orchestrator._load_dispatch()
     spec = variant.get("spec") or {}
     composition = spec.get("composition") or []
+    # Per-tick regime classification mirrors orchestrator._tick_composition
+    # (P2.4a). Backtests honor the same allocation table so dispatch parity
+    # with live SHADOW + sim mode is preserved.
+    regime = allocation.current_regime()
     for sleeve in composition:
         if sleeve.get("portfolio_id"):
             continue
@@ -251,6 +256,8 @@ def tick_replay_variant(variant: dict) -> None:
         sleeve_with_k = dict(sleeve)
         sleeve_with_k["_effective_leverage"] = \
             orchestrator._resolve_sleeve_leverage(spec, sleeve)
+        sleeve_with_k["_effective_weight_pct"] = \
+            orchestrator._resolve_sleeve_weight(sleeve, regime)
         try:
             dispatcher(variant, sleeve_with_k)
         except Exception:
