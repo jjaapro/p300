@@ -44,5 +44,4 @@ preserving counter-trend SHORT funding income.
 - [config.py](config.py) — calibration constants (ADX periods, trend filter, cost)
 - `__init__.py` — package marker
 
-Validation script: `studies/notebooks/bitstamp_adx_backtest.py` (moved
-from `tools/` in restructure step 8 — pending `.ipynb` conversion).
+Validation notebook: `studies/notebooks/bitstamp_adx_backtest.ipynb`.

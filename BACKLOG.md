@@ -63,41 +63,26 @@ Low. Pure refactor; the function bodies don't change.
 
 ---
 
-## P2.2 — Notebook conversion of `studies/notebooks/*.py`
+## P2.2 — Notebook conversion of `studies/notebooks/*.py` ✅
 
 **Captured:** 2026-05-14 (deferred during step 8).
-**Status:** lowest-priority cleanup; user explicitly said "later".
+**Status:** completed 2026-05-14. 17 scripts converted to `.ipynb`
+(12 in `studies/notebooks/`, 5 in `studies/notebooks/r4_study/`).
+`r4_study/r4_lib.py` kept as a `.py` library module — it's imported by
+the other r4_study notebooks (`from r4_lib import …`) and converting it
+would break those imports.
 
-### Motivation
-
-During step 8 the research scripts moved from `tools/` to
-`studies/notebooks/` but stayed as `.py` files. User direction:
-"literal conversion to .ipynb" eventually, but "scripts can be first
-moved to the new directory and then converted when we get there"
-(2026-05-14).
-
-### Scope
-
-12 `.py` files to convert (and verify they still produce expected output):
-
-```
-studies/notebooks/bitstamp_adx_backtest.py
-studies/notebooks/bitstamp_thu_bear_backtest.py
-studies/notebooks/compare_with_fomc.py
-studies/notebooks/fomc_backtest_drilldown.py
-studies/notebooks/fomc_leverage_sensitivity.py
-studies/notebooks/pdo_tv_validate.py
-studies/notebooks/pdo_tv_validate_sweep.py
-studies/notebooks/pdo_tv_validate_dump.py
-studies/notebooks/pdo_tv_csv_parse.py
-studies/notebooks/backtest_report.py
-studies/notebooks/tools_statistical_validation.py
-studies/notebooks/full_portfolio_report.py
-studies/notebooks/r4_study/{r4_lib,era_split,walk_forward,grid_search,year_breakdown,sizing_study}.py
-```
-
-Each conversion: structure into cells, add markdown headers, drop the
-`if __name__ == '__main__'` boilerplate where possible.
+Conversion was done programmatically via `c:/tmp/py_to_ipynb.py`
+(a one-shot ast-based splitter) using this cell-break heuristic:
+module docstring → leading markdown cell; banner comments
+(`# ─── label ───`) → markdown headers starting a new section; each
+top-level `def` / `class` → its own code cell; `if __name__ ==
+'__main__':` blocks dropped, replaced by a trailing `# main()` cell
+the user can edit. Each generated notebook was validated by
+ast-parsing its concatenated code cells (0 syntax errors across 17
+files). Sleeve READMEs (adx / thu_bear / pdo) and one stale comment in
+`strategies/support/indicators.py` were updated to point at the new
+`.ipynb` paths.
 
 ### Dependencies
 

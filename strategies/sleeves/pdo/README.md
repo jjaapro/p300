@@ -48,6 +48,6 @@ after a down-gap, conditional on the broader regime not being in capitulation.
 - [config.py](config.py) — calibration constants (gap, regime, touch tolerance, hold)
 - `__init__.py` — package marker
 
-Validation scripts (moved from `tools/` in step 8, pending `.ipynb` conversion):
-`studies/notebooks/pdo_tv_validate.py`, `studies/notebooks/pdo_tv_validate_sweep.py`,
-`studies/notebooks/pdo_tv_validate_dump.py`, `studies/notebooks/pdo_tv_csv_parse.py`.
+Validation notebooks:
+`studies/notebooks/pdo_tv_validate.ipynb`, `studies/notebooks/pdo_tv_validate_sweep.ipynb`,
+`studies/notebooks/pdo_tv_validate_dump.ipynb`, `studies/notebooks/pdo_tv_csv_parse.ipynb`.

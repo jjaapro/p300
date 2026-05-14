@@ -5,9 +5,9 @@ validators, and backtests. Replaces four byte-identical EMA copies and two
 byte-identical ADX copies that previously lived in:
 
   strategies/sleeves/adx/signal.py   (_calc_ema, _calc_adx)
-  bitstamp_adx_backtest.py           (calc_ema, calc_adx)
-  bitstamp_thu_bear_backtest.py  (calc_ema)
-  jplus/regime.py           (ema_calc)
+  bitstamp_adx_backtest.ipynb        (calc_ema, calc_adx)
+  bitstamp_thu_bear_backtest.ipynb   (calc_ema)
+  jplus/regime.py                    (ema_calc)
 
 Functions are pure (no DB / network / clock dependencies). All inputs and
 outputs are plain Python lists/dicts so the same code runs in the live
