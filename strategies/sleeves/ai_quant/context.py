@@ -21,12 +21,12 @@ from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from typing import Callable
 
-from services import (
-    coindesk_fetcher,
-    fed_funds_service,
-    news_fetcher,
-    polymarket_service,
-    sentiment_index_service,
+from data.sources import (
+    coindesk as coindesk_fetcher,
+    fed_funds as fed_funds_service,
+    news as news_fetcher,
+    polymarket as polymarket_service,
+    sentiment as sentiment_index_service,
 )
 from strategies.support import clock, db, price_feed
 from . import cvd as ai_cvd

@@ -33,7 +33,7 @@ from pathlib import Path
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[2]
 XML_PATH = REPO / "data" / "nyfed_rates.xml"
 JSON_PATH = REPO / "data" / "fed_funds_target_upper.json"
 

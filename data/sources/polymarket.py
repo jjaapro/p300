@@ -24,7 +24,7 @@ from urllib.error import URLError
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[2]
 CACHE_PATH = REPO / "data" / "polymarket_fed_2026.json"
 GAMMA_BASE = "https://gamma-api.polymarket.com"
 ANCHOR_SLUG = "how-many-fed-rate-cuts-in-2026"
@@ -196,7 +196,7 @@ def expected_action_for_meeting(fomc_date: str,
 
     Returns (label, info_dict).
     """
-    from services import fed_funds_service
+    from data.sources import fed_funds as fed_funds_service
 
     year = fomc_date[:4]
     if year != "2026":

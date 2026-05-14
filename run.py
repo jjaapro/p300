@@ -83,7 +83,7 @@ def _signal_handler(signum, frame):
 
 def _feed_thread(interval: int) -> None:
     """Background thread that refreshes Binance data each cycle."""
-    import binance_feed  # local import so run.py works even if feed is absent
+    from data.sources import binance as binance_feed  # local import so run.py works even if feed is absent
     log.info(f"binance_feed thread starting (interval={interval}s)")
     while not _stop.is_set():
         try:
@@ -223,7 +223,7 @@ def _run_live_loop(args, log) -> int:
     if args.feed and not args.once:
         if not args.skip_gap_fix:
             log.info("=== startup gap fix ===")
-            import binance_feed
+            from data.sources import binance as binance_feed
             res = binance_feed.fix_all_gaps()
             nonzero = {k: v for k, v in res.items() if v}
             if nonzero:

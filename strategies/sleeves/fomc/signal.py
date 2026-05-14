@@ -107,7 +107,7 @@ def evaluate(fomc_date: str) -> dict:
     Returns dict with keys: decision ('trade'|'skip'), reason, phase,
     target_rate_pct, expected_action, fear_greed.
     """
-    from services import fed_funds_service, sentiment_index_service, polymarket_service
+    from data.sources import fed_funds as fed_funds_service, sentiment as sentiment_index_service, polymarket as polymarket_service
 
     target_rate = fed_funds_service.get_target_rate(fomc_date)
     phase = fed_funds_service.classify_phase(fomc_date)

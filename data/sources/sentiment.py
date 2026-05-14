@@ -34,7 +34,7 @@ from pathlib import Path
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
-REPO = Path(__file__).resolve().parent.parent
+REPO = Path(__file__).resolve().parents[2]
 JSON_PATH = REPO / "data" / "fear_greed.json"
 API_URL = "https://api.alternative.me/fng/?limit=0&format=json"
 

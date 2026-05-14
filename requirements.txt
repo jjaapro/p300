@@ -8,7 +8,7 @@ tzdata; sys_platform == "win32"
 # AI_QUANT sleeve: matplotlib renders the per-decision chart that the
 # multimodal LLM looks at; mplfinance draws the OHLC candles. anthropic is
 # the SDK used by strategies.sleeves.ai_quant.decision to call Claude. feedparser
-# is the RSS/Atom parser used by services.news_fetcher to ingest
+# is the RSS/Atom parser used by data.sources.news to ingest
 # headlines from a hand-picked list of reputable outlets directly,
 # instead of going through a third-party aggregator.
 matplotlib>=3.8

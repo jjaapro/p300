@@ -36,7 +36,7 @@ from typing import Any
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-DB_PATH = Path(__file__).resolve().parent / "data" / "trader.db"
+DB_PATH = Path(__file__).resolve().parents[2] / "data" / "trader.db"
 SPOT_API = "https://api.binance.com/api/v3"
 FAPI = "https://fapi.binance.com/fapi/v1"
 # /futures/data/* endpoints are NOT under /fapi/v1/ — they live at the base.
@@ -640,7 +640,7 @@ def refresh_all() -> dict[str, int]:
     try:
         results["fear_greed"] = 1 if _refresh_daily_external(
             "fear_greed",
-            lambda: __import__("services.sentiment_index_service",
+            lambda: __import__("data.sources.sentiment",
                                 fromlist=["refresh"]).refresh()) else 0
     except Exception as e:
         log.warning(f"fear_greed refresh failed: {e}")
@@ -648,7 +648,7 @@ def refresh_all() -> dict[str, int]:
     try:
         results["fed_funds"] = 1 if _refresh_daily_external(
             "fed_funds",
-            lambda: __import__("services.fed_funds_service",
+            lambda: __import__("data.sources.fed_funds",
                                 fromlist=["refresh_xml"]).refresh_xml()) else 0
     except Exception as e:
         log.warning(f"fed_funds refresh failed: {e}")
@@ -656,7 +656,7 @@ def refresh_all() -> dict[str, int]:
     try:
         results["polymarket_fed"] = 1 if _refresh_daily_external(
             "polymarket_fed",
-            lambda: __import__("services.polymarket_service",
+            lambda: __import__("data.sources.polymarket",
                                 fromlist=["refresh"]).refresh()) else 0
     except Exception as e:
         log.warning(f"polymarket_fed refresh failed: {e}")
@@ -667,7 +667,7 @@ def refresh_all() -> dict[str, int]:
     # the AI_QUANT sleeve.
     try:
         results["news_headlines"] = __import__(
-            "services.news_fetcher", fromlist=["refresh"]).refresh()
+            "data.sources.news", fromlist=["refresh"]).refresh()
     except Exception as e:
         log.warning(f"news_fetcher refresh failed: {e}")
         results["news_headlines"] = -1
@@ -675,7 +675,7 @@ def refresh_all() -> dict[str, int]:
     # Throttled to once per hour inside the fetcher. Free public endpoints,
     # no auth, so safe to leave wired even on installs that don't use AI_QUANT.
     try:
-        cd = __import__("services.coindesk_fetcher",
+        cd = __import__("data.sources.coindesk",
                           fromlist=["refresh"]).refresh()
         for k, v in cd.items():
             results[f"cd_{k}"] = v

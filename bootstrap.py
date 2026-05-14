@@ -126,7 +126,7 @@ def fetch_lsr_history(skip: bool) -> None:
 
 
 def backfill_from_binance(since: str, skip_klines: bool) -> None:
-    import binance_feed
+    from data.sources import binance as binance_feed
 
     print(f"\n=== Backfilling funding (since {since}) ===")
     for sym, tbl in [("BTCUSDT", "cd_funding_rate"),
@@ -153,7 +153,7 @@ def fetch_fomc_sleeve_inputs() -> None:
     binance_feed loop also refreshes them daily, so a transient miss here
     self-heals on the next live tick."""
     print("\n=== Fetching FOMC sleeve inputs ===")
-    from services import sentiment_index_service, fed_funds_service, polymarket_service
+    from data.sources import sentiment as sentiment_index_service, fed_funds as fed_funds_service, polymarket as polymarket_service
     from strategies.sleeves.fomc import signal as fomc_sleeve
     fomc_sleeve.init_schema()
     print("  fomc_observer table ensured")

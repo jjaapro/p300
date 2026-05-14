@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from services import news_fetcher
+from data.sources import news as news_fetcher
 from strategies.sleeves.ai_quant import tools
 
 

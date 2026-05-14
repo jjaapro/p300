@@ -26,7 +26,7 @@ import json
 import logging
 from typing import Any, Callable
 
-from services import news_fetcher
+from data.sources import news as news_fetcher
 from . import chart
 
 log = logging.getLogger("p300.ai_quant.tools")

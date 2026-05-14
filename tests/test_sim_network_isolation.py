@@ -59,33 +59,33 @@ def network_tripwire():
 def test_fed_funds_refresh_xml_is_no_op_in_sim(
     simulated_clock, network_tripwire,
 ):
-    from services import fed_funds_service
+    from data.sources import fed_funds as fed_funds_service
     assert fed_funds_service.refresh_xml() is False
 
 
 def test_polymarket_refresh_is_no_op_in_sim(
     simulated_clock, network_tripwire,
 ):
-    from services import polymarket_service
+    from data.sources import polymarket as polymarket_service
     assert polymarket_service.refresh() is False
 
 
 def test_sentiment_refresh_is_no_op_in_sim(
     simulated_clock, network_tripwire,
 ):
-    from services import sentiment_index_service
+    from data.sources import sentiment as sentiment_index_service
     assert sentiment_index_service.refresh() is False
 
 
 def test_news_refresh_is_no_op_in_sim(simulated_clock, network_tripwire):
-    from services import news_fetcher
+    from data.sources import news as news_fetcher
     # force=True bypasses the throttle but should still be blocked by
     # the sim guard, so this is the harder version of the test.
     assert news_fetcher.refresh(force=True) == 0
 
 
 def test_coindesk_refresh_is_no_op_in_sim(simulated_clock, network_tripwire):
-    from services import coindesk_fetcher
+    from data.sources import coindesk as coindesk_fetcher
     assert coindesk_fetcher.refresh(force=True) == {}
 
 
@@ -103,7 +103,7 @@ def test_guards_only_block_under_simulated_clock(network_tripwire):
     patch; in that case the call reaches ``socket.socket.connect``
     instead. Either way the network WAS attempted, which is what this
     negative control proves."""
-    from services import fed_funds_service
+    from data.sources import fed_funds as fed_funds_service
     assert not clock.is_simulated()
     with pytest.raises(AssertionError,
                         match="(urlopen called|socket.connect called)"):

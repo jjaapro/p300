@@ -334,7 +334,7 @@ def test_freshness_section_handles_missing_news_table(fixture_dbs):
 def test_news_section_integrates_with_news_fetcher_query(fixture_dbs):
     """Manually insert headlines via news_fetcher's schema and assert
     they show up in the news section, slimmed to (ts_utc, title, source, hot)."""
-    from services import news_fetcher
+    from data.sources import news as news_fetcher
     con = sqlite3.connect(str(fixture_dbs["trader"]))
     try:
         news_fetcher._ensure_schema(con)

@@ -1,4 +1,4 @@
-"""Tests for services.news_fetcher (RSS aggregator).
+"""Tests for data.sources.news (RSS aggregator).
 
 The aggregator is mocked via the `fetcher` injection point on refresh();
 no test makes a real network call. We verify multi-source aggregation,
@@ -15,7 +15,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from services import news_fetcher
+from data.sources import news as news_fetcher
 
 
 # ─── Test helpers ───────────────────────────────────────────────────────────

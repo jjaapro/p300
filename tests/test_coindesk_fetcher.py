@@ -1,4 +1,4 @@
-"""Tests for services.coindesk_fetcher.
+"""Tests for data.sources.coindesk.
 
 HTTP is mocked via the `http_get` injection point on every fetcher. No
 test makes a real network call. Coverage:
@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from services import coindesk_fetcher as cd
+from data.sources import coindesk as cd
 
 
 # ─── Fixture ────────────────────────────────────────────────────────────────

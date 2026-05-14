@@ -40,7 +40,7 @@ def patched_evaluate(monkeypatch):
     def fake_expected(d, n): return state["expected_action"], state["ea_meta"]
     def fake_remaining(d): return 5  # arbitrary, not checked by rule
 
-    from services import fed_funds_service, sentiment_index_service, polymarket_service
+    from data.sources import fed_funds as fed_funds_service, sentiment as sentiment_index_service, polymarket as polymarket_service
     monkeypatch.setattr(fed_funds_service, "get_target_rate", fake_target_rate)
     monkeypatch.setattr(fed_funds_service, "classify_phase", fake_phase)
     monkeypatch.setattr(sentiment_index_service, "get_value", fake_get_value)
@@ -148,7 +148,7 @@ def test_phase_classifier_known_dates():
     file isn't present the test skips rather than fails — the rule itself
     is exercised by the mocked tests above."""
     from pathlib import Path
-    from services import fed_funds_service
+    from data.sources import fed_funds as fed_funds_service
 
     json_path = Path(__file__).resolve().parent.parent / "data" / "fed_funds_target_upper.json"
     if not json_path.exists():
@@ -172,7 +172,7 @@ def test_phase_classifier_known_dates():
 # ─── F&G bucket boundary cases ───────────────────────────────────────────────
 
 def test_fg_bucket_boundaries():
-    from services import sentiment_index_service as s
+    from data.sources import sentiment as s
     assert s.bucket(None) == "unknown"
     assert s.bucket(0) == "extreme_fear"
     assert s.bucket(25) == "extreme_fear"
