@@ -17,7 +17,7 @@ Coverage:
   - regime_classifier.classify_regime (gates S-096 Thu Bear, 6%)
   - services.carry_service._load_recent_daily_funding (S-078 Carry, 12%)
   - strategies.sleeves.cpr.signal._load_daily_closes (CPR, 8%)
-  - services.pdo_retouch_service._btc_30d_return_pct (PDO, 4%)
+  - strategies.sleeves.pdo.signal._btc_30d_return_pct (PDO, 4%)
   - strategies.sleeves.thu_bear.signal._get_regime_for_prev_day (Thu Bear, 6%)
   - services.fomc_service.evaluate (FOMC, 5%)
 """
@@ -236,7 +236,7 @@ def test_pdo_30d_return_clock_bounded():
     it at clock=T, then at T2 > T, then back at T must yield the same value
     for T both times. Catches accidental global mutation or peeking past the
     clock bound."""
-    from services.pdo_retouch_service import _btc_30d_return_pct
+    from strategies.sleeves.pdo.signal import _btc_30d_return_pct
 
     t1 = datetime(2024, 6, 1, 12, tzinfo=timezone.utc)
     t2 = datetime(2025, 6, 1, 12, tzinfo=timezone.utc)

@@ -1,6 +1,6 @@
 """PDO_RETOUCH BTC TradingView fidelity probe.
 
-Replicates services/pdo_retouch_service.pine for BTCUSDT 1H over a user-
+Replicates strategies/sleeves/pdo/signal.pine for BTCUSDT 1H over a user-
 specified date range. No regime filter (matches user TV run 2026-05-11).
 
 Pine semantics replicated:

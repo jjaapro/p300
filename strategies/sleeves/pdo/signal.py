@@ -35,10 +35,10 @@ from services import db
 
 log = logging.getLogger(__name__)
 
-GAP_THRESHOLD_PCT = 2.0
-REGIME_THRESHOLD_PCT = -10.0
-TOUCH_TOL_PCT = 0.10  # 0.1% tolerance around PDO
-HOLD_BARS_BY_ASSET = {"BTC": 24, "ETH": 4}
+from .config import (
+    GAP_THRESHOLD_PCT, REGIME_THRESHOLD_PCT, TOUCH_TOL_PCT,
+    HOLD_BARS_BY_ASSET, COST_BP_RT,
+)
 
 
 # ─── Data loaders ─────────────────────────────────────────────────────────────
@@ -237,7 +237,7 @@ def _close_pdo_shadow(trade_id: str, exit_price: float, reason: str) -> None:
     enough live PDO trades have accumulated."""
     from services.trades import close_perp_trade
     close_perp_trade(trade_id, exit_price, reason, sleeve_name="PDO_RETOUCH",
-                     cost_bp_rt=10.0, apply_funding=False)
+                     cost_bp_rt=COST_BP_RT, apply_funding=False)
 
 
 # ─── Public tick ─────────────────────────────────────────────────────────────
