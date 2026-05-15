@@ -4,49 +4,57 @@ A complete reference for what the bot trades, when each strategy fires, what
 leverage it uses, and how the pieces compose. All percentages are **fractions
 of total capital** unless stated otherwise.
 
-> Variant ID: `p300_aggressive_v2_v1_0` · Status: paper (paper-only)
-> Last updated: 2026-05-10 (live/sim refactor — daily-return accrual + catchup deleted; sim mode added; analytic simulator now research-only).
+> Variant ID: `p300_aggressive_v2_v1_0` · Status: paper-only.
 
 ---
 
-## 1. Top-level allocation
+## 1. Sleeve roster
 
-| Block | Capital | Mechanism | What it writes |
-|---|---|---|---|
-| **Core J+ engine** | **50%** | daily-return accrual via `jplus.simulate()` | `variant_daily_returns` (one row/day, `source='live_computed'`) |
-| **Tactical stack** | **50%** *(includes AI_QUANT)* | discrete entries/exits across 6 sleeves + AI_QUANT | `trades` table (`execution_mode='paper'`) |
-| ~~Stable reserve~~ | 0% | (removed 2026-04-30 — FOMC absorbed the slot) | — |
+The bot dispatches 13 sleeves per minute through
+[strategies/orchestrator.py](strategies/orchestrator.py). All sleeves
+write to the same `trades` table (`execution_mode='paper'`); realized
+PnL is the trade-ledger sum (no parallel theoretical-PnL track since
+the 2026-05-10 live/sim refactor).
 
-The Core's daily return is computed once per day after midnight UTC. The
-6 tactical sleeves each tick every minute, opening / closing phantom trades
-based on their own signal logic. AI_QUANT is an additional Phase-1
-experimental bucket inside the 50% tactical cap — gated behind an env
-var and skipped on historical replay (see §2.7). Core/Tactical 50/50 is
-enforced by `CORE_ALLOC_CAP=0.5` ([strategies/support/jplus_inputs.py](strategies/support/jplus_inputs.py))
-on the Core side and by per-sleeve allocations summing to 50% (15 + 8 +
-6 + 9 + 5 + 5 + 2) on the Tactical side.
-
----
-
-## 2. The Tactical Stack — 6 sleeves, 50% of capital (+ AI_QUANT, additive)
-
-Each sleeve has its own service module under [strategies/sleeves/](strategies/sleeves/) and is
-dispatched per-minute by [strategies/orchestrator.py](strategies/orchestrator.py).
-
-| Sleeve | Allocation | Leverage | Asset | Direction | Holding period |
+| Sleeve | Pre-lev alloc | Leverage | Asset | Direction | Hold |
 |---|---|---|---|---|---|
-| [S-003 ADX](strategies/sleeves/adx/signal.py) | **15%** | 5× | BTC | both | days–weeks |
-| [S-078 Carry](strategies/sleeves/carry/signal.py) | **8%** | 5× | BTC (delta-neutral) | n/a | days |
-| [S-096 V4 Thu Bear](strategies/sleeves/thu_bear/signal.py) | **6%** (3% BTC + 3% ETH) | 5× | BTC + ETH | SHORT | 24h (Thursdays) |
-| [S-102 PDO-L-RF](strategies/sleeves/pdo/signal.py) | **9%** (4.5% BTC + 4.5% ETH) | 1× | BTC + ETH | LONG | 24h |
-| [S-101 CPR](strategies/sleeves/cpr/signal.py) | **5%** (2.5% BTC + 2.5% ETH) | 1× | BTC + ETH | LONG | up to 15 days |
-| [S-103 FOMC](strategies/sleeves/fomc/signal.py) | **5%** | 10× | BTC | LONG | ~10.5h (FOMC days only) |
-| [AI_QUANT](strategies/sleeves/ai_quant/signal.py) *(experimental)* | **2%** *default-OFF* | 3× | BTC | LONG / SHORT / FLAT | LLM-discretionary (no fixed exit) |
+| [S-003 ADX](strategies/sleeves/adx/signal.py) | 15% | 5× | BTC | LONG/SHORT | days–weeks |
+| [S-078 Carry](strategies/sleeves/carry/signal.py) | 8% | 5× | BTC (delta-neutral) | n/a | days |
+| [S-096 V4 Thu Bear](strategies/sleeves/thu_bear/signal.py) | 6% (3% BTC + 3% ETH) | 5× | BTC + ETH | SHORT | 24h (Thu) |
+| [S-102 PDO-L-RF](strategies/sleeves/pdo/signal.py) | 9% (4.5/asset) | 1× | BTC + ETH | LONG | 24h |
+| [S-101 CPR](strategies/sleeves/cpr/signal.py) | 5% (2.5/asset) | 1× | BTC + ETH | LONG | ≤15 days |
+| [S-103 FOMC](strategies/sleeves/fomc/signal.py) | 5% | 10× | BTC | LONG | ~10.5h (FOMC days) |
+| [JPLUS_R4_BTC](strategies/sleeves/r4/signal.py) | regime-keyed | regime × vol-lev | BTC | LONG | 12h |
+| [JPLUS_R4_ETH](strategies/sleeves/r4/signal.py) | regime-keyed | regime × vol-lev | ETH | LONG | 24h |
+| [JPLUS_R4_BTC_V2](strategies/sleeves/r4/signal.py) | regime-keyed | regime × vol-lev | BTC | LONG | 10h |
+| [JPLUS_R4_ETH_V2](strategies/sleeves/r4/signal.py) | regime-keyed | regime × vol-lev | ETH | LONG | 10h |
+| [JPLUS_EMA_BTC](strategies/sleeves/ema/signal.py) | regime-keyed | vol-lev | BTC | LONG/SHORT | continuous |
+| [JPLUS_ETH_DAILY](strategies/sleeves/eth_daily/signal.py) | regime-keyed | vol-lev | ETH | LONG | continuous in bull |
+| [AI_QUANT](strategies/sleeves/ai_quant/signal.py) *(experimental)* | 2% × conviction | 3× | BTC | LONG/SHORT/FLAT | LLM-discretionary |
 
-**Tactical total: 50%** (15 + 8 + 6 + 9 + 5 + 5 + 2). Matches Core's 50% cap
-so combined pre-leverage allocation is exactly 100% of capital. AI_QUANT
-counts inside the 50% (PDO was trimmed from 11% → 9% on 2026-05-12 to make
-room while keeping the cap exact).
+The 7 non-J+ rows use static regime-independent allocations from
+[strategies/support/allocation.py](strategies/support/allocation.py)
+(P2.4a) — same numbers historically lived in `register_p300.py`.
+The 6 J+ rows pull regime-keyed weights from the same
+WEIGHT_TABLE (matching the legacy `REGIME_WEIGHTS_FULL` from
+[strategies/support/jplus_inputs.py](strategies/support/jplus_inputs.py))
+with a `CORE_ALLOC_CAP=0.50` runtime scalar applied to the family.
+
+Cross-sleeve coordination at trade-open time:
+
+- **Margin headroom** ([strategies/support/margin_headroom.py](strategies/support/margin_headroom.py))
+  — variant gross notional ≤ `gross_notional_target_x × capital`
+  (default 2.5×). Sleeves skip with `margin_constrained` on overrun.
+- **Conflict resolver** ([strategies/support/conflict_resolver.py](strategies/support/conflict_resolver.py))
+  — a sleeve skips with `directional_conflict` when another sleeve
+  already has an opposing perp open on the same asset. CARRY's
+  delta-neutral SHORT leg is excluded.
+- **Signal aggregator** ([strategies/support/signal_aggregator.py](strategies/support/signal_aggregator.py))
+  — detection only today; sleeves consume in a later stage.
+
+Sleeve order in `spec.composition` is the implicit dispatch
+priority — first-come-first-served on the margin pool and on
+conflict resolution. AI_QUANT is last (yields first).
 
 > **Stop-loss semantics.** All `stop_loss_pct` values configured per sleeve
 > are interpreted as **price-move** percentages by default — i.e. a 10% stop
@@ -56,6 +64,14 @@ room while keeping the cap exact).
 > margin-loss caps (10% margin-loss → 2% price move at k=5×); if you do,
 > re-tune each sleeve's `stop_loss_pct` since the pcts were sized for the
 > price-move semantic. See [strategies/support/risk_config.py](strategies/support/risk_config.py).
+
+---
+
+## 2. Per-sleeve detail
+
+Tactical sleeves (regime-independent allocation today; §3 covers the
+J+ family). Section numbering preserved from the pre-restructure
+revision for backwards-compatible cross-references.
 
 ### 2.1 S-003 ADX — Trend-flip on BTC
 
@@ -132,7 +148,7 @@ room while keeping the cap exact).
   chosen daily by the model.
 - **Signal**: an Anthropic Opus 4.7 tool-use loop runs once per UTC day in a
   10-minute window (00:05–00:15 UTC). Every minute, four cheap gates are
-  evaluated by [variant_engine](strategies/orchestrator.py) before any
+  evaluated by [orchestrator](strategies/orchestrator.py) before any
   LLM call: kill-switch / time-window / per-day-already-fired /
   daily-cost-cap. On the one tick that passes all four, the service builds
   a context bundle (regime, F&G, funding, recent volatility, open
@@ -177,26 +193,29 @@ room while keeping the cap exact).
 
 ---
 
-## 3. Core J+ Engine — 50% of capital
+## 3. Core J+ Family — six regime-keyed sleeves
 
-The Core is a composite strategy whose machinery lives in the (removed — math redistributed across strategies/support/ + strategies/sleeves/)
-package. Each of its six sub-sleeves is dispatched as a tactical-style
-top-level entry in `STRATEGY_DISPATCH` and runs its own per-tick handler in
-[strategies/sleeves/{r4,ema,eth_daily}/signal.py](strategies/sleeves/{r4,ema,eth_daily}/signal.py):
+Six sub-sleeves derived from the upstream J+ engine, dispatched as
+top-level entries in `STRATEGY_DISPATCH`. Each runs its own per-tick
+handler:
 
 | Sleeve | Allocation | Leverage | Asset | Direction | Holding period |
 |---|---|---|---|---|---|
-| [JPLUS_R4_BTC](strategies/sleeves/{r4,ema,eth_daily}/signal.py) | **0–11.1%** (regime-varying, capped) | 2.5× inner × vol_lev → ~5× typ / 7.5× max | BTC | LONG | 12h (Mon 06→18 UTC, weeks 1-2) |
-| [JPLUS_R4_ETH](strategies/sleeves/{r4,ema,eth_daily}/signal.py) | **0–14.8%** (regime-varying, capped) | 2.5× inner × vol_lev → ~5× typ / 7.5× max | ETH | LONG | 24h (Tue 20→Wed 20 UTC, weeks 1-2) |
-| [JPLUS_R4_BTC_V2](strategies/sleeves/{r4,ema,eth_daily}/signal.py) | **0–5.6%** (regime-varying, capped) | 2.5× inner × vol_lev → ~5× typ / 7.5× max | BTC | LONG | 10h (Wed/Fri 04→14 UTC, weeks 1-2) |
-| [JPLUS_R4_ETH_V2](strategies/sleeves/{r4,ema,eth_daily}/signal.py) | **0–7.4%** (regime-varying, capped) | 2.5× inner × vol_lev → ~5× typ / 7.5× max | ETH | LONG | 10h (Wed/Fri 04→14 UTC, weeks 1-2) |
-| [JPLUS_EMA_BTC](strategies/sleeves/{r4,ema,eth_daily}/signal.py) | **11.1–30%** (regime-varying, capped) | vol_lev only: 0.5×–3× (regime-capped) | BTC | LONG / SHORT (weekly EMA flip) | continuous (open-ended; FLIP on weekly cross) |
-| [JPLUS_ETH_DAILY](strategies/sleeves/{r4,ema,eth_daily}/signal.py) | **0–8.7%** (bull regimes only) | vol_lev only: 0.5×–3× (regime-capped) | ETH | LONG | continuous (opens on regime enter bull; closes on regime exit) |
+| [JPLUS_R4_BTC](strategies/sleeves/r4/signal.py) | **0–11.1%** (regime-varying, capped) | 2.5× inner × vol_lev → ~5× typ / 7.5× max | BTC | LONG | 12h (Mon 06→18 UTC, weeks 1-2) |
+| [JPLUS_R4_ETH](strategies/sleeves/r4/signal.py) | **0–14.8%** (regime-varying, capped) | 2.5× inner × vol_lev → ~5× typ / 7.5× max | ETH | LONG | 24h (Tue 20→Wed 20 UTC, weeks 1-2) |
+| [JPLUS_R4_BTC_V2](strategies/sleeves/r4/signal.py) | **0–5.6%** (regime-varying, capped) | 2.5× inner × vol_lev → ~5× typ / 7.5× max | BTC | LONG | 10h (Wed/Fri 04→14 UTC, weeks 1-2) |
+| [JPLUS_R4_ETH_V2](strategies/sleeves/r4/signal.py) | **0–7.4%** (regime-varying, capped) | 2.5× inner × vol_lev → ~5× typ / 7.5× max | ETH | LONG | 10h (Wed/Fri 04→14 UTC, weeks 1-2) |
+| [JPLUS_EMA_BTC](strategies/sleeves/ema/signal.py) | **11.1–30%** (regime-varying, capped) | vol_lev only: 0.5×–3× (regime-capped) | BTC | LONG / SHORT (weekly EMA flip) | continuous (open-ended; FLIP on weekly cross) |
+| [JPLUS_ETH_DAILY](strategies/sleeves/eth_daily/signal.py) | **0–8.7%** (bull regimes only) | vol_lev only: 0.5×–3× (regime-capped) | ETH | LONG | continuous (opens on regime enter bull; closes on regime exit) |
 
-**Core total: 50%** of capital, enforced by `CORE_ALLOC_CAP` ([strategies/support/jplus_inputs.py](strategies/support/jplus_inputs.py)).
-Allocation ranges above are the **capped** values across the four regimes
-(min = 0% in regimes where the sub-sleeve is dormant; max = the highest
-regime's capped weight). Per-regime breakdown is in §3.2.
+The family sum is bounded by `CORE_ALLOC_CAP=0.50`
+([strategies/support/allocation.py](strategies/support/allocation.py)
+applies it at lookup time; the legacy `_cap_core_weights` in
+[strategies/support/jplus_inputs.py](strategies/support/jplus_inputs.py)
+is preserved for parity). Allocation ranges above are the **capped**
+values across the four regimes (min = 0% in regimes where the
+sub-sleeve is dormant; max = the highest regime's capped weight).
+Per-regime breakdown is in §3.2.
 
 **Leverage stacking** (R4 sub-sleeves):
 - *Inner* — 2.5× ungated, 1.0× when the vol-percentile gate fires (high-vol regime, see §3.3).
@@ -214,11 +233,11 @@ extracts comparable signal on ETH (R4_ETH_V2) per the cross-asset study.
 
 Each handler:
 - pulls today's regime mode, vol-target leverage, R4 gate, EMA position,
-  and sub-sleeve weights from [`jplus.simulate.today_inputs()`](strategies/support/jplus_inputs.py)
+  and sub-sleeve weights from [`jplus_inputs.today_inputs()`](strategies/support/jplus_inputs.py)
   — which derives them strictly from data through yesterday's close;
-- prices the entry from [`services.price_feed.get_current_price`](strategies/support/price_feed.py)
+- prices the entry from [`strategies.support.price_feed.get_current_price`](strategies/support/price_feed.py)
   (latest closed 1m bar — ~30s lag);
-- writes the trade via [`services.trades.open_paper_trade`](strategies/trades.py),
+- writes the trade via [`strategies.trades.open_paper_trade`](strategies/trades.py),
   with `scheduled_exit_dt` set for the discrete-window sleeves and `None` for
   continuous positions;
 - is idempotent per UTC day via the `trades` table and the
@@ -238,22 +257,22 @@ write there uniformly. `SELECT * FROM trades WHERE status='open'`
 returns the bot's complete current exposure.
 
 Two earlier paths were removed in the 2026-05-10 live/sim refactor:
-- The simulator-driven daily-return accrual (`(deleted 2026-05-10 in the trade-emitter migration)`,
-  which wrote `variant_daily_returns` once per UTC day from the analytic
-  formula) was a research artifact running parallel to the realized
-  trade ledger. With the trade ledger as the canonical PnL, the parallel
-  theoretical track only confused the operator about which number was real.
-- The retroactive trade-emitter (`(deleted 2026-05-10 in the trade-emitter migration)`,
-  startup gap-filler) backfilled trades for dates the bot had been
-  offline. That has no analogue in real trading and silently masked
-  sleeve-disablement bugs (the V2 sleeves silently fired only via
-  catchup for two days because they were missing from the variant
-  composition).
+- The simulator-driven daily-return accrual (which wrote
+  `variant_daily_returns` once per UTC day from the analytic formula)
+  was a research artifact running parallel to the realized trade
+  ledger. With the trade ledger as the canonical PnL, the parallel
+  theoretical track only confused the operator about which number was
+  real.
+- The retroactive trade-emitter (startup gap-filler) backfilled trades
+  for dates the bot had been offline. That has no analogue in real
+  trading and silently masked sleeve-disablement bugs (the V2 sleeves
+  silently fired only via catchup for two days because they were
+  missing from the variant composition).
 
 Today: the bot opens trades when each handler's signal fires; if the
 bot is offline during a window, that trade is missed permanently — same
 semantics as tactical sleeves. The analytic
-[`jplus.simulate.simulate()`](strategies/support/jplus_inputs.py) function remains
+[`studies.jplus_analytic.simulate()`](strategies/support/jplus_inputs.py) function remains
 available as a **research-only** tool for offline analysis (regenerating
 §6 numbers, parameter sweeps, walk-forward studies); no runtime path
 calls it.
@@ -578,7 +597,7 @@ superseded; do not compare side-by-side.
 > models) are the ground truth for forward operation.
 
 > The Core columns below are the analytic output of
-> [`jplus.simulate.simulate()`](strategies/support/jplus_inputs.py), which has been
+> [`studies.jplus_analytic.simulate()`](strategies/support/jplus_inputs.py), which has been
 > retained as a research-only tool after the 2026-05-10 live/sim
 > refactor — no runtime path calls it. Tactical numbers come from the
 > backtest_runner's realized trade ledger. Live operation (real-money or
@@ -702,7 +721,7 @@ were affected by the data-source switch.
     *net of API cost* (capped at $5/day, ~$1,825/yr against a 2% sleeve).
 
 11. **Execution-cost model — fees + slippage, modeled separately.**
-    `services.trades.compute_perp_close` charges round-trip cost as
+    `strategies.trades.compute_perp_close` charges round-trip cost as
     `(cost_bp_rt + slippage_bp_rt)` against notional at close. Defaults
     (since 2026-05-13, audit-calibrated):
     - `DEFAULT_COST_BP_RT = 10.0` — Binance taker fee × 2 legs.
@@ -737,9 +756,9 @@ were affected by the data-source switch.
 | Variant registration + weights | [register_p300.py](register_p300.py) |
 | Sleeve dispatch + spec resolution | [strategies/orchestrator.py](strategies/orchestrator.py) |
 | Per-tactical-sleeve services | [strategies/sleeves/](strategies/sleeves/) — adx, carry, cpr, fomc, pdo_retouch, thu_bear |
-| Core J+ live handlers | [strategies/sleeves/{r4,ema,eth_daily}/signal.py](strategies/sleeves/{r4,ema,eth_daily}/signal.py) — r4_btc / r4_eth / r4_btc_v2 / r4_eth_v2 / ema_btc / eth_daily |
-| Core J+ sizing inputs | [jplus.simulate.today_inputs()](strategies/support/jplus_inputs.py) — regime/lev/gate/ema_p/weights from T-1 data |
-| Core J+ analytic backtest (research-only) | [jplus.simulate.simulate()](strategies/support/jplus_inputs.py) |
+| Core J+ live handlers | [strategies/sleeves/r4/signal.py](strategies/sleeves/r4/signal.py) (R4 family), [strategies/sleeves/ema/signal.py](strategies/sleeves/ema/signal.py) (EMA_BTC), [strategies/sleeves/eth_daily/signal.py](strategies/sleeves/eth_daily/signal.py) |
+| Core J+ sizing inputs | [jplus_inputs.today_inputs()](strategies/support/jplus_inputs.py) — regime/lev/gate/ema_p/weights from T-1 data |
+| Core J+ analytic backtest (research-only) | [studies/jplus_analytic/](studies/jplus_analytic/) — `simulate()` for parameter sweeps / walk-forward |
 | AI_QUANT discretionary trader | [strategies/sleeves/ai_quant/signal.py](strategies/sleeves/ai_quant/signal.py) + [strategies/sleeves/ai_quant/](strategies/sleeves/ai_quant/) |
 | Decision rule for FOMC | [strategies/sleeves/fomc/signal.py:evaluate()](strategies/sleeves/fomc/signal.py) |
 | FOMC observer audit log | `data/prod.db:fomc_observer` |
