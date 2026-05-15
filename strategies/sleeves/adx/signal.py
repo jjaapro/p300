@@ -352,6 +352,25 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
         # Single-open invariant: only open if NO trades remain.
         if not open_trades:
             entry_price = current_price
+            # P2.4e: check for opposing directional perp opens (e.g.
+            # THU_BEAR SHORT BTC from a Thursday 00:05 fire). On the
+            # cross-day boundary where THU_BEAR fires first and ADX's
+            # signal crosses later in the day, ADX yields here rather
+            # than opening a net-cancelling LONG. Same first-come-first-
+            # served semantics the other opt-in sleeves use.
+            from strategies.support import conflict_resolver
+            opposing = conflict_resolver.detect_opposing_open(
+                variant["id"], "BTC", new_dir)
+            if opposing is not None:
+                log.info(f"[adx {variant['id']}] directional-conflict: "
+                         f"opposing {opposing['strategy']} "
+                         f"{opposing['direction']} already open "
+                         f"({opposing['id']})")
+                return {"status": "directional_conflict",
+                        "intended_direction": new_dir,
+                        "conflicting_trade_id": opposing["id"],
+                        "conflicting_strategy": opposing["strategy"],
+                        "conflicting_direction": opposing["direction"]}
             # P2.4d: ADX opts into the variant-level margin-headroom cap.
             # Candidate notional = capital × alloc_pct/100 × leverage; if
             # opening would push the variant over gross_notional_target_x,
