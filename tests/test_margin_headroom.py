@@ -104,30 +104,30 @@ def test_current_gross_zero_when_no_open_trades(temp_db):
     assert margin_headroom.current_gross_notional_usdt("V") == pytest.approx(0.0)
 
 
-def test_current_gross_sums_size_x_leverage(temp_db):
-    _insert(temp_db, id="T1", size_usdt=1000, leverage=5)
-    _insert(temp_db, id="T2", size_usdt=500, leverage=3)
-    assert margin_headroom.current_gross_notional_usdt("V") == pytest.approx(
-        1000 * 5 + 500 * 3
-    )
+def test_current_gross_sums_size_usdt(temp_db):
+    """size_usdt is already the leveraged notional (see
+    open_paper_trade: capital × alloc_pct/100 × leverage). Just sum it."""
+    _insert(temp_db, id="T1", size_usdt=5000)
+    _insert(temp_db, id="T2", size_usdt=1500)
+    assert margin_headroom.current_gross_notional_usdt("V") == pytest.approx(6500)
 
 
 def test_current_gross_excludes_closed_trades(temp_db):
-    _insert(temp_db, id="T1", size_usdt=1000, leverage=5, status="open")
-    _insert(temp_db, id="T2", size_usdt=500, leverage=3, status="closed")
+    _insert(temp_db, id="T1", size_usdt=5000, status="open")
+    _insert(temp_db, id="T2", size_usdt=1500, status="closed")
     assert margin_headroom.current_gross_notional_usdt("V") == pytest.approx(5000)
 
 
 def test_current_gross_excludes_other_variants(temp_db):
-    _insert(temp_db, id="T1", strategy_variant="V", size_usdt=1000, leverage=5)
-    _insert(temp_db, id="T2", strategy_variant="OTHER", size_usdt=500, leverage=3)
+    _insert(temp_db, id="T1", strategy_variant="V", size_usdt=5000)
+    _insert(temp_db, id="T2", strategy_variant="OTHER", size_usdt=1500)
     assert margin_headroom.current_gross_notional_usdt("V") == pytest.approx(5000)
 
 
 def test_current_gross_excludes_non_paper_mode(temp_db):
     """If the bot ever runs live + paper side-by-side, gross is scoped to paper."""
-    _insert(temp_db, id="T1", size_usdt=1000, leverage=5, execution_mode="paper")
-    _insert(temp_db, id="T2", size_usdt=500, leverage=3, execution_mode="live")
+    _insert(temp_db, id="T1", size_usdt=5000, execution_mode="paper")
+    _insert(temp_db, id="T2", size_usdt=1500, execution_mode="live")
     assert margin_headroom.current_gross_notional_usdt("V") == pytest.approx(5000)
 
 
@@ -140,19 +140,19 @@ def test_headroom_equals_cap_when_nothing_open(temp_db):
 
 def test_headroom_decreases_with_open_notional(temp_db):
     v = _variant(capital=10000, target_x=2.5)
-    _insert(temp_db, id="T1", size_usdt=2000, leverage=5)  # 10k notional
+    _insert(temp_db, id="T1", size_usdt=10_000)  # 10k notional already on
     assert margin_headroom.headroom_usdt(v) == pytest.approx(15_000)
 
 
 def test_headroom_negative_when_over_cap(temp_db):
     v = _variant(capital=10000, target_x=2.0)  # cap = 20k
-    _insert(temp_db, id="T1", size_usdt=5000, leverage=5)  # 25k notional
+    _insert(temp_db, id="T1", size_usdt=25_000)
     assert margin_headroom.headroom_usdt(v) == pytest.approx(-5_000)
 
 
 def test_can_open_true_when_within_cap(temp_db):
     v = _variant(capital=10000, target_x=2.5)  # cap = 25k
-    _insert(temp_db, id="T1", size_usdt=2000, leverage=5)  # 10k used
+    _insert(temp_db, id="T1", size_usdt=10_000)
     ok, reason = margin_headroom.can_open(v, candidate_notional_usdt=10_000)
     assert ok is True
     assert reason is None
@@ -160,14 +160,14 @@ def test_can_open_true_when_within_cap(temp_db):
 
 def test_can_open_true_at_exact_cap(temp_db):
     v = _variant(capital=10000, target_x=2.5)
-    _insert(temp_db, id="T1", size_usdt=2000, leverage=5)  # 10k used
+    _insert(temp_db, id="T1", size_usdt=10_000)
     ok, _ = margin_headroom.can_open(v, candidate_notional_usdt=15_000)  # = 25k cap
     assert ok is True
 
 
 def test_can_open_false_when_exceeds_cap(temp_db):
     v = _variant(capital=10000, target_x=2.5)  # cap = 25k
-    _insert(temp_db, id="T1", size_usdt=2000, leverage=5)  # 10k used
+    _insert(temp_db, id="T1", size_usdt=10_000)
     ok, reason = margin_headroom.can_open(v, candidate_notional_usdt=20_000)
     assert ok is False
     assert reason is not None
@@ -178,7 +178,7 @@ def test_can_open_handles_already_over_cap(temp_db):
     """If the variant is already over cap, can_open always returns False —
     even for a candidate that on its own would fit."""
     v = _variant(capital=10000, target_x=2.0)  # cap = 20k
-    _insert(temp_db, id="T1", size_usdt=5000, leverage=5)  # 25k used, already over
+    _insert(temp_db, id="T1", size_usdt=25_000)  # already over
     ok, _ = margin_headroom.can_open(v, candidate_notional_usdt=100)
     assert ok is False
 
@@ -190,7 +190,7 @@ def test_orchestrator_injects_effective_margin_headroom(temp_db):
     drops it on every sleeve_cfg. Verified via direct call here (live
     tick covered by integration tests)."""
     v = _variant(capital=10000, target_x=2.5)
-    _insert(temp_db, id="T1", size_usdt=1000, leverage=5)  # 5k used -> 20k headroom
+    _insert(temp_db, id="T1", size_usdt=5000)  # 5k used -> 20k headroom
     h = margin_headroom.headroom_usdt(v)
     sleeve_cfg = {"strategy_id": "S-003"}
     sleeve_cfg["_effective_margin_headroom_usdt"] = h

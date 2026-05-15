@@ -239,20 +239,27 @@ commit and probably multi-session. A reasonable sub-decomposition:
   tactical sleeves opt into consuming `_effective_vol_scalar` and the
   semantics change. The dispatch wiring above does not.*
 - **P2.4d** — Margin headroom check; deferral policy.
-  *2026-05-15: scaffold shipped. `strategies/support/margin_headroom.py`
-  exposes `current_gross_notional_usdt(variant_id)` (sums
-  `size_usdt × leverage` across open paper trades),
+  *2026-05-15: scaffold + first opt-in shipped.
+  `strategies/support/margin_headroom.py` exposes
+  `current_gross_notional_usdt(variant_id)` (sums `size_usdt` across
+  open paper trades — note: `size_usdt` is already the leveraged
+  notional, see `trades.open_paper_trade`),
   `gross_cap_usdt(variant)` (reads
   `spec.allocator_notes.gross_notional_target_x`, default 2.5×
   capital), `headroom_usdt(variant)`, and
   `can_open(variant, candidate_notional_usdt) -> (bool, reason)`.
   Orchestrator + backtest_runner inject
-  `_effective_margin_headroom_usdt` into every dispatched sleeve_cfg;
-  no sleeve consumes it yet — behavior unchanged. 16 tests anchor
-  the math + injection. Follow-ups: (a) sleeves opt into reading
-  `_effective_margin_headroom_usdt` and skip with status
-  `margin_constrained` when their candidate notional would push the
-  variant over cap; (b) proportional reduce policy instead of skip;
+  `_effective_margin_headroom_usdt` into every dispatched sleeve_cfg.
+  AI_QUANT is the first sleeve to opt in — both entry sites in
+  `_reconcile` (fresh open + direction flip) check
+  `margin_headroom.can_open` and skip with
+  status=`skipped:margin_constrained` (fresh) or
+  `flip_aborted=margin_constrained` (flip) when the candidate
+  notional would push the variant over cap. AI_QUANT was picked
+  first because it's the lowest-priority sleeve (additive 2%,
+  default-OFF, naturally yields). 20 tests (16 module + 4 AI_QUANT
+  opt-in). Follow-ups: (a) more sleeves opt in (tactical sleeves
+  next, then J+); (b) proportional reduce policy instead of skip;
   (c) explicit sleeve priority (today: spec.composition iteration
   order).*
 - **P2.4e** — Cross-sleeve conflict resolver.

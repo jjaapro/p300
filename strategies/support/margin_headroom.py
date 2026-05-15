@@ -54,18 +54,22 @@ DEFAULT_GROSS_NOTIONAL_TARGET_X = 2.5
 
 
 def current_gross_notional_usdt(variant_id: str) -> float:
-    """Sum of (size_usdt × leverage) across this variant's open paper trades.
+    """Sum of ``size_usdt`` across this variant's open paper trades.
 
-    This is the directional-perp gross — what the bot would have on the
-    exchange right now if every open trade were placed at its recorded
-    size + leverage. CARRY's spot leg is intentionally NOT counted: the
-    perp leg of a CARRY pair carries the leverage; the spot leg is
-    collateral, not a position the cap should bound.
+    ``size_usdt`` is computed at trade-open as
+    ``capital × allocation_pct/100 × leverage`` (see
+    :func:`strategies.trades.open_paper_trade`) — i.e. it's already the
+    *leveraged* notional, not the margin posted. Summing it gives the
+    directional-perp gross that's actually exposed to the market.
+
+    CARRY's spot leg is implicitly excluded because the CARRY sleeve
+    only writes ONE trade row for the pair (the perp leg). The spot
+    side is collateral inside the same trade, not a separate row.
     """
     con = sqlite3.connect(str(db.DASH_DB))
     try:
         row = con.execute(
-            "SELECT COALESCE(SUM(size_usdt * leverage), 0) FROM trades "
+            "SELECT COALESCE(SUM(size_usdt), 0) FROM trades "
             "WHERE strategy_variant = ? AND status = 'open' "
             "  AND execution_mode = 'paper'",
             (variant_id,),
@@ -100,8 +104,10 @@ def headroom_usdt(variant: dict) -> float:
 def can_open(variant: dict, candidate_notional_usdt: float
               ) -> tuple[bool, Optional[str]]:
     """True if opening a new trade with ``candidate_notional_usdt``
-    notional (== ``size_usdt × leverage``) would keep the variant at or
-    below its gross cap. ``False, reason`` otherwise.
+    notional (already leveraged — same shape as ``size_usdt`` in
+    :mod:`strategies.trades`: ``capital × alloc_pct/100 × leverage``)
+    would keep the variant at or below its gross cap.
+    ``False, reason`` otherwise.
 
     Sleeves that opt into enforcement call this just before
     :func:`strategies.trades.open_paper_trade`; if it returns False

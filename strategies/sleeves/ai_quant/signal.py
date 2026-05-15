@@ -191,6 +191,21 @@ def _reconcile(
         if live_price is None:
             return "skipped:no_price", {"reason": "live_price_unavailable"}
         alloc = _allocation_pct_for(conviction, weight_pct)
+        # P2.4d: AI_QUANT is the first sleeve to opt into the margin-headroom
+        # cap (lowest-priority sleeve — additive 2%, default-OFF, naturally
+        # yields when the variant's notional pool is tight). Skip the open
+        # if the candidate notional would push the variant over its
+        # gross_notional_target_x.
+        capital = float(variant.get("capital_usdt") or 10000)
+        candidate_notional = capital * (alloc / 100.0) * leverage
+        from strategies.support import margin_headroom
+        ok, reason = margin_headroom.can_open(variant, candidate_notional)
+        if not ok:
+            return "skipped:margin_constrained", {
+                "reason": reason,
+                "alloc_pct_intended": alloc,
+                "candidate_notional_usdt": candidate_notional,
+            }
         tid = trades.open_paper_trade(
             variant=variant,
             sleeve_name=SLEEVE_NAME,
@@ -238,6 +253,25 @@ def _reconcile(
         reason="ai_quant_flip", sleeve_name=SLEEVE_NAME,
     )
     alloc = _allocation_pct_for(conviction, weight_pct)
+    # P2.4d: same margin-headroom check as the fresh-entry path. Note
+    # the prior position is already closed at this point, so the
+    # candidate adds back into the variant's pool without netting
+    # against itself.
+    capital = float(variant.get("capital_usdt") or 10000)
+    candidate_notional = capital * (alloc / 100.0) * leverage
+    from strategies.support import margin_headroom
+    ok, reason = margin_headroom.can_open(variant, candidate_notional)
+    if not ok:
+        return (
+            f"closed:{open_trade['id']}",  # flip aborted at open step
+            {
+                "closed_trade_id": open_trade["id"],
+                "flip_aborted": "margin_constrained",
+                "reason": reason,
+                "alloc_pct_intended": alloc,
+                "candidate_notional_usdt": candidate_notional,
+            },
+        )
     new_tid = trades.open_paper_trade(
         variant=variant,
         sleeve_name=SLEEVE_NAME,
