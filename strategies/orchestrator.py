@@ -410,7 +410,7 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
     feeds allocation_pct; gate.leverage_mult further modulates leverage;
     gate.fire=False is a hard entry block; the vol scalar (J+ family only
     today; portfolio-wide in a P2.4c follow-up) further scales leverage."""
-    from strategies.support import allocation, gating, portfolio_vol
+    from strategies.support import allocation, gating, margin_headroom, portfolio_vol
     _load_dispatch()
     spec = variant.get("spec") or {}
     composition = spec.get("composition") or []
@@ -418,6 +418,10 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
     # whose strategy_id isn't in the allocation table (or before warmup is
     # complete) fall back to their static composition ``weight_pct``.
     regime = allocation.current_regime(now_utc)
+    # Compute remaining notional capacity once per pass too. Sleeves that
+    # opt into P2.4d enforcement read this to skip when their candidate
+    # notional would push the variant above gross_notional_target_x.
+    headroom_usdt = margin_headroom.headroom_usdt(variant)
     for sleeve in composition:
         portfolio_id = sleeve.get("portfolio_id")
         strategy_id = sleeve.get("strategy_id")
@@ -429,12 +433,13 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
         if not strategy_id:
             continue
         # Resolve and inject per-sleeve leverage + regime-aware weight + gate
-        # + vol scalar (non-destructive copy).
+        # + vol scalar + remaining margin headroom (non-destructive copy).
         sleeve_with_k = dict(sleeve)
         sleeve_with_k["_effective_leverage"] = _resolve_sleeve_leverage(spec, sleeve)
         sleeve_with_k["_effective_weight_pct"] = _resolve_sleeve_weight(sleeve, regime)
         sleeve_with_k["_effective_gate"] = gating.get_decision(strategy_id, regime, now_utc)
         sleeve_with_k["_effective_vol_scalar"] = portfolio_vol.current_vol_scalar(strategy_id)
+        sleeve_with_k["_effective_margin_headroom_usdt"] = headroom_usdt
         sleeve = sleeve_with_k
         dispatcher = STRATEGY_DISPATCH.get(strategy_id)
         if dispatcher is None:

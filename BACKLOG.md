@@ -239,6 +239,22 @@ commit and probably multi-session. A reasonable sub-decomposition:
   tactical sleeves opt into consuming `_effective_vol_scalar` and the
   semantics change. The dispatch wiring above does not.*
 - **P2.4d** — Margin headroom check; deferral policy.
+  *2026-05-15: scaffold shipped. `strategies/support/margin_headroom.py`
+  exposes `current_gross_notional_usdt(variant_id)` (sums
+  `size_usdt × leverage` across open paper trades),
+  `gross_cap_usdt(variant)` (reads
+  `spec.allocator_notes.gross_notional_target_x`, default 2.5×
+  capital), `headroom_usdt(variant)`, and
+  `can_open(variant, candidate_notional_usdt) -> (bool, reason)`.
+  Orchestrator + backtest_runner inject
+  `_effective_margin_headroom_usdt` into every dispatched sleeve_cfg;
+  no sleeve consumes it yet — behavior unchanged. 16 tests anchor
+  the math + injection. Follow-ups: (a) sleeves opt into reading
+  `_effective_margin_headroom_usdt` and skip with status
+  `margin_constrained` when their candidate notional would push the
+  variant over cap; (b) proportional reduce policy instead of skip;
+  (c) explicit sleeve priority (today: spec.composition iteration
+  order).*
 - **P2.4e** — Cross-sleeve conflict resolver.
 - **P2.4f** — Signal aggregator.
 
