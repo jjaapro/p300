@@ -263,7 +263,13 @@ commit and probably multi-session. A reasonable sub-decomposition:
   (or `btc_cap_block` for the older PDO+CPR cap path).
   Pending: (b) proportional reduce policy instead of skip;
   (c) explicit sleeve priority (today: spec.composition iteration
-  order).*
+  order). The scale-adjustment check (P2.4d (d) in the earlier note)
+  shipped 2026-05-15: EMA_BTC and ETH_DAILY's daily-rebalance CASE 4
+  now checks `can_open` against `(desired_qty - cur_qty) * price`
+  before calling `trades.apply_scale`; scale-DOWN is always allowed,
+  scale-UP yields with `actions.append("scale_up_margin_constrained")`
+  when the delta would push the variant over cap. Total qty stays at
+  cur_qty for that tick; the next daily rebalance will retry.*
 - **P2.4e** — Cross-sleeve conflict resolver.
   *2026-05-15: detection + first opt-ins shipped.
   `strategies/support/conflict_resolver.py` exposes

@@ -155,14 +155,30 @@ def eth_daily_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     if abs(desired_qty - cur_qty) > max(1e-9, 1e-9 * abs(cur_qty)):
         if not _has_adjustment_today(open_pos["id"], today_iso,
                                       ("SCALE_UP", "SCALE_DOWN")):
-            trades.apply_scale(
-                open_pos["id"], new_qty=desired_qty, price=price,
-                fee_usdt=0.0,
-                event_time=now.isoformat(), event_date=today_iso,
-                notes={"reason": "daily_rebalance", "mode": ti["mode"],
-                       "weight": desired_weight, "vol_lev": desired_lev},
-            )
-            actions.append("scaled")
+            # P2.4d (d): guard scale-UP against the variant cap. The
+            # existing qty is already in current_gross_notional, so the
+            # candidate is just the qty-delta × price.
+            qty_delta = desired_qty - cur_qty
+            if qty_delta > 0:
+                from strategies.support import margin_headroom
+                delta_notional = qty_delta * price
+                ok, mh_reason = margin_headroom.can_open(variant, delta_notional)
+                if not ok:
+                    log.info(f"[jplus_live ETH_DAILY {variant['id']}] scale-up "
+                             f"margin-constrained: {mh_reason} "
+                             f"(delta_qty={qty_delta:.6f}, "
+                             f"delta_notional={delta_notional:,.2f})")
+                    actions.append("scale_up_margin_constrained")
+                    qty_delta = 0.0
+            if qty_delta != 0.0 or desired_qty < cur_qty:
+                trades.apply_scale(
+                    open_pos["id"], new_qty=desired_qty, price=price,
+                    fee_usdt=0.0,
+                    event_time=now.isoformat(), event_date=today_iso,
+                    notes={"reason": "daily_rebalance", "mode": ti["mode"],
+                           "weight": desired_weight, "vol_lev": desired_lev},
+                )
+                actions.append("scaled")
     if abs(desired_lev - cur_lev) > 1e-9:
         if not _has_adjustment_today(open_pos["id"], today_iso,
                                       ("LEVERAGE_ADJUST",)):
