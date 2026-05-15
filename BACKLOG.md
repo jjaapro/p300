@@ -250,17 +250,20 @@ commit and probably multi-session. A reasonable sub-decomposition:
   `can_open(variant, candidate_notional_usdt) -> (bool, reason)`.
   Orchestrator + backtest_runner inject
   `_effective_margin_headroom_usdt` into every dispatched sleeve_cfg.
-  AI_QUANT is the first sleeve to opt in — both entry sites in
-  `_reconcile` (fresh open + direction flip) check
-  `margin_headroom.can_open` and skip with
-  status=`skipped:margin_constrained` (fresh) or
-  `flip_aborted=margin_constrained` (flip) when the candidate
-  notional would push the variant over cap. AI_QUANT was picked
-  first because it's the lowest-priority sleeve (additive 2%,
-  default-OFF, naturally yields). 20 tests (16 module + 4 AI_QUANT
-  opt-in). Follow-ups: (a) more sleeves opt in (tactical sleeves
-  next, then J+); (b) proportional reduce policy instead of skip;
-  (c) explicit sleeve priority (today: spec.composition iteration
+  All 7 non-J+ sleeves have opted in by 2026-05-15: AI_QUANT (first;
+  both entry sites in `_reconcile` — fresh open returns
+  status=`skipped:margin_constrained`, direction flip returns
+  `closed:<old_id>` with `flip_aborted=margin_constrained`), then ADX,
+  CPR, PDO, THU_BEAR, FOMC, CARRY. Per-asset loop sleeves (CPR / PDO /
+  THU_BEAR) cascade correctly across BTC -> ETH within one tick
+  because `can_open` re-reads the DB each call, so the second asset's
+  candidate sees the first asset's just-opened row. Status returned
+  on overrun is `margin_constrained` (or `btc_cap_block` for the
+  older PDO+CPR cap path). 20 tests (16 module + 4 AI_QUANT opt-in).
+  Pending: (a) **J+ family opt-in** — same shape but with the
+  ti["weights"] / stacked_lev arithmetic; daily-firing so most
+  likely to hit the cap. (b) proportional reduce policy instead of
+  skip; (c) explicit sleeve priority (today: spec.composition iteration
   order).*
 - **P2.4e** — Cross-sleeve conflict resolver.
   *2026-05-15: detection layer shipped.

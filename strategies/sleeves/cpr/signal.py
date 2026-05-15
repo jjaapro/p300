@@ -389,6 +389,21 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                             "entry": entry_price, "target": target})
             continue
 
+        # P2.4d: opt into the variant-level margin-headroom cap. can_open
+        # re-reads the DB each call, so the second asset on this tick
+        # sees the first asset's just-opened row when computing remaining
+        # headroom — multi-asset opens cascade correctly.
+        from strategies.support import margin_headroom
+        capital = float(variant.get("capital_usdt") or 10000)
+        candidate_notional = capital * (per_asset_alloc / 100.0) * leverage
+        ok, mh_reason = margin_headroom.can_open(variant, candidate_notional)
+        if not ok:
+            log.info(f"[cpr {variant['id']} {asset}] margin-constrained: "
+                     f"{mh_reason} (alloc={per_asset_alloc}%, k={leverage}x)")
+            results.append({"asset": asset, "status": "margin_constrained",
+                            "reason": mh_reason})
+            continue
+
         reason = {
             "trigger": "CPR_entry",
             "variant_id": variant["id"],

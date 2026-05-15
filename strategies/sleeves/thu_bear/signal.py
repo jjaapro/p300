@@ -276,6 +276,17 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             if price is None:
                 log.warning(f"[thu_bear {variant['id']}] no {asset} price — skip entry")
                 continue
+            # P2.4d: opt into the variant-level margin-headroom cap.
+            from strategies.support import margin_headroom
+            capital = float(variant.get("capital_usdt") or 10000)
+            candidate_notional = capital * (per_asset_alloc / 100.0) * leverage
+            ok, mh_reason = margin_headroom.can_open(variant, candidate_notional)
+            if not ok:
+                log.info(f"[thu_bear {variant['id']} {asset}] margin-constrained: "
+                         f"{mh_reason} (alloc={per_asset_alloc}%, k={leverage}x)")
+                actions.append({"status": "margin_constrained", "asset": asset,
+                                "reason": mh_reason})
+                continue
             reason = {
                 "trigger": f"S-096_thu_bear_{version.lower()}",
                 "variant_id": variant["id"],

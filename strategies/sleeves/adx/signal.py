@@ -352,6 +352,20 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
         # Single-open invariant: only open if NO trades remain.
         if not open_trades:
             entry_price = current_price
+            # P2.4d: ADX opts into the variant-level margin-headroom cap.
+            # Candidate notional = capital × alloc_pct/100 × leverage; if
+            # opening would push the variant over gross_notional_target_x,
+            # skip rather than opening.
+            from strategies.support import margin_headroom
+            capital = float(variant.get("capital_usdt") or 10000)
+            candidate_notional = capital * (alloc_pct / 100.0) * leverage
+            ok, mh_reason = margin_headroom.can_open(variant, candidate_notional)
+            if not ok:
+                log.info(f"[adx {variant['id']}] margin-constrained: "
+                         f"{mh_reason} (alloc={alloc_pct}%, k={leverage}x)")
+                return {"status": "margin_constrained", "reason": mh_reason,
+                        "alloc_pct_intended": alloc_pct,
+                        "candidate_notional_usdt": candidate_notional}
             reason = {
                 "trigger": "S-003_ADX_entry",
                 "variant_id": variant["id"],

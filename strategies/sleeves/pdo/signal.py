@@ -358,6 +358,18 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             results.append({"asset": asset, "status": "stale_price_skip"})
             continue
 
+        # P2.4d: opt into the variant-level margin-headroom cap.
+        from strategies.support import margin_headroom
+        capital = float(variant.get("capital_usdt") or 10000)
+        candidate_notional = capital * (per_asset_alloc / 100.0) * leverage
+        ok, mh_reason = margin_headroom.can_open(variant, candidate_notional)
+        if not ok:
+            log.info(f"[pdo {variant['id']} {asset}] margin-constrained: "
+                     f"{mh_reason} (alloc={per_asset_alloc}%, k={leverage}x)")
+            results.append({"asset": asset, "status": "margin_constrained",
+                            "reason": mh_reason})
+            continue
+
         reason = {
             "trigger": "PDO_retouch",
             "variant_id": variant["id"],

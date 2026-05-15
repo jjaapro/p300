@@ -226,6 +226,21 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     if (not open_trades and sig["entry_ok"]
             and not sig["exit_trigger"] and not already_acted_today):
         entry_price = sig["spot_close"]
+        # P2.4d: opt into the variant-level margin-headroom cap. CARRY's
+        # perp leg is real notional on the perp margin account (the
+        # spot leg sits in a wallet / spot account, not on the perp
+        # exchange), so it competes for the same gross budget as
+        # directional sleeves.
+        from strategies.support import margin_headroom
+        capital = float(variant.get("capital_usdt") or 10000)
+        candidate_notional = capital * (alloc_pct / 100.0) * leverage
+        ok, mh_reason = margin_headroom.can_open(variant, candidate_notional)
+        if not ok:
+            log.info(f"[carry {variant['id']}] margin-constrained: "
+                     f"{mh_reason} (alloc={alloc_pct}%, k={leverage}x)")
+            return {"status": "margin_constrained", "reason": mh_reason,
+                    "alloc_pct_intended": alloc_pct,
+                    "candidate_notional_usdt": candidate_notional}
         reason = {
             "trigger": "S-078_carry_entry",
             "variant_id": variant["id"],

@@ -486,6 +486,21 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     alloc_pct = float(sleeve_cfg.get("_effective_weight_pct",
                                        sleeve_cfg.get("weight_pct", 0.0)))
     leverage = float(sleeve_cfg.get("_effective_leverage", 1.0))
+    # P2.4d: opt into the variant-level margin-headroom cap. FOMC runs at
+    # high leverage (10× by default); a single entry can consume a large
+    # slice of the gross budget, so the cap matters here even though FOMC
+    # fires only ~8 times/year.
+    from strategies.support import margin_headroom
+    capital = float(variant.get("capital_usdt") or 10000)
+    candidate_notional = capital * (alloc_pct / 100.0) * leverage
+    ok, mh_reason = margin_headroom.can_open(variant, candidate_notional)
+    if not ok:
+        log.info(f"[fomc {variant['id']}] margin-constrained: "
+                 f"{mh_reason} (alloc={alloc_pct}%, k={leverage}x)")
+        return {"status": "margin_constrained", "fomc_date": fomc_date,
+                "reason": mh_reason,
+                "alloc_pct_intended": alloc_pct,
+                "candidate_notional_usdt": candidate_notional}
     reason = {
         "trigger": "FOMC_long",
         "variant_id": variant["id"],
