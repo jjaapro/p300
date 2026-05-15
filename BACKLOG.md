@@ -588,19 +588,33 @@ behavioral change).
 
 ---
 
-## P2.7 — End-of-restructure doc sweep
+## P2.7 — End-of-restructure doc sweep ✅
 
 **Captured:** 2026-05-14 (memory `project_doc_cleanup_planned`).
-**Status:** 2026-05-15 — path-fix pass shipped (Stage 1). README's
-architecture tree rewritten to reflect the post-restructure layout
-(strategies/sleeves/, strategies/support/, data/sources/, studies/);
-~127 stale `services/*` / `jplus/*` / `tools/*` / `trader.db` /
-`dashboard.db` / `run.py` / `--mode sim` references replaced across
-README, OPERATIONS, PORTFOLIO, MANUAL. Final stale `dashboard.db`
-prose mentions updated to `prod.db` or `--dash-db` flag references.
-Stage 2 (readability rewrite — "messy and hard to read" per user)
-remains outstanding; defer until Phase 2 design-heavy items
-(P2.4d/e/f) settle so the docs describe a stable surface.
+**Status:** 2026-05-15 — Stage 1 (path-fix) and Stage 2 (readability)
+both shipped across the four operator-facing docs. Each doc got its
+own focused commit; structural drift the path-fix script couldn't
+salvage (orphaned headings, bad substitutions, the dropped
+Core/Tactical 50/50 framing, etc.) was hand-rewritten.
+
+  - README (7a26449): new "What runs live here" 13-row table replaces
+    the Core/Tactical prose split; dropped the long retraction of the
+    upstream Sharpe number; added cross-sleeve coordination paragraph.
+  - OPERATIONS (13a13cb): "Live operation" section rewritten around
+    the orchestrator-injected `_effective_*` fields; new
+    `margin_constrained` / `directional_conflict` troubleshooting note;
+    test-count bump.
+  - PORTFOLIO (2a69dce): §1 top-level allocation rewritten as a single
+    13-row roster; §3 renamed "Core J+ Family"; brace-expansion paths
+    and stranded substitutions cleaned.
+  - MANUAL (5260329): CORE_ALLOC_CAP framing clarified; one stale
+    `jplus.simulate._cap_core_weights` path fixed.
+
+Audits show 0 stale `services/` / `jplus/` / `variant_engine` /
+`SHADOW` / `--mode sim` / `data/trader.db` / `data/dashboard.db` /
+`jplus.simulate` references in any of the four docs. The
+architecture trees + canonical per-sleeve references match the
+post-restructure layout.
 
 ### Motivation
 
