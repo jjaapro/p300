@@ -275,8 +275,18 @@ commit and probably multi-session. A reasonable sub-decomposition:
   call, so the second asset's candidate sees the first asset's
   just-opened row. Status returned on overrun is `margin_constrained`
   (or `btc_cap_block` for the older PDO+CPR cap path).
-  Pending: (b) proportional reduce policy instead of skip;
-  (c) explicit sleeve priority (today: spec.composition iteration
+  (b) Proportional-reduce policy shipped 2026-05-15:
+  `margin_headroom.clamp_to_headroom(variant, candidate, min_reduce_fraction=0.5)`
+  returns `(clamped, status, reason)` with status in
+  ``{full, reduced, too_small, no_headroom}``. AI_QUANT is the first
+  sleeve to consume it — at the fresh-open path, a partial-headroom
+  case (>=50% of intended candidate fits) opens at the reduced size
+  rather than skipping; below the floor it still skips. Other sleeves
+  continue using `can_open` (skip-policy); the operator opts each in
+  by replacing `can_open` with `clamp_to_headroom` per sleeve. AI_QUANT
+  was the natural pilot because its conviction scaling already varies
+  size trade-by-trade.
+  Pending: (c) explicit sleeve priority (today: spec.composition iteration
   order). The scale-adjustment check (P2.4d (d) in the earlier note)
   shipped 2026-05-15: EMA_BTC and ETH_DAILY's daily-rebalance CASE 4
   now checks `can_open` against `(desired_qty - cur_qty) * price`

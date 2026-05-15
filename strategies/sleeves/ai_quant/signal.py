@@ -208,19 +208,35 @@ def _reconcile(
             }
         # P2.4d: AI_QUANT is the first sleeve to opt into the margin-headroom
         # cap (lowest-priority sleeve — additive 2%, default-OFF, naturally
-        # yields when the variant's notional pool is tight). Skip the open
-        # if the candidate notional would push the variant over its
-        # gross_notional_target_x.
+        # yields when the variant's notional pool is tight).
+        #
+        # 2026-05-15 also opted into the *reduce* policy (P2.4d (b)) — AI_QUANT's
+        # conviction-scaled allocation already varies trade-by-trade, so a
+        # clamped-down size loses less calibrated edge than it would for a
+        # fixed-size tactical sleeve. The reduce floor is 50% of the
+        # intended candidate; below that, we skip rather than open a
+        # token-sized position.
         capital = float(variant.get("capital_usdt") or 10000)
         candidate_notional = capital * (alloc / 100.0) * leverage
         from strategies.support import margin_headroom
-        ok, reason = margin_headroom.can_open(variant, candidate_notional)
-        if not ok:
+        clamped, status, reason = margin_headroom.clamp_to_headroom(
+            variant, candidate_notional)
+        if status in ("too_small", "no_headroom"):
             return "skipped:margin_constrained", {
                 "reason": reason,
                 "alloc_pct_intended": alloc,
                 "candidate_notional_usdt": candidate_notional,
+                "headroom_status": status,
             }
+        if status == "reduced":
+            # Reduce alloc so the resulting size_usdt = clamped.
+            #   size = capital × (alloc / 100) × leverage = clamped
+            # -> alloc = clamped × 100 / (capital × leverage)
+            new_alloc = clamped * 100.0 / (capital * leverage)
+            log.info(f"[ai_quant {variant['id']}] margin-reduce: "
+                     f"alloc {alloc:.2f}%->{new_alloc:.2f}% "
+                     f"(notional {candidate_notional:,.0f}->{clamped:,.0f})")
+            alloc = new_alloc
         tid = trades.open_paper_trade(
             variant=variant,
             sleeve_name=SLEEVE_NAME,
@@ -234,6 +250,9 @@ def _reconcile(
                 "ai_decision": _summarize_payload(decision_payload),
                 "allocation_pct_used": alloc,
                 "weight_pct_max": weight_pct,
+                **({"headroom_clamped": True,
+                    "candidate_notional_usdt_intended": candidate_notional}
+                   if status == "reduced" else {}),
             },
             scheduled_exit_dt=None,
         )

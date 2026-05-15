@@ -150,6 +150,40 @@ def test_fresh_open_skipped_when_at_cap_with_full_size_candidate(temp_db):
     assert action.startswith("opened:")
 
 
+def test_fresh_open_reduces_allocation_when_partial_headroom(temp_db):
+    """24.7k used out of 25k cap = 300 headroom. AI_QUANT's intended
+    candidate at conviction=100, weight=2%, k=3x = 10k × 0.02 × 3 = 600.
+    300 / 600 = 0.50 == the default min_reduce_fraction floor. So the
+    clamp returns reduced with clamped=300, and AI_QUANT opens at the
+    reduced size (alloc 1.0% instead of 2.0%)."""
+    import sqlite3
+    variant = _variant(capital=10000, target_x=2.5)  # cap=25k
+    _insert_open_paper_trade(temp_db, id="T_pdo", size_usdt=24_700.0, leverage=5)
+    action, debug = ai_quant_signal._reconcile(
+        variant=variant,
+        sleeve_cfg=_sleeve_cfg(weight_pct=2.0, leverage=3.0),
+        asset="BTC",
+        current_open=[],
+        decision_payload=_decision(direction="LONG", conviction=100),
+        live_price=80_000.0,
+    )
+    assert action.startswith("opened:")
+    # Trade row should have allocation_pct reduced — 300 = 10k × alloc/100 × 3
+    # -> alloc = 1.0%.
+    con = sqlite3.connect(str(temp_db))
+    con.row_factory = sqlite3.Row
+    try:
+        row = con.execute(
+            "SELECT allocation_pct, size_usdt FROM trades "
+            "WHERE strategy='AI_QUANT' AND status='open'"
+        ).fetchone()
+    finally:
+        con.close()
+    assert row is not None
+    assert row["allocation_pct"] == pytest.approx(1.0, abs=1e-6)
+    assert row["size_usdt"] == pytest.approx(300.0, abs=1e-6)
+
+
 # ─── Direction flip ──────────────────────────────────────────────────────────
 
 def test_flip_aborts_open_when_margin_constrained(temp_db):

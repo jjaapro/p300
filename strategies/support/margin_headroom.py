@@ -123,3 +123,77 @@ def can_open(variant: dict, candidate_notional_usdt: float
         f"+ candidate={candidate_notional_usdt:,.0f} "
         f"> cap={cap:,.0f}"
     )
+
+
+# Below this fraction of the intended notional, the reduced trade is
+# too small to be worth the round-trip fees and slippage. Sleeves that
+# opt into the reduce policy treat anything below this as a skip
+# instead of an open.
+DEFAULT_MIN_REDUCE_FRACTION = 0.50
+
+
+def clamp_to_headroom(variant: dict,
+                       candidate_notional_usdt: float,
+                       min_reduce_fraction: float = DEFAULT_MIN_REDUCE_FRACTION,
+                       ) -> tuple[float, str, Optional[str]]:
+    """Return the candidate notional clamped to remaining headroom.
+
+    Result tuple is ``(clamped_notional, status, reason)``:
+
+      - ``("full", None)`` — the full candidate fits; no clamp needed.
+      - ``("reduced", reason)`` — clamped to remaining headroom; the
+        reduced size is still at least ``min_reduce_fraction`` of the
+        original candidate. Sleeve opens at the reduced size.
+      - ``("too_small", reason)`` — headroom is positive but less than
+        ``min_reduce_fraction × candidate``; the reduced trade would
+        be too small to bother with. Sleeve skips.
+      - ``("no_headroom", reason)`` — headroom is zero or negative.
+        Sleeve skips.
+
+    Sleeves that opt into the proportional-reduce policy replace::
+
+        ok, reason = margin_headroom.can_open(variant, candidate)
+        if not ok: return {"status": "margin_constrained", ...}
+
+    with::
+
+        clamped, status, reason = margin_headroom.clamp_to_headroom(
+            variant, candidate)
+        if status in ("too_small", "no_headroom"):
+            return {"status": "margin_constrained", ...}
+        if status == "reduced":
+            # Scale the sleeve's alloc_pct / leverage / weight down so
+            # the size_usdt that open_paper_trade will compute equals
+            # `clamped`. For sleeves where size = capital × alloc/100 ×
+            # leverage, that's: new_alloc = clamped × 100 / (capital × leverage).
+            ...
+
+    Defaults to a 50% floor — below half the intended size the trade
+    likely doesn't capture the calibrated edge anyway. Set
+    ``min_reduce_fraction=0.0`` to always open at headroom.
+    """
+    current = current_gross_notional_usdt(variant["id"])
+    cap = gross_cap_usdt(variant)
+    headroom = cap - current
+    if candidate_notional_usdt <= 0:
+        # Sleeve passed a non-positive candidate — short-circuit as
+        # "full" so the sleeve's own no-op path can run.
+        return (0.0, "full", None)
+    if current + candidate_notional_usdt <= cap + 1e-9:
+        return (candidate_notional_usdt, "full", None)
+    if headroom <= 0:
+        return (0.0, "no_headroom", (
+            f"margin_cap: current={current:,.0f} >= cap={cap:,.0f}, "
+            f"candidate={candidate_notional_usdt:,.0f}"
+        ))
+    if headroom < min_reduce_fraction * candidate_notional_usdt:
+        return (0.0, "too_small", (
+            f"margin_cap: headroom={headroom:,.0f} < "
+            f"{min_reduce_fraction:.0%} × candidate={candidate_notional_usdt:,.0f}"
+        ))
+    # Reduce: candidate doesn't fit but headroom is at least
+    # min_reduce_fraction of it. Open at headroom.
+    return (headroom, "reduced", (
+        f"margin_cap: candidate={candidate_notional_usdt:,.0f} clamped "
+        f"to headroom={headroom:,.0f}"
+    ))

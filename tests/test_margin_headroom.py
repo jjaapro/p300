@@ -183,6 +183,71 @@ def test_can_open_handles_already_over_cap(temp_db):
     assert ok is False
 
 
+# ─── clamp_to_headroom (P2.4d (b)) ───────────────────────────────────────────
+
+def test_clamp_full_when_fits(temp_db):
+    v = _variant(capital=10000, target_x=2.5)  # cap = 25k
+    _insert(temp_db, id="T1", size_usdt=5000)
+    clamped, status, reason = margin_headroom.clamp_to_headroom(v, 10_000)
+    assert clamped == pytest.approx(10_000)
+    assert status == "full"
+    assert reason is None
+
+
+def test_clamp_reduced_when_partial_room(temp_db):
+    """20k used + 6k candidate = 26k, over the 25k cap. Headroom is 5k.
+    With min_reduce_fraction=0.5, 5k >= 0.5*6k=3k -> reduced to 5k."""
+    v = _variant(capital=10000, target_x=2.5)
+    _insert(temp_db, id="T1", size_usdt=20_000)
+    clamped, status, reason = margin_headroom.clamp_to_headroom(v, 6_000)
+    assert clamped == pytest.approx(5_000)
+    assert status == "reduced"
+    assert "clamped" in reason
+
+
+def test_clamp_too_small_when_headroom_below_floor(temp_db):
+    """22k used + 6k candidate over 25k cap. Headroom is 3k. With
+    min_reduce_fraction=0.5, 3k < 0.5*6k=3k? actually 3k == 0.5*6k.
+    Make headroom 2k to be strictly below: use size_usdt=23000."""
+    v = _variant(capital=10000, target_x=2.5)  # cap = 25k
+    _insert(temp_db, id="T1", size_usdt=23_000)
+    clamped, status, reason = margin_headroom.clamp_to_headroom(v, 6_000)
+    assert clamped == pytest.approx(0.0)
+    assert status == "too_small"
+    assert "headroom" in reason
+
+
+def test_clamp_no_headroom_when_already_over_cap(temp_db):
+    v = _variant(capital=10000, target_x=2.0)  # cap = 20k
+    _insert(temp_db, id="T1", size_usdt=25_000)  # already over
+    clamped, status, reason = margin_headroom.clamp_to_headroom(v, 1_000)
+    assert clamped == pytest.approx(0.0)
+    assert status == "no_headroom"
+    assert "current" in reason and "cap" in reason
+
+
+def test_clamp_zero_or_negative_candidate_is_full(temp_db):
+    """A sleeve that decided not to size anything ends up with
+    candidate=0; clamp doesn't crash and reports 'full' so the sleeve's
+    own no-op path runs."""
+    v = _variant()
+    for cand in (0.0, -1.0):
+        clamped, status, reason = margin_headroom.clamp_to_headroom(v, cand)
+        assert status == "full"
+
+
+def test_clamp_floor_override(temp_db):
+    """Passing min_reduce_fraction=0.0 always opens at headroom rather
+    than skipping with too_small."""
+    v = _variant(capital=10000, target_x=2.5)
+    _insert(temp_db, id="T1", size_usdt=24_500)  # headroom = 500
+    clamped, status, _ = margin_headroom.clamp_to_headroom(
+        v, candidate_notional_usdt=10_000, min_reduce_fraction=0.0,
+    )
+    assert clamped == pytest.approx(500)
+    assert status == "reduced"
+
+
 # ─── Orchestrator injection ──────────────────────────────────────────────────
 
 def test_orchestrator_injects_effective_margin_headroom(temp_db):
