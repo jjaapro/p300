@@ -45,7 +45,7 @@
       "Bash(python compare_with_fomc.py --tag with_fomc_v3)",
       "Bash(python fomc_leverage_sensitivity.py --tag with_fomc_v3 --mc 10000)",
       "PowerShell(Get-CimInstance Win32_Process -Filter \"Name='python.exe'\")",
-      "Bash(python -m pytest tests/test_fomc_service.py::test_close_due_shadows_skips_disabled_variants -x --tb=short)",
+      "Bash(python -m pytest tests/test_fomc_service.py::test_close_due_paper_trades_skips_disabled_variants -x --tb=short)",
       "PowerShell(Get-CimInstance Win32_Process -Filter \"Name='python.exe'\" | Where-Object { $_.CommandLine -match \"bot.py\" } | Select-Object ProcessId, CommandLine | Format-List)",
       "Bash(python register_p300.py)",
       "Bash(\"C:/Python/Python313/python.exe\" bot.py --once --skip-gap-fix)",
@@ -182,7 +182,10 @@
       "Bash(python -m pytest tests/test_jplus_lookahead.py tests/test_fomc_service.py -x -q)",
       "Bash(git rm *)",
       "Bash(git mv *)",
-      "Bash(python c:/tmp/py_to_ipynb.py studies/notebooks/bitstamp_adx_backtest.py)"
+      "Bash(python c:/tmp/py_to_ipynb.py studies/notebooks/bitstamp_adx_backtest.py)",
+      "Bash(venv/Scripts/python.exe -m pytest tests/test_allocation_parity.py -q)",
+      "Bash(venv/Scripts/python.exe -m pytest tests/ -k \"r4 or jplus or ema_btc or eth_daily\" --collect-only -q)",
+      "Bash(venv/Scripts/python.exe -m pytest -q)"
     ],
     "additionalDirectories": [
       "\\tmp"

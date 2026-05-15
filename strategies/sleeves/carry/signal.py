@@ -1,5 +1,5 @@
 """
-S-078 Filtered Carry — live shadow service (delta-neutral funding harvest).
+S-078 Filtered Carry — live paper service (delta-neutral funding harvest).
 
 Strategy (from backtest_tail_harvester.py, mode='filtered'):
   Entry: 7-day rolling avg of daily BTC funding rate > 0
@@ -8,12 +8,12 @@ Strategy (from backtest_tail_harvester.py, mode='filtered'):
   P&L: short perp collects funding; basis ~0 over open period; fees on
        entry + exit
 
-Modeled as a single shadow trade per variant with strategy='CARRY' and
+Modeled as a single paper trade per variant with strategy='CARRY' and
 direction='LONG' (the long-spot leg is the defining side for accounting).
 The short-perp hedge is implicit — P&L is computed from funding accrual
 only (delta-neutral construction zeroes out spot-vs-perp mark-to-market).
 
-This is SHADOW-ONLY. No exchange calls. Daily idempotent via a trade-exists-
+This is paper-ONLY. No exchange calls. Daily idempotent via a trade-exists-
 per-day check.
 
 Daily funding is the sum of 3 settlements (00:00 / 08:00 / 16:00 UTC), each
@@ -160,14 +160,14 @@ def _carry_action_today(variant_id: str, today_utc: str) -> bool:
     return row is not None
 
 
-def _open_carry_shadow(variant: dict, entry_price: float, allocation_pct: float,
+def _open_carry_paper(variant: dict, entry_price: float, allocation_pct: float,
                        reason: dict, leverage: float = 1.0) -> str:
-    """Open a CARRY shadow trade — delegates to strategies.trades.open_shadow_trade.
+    """Open a CARRY paper trade — delegates to strategies.trades.open_paper_trade.
     CARRY is delta-neutral (long-spot + short-perp); the trades.direction
     column stores 'LONG' as the spot-leg notation. Carry exits when funding
     flips negative for ``EXIT_NEG_DAYS`` consecutive days, not on a schedule."""
-    from strategies.trades import open_shadow_trade
-    return open_shadow_trade(
+    from strategies.trades import open_paper_trade
+    return open_paper_trade(
         variant=variant, sleeve_name="CARRY",
         asset="BTC", direction="LONG",
         entry_price=entry_price, allocation_pct=allocation_pct, leverage=leverage,
@@ -175,7 +175,7 @@ def _open_carry_shadow(variant: dict, entry_price: float, allocation_pct: float,
     )
 
 
-def _close_carry_shadow(trade_id: str, exit_price: float, reason: str) -> None:
+def _close_carry_paper(trade_id: str, exit_price: float, reason: str) -> None:
     """Sleeve close — delegates to strategies.trades.close_carry_trade. CARRY is
     delta-neutral, so its close has no price-PnL component (just funding
     collected − fees on both legs)."""
@@ -188,7 +188,7 @@ def _close_carry_shadow(trade_id: str, exit_price: float, reason: str) -> None:
 def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     """Evaluate S-078 carry signal for this variant. Daily idempotent.
 
-    Opens / closes a paired CARRY shadow trade based on funding rate regime.
+    Opens / closes a paired CARRY paper trade based on funding rate regime.
     P&L is computed at close from accumulated funding minus fees.
     """
     alloc_pct = float(sleeve_cfg.get("_effective_weight_pct",
@@ -208,12 +208,12 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
 
     # Exit sweep: close every open carry trade if the 3-day negative-streak
     # exit signal fires. Funding collected is computed per-settlement inside
-    # _close_carry_shadow.
+    # _close_carry_paper.
     if open_trades and sig["exit_trigger"]:
         exit_price = sig["spot_close"]
         closed_ids = []
         for tr in open_trades:
-            _close_carry_shadow(tr["id"], exit_price,
+            _close_carry_paper(tr["id"], exit_price,
                                 f"neg_streak={sig['neg_streak_days']}d")
             closed_ids.append(tr["id"])
             log.info(f"[carry {variant['id']}] closed {tr['id']} @ "
@@ -236,7 +236,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             "structure": "long_spot_short_perp_delta_neutral",
             "regime": "unknown",
         }
-        tid = _open_carry_shadow(variant, entry_price, alloc_pct, reason,
+        tid = _open_carry_paper(variant, entry_price, alloc_pct, reason,
                                   leverage=leverage)
         log.info(f"[carry {variant['id']}] opened {tid} @ {entry_price:.2f} "
                  f"(7d avg FR = {sig['fr_7d_avg_pct']:.4f}%, alloc={alloc_pct}%)")

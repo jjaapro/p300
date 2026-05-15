@@ -1,13 +1,13 @@
 # p300 — standalone P-300 paper-trading bot
 
 Self-contained implementation of the **P-300 Aggressive 2.0 1.0** strategy.
-Runs as a SHADOW variant — writes phantom trades to a local sqlite DB and
+Runs as a paper variant — writes phantom trades to a local sqlite DB and
 never places orders on any exchange. The repo has no dependency on any
 upstream `trader` research repo: market data is pulled from Binance public
 REST, scheduled events are computed in-process, and long-short ratio
 history comes from Coinalyze (free tier).
 
-> **Status: SHADOW validation in progress.** All prior upstream backtest
+> **Status: paper validation in progress.** All prior upstream backtest
 > numbers are treated as compromised and have been stripped. The earlier
 > headline (Sharpe ≈ 1.73, bootstrap 95% CI [0.96, 2.44]) was computed
 > from a `variant_daily_returns WHERE source='replay'` table that the
@@ -15,7 +15,7 @@ history comes from Coinalyze (free tier).
 > reproducible from current code** and has been retracted pending
 > regeneration on the realized trade ledger. The migrated tool
 > (`python tools/tools_statistical_validation.py`) now runs against
-> closed SHADOW trades directly; SHADOW accumulation is the only real
+> closed paper trades directly; paper accumulation is the only real
 > OOS validation path, and the live-window Sharpe stabilises only after
 > ~6+ months of realized data.
 
@@ -38,7 +38,7 @@ trade-ledger sum (no parallel theoretical-return track):
   BTC and ETH.
 - **AI_QUANT (2%, inside the tactical 50%, default-OFF)** — discretionary
   LLM trader using Anthropic Opus 4.7 once per UTC day. Gated behind
-  `AI_QUANT_ENABLED` env var; shadow-only like every other sleeve; skipped
+  `AI_QUANT_ENABLED` env var; paper-only like every other sleeve; skipped
   on historical replay. Per-decision markdown archive under
   `data/ai_quant_archive/`. (Was additive; folded into the 50% cap on
   2026-05-12 — PDO trimmed from 11% to 9% to make room.)
@@ -378,7 +378,7 @@ whether any specific backtest is trusted:
   `python tools/backtest_report.py --variant <id>` for replay metrics.
 - **No prior-backtest equity seed.** Any daily-returns panel present in older
   versions of this repo has been removed as compromised. Equity attribution
-  begins from the first clean replay or live SHADOW fill.
+  begins from the first clean replay or live paper fill.
 - **`ca_long_short_ratio` history beyond Binance's 30d window** must come from
   Coinalyze. After bootstrap, the rolling 30d refresh from Binance is enough
   to keep things current; the ~5y of pre-bootstrap history relies on the

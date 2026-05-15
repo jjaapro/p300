@@ -4,7 +4,7 @@ A complete reference for what the bot trades, when each strategy fires, what
 leverage it uses, and how the pieces compose. All percentages are **fractions
 of total capital** unless stated otherwise.
 
-> Variant ID: `p300_aggressive_v2_v1_0` · Status: SHADOW (paper-only)
+> Variant ID: `p300_aggressive_v2_v1_0` · Status: paper (paper-only)
 > Last updated: 2026-05-10 (live/sim refactor — daily-return accrual + catchup deleted; sim mode added; analytic simulator now research-only).
 
 ---
@@ -14,7 +14,7 @@ of total capital** unless stated otherwise.
 | Block | Capital | Mechanism | What it writes |
 |---|---|---|---|
 | **Core J+ engine** | **50%** | daily-return accrual via `jplus.simulate()` | `variant_daily_returns` (one row/day, `source='live_computed'`) |
-| **Tactical stack** | **50%** *(includes AI_QUANT)* | discrete entries/exits across 6 sleeves + AI_QUANT | `trades` table (`execution_mode='SHADOW'`) |
+| **Tactical stack** | **50%** *(includes AI_QUANT)* | discrete entries/exits across 6 sleeves + AI_QUANT | `trades` table (`execution_mode='paper'`) |
 | ~~Stable reserve~~ | 0% | (removed 2026-04-30 — FOMC absorbed the slot) | — |
 
 The Core's daily return is computed once per day after midnight UTC. The
@@ -126,7 +126,7 @@ room while keeping the cap exact).
   short-circuits to `status='disabled'` and no LLM call is made.
 - **Allocation**: 2% of capital, **inside** the 50% Tactical cap (since
   2026-05-12; PDO was trimmed from 11% to 9% to make room). Raise to 5%
-  only after 60+ days of forward shadow PnL net of API cost, which would
+  only after 60+ days of forward paper PnL net of API cost, which would
   require trimming another tactical sleeve to stay under the 50% cap.
 - **Leverage**: 3×. **Asset**: BTC perp. **Direction**: LONG / SHORT / FLAT,
   chosen daily by the model.
@@ -218,7 +218,7 @@ Each handler:
   — which derives them strictly from data through yesterday's close;
 - prices the entry from [`services.price_feed.get_current_price`](services/price_feed.py)
   (latest closed 1m bar — ~30s lag);
-- writes the trade via [`services.trades.open_shadow_trade`](services/trades.py),
+- writes the trade via [`services.trades.open_paper_trade`](services/trades.py),
   with `scheduled_exit_dt` set for the discrete-window sleeves and `None` for
   continuous positions;
 - is idempotent per UTC day via the `trades` table and the
@@ -567,14 +567,14 @@ superseded; do not compare side-by-side.
 >   now charge funding on multi-week perp holds (~4.5%/yr) plus fee +
 >   slippage; previously zero on all three.
 > - **Liquidation simulator in live + sim** (`477933f`) and **margin
->   haircut 0.95→0.50** (`b9cad06`) — high-leverage SHADOW trades that
+>   haircut 0.95→0.50** (`b9cad06`) — high-leverage paper trades that
 >   would have been wiped in reality now show up as forced closes.
 >
 > Treat the +485.7% / +121.1% / +294.8% / -15.7% figures below as
 > historically-informative but **not exact, not currently reproducible,
 > and overstated in the same direction as every fix above**. They will
 > be regenerated in the next backtest refresh; until then, the *live*
-> SHADOW trade-ledger metrics (which now run on all the corrected
+> paper trade-ledger metrics (which now run on all the corrected
 > models) are the ground truth for forward operation.
 
 > The Core columns below are the analytic output of
@@ -582,7 +582,7 @@ superseded; do not compare side-by-side.
 > retained as a research-only tool after the 2026-05-10 live/sim
 > refactor — no runtime path calls it. Tactical numbers come from the
 > backtest_runner's realized trade ledger. Live operation (real-money or
-> SHADOW) tracks PnL purely from the trade ledger via
+> paper) tracks PnL purely from the trade ledger via
 > [services/strategy_health.py:trades_daily_returns](services/strategy_health.py),
 > so live numbers may diverge from these analytic values by the
 > idealized-fill / discretization gap.
@@ -698,7 +698,7 @@ were affected by the data-source switch.
 10. **AI_QUANT is excluded from all backtest figures in §6.** The sleeve
     is non-deterministic (LLM outputs vary run-to-run) and is skipped on
     historical replay via `params.deterministic=False`. Its edge — if any —
-    will only be visible in forward shadow PnL, and must be evaluated
+    will only be visible in forward paper PnL, and must be evaluated
     *net of API cost* (capped at $5/day, ~$1,825/yr against a 2% sleeve).
 
 11. **Execution-cost model — fees + slippage, modeled separately.**
@@ -721,8 +721,8 @@ were affected by the data-source switch.
       ETH_DAILY's status was framed as "pending a spot-fee model" — but
       both trade the *perp*, so the zero-funding default was structurally
       wrong. Multi-week ETH-LONG perp at 8h funding ~0.005% accrues to
-      ~4.5%/yr and was previously invisible to SHADOW PnL.
-    - **Pre-2026-05-13 SHADOW PnL** was net of fees only. Forward
+      ~4.5%/yr and was previously invisible to paper PnL.
+    - **Pre-2026-05-13 paper PnL** was net of fees only. Forward
       numbers from 2026-05-13 onward are net of fees + slippage; the
       backtest figures in §6 (run before this commit) are not. Treat the
       step-down on 2026-05-13 as a methodology change, not a regime

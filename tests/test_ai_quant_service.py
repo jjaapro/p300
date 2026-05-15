@@ -422,7 +422,7 @@ def _seed_open_trade(dash_db, *, direction: str, variant_id: str = "p300_test_va
                     '2026-05-07T00:06:00+00:00',
                     '9999-12-31T23:59:59+00:00',
                     '2026-05-07T00:06:00+00:00',
-                    ?, 1500, 0.0214, 'open', 'SHADOW',
+                    ?, 1500, 0.0214, 'open', 'paper',
                     ?, 0.0214, 3.0, 1500, 0.0, ?)
         """, (tid, direction, entry_price, variant_id, entry_price))
         con.commit()

@@ -44,7 +44,7 @@ def _open_continuous(variant: dict, weight: float, lev: float,
                       price: float, mode: str, now: datetime) -> str:
     """Open a continuous ETH_DAILY LONG (no scheduled exit; closed on
     regime exit from bull)."""
-    return trades.open_shadow_trade(
+    return trades.open_paper_trade(
         variant=variant, sleeve_name=STRATEGY_ETH_DAILY,
         asset="ETH", direction="LONG",
         entry_price=price,

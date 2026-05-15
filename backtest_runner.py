@@ -126,7 +126,7 @@ def ensure_replay_variant(variant_id: str, reset: bool = False) -> dict:
             "Historical replay of P-300 Tactical-Only 1.0 — same sleeve code, "
             "simulated clock. Core J+ MLgate NOT included. Variant weights "
             "sum to 45% of intended capital.",
-            "full_portfolio", None, "1.0-replay", "SHADOW",
+            "full_portfolio", None, "1.0-replay", "paper",
             0, float(live.get("capital_usdt") or 10000), "#8b0000",
             spec_json,
             "Created by backtest_runner.py. Trades here come from historical "
@@ -152,7 +152,7 @@ def mark_remaining_at_end(variant_id: str) -> int:
     con.row_factory = sqlite3.Row
     opens = con.execute("""
         SELECT id, asset, strategy FROM trades
-        WHERE strategy_variant = ? AND execution_mode = 'SHADOW'
+        WHERE strategy_variant = ? AND execution_mode = 'paper'
           AND status = 'open'
     """, (variant_id,)).fetchall()
     con.close()
@@ -171,7 +171,7 @@ def mark_remaining_at_end(variant_id: str) -> int:
 
 
 def close_due_for_variant(variant_id: str, now_utc: datetime) -> int:
-    """Close any open shadow trade for this variant whose scheduled exit_time
+    """Close any open paper trade for this variant whose scheduled exit_time
     has passed. Dispatches to the sleeve-specific close (so fees/funding are
     applied); falls back to a simple mark-to-close if no sleeve owns the
     strategy. Returns count closed."""
@@ -179,7 +179,7 @@ def close_due_for_variant(variant_id: str, now_utc: datetime) -> int:
     con.row_factory = sqlite3.Row
     opens = con.execute("""
         SELECT id, asset, strategy, exit_time FROM trades
-        WHERE strategy_variant = ? AND execution_mode = 'SHADOW'
+        WHERE strategy_variant = ? AND execution_mode = 'paper'
           AND status = 'open'
     """, (variant_id,)).fetchall()
     con.close()
@@ -233,7 +233,7 @@ def tick_replay_variant(variant: dict) -> None:
     composition = spec.get("composition") or []
     # Per-tick regime classification mirrors orchestrator._tick_composition
     # (P2.4a). Backtests honor the same allocation table so dispatch parity
-    # with live SHADOW + sim mode is preserved.
+    # with live paper + sim mode is preserved.
     regime = allocation.current_regime()
     for sleeve in composition:
         if sleeve.get("portfolio_id"):

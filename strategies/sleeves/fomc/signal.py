@@ -30,7 +30,7 @@ Composite rule:
   TRADE otherwise
 
 Mode: FULLY DISPATCHED tactical sleeve (promoted from observer 2026-04-30).
-Opens shadow trades via the standard orchestrator dispatch path. The
+Opens paper trades via the standard orchestrator dispatch path. The
 fomc_observer table still records every decision for audit purposes.
 """
 from __future__ import annotations
@@ -328,14 +328,14 @@ def tick_observer() -> dict:
 def _open_fomc_long(variant: dict, asset: str, entry_price: float,
                      allocation_pct: float, leverage: float,
                      reason: dict, exit_iso: str) -> str:
-    """Open a FOMC LONG shadow trade — delegates to strategies.trades.open_shadow_trade.
+    """Open a FOMC LONG paper trade — delegates to strategies.trades.open_paper_trade.
 
     FOMC is the one sleeve that uses ``reason["phase"]`` (not "regime") as
     the regime-column value, so we pass it explicitly via regime_value.
     """
-    from strategies.trades import open_shadow_trade
+    from strategies.trades import open_paper_trade
     exit_dt = datetime.fromisoformat(exit_iso)
-    return open_shadow_trade(
+    return open_paper_trade(
         variant=variant, sleeve_name="FOMC",
         asset=asset, direction="LONG",
         entry_price=entry_price, allocation_pct=allocation_pct, leverage=leverage,
@@ -344,7 +344,7 @@ def _open_fomc_long(variant: dict, asset: str, entry_price: float,
     )
 
 
-def _close_fomc_shadow(trade_id: str, exit_price: float, reason: str) -> None:
+def _close_fomc_paper(trade_id: str, exit_price: float, reason: str) -> None:
     """Sleeve close — delegates to strategies.trades.close_perp_trade."""
     from strategies.trades import close_perp_trade
     close_perp_trade(trade_id, exit_price, reason, sleeve_name="FOMC",
@@ -384,7 +384,7 @@ def _sweep_stuck_opens(variant_id: str) -> int:
         rows = con.execute(
             "SELECT id, asset, exit_time FROM trades "
             "WHERE strategy_variant=? AND strategy='FOMC' "
-            "  AND status='open' AND execution_mode='SHADOW'",
+            "  AND status='open' AND execution_mode='paper'",
             (variant_id,)).fetchall()
     finally:
         con.close()
@@ -402,7 +402,7 @@ def _sweep_stuck_opens(variant_id: str) -> int:
         if price is None:
             continue
         try:
-            _close_fomc_shadow(r["id"], price, "self_sweep_past_exit")
+            _close_fomc_paper(r["id"], price, "self_sweep_past_exit")
             n += 1
             log.info(f"[fomc {variant_id}] self-sweep closed {r['id']} "
                      f"{r['asset']} @ {price:.2f}")

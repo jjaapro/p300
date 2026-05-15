@@ -1,5 +1,5 @@
 """
-PDO Retouch Long (regime-filtered) service — live dispatcher for P-300 shadow
+PDO Retouch Long (regime-filtered) service — live dispatcher for P-300 paper
 variants.
 
 Signal:
@@ -11,7 +11,7 @@ Execution per fire:
   Entry: market on the first hourly bar that contains the PDO level
   Exit:  min(hold_bars, end-of-UTC-day)   — hold_bars = 24 for BTC, 4 for ETH
 
-Trade tags: SHADOW mode, strategy='PDO_RETOUCH', direction='LONG',
+Trade tags: paper mode, strategy='PDO_RETOUCH', direction='LONG',
 series='SJ-' prefix.
 
 Source probes:
@@ -200,10 +200,10 @@ def _pdo_action_for_bar_day(variant_id: str, asset: str,
     return row is not None
 
 
-def _open_pdo_shadow(variant: dict, asset: str, entry_price: float,
+def _open_pdo_paper(variant: dict, asset: str, entry_price: float,
                      allocation_pct: float, leverage: float,
                      hold_hours: int, reason: dict) -> str:
-    """Open a PDO_RETOUCH shadow trade — delegates to strategies.trades.open_shadow_trade.
+    """Open a PDO_RETOUCH paper trade — delegates to strategies.trades.open_paper_trade.
 
     Scheduled exit: Pine's ``else if newDay`` closes at the close of the
     first 1H bar of the day AFTER bar_day (= bar_day+1 at 01:00 UTC),
@@ -211,13 +211,13 @@ def _open_pdo_shadow(variant: dict, asset: str, entry_price: float,
     derived from ``now`` so trades fired at bar_day+1's 00:00 UTC (against
     bar_day's last-hour bar) get the next-bar exit, not a 25h DayEnd.
     """
-    from strategies.trades import open_shadow_trade
+    from strategies.trades import open_paper_trade
     now = clock.now_utc()
     bar_day_start = _bar_day_start(now)
     day_after_01_utc = bar_day_start + timedelta(days=1, hours=1)
     by_hold = now + timedelta(hours=hold_hours)
     exit_dt = min(day_after_01_utc, by_hold)
-    return open_shadow_trade(
+    return open_paper_trade(
         variant=variant, sleeve_name="PDO_RETOUCH",
         asset=asset, direction="LONG",
         entry_price=entry_price, allocation_pct=allocation_pct, leverage=leverage,
@@ -225,7 +225,7 @@ def _open_pdo_shadow(variant: dict, asset: str, entry_price: float,
     )
 
 
-def _close_pdo_shadow(trade_id: str, exit_price: float, reason: str) -> None:
+def _close_pdo_paper(trade_id: str, exit_price: float, reason: str) -> None:
     """Sleeve close — delegates to strategies.trades.close_perp_trade.
 
     No funding modeling: PDO BTC holds are scheduled-24h, ETH 4h. A
@@ -289,7 +289,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                     results.append({"asset": asset, "status": "stale_price_skip",
                                     "trade_id": tr["id"]})
                     continue
-                _close_pdo_shadow(tr["id"], exit_price, f"hold_{hold_hours}h")
+                _close_pdo_paper(tr["id"], exit_price, f"hold_{hold_hours}h")
                 log.info(f"[pdo {variant['id']} {asset}] closed {tr['id']} "
                          f"@ {exit_price:.2f} (hold {hold_hours}h)")
                 results.append({"asset": asset, "status": "closed_hold",
@@ -369,7 +369,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             "hold_hours": hold_hours,
             "regime": "gap_up_retrace",
         }
-        tid = _open_pdo_shadow(variant, asset, entry_price, per_asset_alloc,
+        tid = _open_pdo_paper(variant, asset, entry_price, per_asset_alloc,
                                leverage, hold_hours, reason)
         log.info(f"[pdo {variant['id']} {asset}] opened {tid} @ {entry_price:.2f} "
                  f"(PDO={sig['pdo']:.2f}, gap={sig['gap_pct']:.2f}%, "

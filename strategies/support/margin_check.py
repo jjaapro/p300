@@ -3,11 +3,11 @@
 Two responsibilities live here:
 
 1. **Math** — :func:`check_liquidations_for_variant` builds margin-simulator
-   inputs from the SHADOW trade record + trader.db price/funding data, runs
+   inputs from the paper trade record + trader.db price/funding data, runs
    the simulator, returns liquidation events. Pure read-only.
 
 2. **Orchestration** — :func:`force_close_liquidations` walks every open
-   shadow trade for a variant, calls the math, then per-event invokes the
+   paper trade for a variant, calls the math, then per-event invokes the
    sleeve's close function at the liquidation price/time. This is what the
    live tick (``orchestrator._check_liquidations_all_variants``) and the
    backtest tick (``backtest_runner.run._tick``) both call.
@@ -283,7 +283,7 @@ def check_liquidations_for_variant(
     sim_now: datetime,
     params: Optional[SimParams] = None,
 ) -> list[tuple[dict, LiquidationEvent]]:
-    """Walk open shadow trades for the variant; return list of
+    """Walk open paper trades for the variant; return list of
     (trade_dict, liq_event) pairs for any that would have been liquidated
     by sim_now. Caller is responsible for force-closing them via the
     sleeve's close function at liq_event.liq_price / liq_event.liq_time.
@@ -292,7 +292,7 @@ def check_liquidations_for_variant(
     con.row_factory = sqlite3.Row
     opens = con.execute("""
         SELECT * FROM trades
-        WHERE strategy_variant = ? AND execution_mode = 'SHADOW'
+        WHERE strategy_variant = ? AND execution_mode = 'paper'
           AND status = 'open'
     """, (variant_id,)).fetchall()
     con.close()
@@ -312,28 +312,28 @@ def _load_close_fn(strategy: str):
     """Return the sleeve-specific close function (which applies fees/funding).
     Falls back to None for unknown strategies — caller logs and skips."""
     if strategy == "ADX":
-        from strategies.sleeves.adx.signal import _close_adx_shadow
-        return _close_adx_shadow
+        from strategies.sleeves.adx.signal import _close_adx_paper
+        return _close_adx_paper
     if strategy == "CARRY":
-        from strategies.sleeves.carry.signal import _close_carry_shadow
-        return _close_carry_shadow
+        from strategies.sleeves.carry.signal import _close_carry_paper
+        return _close_carry_paper
     if strategy == "THU_BEAR":
-        from strategies.sleeves.thu_bear.signal import _close_thu_bear_shadow
-        return _close_thu_bear_shadow
+        from strategies.sleeves.thu_bear.signal import _close_thu_bear_paper
+        return _close_thu_bear_paper
     if strategy == "PDO_RETOUCH":
-        from strategies.sleeves.pdo.signal import _close_pdo_shadow
-        return _close_pdo_shadow
+        from strategies.sleeves.pdo.signal import _close_pdo_paper
+        return _close_pdo_paper
     if strategy == "CPR":
-        from strategies.sleeves.cpr.signal import _close_cpr_shadow
-        return _close_cpr_shadow
+        from strategies.sleeves.cpr.signal import _close_cpr_paper
+        return _close_cpr_paper
     if strategy == "FOMC":
-        from strategies.sleeves.fomc.signal import _close_fomc_shadow
-        return _close_fomc_shadow
+        from strategies.sleeves.fomc.signal import _close_fomc_paper
+        return _close_fomc_paper
     return None
 
 
 def force_close_liquidations(variant_id: str, now_utc: datetime) -> int:
-    """Walk open shadow trades for this variant; for any leveraged trade
+    """Walk open paper trades for this variant; for any leveraged trade
     whose margin trajectory would have breached maintenance margin between
     its entry and now_utc, force-close it via the sleeve's close function
     at the liquidation price/time.

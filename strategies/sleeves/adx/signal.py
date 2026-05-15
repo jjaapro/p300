@@ -1,11 +1,11 @@
 """
-S-003 ADX Regime Flip — live shadow service.
+S-003 ADX Regime Flip — live paper service.
 
 Fires LONG/SHORT signals on BTC 1D when ADX crosses from compression (<20)
 into trend (>=25). Direction is close-vs-EMA(50). Exit on ADX < 20 (trend
 dies), direction-flip, or per-variant stop loss.
 
-This is a SHADOW-ONLY service. It creates phantom trades tagged with the
+This is a paper-ONLY service. It creates phantom trades tagged with the
 caller's variant_id. No exchange orders are ever placed.
 
 Ticks idempotently — if called multiple times per day, only fires once per
@@ -220,13 +220,13 @@ def _adx_trade_exists_today(variant_id: str, today_utc: str) -> bool:
     return row is not None
 
 
-def _open_adx_shadow(variant: dict, direction: str, entry_price: float,
+def _open_adx_paper(variant: dict, direction: str, entry_price: float,
                      asset: str, allocation_pct: float, reason: dict,
                      leverage: float = 1.0) -> str:
-    """Open an S-003 shadow trade — delegates to strategies.trades.open_shadow_trade.
+    """Open an S-003 paper trade — delegates to strategies.trades.open_paper_trade.
     ADX exits on signal (ADX < 20) so no scheduled exit_time is set."""
-    from strategies.trades import open_shadow_trade
-    return open_shadow_trade(
+    from strategies.trades import open_paper_trade
+    return open_paper_trade(
         variant=variant, sleeve_name="ADX",
         asset=asset, direction=direction,
         entry_price=entry_price, allocation_pct=allocation_pct, leverage=leverage,
@@ -234,7 +234,7 @@ def _open_adx_shadow(variant: dict, direction: str, entry_price: float,
     )
 
 
-def _close_adx_shadow(trade_id: str, exit_price: float, reason: str) -> None:
+def _close_adx_paper(trade_id: str, exit_price: float, reason: str) -> None:
     """Sleeve close — delegates to strategies.trades.close_perp_trade. Kept as a
     thin wrapper so ``strategies.support.margin_check._load_close_fn`` can
     resolve it by sleeve."""
@@ -246,7 +246,7 @@ def _close_adx_shadow(trade_id: str, exit_price: float, reason: str) -> None:
 # ─── Public tick ─────────────────────────────────────────────────────────────
 
 def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
-    """Evaluate today's S-003 signal and open/close shadow trades for this
+    """Evaluate today's S-003 signal and open/close paper trades for this
     variant. Returns a status dict (for logging).
 
     variant:    registry row (dict with id, capital_usdt, ...)
@@ -301,7 +301,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
         hit, pnl_pct = is_sl_hit(tr["direction"], float(tr["entry_price"]),
                                  current_price, sl_price_thresh)
         if hit:
-            _close_adx_shadow(tr["id"], current_price,
+            _close_adx_paper(tr["id"], current_price,
                               f"stop_loss {pnl_pct:.2f}%")
             log.info(f"[adx {variant['id']}] SL hit: closed {tr['id']} "
                      f"{tr['direction']} at {current_price:.2f} "
@@ -319,7 +319,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     # Step 3: Exit signal — close ALL remaining open ADX trades if ADX < 20.
     if open_trades and sig["exit_sig"]:
         for tr in open_trades:
-            _close_adx_shadow(tr["id"], current_price, "ADX < 20")
+            _close_adx_paper(tr["id"], current_price, "ADX < 20")
             log.info(f"[adx {variant['id']}] ADX exit: closed {tr['id']} "
                      f"at {current_price:.2f}")
         open_trades = []
@@ -345,7 +345,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
         # Close every trade whose direction disagrees with the new signal.
         for tr in list(open_trades):
             if tr["direction"] != new_dir:
-                _close_adx_shadow(tr["id"], current_price, "direction flip")
+                _close_adx_paper(tr["id"], current_price, "direction flip")
                 log.info(f"[adx {variant['id']}] reversal: closed {tr['id']} "
                          f"{tr['direction']} -> new {new_dir}")
                 open_trades.remove(tr)
@@ -370,7 +370,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                 "stop_loss_pct": stop_loss_pct,
                 "sl_semantic_price_thresh_pct": sl_price_thresh,
             }
-            tid = _open_adx_shadow(variant, new_dir, entry_price, "BTC",
+            tid = _open_adx_paper(variant, new_dir, entry_price, "BTC",
                                    alloc_pct, reason, leverage=leverage)
             log.info(f"[adx {variant['id']}] opened {tid} BTC {new_dir} @ "
                      f"{entry_price:.2f} (ADX={sig['adx']}, EMA50={sig['ema']}, "

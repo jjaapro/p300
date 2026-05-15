@@ -83,7 +83,7 @@ notes on each item. Brief index:
 | `.ipynb` conversion of `studies/notebooks/*.py` | Mechanical / cosmetic | None | User flagged as low priority during the proposal. |
 | `run.py` → `bot.py` redesign | Mechanical + scope | Low | Drops `--mode sim` (splits to `studies/simulation/sim.py`), always-on feed, drops `tools/p300_run.ps1`. Wasn't part of "build the orchestrator". |
 | Real orchestrator architecture | **Design + impl** | Medium | Cross-sleeve allocation, ML gating, portfolio vol target, margin enforcement, conflict resolution, signal aggregation. Multiple design questions; warrants its own focused effort. |
-| `SHADOW` → `paper` rename | Code + DB migration | Medium | Touches live paper-trade rows in `dashboard.db`. Needs careful migration order. |
+| `paper` → `paper` rename | Code + DB migration | Medium | Touches live paper-trade rows in `dashboard.db`. Needs careful migration order. |
 | DB consolidation (`trader.db` + `dashboard.db` → `prod.db`) | DB migration | Medium | Hot DBs; needs schema design + migration script. |
 | Doc sweep (PORTFOLIO / README / MANUAL / OPERATIONS) | Doc rewrite | Low | User flagged "messy and hard to read" — readability rewrite, not just path-fix. Last so all paths settle first. |
 
@@ -94,7 +94,7 @@ notes on each item. Brief index:
 - `strategies/support/` holds shared services (regime, ml_gate, voltarget, margin sim, price feed, cost model) usable by any sleeve.
 - No more Core/Tactical split — all sleeves are equal under the orchestrator. Regime weighting and ML gating apply to every sleeve.
 - `tools/` directory removed entirely; redistributed by purpose.
-- `SHADOW` terminology to be dropped everywhere; replaced by `paper` / `live` trade tag. **(Code rewrite is phase 2.)**
+- `paper` terminology to be dropped everywhere; replaced by `paper` / `live` trade tag. **(Code rewrite is phase 2.)**
 - **Uniform sleeve internal layout**: every sleeve has at minimum `signal.py` + `config.py` + `README.md` + `__init__.py`. Sleeve-specific extras (e.g. `chart.py`, `archive_rebuild.py`, sleeve-specific data fetchers) sit alongside. Unit tests at `tests/unit/<sleeve>/`, not inside the sleeve folder.
 - **`prod.db` is one SQLite file** holding everything paper+live: market data tables, `trades`, observers/journals. Today's `trader.db` + `dashboard.db` consolidate into it. **(Phase 2.)**
 - **Orchestrator tick cadence: 1 minute.** Lowest timeframe used is 1m candles, so the loop wakes once per minute after the bar closes.

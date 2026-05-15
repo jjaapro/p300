@@ -14,7 +14,7 @@ Currently exposes:
                                                      with the threshold check
 
 Other shared concerns (sizing math, variant capital lookup, INSERT) already
-live in ``strategies.trades.open_shadow_trade``; close mechanics live in
+live in ``strategies.trades.open_paper_trade``; close mechanics live in
 ``strategies.trades.close_perp_trade`` / ``close_carry_trade``.
 """
 from __future__ import annotations

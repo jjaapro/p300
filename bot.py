@@ -1,8 +1,8 @@
 """P-300 Aggressive 2.0 — standalone paper-trading bot.
 
 Runs the orchestrator on a 60-second loop. Each tick dispatches all
-sleeves of the SHADOW variant; sleeves emit phantom trades into the
-``trades`` table tagged ``execution_mode='SHADOW'`` and
+sleeves of the paper variant; sleeves emit phantom trades into the
+``trades`` table tagged ``execution_mode='paper'`` and
 ``strategy_variant='p300_aggressive_v2_v1_0'``. Realized PnL is the
 sum of the trade ledger; there is no parallel theoretical-PnL track.
 
@@ -149,13 +149,13 @@ def _ensure_variant_registered() -> None:
     if not v["enabled"]:
         log.error(f"Variant {VARIANT_ID} is disabled — cannot tick.")
         sys.exit(2)
-    if v["status"] != "SHADOW":
-        log.warning(f"Variant {VARIANT_ID} status = {v['status']} (expected SHADOW)")
+    if v["status"] != "paper":
+        log.warning(f"Variant {VARIANT_ID} status = {v['status']} (expected paper)")
     log.info(f"Variant {VARIANT_ID} OK: {v['short_name']} ({v['status']})")
 
 
 def _print_open_trades() -> None:
-    """Show every open shadow trade across enabled variants at startup so
+    """Show every open paper trade across enabled variants at startup so
     the operator can see what positions the bot is inheriting (e.g. from a
     prior session). Reads via ``strategies.support.db.DASH_DB`` so a sim-mode
     redirection of that constant is honoured here too."""
@@ -163,7 +163,7 @@ def _print_open_trades() -> None:
     from strategies.support import db as _db_mod
     db_path = _db_mod.DASH_DB
     if not db_path.exists():
-        log.info("=== open shadow trades: dashboard.db missing ===")
+        log.info("=== open paper trades: dashboard.db missing ===")
         return
     con = sqlite3.connect(str(db_path))
     con.row_factory = sqlite3.Row
@@ -172,16 +172,16 @@ def _print_open_trades() -> None:
                t.entry_price, t.size_usdt, t.leverage,
                t.actual_entry_time, t.exit_time
         FROM trades t JOIN variants v ON t.strategy_variant = v.id
-        WHERE t.execution_mode='SHADOW' AND t.status='open'
+        WHERE t.execution_mode='paper' AND t.status='open'
           AND v.enabled=1
         ORDER BY t.actual_entry_time
     """).fetchall()
     con.close()
 
     if not rows:
-        log.info("=== open shadow trades: none ===")
+        log.info("=== open paper trades: none ===")
         return
-    log.info(f"=== open shadow trades: {len(rows)} ===")
+    log.info(f"=== open paper trades: {len(rows)} ===")
     for r in rows:
         entry = (r["actual_entry_time"] or "")[:16].replace("T", " ")
         exit_due = (r["exit_time"] or "")[:16].replace("T", " ")

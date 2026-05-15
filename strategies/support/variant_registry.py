@@ -2,10 +2,10 @@
 
 Ported from the original dashboard with dashboard-only helpers trimmed
 (metrics / attribution / get_events). The P-300 bot only needs register /
-list / get / get_active_shadows.
+list / get / get_active_paper_variants.
 
 A "variant" is a portfolio (or portfolio modification) that the bot can
-track. SHADOW variants produce phantom trades tagged with their variant_id
+track. paper variants produce phantom trades tagged with their variant_id
 and never touch an exchange.
 """
 from __future__ import annotations
@@ -52,7 +52,7 @@ def init_schema() -> None:
             kind TEXT NOT NULL CHECK (kind IN ('full_portfolio', 'signal_overlay')),
             parent_variant_id TEXT,
             version TEXT NOT NULL,
-            status TEXT NOT NULL DEFAULT 'SHADOW',
+            status TEXT NOT NULL DEFAULT 'paper',
             is_primary INTEGER NOT NULL DEFAULT 0,
             capital_usdt REAL,
             color TEXT,
@@ -120,12 +120,12 @@ def get_primary() -> dict | None:
     return _row_to_dict(row) if row else None
 
 
-def get_active_shadows() -> list[dict]:
-    """Enabled SHADOW variants that should tick each minute."""
+def get_active_paper_variants() -> list[dict]:
+    """Enabled paper variants that should tick each minute."""
     con = _con()
     rows = con.execute(
         "SELECT * FROM variants WHERE enabled = 1 AND is_primary = 0 "
-        "AND status = 'SHADOW' "
+        "AND status = 'paper' "
         "ORDER BY created_at"
     ).fetchall()
     con.close()
@@ -140,7 +140,7 @@ def register_variant(
     version: str,
     spec: dict,
     long_name: str | None = None,
-    status: str = "SHADOW",
+    status: str = "paper",
     is_primary: bool = False,
     capital_usdt: float | None = None,
     color: str | None = None,

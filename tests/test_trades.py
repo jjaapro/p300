@@ -1,4 +1,4 @@
-"""strategies.trades — close mechanics for shadow trades."""
+"""strategies.trades — close mechanics for paper trades."""
 from __future__ import annotations
 
 import sqlite3
@@ -184,7 +184,7 @@ def trades_db(tmp_path, monkeypatch):
          current_qty, current_leverage, current_size_usdt, realized_pnl_usdt)
         VALUES
         ('TX-1','SJ','BTC','LONG','TEST',5.0,1.0,
-         '2024-01-01T00:00:00+00:00','open','SHADOW',
+         '2024-01-01T00:00:00+00:00','open','paper',
          'test_variant','2024-01-01T00:00:00+00:00',
          100.0,1000.0,10.0,'',
          10.0,1.0,1000.0,0)
@@ -250,7 +250,7 @@ def test_close_perp_trade_end_to_end(trades_db, monkeypatch):
 
 
 def test_close_perp_trade_unknown_id_silent(trades_db):
-    """Unknown trade id is a no-op (matches legacy _close_X_shadow behavior)."""
+    """Unknown trade id is a no-op (matches legacy _close_X_paper behavior)."""
     clock.set_simulated_now(datetime(2024, 1, 1, 1, 0, tzinfo=timezone.utc))
     try:
         trades.close_perp_trade("DOES-NOT-EXIST", exit_price=110.0,
@@ -322,7 +322,7 @@ def test_close_perp_trade_disabled_funding_omits_funding_in_notes(trades_db):
     assert "funding=" not in r[0]
 
 
-# ─── open_shadow_trade ───────────────────────────────────────────────────────
+# ─── open_paper_trade ───────────────────────────────────────────────────────
 
 @pytest.fixture
 def empty_trades_db(tmp_path, monkeypatch):
@@ -344,11 +344,11 @@ def _stub_paper_account_default(monkeypatch):
                          lambda key: 10000.0 if key == "paper_account_usdt" else None)
 
 
-def test_open_shadow_trade_inserts_row_with_expected_fields(empty_trades_db, monkeypatch):
+def test_open_paper_trade_inserts_row_with_expected_fields(empty_trades_db, monkeypatch):
     _stub_paper_account_default(monkeypatch)
     clock.set_simulated_now(datetime(2024, 6, 15, 12, 0, tzinfo=timezone.utc))
     try:
-        tid = trades.open_shadow_trade(
+        tid = trades.open_paper_trade(
             variant={"id": "test_variant", "capital_usdt": 50000.0},
             sleeve_name="ADX",
             asset="BTC", direction="LONG",
@@ -372,7 +372,7 @@ def test_open_shadow_trade_inserts_row_with_expected_fields(empty_trades_db, mon
     assert row["strategy"] == "ADX"
     assert row["regime"] == "uncertain"
     assert row["status"] == "open"
-    assert row["execution_mode"] == "SHADOW"
+    assert row["execution_mode"] == "paper"
     assert row["strategy_variant"] == "test_variant"
     assert row["allocation_pct"] == 15.0
     assert row["leverage"] == 5.0
@@ -380,12 +380,12 @@ def test_open_shadow_trade_inserts_row_with_expected_fields(empty_trades_db, mon
     assert row["exit_time"].startswith("2099")
 
 
-def test_open_shadow_trade_with_scheduled_exit(empty_trades_db, monkeypatch):
+def test_open_paper_trade_with_scheduled_exit(empty_trades_db, monkeypatch):
     _stub_paper_account_default(monkeypatch)
     clock.set_simulated_now(datetime(2024, 6, 15, 12, 0, tzinfo=timezone.utc))
     exit_dt = datetime(2024, 6, 15, 19, 30, tzinfo=timezone.utc)
     try:
-        tid = trades.open_shadow_trade(
+        tid = trades.open_paper_trade(
             variant={"id": "fomc_test", "capital_usdt": 10000.0},
             sleeve_name="FOMC",
             asset="BTC", direction="LONG",
@@ -403,13 +403,13 @@ def test_open_shadow_trade_with_scheduled_exit(empty_trades_db, monkeypatch):
     assert r[1] == "T-10h"  # regime_value override (not reason["regime"])
 
 
-def test_open_shadow_trade_id_increments(empty_trades_db, monkeypatch):
+def test_open_paper_trade_id_increments(empty_trades_db, monkeypatch):
     """Two opens get sequential SJ ids; third skips to SJ-0003."""
     _stub_paper_account_default(monkeypatch)
     clock.set_simulated_now(datetime(2024, 6, 15, 12, 0, tzinfo=timezone.utc))
     try:
         ids = [
-            trades.open_shadow_trade(
+            trades.open_paper_trade(
                 variant={"id": "v", "capital_usdt": 10000.0},
                 sleeve_name="ADX", asset="BTC", direction="LONG",
                 entry_price=70000.0, allocation_pct=10.0, leverage=1.0,
@@ -422,12 +422,12 @@ def test_open_shadow_trade_id_increments(empty_trades_db, monkeypatch):
     assert ids == ["SJ-0001", "SJ-0002", "SJ-0003"]
 
 
-def test_open_shadow_trade_zero_entry_price_yields_zero_qty(empty_trades_db, monkeypatch):
+def test_open_paper_trade_zero_entry_price_yields_zero_qty(empty_trades_db, monkeypatch):
     """Defensive: bad price input must not crash with ZeroDivisionError."""
     _stub_paper_account_default(monkeypatch)
     clock.set_simulated_now(datetime(2024, 6, 15, 12, 0, tzinfo=timezone.utc))
     try:
-        tid = trades.open_shadow_trade(
+        tid = trades.open_paper_trade(
             variant={"id": "v", "capital_usdt": 10000.0},
             sleeve_name="ADX", asset="BTC", direction="LONG",
             entry_price=0.0, allocation_pct=10.0, leverage=1.0,
@@ -469,7 +469,7 @@ def multi_strategy_db(tmp_path, monkeypatch):
             allocation_pct, leverage, entry_time, exit_time, status, execution_mode,
             strategy_variant, actual_entry_time, entry_price, size_usdt, qty,
             current_qty, current_leverage, current_size_usdt)
-            VALUES (?, 'SJ', ?, 'LONG', ?, 5.0, 1.0, ?, '2099', ?, 'SHADOW', ?, ?,
+            VALUES (?, 'SJ', ?, 'LONG', ?, 5.0, 1.0, ?, '2099', ?, 'paper', ?, ?,
                     100.0, 1000.0, 10.0, 10.0, 1.0, 1000.0)""",
             (tid, asset, strat, et, status, variant, et))
     con.commit()
@@ -507,12 +507,12 @@ def test_get_open_trades_excludes_closed_trades(multi_strategy_db):
     assert "A2" not in ids
 
 
-def test_open_shadow_trade_falls_back_to_paper_account_default(empty_trades_db, monkeypatch):
+def test_open_paper_trade_falls_back_to_paper_account_default(empty_trades_db, monkeypatch):
     """If variant has no capital_usdt, falls back to paper_account_usdt config."""
     _stub_paper_account_default(monkeypatch)
     clock.set_simulated_now(datetime(2024, 6, 15, 12, 0, tzinfo=timezone.utc))
     try:
-        tid = trades.open_shadow_trade(
+        tid = trades.open_paper_trade(
             variant={"id": "novalue"},  # no capital_usdt
             sleeve_name="ADX", asset="BTC", direction="LONG",
             entry_price=100.0, allocation_pct=10.0, leverage=1.0,

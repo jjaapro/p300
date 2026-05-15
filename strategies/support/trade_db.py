@@ -7,7 +7,7 @@ Minimal subset of the original dashboard `trade_db.py`:
     engine make at runtime.
 
 All dashboard-only extras (fills, audit_log, heartbeat, recovery_log,
-chart markers/bands/hover helpers) are omitted — P-300 SHADOW never calls
+chart markers/bands/hover helpers) are omitted — P-300 paper never calls
 them. Re-add on demand.
 """
 from __future__ import annotations

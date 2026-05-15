@@ -10,7 +10,7 @@ Crucially this script is **side-effect free** with respect to the trading
 system:
 
   * No row written to ``ai_quant_decisions``.
-  * No shadow trade opened or closed.
+  * No paper trade opened or closed.
   * No effect on the once-per-day idempotency gate or the daily cost cap
     (those gates read the journal table, which we don't touch).
   * ``AI_QUANT_ENABLED`` does not need to be set; gates are bypassed.

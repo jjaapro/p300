@@ -1,5 +1,5 @@
 """
-S-096 Thu Bear V3 enhanced — live shadow service.
+S-096 Thu Bear V3 enhanced — live paper service.
 
 Shorts BTC + ETH at Thursday 00:00 UTC and closes at Friday 01:00 UTC,
 conditional on Wednesday's (previous-day) regime being one of
@@ -30,7 +30,7 @@ Per-variant params:
 
 Idempotent: only opens once per Thursday, closes at the end-of-Thursday tick
 or on stop loss. Positions are scoped to the variant_id — multiple variants
-composing S-096 each get their own independent shadow trades.
+composing S-096 each get their own independent paper trades.
 """
 from __future__ import annotations
 
@@ -155,17 +155,17 @@ def _get_open_thu_bear_trades(variant_id: str, asset: str) -> list[dict]:
     return get_open_trades(variant_id, "THU_BEAR", asset=asset)
 
 
-def _open_thu_bear_shadow(variant: dict, asset: str, entry_price: float,
+def _open_thu_bear_paper(variant: dict, asset: str, entry_price: float,
                          allocation_pct: float, reason: dict,
                          leverage: float = 1.0) -> str:
-    """Open a THU_BEAR shadow trade — delegates to strategies.trades.open_shadow_trade.
+    """Open a THU_BEAR paper trade — delegates to strategies.trades.open_paper_trade.
     Scheduled exit: Friday 01:00 UTC (matches Pine reference). The engine's
     close-due loop picks this up as a fallback if our own EXIT_HOUR tick misses."""
-    from strategies.trades import open_shadow_trade
+    from strategies.trades import open_paper_trade
     now = clock.now_utc()
     exit_dt = (now + timedelta(days=1)).replace(
         hour=EXIT_HOUR, minute=0, second=0, microsecond=0)
-    return open_shadow_trade(
+    return open_paper_trade(
         variant=variant, sleeve_name="THU_BEAR",
         asset=asset, direction="SHORT",
         entry_price=entry_price, allocation_pct=allocation_pct, leverage=leverage,
@@ -173,7 +173,7 @@ def _open_thu_bear_shadow(variant: dict, asset: str, entry_price: float,
     )
 
 
-def _close_thu_bear_shadow(trade_id: str, exit_price: float, reason: str) -> None:
+def _close_thu_bear_paper(trade_id: str, exit_price: float, reason: str) -> None:
     """Sleeve close — delegates to strategies.trades.close_perp_trade."""
     from strategies.trades import close_perp_trade
     close_perp_trade(trade_id, exit_price, reason, sleeve_name="THU_BEAR",
@@ -235,7 +235,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             hit, pnl = is_sl_hit(tr["direction"], float(tr["entry_price"]),
                                  current, sl_price_thresh)
             if hit:
-                _close_thu_bear_shadow(tr["id"], current,
+                _close_thu_bear_paper(tr["id"], current,
                                         f"stop_loss {pnl:.2f}%")
                 actions.append({"status": "sl_closed", "asset": asset,
                                  "trade_id": tr["id"], "pnl_pct": pnl})
@@ -288,7 +288,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                 "sl_semantic_price_thresh_pct": sl_price_thresh,
                 "regime": regime,
             }
-            tid = _open_thu_bear_shadow(variant, asset, price, per_asset_alloc,
+            tid = _open_thu_bear_paper(variant, asset, price, per_asset_alloc,
                                          reason, leverage=leverage)
             # Track in memory so a subsequent within-tick exit pass sees it.
             open_by_asset.setdefault(asset, []).append({
@@ -314,7 +314,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             if price is None:
                 continue
             for tr in opens:
-                _close_thu_bear_shadow(tr["id"], price, "scheduled_close_friday")
+                _close_thu_bear_paper(tr["id"], price, "scheduled_close_friday")
                 actions.append({"status": "scheduled_closed", "asset": asset,
                                  "trade_id": tr["id"], "exit_price": price})
                 log.info(f"[thu_bear {variant['id']}] Friday-close {tr['id']} "

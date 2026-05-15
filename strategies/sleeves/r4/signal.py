@@ -11,8 +11,8 @@ sized off ``strategies.support.jplus_inputs.today_inputs()``:
 All handlers:
   - use ``strategies.support.price_feed.get_current_price`` for live execution price
     (latest closed 1m bar; ~30s lag from instant);
-  - open trades via ``strategies.trades.open_shadow_trade`` with
-    ``scheduled_exit_dt`` set so ``orchestrator._close_due_shadows``
+  - open trades via ``strategies.trades.open_paper_trade`` with
+    ``scheduled_exit_dt`` set so ``orchestrator._close_due_paper_trades``
     closes them at the right time;
   - are idempotent per UTC day via the ``trades`` table existence check.
 
@@ -64,7 +64,7 @@ def _has_trade_for_day(variant_id: str, strategy: str, day_iso: str) -> bool:
 
 def r4_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     """Open R4_BTC LONG at 06:00 UTC on Mon wk1-2, scheduled to close at
-    18:00 UTC same day. ``orchestrator._close_due_shadows`` handles the
+    18:00 UTC same day. ``orchestrator._close_due_paper_trades`` handles the
     close via ``scheduled_exit_dt``.
 
     Mon-only since 2026-05-08 — Wednesdays moved to ``r4_btc_v2_try_fire``
@@ -123,7 +123,7 @@ def r4_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     exit_dt = now.replace(hour=R4_BTC_EXIT_HOUR, minute=0,
                            second=0, microsecond=0)
     capital = float(variant.get("capital_usdt") or 10000)
-    tid = trades.open_shadow_trade(
+    tid = trades.open_paper_trade(
         variant=variant, sleeve_name=STRATEGY_R4_BTC,
         asset="BTC", direction="LONG",
         entry_price=price,
@@ -197,7 +197,7 @@ def r4_eth_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     exit_dt = tomorrow.replace(hour=R4_ETH_EXIT_HOUR, minute=0,
                                  second=0, microsecond=0)
     capital = float(variant.get("capital_usdt") or 10000)
-    tid = trades.open_shadow_trade(
+    tid = trades.open_paper_trade(
         variant=variant, sleeve_name=STRATEGY_R4_ETH,
         asset="ETH", direction="LONG",
         entry_price=price,
@@ -273,7 +273,7 @@ def _r4_v2_try_fire(variant: dict, asset: str, strategy: str,
     exit_dt = now.replace(hour=R4_V2_EXIT_HOUR, minute=0,
                            second=0, microsecond=0)
     capital = float(variant.get("capital_usdt") or 10000)
-    tid = trades.open_shadow_trade(
+    tid = trades.open_paper_trade(
         variant=variant, sleeve_name=strategy,
         asset=asset, direction="LONG",
         entry_price=price,

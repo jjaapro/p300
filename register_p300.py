@@ -3,9 +3,9 @@
 # The upstream `trader` research repo's backtest results are considered
 # compromised; this registration does NOT seed any daily returns and does
 # NOT claim any Sharpe / CAGR / MDD figures. Performance is measured by
-# the replay + live SHADOW trade-ledger the bot itself produces.
+# the replay + live paper trade-ledger the bot itself produces.
 #
-# What this variant runs live (SHADOW mode only):
+# What this variant runs live (paper mode only):
 #   Core J+ (50%) — six sub-sleeves dispatched per-tick like tactical:
 #     JPLUS_R4_BTC     — Mon wk1-2 06→18 UTC, BTC long, 2.5× inner × vol-lev
 #     JPLUS_R4_ETH     — Tue 20→Wed 20 UTC, ETH long, 2.5× inner × vol-lev
@@ -125,7 +125,7 @@ def build_spec() -> dict:
             # AI_QUANT_ENABLED env var (strategies/sleeves/ai_quant/signal.py
             # checks it and short-circuits to status='disabled' otherwise).
             # Set to 2.0% as a phase-1 experiment cap; raise to 5.0% only
-            # after 60+ days of forward shadow PnL net of API cost. The
+            # after 60+ days of forward paper PnL net of API cost. The
             # `deterministic: False` flag is consumed by backtest_runner
             # to skip this sleeve on historical replay (the LLM is non-
             # deterministic — replay would produce different decisions
@@ -289,7 +289,7 @@ def register(dash_db: str | None = None) -> None:
         "full_portfolio",
         None,
         "1.0",
-        "SHADOW",
+        "paper",
         0,
         10000.0,
         "#7c2d12",
@@ -319,13 +319,13 @@ def register(dash_db: str | None = None) -> None:
                     "gold_included": False,
                     "fomc_added_at": "2026-04-30",
                     "core_umbrella_removed_at": "2026-05-10"}),
-        "Registered P-300 Aggressive 2.0 1.0 (SHADOW) — 13 live sleeves "
+        "Registered P-300 Aggressive 2.0 1.0 (paper) — 13 live sleeves "
         "(6 tactical + 6 J+ sub-sleeves + AI_QUANT). Realized-PnL only; "
         "JPLUS-CORE umbrella + simulator daily-return accrual removed.",
     ))
     con.commit()
 
-    print(f"  Variant {VARIANT_ID} registered as SHADOW.")
+    print(f"  Variant {VARIANT_ID} registered as paper.")
     # Legacy DBs may still have variant_daily_returns rows from before
     # Phase 3 deleted the daily-return accrual; print the count only if
     # the table is present.

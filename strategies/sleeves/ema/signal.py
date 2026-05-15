@@ -45,7 +45,7 @@ def _open_continuous(variant: dict, asset: str, direction: str,
                       mode: str, ema_p: int, now: datetime) -> str:
     """Open a continuous EMA_BTC trade (no scheduled exit; closed on
     FLIP / weekly-cross-to-zero / regime exit)."""
-    return trades.open_shadow_trade(
+    return trades.open_paper_trade(
         variant=variant, sleeve_name=STRATEGY_EMA_BTC,
         asset=asset, direction=direction,
         entry_price=price,

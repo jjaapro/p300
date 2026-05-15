@@ -34,7 +34,7 @@ all 530 tests pass.
 `strategies/orchestrator.py:436` imports `check_liquidations_for_variant`
 from `backtest_runner.py`. That's a live module depending on a
 research module — a layer inversion. The function is the orchestration
-wrapper that walks open shadow trades, calls
+wrapper that walks open paper trades, calls
 `strategies.support.margin_check.check_liquidations_for_variant` (the
 math), then per-event calls the sleeve's close_fn. The math is already
 in `support/`; the orchestration wrapper belongs there too.
@@ -417,10 +417,10 @@ explicit test.
 
 ### Dependencies
 
-- Independent of [P2.5 / P2.6](#p25--shadow--paper-rename) (those touch
+- Independent of [P2.5 / P2.6](#p25--paper--paper-rename) (those touch
   the data layer; this touches orchestration).
-- Should land before the SHADOW rename so the new orchestrator doesn't
-  inherit the `execution_mode='SHADOW'` literal.
+- Should land before the paper rename so the new orchestrator doesn't
+  inherit the `execution_mode='paper'` literal.
 - P2.4a (allocation) is a precondition for P2.4d (margin enforcement)
   and P2.4f (signal aggregation) — both depend on a single source of
   truth for per-sleeve sizing.
@@ -435,62 +435,41 @@ changed semantics).
 
 ---
 
-## P2.5 — `SHADOW` → `paper` rename across code + DB
+## P2.5 — `SHADOW` → `paper` rename across code + DB ✅
 
 **Captured:** 2026-05-14.
-**Status:** ready when the operator is OK pausing live paper trading
-for the migration window (or running the migration online).
+**Status:** completed 2026-05-15. Code rename done in one mechanical
+pass — `'SHADOW'` literals across ~30 files swapped for `'paper'`,
+identifiers renamed (`open_shadow_trade` → `open_paper_trade`,
+`_close_X_shadow` → `_close_X_paper`, `_close_due_paper_trades`,
+`get_active_paper_variants`, etc.), test names updated, docs/comments
+updated where prose still made sense ("paper trades" survives as
+phrasing). DB migration script at
+`studies/simulation/migrate_shadow_to_paper.py` — idempotent, dry-run
+mode supported. Applied to `data/dashboard.db` (3,451 trades + 41
+variants migrated; backup at `data/dashboard.db.bak_pre_paper_rename`).
+AUDIT_*.md files left frozen with the old terminology by design.
 
-### Motivation
+### Notes
 
-User directive 2026-05-14:
-> "We should also drop the name 'shadow'; we have paper trades and we
->  have live trades. Only separation for these is available connection
->  to the exchange and we haven't even implemented that yet."
+Original motivation captured 2026-05-14: drop the name "shadow"; the
+only real distinction is whether the bot has an exchange connection
+(paper vs live). Memory:
+[[feedback_naming_paper_not_shadow]].
 
-The `execution_mode='SHADOW'` literal exists in code (~50 sites) and
-in `data/dashboard.db` (every trade row).
+Mechanically the rename split into:
+- Code-side: `'SHADOW'` literals → `'paper'`; identifier renames
+  (`open_paper_trade`, `_close_X_paper`, `_close_due_paper_trades`,
+  `get_active_paper_variants`, `_create_paper_trade`,
+  `_paper_trade_exists`); test-fn names; docstring / comment wording.
+  Ran via a one-shot `c:/tmp/rename_shadow_to_paper.py` script
+  (regex + word-boundary identifier swap; AUDIT_*.md skipped).
+- DB-side: `studies/simulation/migrate_shadow_to_paper.py` runs
+  `UPDATE trades` + `UPDATE variants` for the two tables that hold
+  the enum. Idempotent, dry-run supported. Backup before running.
 
-### Scope
-
-**Code rewrites:**
-- `strategies/trades.py` — `open_shadow_trade`, `close_perp_trade`,
-  every internal `execution_mode='SHADOW'` literal.
-- Each sleeve's `signal.py` — references like
-  `from strategies.trades import open_shadow_trade`.
-- `strategies/orchestrator.py` — the active-shadow-variants iteration
-  (`get_active_shadows`).
-- `strategies/support/variant_registry.py` — `status='SHADOW'` literal
-  in variant rows.
-- `strategies/support/trade_db.py` — schema default + comment.
-- `strategies/support/strategy_health.py` — filter on `execution_mode`.
-- `backtest_runner.py` — replay variants are SHADOW-status today.
-- All tests that hard-code `SHADOW`.
-
-**DB migration (one-shot, idempotent):**
-- `UPDATE trades SET execution_mode='paper' WHERE execution_mode='SHADOW';`
-- `UPDATE variants SET status='paper' WHERE status='SHADOW';`
-- Same on `data/dashboard.db` (live) and any sim DBs.
-
-**Test fixtures:** any test that builds a trade row with
-`execution_mode='SHADOW'` updates to `'paper'`.
-
-**Naming decision:** confirm enum values are `paper` and `live` (two
-values, mutually exclusive). The trade row gets one or the other; live
-means "connected to an exchange that filled the order".
-
-### Dependencies
-
-- After P2.4 (real orchestrator) ideally, so the new code doesn't ship
-  with `SHADOW` literals and then immediately get rewritten.
-- Before P2.6 (DB consolidation) so the renamed values land in the
-  single consolidated DB rather than getting migrated twice.
-
-### Risk
-
-Medium. The DB migration must be coordinated with bot uptime —
-running the UPDATE while a tick is mid-write is unsafe. Standard
-approach: stop bot, run migration, restart.
+The naming decision is confirmed: `paper` and `live` are the two
+enum values; the trade row gets one or the other.
 
 ---
 
@@ -532,7 +511,7 @@ simpler.
 
 ### Dependencies
 
-- After P2.5 (SHADOW rename) so we migrate once with clean enum values.
+- After P2.5 (paper rename) so we migrate once with clean enum values.
 - Independent of P2.4 (orchestrator).
 
 ### Risk
@@ -562,7 +541,7 @@ enough — a readability rewrite is needed.
 
 For each of `PORTFOLIO.md`, `README.md`, `MANUAL.md`, `OPERATIONS.md`:
 - Update every path link to the new location.
-- Drop content that referred to dropped pieces (`SHADOW` terminology
+- Drop content that referred to dropped pieces (`paper` terminology
   after P2.5, `services/` after the restructure, `jplus/` after step
   6c.2, `tools/` after step 8, `--mode sim` after P2.3).
 - Re-organize sections for the reader to find what they need quickly

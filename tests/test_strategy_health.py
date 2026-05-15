@@ -200,7 +200,7 @@ def synthetic_db(tmp_path, monkeypatch):
              entry_price, exit_price, size_usdt, qty, pnl_usdt, pnl_pct,
              current_qty, current_leverage, current_size_usdt, realized_pnl_usdt)
             VALUES (?, 'SJ', 'BTC', 'LONG', 'ADX', 5.0, 1.0,
-                    ?, ?, 'closed', 'SHADOW', 'syn_v',
+                    ?, ?, 'closed', 'paper', 'syn_v',
                     ?, ?, 100.0, 110.0, 1000.0, 10.0, ?, ?,
                     0, 1.0, 0, ?)
         """, (tid, entry, exit_, entry, exit_, pnl, pnl/10.0, pnl))
@@ -312,7 +312,7 @@ def test_trades_daily_returns_includes_jplus_strategies(tmp_path, monkeypatch):
              current_qty, current_leverage, current_size_usdt, realized_pnl_usdt)
             VALUES (?, 'SJ', 'BTC', 'LONG', ?, 15.0, 5.0,
                     '2024-06-01T06:00:00+00:00', '2024-06-01T18:00:00+00:00',
-                    'closed', 'SHADOW', 'vz',
+                    'closed', 'paper', 'vz',
                     '2024-06-01T06:00:00+00:00', '2024-06-01T18:00:00+00:00',
                     100.0, 110.0, 1500.0, 15.0, ?, 0,
                     0, 5.0, 0, ?)

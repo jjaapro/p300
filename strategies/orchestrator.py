@@ -1,23 +1,23 @@
 """
-Variant engine — scheduler tick that drives shadow variants alongside the prod
+Variant engine — scheduler tick that drives paper variants alongside the prod
 portfolio.
 
 Invariants:
   - The PRIMARY variant flows through execution_service (PAPER/LIVE, real sizing,
     real reconciliation). This engine does NOT touch primary execution.
-  - SHADOW variants produce phantom trades only. They never call
+  - paper variants produce phantom trades only. They never call
     exchange_service; they never enter execution_service._execute_entry.
-  - Each shadow trade is tagged with strategy_variant=<variant_id> and
-    execution_mode='SHADOW'.
+  - Each paper trade is tagged with strategy_variant=<variant_id> and
+    execution_mode='paper'.
 
-V1 scope: R4 window shadows (signal_overlay variants that mod R4 BTC / R4 ETH
+V1 scope: R4 window paper trades (signal_overlay variants that mod R4 BTC / R4 ETH
 entry hours and sizing multipliers). The existing jplus overlay (P-100 J+ 1.0)
-is now just one row in the registry — the engine iterates all enabled shadow
+is now just one row in the registry — the engine iterates all enabled paper
 signal_overlay variants and fires their windows.
 
-Full-portfolio shadow continuous-sleeve replication (phantom EMA/ETH_SPOT/GOLD
+Full-portfolio paper continuous-sleeve replication (phantom EMA/ETH_SPOT/GOLD
 positions per variant) is deferred. When a full_portfolio variant is enabled,
-it still gets R4 shadow trades via its resolved spec, but continuous sleeves
+it still gets R4 paper trades via its resolved spec, but continuous sleeves
 reuse the parent variant's ledger.
 """
 from __future__ import annotations
@@ -87,7 +87,7 @@ def r4_window_for(variant: dict, sleeve: str) -> dict | None:
     return out
 
 
-# ─── Shadow tick ─────────────────────────────────────────────────────────────
+# ─── Paper tick ─────────────────────────────────────────────────────────────
 
 def _is_r4_day(dt: datetime) -> bool:
     return 1 <= dt.day <= 14
@@ -105,9 +105,9 @@ def _floor_to_hour(dt: datetime) -> datetime:
     return dt.replace(minute=0, second=0, microsecond=0)
 
 
-def _shadow_trade_exists(variant_id: str, strategy: str, entry_iso: str,
+def _paper_trade_exists(variant_id: str, strategy: str, entry_iso: str,
                          asset: str) -> bool:
-    """Check if a shadow trade already exists for (variant_id, strategy, entry_time, asset)."""
+    """Check if a paper trade already exists for (variant_id, strategy, entry_time, asset)."""
     import sqlite3
     con = sqlite3.connect(str(db.DASH_DB))
     try:
@@ -121,13 +121,13 @@ def _shadow_trade_exists(variant_id: str, strategy: str, entry_iso: str,
         con.close()
 
 
-def _create_shadow_trade(
+def _create_paper_trade(
     *, variant: dict, asset: str, direction: str, strategy: str,
     allocation_pct: float, leverage: float,
     entry_time_iso: str, exit_time_iso: str,
     entry_price: float, reason: dict,
 ) -> str:
-    """Insert a shadow open trade tagged with variant_id. Bypasses
+    """Insert a paper open trade tagged with variant_id. Bypasses
     execution_service entirely — never touches exchange."""
     import json
     import sqlite3
@@ -155,11 +155,11 @@ def _create_shadow_trade(
                 execution_mode, strategy_variant, actual_entry_time,
                 entry_price, size_usdt, qty, order_ids, notes)
             VALUES (?, 'SJ', ?, ?, ?, ?, ?, ?, ?, ?, 'open',
-                    'SHADOW', ?, ?, ?, ?, ?, ?, ?)
+                    'paper', ?, ?, ?, ?, ?, ?, ?)
         """, (tid, asset, direction, strategy, reason.get("regime", "unknown"),
               allocation_pct, leverage, entry_time_iso, exit_time_iso,
               variant["id"], now_iso, entry_price, size_usdt, qty,
-              json.dumps([f"SHADOW-{tid}"]),
+              json.dumps([f"paper-{tid}"]),
               json.dumps(reason, default=str)))
         con.commit()
     finally:
@@ -167,13 +167,13 @@ def _create_shadow_trade(
     return tid
 
 
-def _close_due_shadows(now_utc: datetime) -> None:
-    """Close any open shadow trade whose scheduled exit_time has passed.
+def _close_due_paper_trades(now_utc: datetime) -> None:
+    """Close any open paper trade whose scheduled exit_time has passed.
 
     SCOPE: only trades belonging to ENABLED variants. Replay variants are
     registered with enabled=0 (see backtest_runner.ensure_replay_variant)
     so the live engine does not touch their phantom trades. Without this
-    filter, the live tick sees a backtest's open shadow trade (with
+    filter, the live tick sees a backtest's open paper trade (with
     historical exit_time long past wall-clock now) and silently closes it
     at the live price — corrupting any backtest run while the live bot
     is up. This is the root cause of the SJ-1169/1506/1557/1562 leaks.
@@ -186,7 +186,7 @@ def _close_due_shadows(now_utc: datetime) -> None:
             "SELECT t.id, t.asset, t.strategy_variant, t.exit_time, t.entry_price, "
             "       t.qty, t.size_usdt, t.direction, t.strategy "
             "FROM trades t JOIN variants v ON t.strategy_variant = v.id "
-            "WHERE t.execution_mode = 'SHADOW' AND t.status = 'open' "
+            "WHERE t.execution_mode = 'paper' AND t.status = 'open' "
             "  AND v.enabled = 1"
         ).fetchall()
     finally:
@@ -206,7 +206,7 @@ def _close_due_shadows(now_utc: datetime) -> None:
             continue
         price = _get_current_price(t["asset"])
         if price is None:
-            log.warning(f"[shadow] no exit price for {t['id']} {t['asset']} — skipping")
+            log.warning(f"[paper] no exit price for {t['id']} {t['asset']} — skipping")
             continue
         trades.close_perp_trade(t["id"], price, "scheduled_exit",
                                 sleeve_name=t["strategy"])
@@ -214,7 +214,7 @@ def _close_due_shadows(now_utc: datetime) -> None:
 
 def _maybe_open_r4_window(variant: dict, sleeve: str, asset: str,
                           now_utc: datetime) -> None:
-    """Open a shadow R4 window for (variant, sleeve, asset) if now is the
+    """Open a paper R4 window for (variant, sleeve, asset) if now is the
     entry minute."""
     if sleeve == "R4_BTC" and not _is_r4_btc_day(now_utc):
         return
@@ -259,12 +259,12 @@ def _maybe_open_r4_window(variant: dict, sleeve: str, asset: str,
 
     strategy = "R4"
     entry_iso = entry_dt.isoformat()
-    if _shadow_trade_exists(variant["id"], strategy, entry_iso, asset):
+    if _paper_trade_exists(variant["id"], strategy, entry_iso, asset):
         return
 
     price = _get_current_price(asset)
     if price is None:
-        log.warning(f"[shadow {variant['id']}] no {asset} price — skip R4 open")
+        log.warning(f"[paper {variant['id']}] no {asset} price — skip R4 open")
         return
 
     # Base allocation: 15% (matches strong_bull R4 weight). Multiplied by sizing.
@@ -279,20 +279,20 @@ def _maybe_open_r4_window(variant: dict, sleeve: str, asset: str,
         "sizing_multiplier": sizing_mult,
         "regime": "unknown",  # TODO: plumb regime if needed
     }
-    tid = _create_shadow_trade(
+    tid = _create_paper_trade(
         variant=variant, asset=asset, direction="LONG", strategy=strategy,
         allocation_pct=alloc_pct, leverage=1.0,
         entry_time_iso=entry_iso, exit_time_iso=exit_dt.isoformat(),
         entry_price=price, reason=reason,
     )
-    log.info(f"[shadow {variant['id']}] opened {tid} {asset} R4 LONG @ {price:.2f} "
+    log.info(f"[paper {variant['id']}] opened {tid} {asset} R4 LONG @ {price:.2f} "
              f"(window {reason['window']}, sizing ×{sizing_mult})")
 
 
 # ─── Composition dispatch ────────────────────────────────────────────────────
 
 # Maps a strategy_id (from variant spec composition) to the live service that
-# executes its shadow trades. Services expose try_fire_for_variant(variant,
+# executes its paper trades. Services expose try_fire_for_variant(variant,
 # sleeve_cfg) -> status dict. Missing entries = sleeve is not yet live-wired
 # (logged once per tick but doesn't crash the engine).
 STRATEGY_DISPATCH: dict[str, Any] = {}
@@ -421,7 +421,7 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
         strategy_id = sleeve.get("strategy_id")
         if portfolio_id:
             # Core sleeve refs another variant — that variant runs independently
-            # as its own shadow. Don't double-fire. Equity attribution to
+            # as its own paper. Don't double-fire. Equity attribution to
             # P-200's composition is handled in the equity-series endpoint.
             continue
         if not strategy_id:
@@ -452,12 +452,12 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
 
 
 def _check_liquidations_all_variants(now_utc) -> int:
-    """Per-tick liquidation sweep across every active shadow variant.
+    """Per-tick liquidation sweep across every active paper variant.
 
     Reuses ``strategies.support.margin_check.force_close_liquidations`` —
     the same orchestration wrapper the research replay runs — so live
-    SHADOW, ``studies/simulation/sim.py``, and the backtest path all
-    evaluate margin trajectories with identical logic. Each open SHADOW
+    paper, ``studies/simulation/sim.py``, and the backtest path all
+    evaluate margin trajectories with identical logic. Each open paper
     trade whose entry→now path would have breached maintenance margin
     gets force-closed via the sleeve's close function with reason
     ``forced_exit:liquidation``.
@@ -467,8 +467,8 @@ def _check_liquidations_all_variants(now_utc) -> int:
     variants this tick (logged as a warning if non-zero)."""
     from strategies.support.margin_check import force_close_liquidations
     total = 0
-    shadows = variant_registry.get_active_shadows()
-    for v in shadows:
+    paper_variants = variant_registry.get_active_paper_variants()
+    for v in paper_variants:
         try:
             total += force_close_liquidations(v["id"], now_utc)
         except Exception as e:
@@ -481,20 +481,20 @@ def _check_liquidations_all_variants(now_utc) -> int:
 def tick() -> None:
     """Scheduler entry point — runs every minute.
 
-    1. Liquidation sweep — force-close any open SHADOW trade whose
+    1. Liquidation sweep — force-close any open paper trade whose
        entry→now margin trajectory would have breached maintenance.
        Runs BEFORE scheduled-exit checks so a liquidated trade is not
        re-counted as a scheduled close.
-    2. Close any shadow trades whose scheduled exit_time has passed.
+    2. Close any paper trades whose scheduled exit_time has passed.
     3. Tick the FOMC observer (records would-be FOMC decisions + P&L
-       without opening shadow trades). Out-of-portfolio research feed.
-    4. For each enabled shadow variant:
+       without opening paper trades). Out-of-portfolio research feed.
+    4. For each enabled paper variant:
        - signal_overlay variants: evaluate their R4 window modifiers
        - full_portfolio with composition: dispatch each sleeve to its service
     """
     now_utc = clock.now_utc()
     _check_liquidations_all_variants(now_utc)
-    _close_due_shadows(now_utc)
+    _close_due_paper_trades(now_utc)
 
     # FOMC observer — runs unconditionally each tick, regardless of variants.
     try:
@@ -503,8 +503,8 @@ def tick() -> None:
     except Exception as e:
         log.exception(f"[fomc-observer] tick error: {e}")
 
-    shadows = variant_registry.get_active_shadows()
-    for v in shadows:
+    paper_variants = variant_registry.get_active_paper_variants()
+    for v in paper_variants:
         try:
             if v["kind"] == "signal_overlay":
                 _maybe_open_r4_window(v, "R4_BTC", "BTC", now_utc)
@@ -518,7 +518,7 @@ def tick() -> None:
                     _maybe_open_r4_window(v, "R4_BTC", "BTC", now_utc)
                     _maybe_open_r4_window(v, "R4_ETH", "ETH", now_utc)
         except Exception as e:
-            log.exception(f"[shadow {v['id']}] tick error: {e}")
+            log.exception(f"[paper {v['id']}] tick error: {e}")
 
 
 # ─── Read helpers for the UI / API ───────────────────────────────────────────

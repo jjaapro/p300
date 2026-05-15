@@ -216,7 +216,7 @@ def test_self_sweep_closes_past_exit_trade(tmp_path, monkeypatch):
          current_qty, current_leverage, current_size_usdt, realized_pnl_usdt)
         VALUES
         ('SJ-T001','SJ','BTC','LONG','FOMC','peak_hold',5.0,5.0,
-         '2024-01-31T09:00:00+00:00','2024-01-31T19:30:00+00:00','open','SHADOW',
+         '2024-01-31T09:00:00+00:00','2024-01-31T19:30:00+00:00','open','paper',
          'test_variant','2024-01-31T09:00:00+00:00',42000.0,
          2500.0,0.0595,'[]','{}',
          0.0595, 5.0, 2500.0, 0)
@@ -272,7 +272,7 @@ def test_self_sweep_no_op_before_exit_time(tmp_path, monkeypatch):
          current_qty, current_leverage, current_size_usdt, realized_pnl_usdt)
         VALUES
         ('SJ-T002','SJ','BTC','LONG','FOMC','peak_hold',5.0,5.0,
-         '2024-01-31T09:00:00+00:00','2024-01-31T19:30:00+00:00','open','SHADOW',
+         '2024-01-31T09:00:00+00:00','2024-01-31T19:30:00+00:00','open','paper',
          'test_variant','2024-01-31T09:00:00+00:00',42000.0,
          2500.0,0.0595,'[]','{}',
          0.0595, 5.0, 2500.0, 0)
@@ -290,12 +290,12 @@ def test_self_sweep_no_op_before_exit_time(tmp_path, monkeypatch):
     assert n == 0, "should not close trades whose exit_time is in the future"
 
 
-# ─── orchestrator._close_due_shadows scoping ───────────────────────────────
+# ─── orchestrator._close_due_paper_trades scoping ───────────────────────────────
 
-def test_close_due_shadows_skips_disabled_variants(tmp_path, monkeypatch):
-    """Regression test: orchestrator._close_due_shadows must only touch
+def test_close_due_paper_trades_skips_disabled_variants(tmp_path, monkeypatch):
+    """Regression test: orchestrator._close_due_paper_trades must only touch
     trades belonging to ENABLED variants. The live bot used to close replay
-    backtest trades because they were SHADOW + status=open, regardless of
+    backtest trades because they were paper + status=open, regardless of
     the variant's enabled flag — corrupting backtest results."""
     import sqlite3
     from datetime import datetime, timezone
@@ -336,7 +336,7 @@ def test_close_due_shadows_skips_disabled_variants(tmp_path, monkeypatch):
                 realized_pnl_usdt)
             VALUES (?, 'SJ', 'BTC', 'LONG', 'TEST', 5.0, 1.0,
                     '2024-01-01T00:00:00+00:00', '2024-01-02T00:00:00+00:00',
-                    'open', 'SHADOW', ?, '2024-01-01T00:00:00+00:00',
+                    'open', 'paper', ?, '2024-01-01T00:00:00+00:00',
                     50000.0, 500.0, 0.01, '[]', '{}', 0.01, 1.0, 500.0, 0)
         """, (tid, vid))
     con.commit()
@@ -351,7 +351,7 @@ def test_close_due_shadows_skips_disabled_variants(tmp_path, monkeypatch):
     monkeypatch.setattr(svc_trades, "close_perp_trade", fake_close)
     monkeypatch.setattr(ve, "_get_current_price", lambda _a: 51000.0)
 
-    ve._close_due_shadows(datetime(2026, 4, 29, tzinfo=timezone.utc))
+    ve._close_due_paper_trades(datetime(2026, 4, 29, tzinfo=timezone.utc))
 
     assert "SJ-LIVE" in closed_ids, "live variant trade should be closed"
     assert "SJ-REPLAY" not in closed_ids, \

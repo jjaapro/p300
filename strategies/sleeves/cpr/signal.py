@@ -1,6 +1,6 @@
 """
 CPR (Contrarian Positioning Reversal) service — live dispatcher for P-300
-shadow variants.
+paper variants.
 
 Signal (all must fire on same day):
   1. funding 3d avg <= rolling 20th percentile of trailing 180d
@@ -14,7 +14,7 @@ Execution per fire:
   Stop:   entry * 0.95 (5% hard stop)
   Time:   15 calendar days
 
-Assets: BTC, ETH (each evaluated independently; each opens its own shadow
+Assets: BTC, ETH (each evaluated independently; each opens its own paper
 trade with prefix `SJ-`).
 
 Source probe: probes/diagnostic_contrarian_positioning.py (2026-04-22)
@@ -251,15 +251,15 @@ def _cpr_action_today(variant_id: str, asset: str, today_utc: str) -> bool:
     return row is not None
 
 
-def _open_cpr_shadow(variant: dict, asset: str, entry_price: float,
+def _open_cpr_paper(variant: dict, asset: str, entry_price: float,
                      target: float, stop: float, allocation_pct: float,
                      leverage: float, reason: dict) -> str:
-    """Open a CPR shadow trade — delegates to strategies.trades.open_shadow_trade.
+    """Open a CPR paper trade — delegates to strategies.trades.open_paper_trade.
     target/stop are folded into the reason dict (stored in trades.notes JSON)
     so post-hoc inspection can reconstruct the level structure of the entry."""
-    from strategies.trades import open_shadow_trade
+    from strategies.trades import open_paper_trade
     exit_dt = clock.now_utc() + timedelta(days=TIME_STOP_DAYS)
-    return open_shadow_trade(
+    return open_paper_trade(
         variant=variant, sleeve_name="CPR",
         asset=asset, direction="LONG",
         entry_price=entry_price, allocation_pct=allocation_pct, leverage=leverage,
@@ -268,7 +268,7 @@ def _open_cpr_shadow(variant: dict, asset: str, entry_price: float,
     )
 
 
-def _close_cpr_shadow(trade_id: str, exit_price: float, reason: str) -> None:
+def _close_cpr_paper(trade_id: str, exit_price: float, reason: str) -> None:
     """Sleeve close — delegates to strategies.trades.close_perp_trade."""
     from strategies.trades import close_perp_trade
     close_perp_trade(trade_id, exit_price, reason, sleeve_name="CPR",
@@ -330,13 +330,13 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                 except (json.JSONDecodeError, ValueError):
                     target_px = 0.0
                 if price <= stop_px:
-                    _close_cpr_shadow(tr["id"], price, f"stop_hit@{price:.2f}")
+                    _close_cpr_paper(tr["id"], price, f"stop_hit@{price:.2f}")
                     log.info(f"[cpr {variant['id']} {asset}] closed {tr['id']} "
                              f"stop (fill={price:.2f}, level={stop_px:.2f})")
                     results.append({"asset": asset, "status": "closed_stop", "trade_id": tr["id"]})
                     continue
                 if target_px > 0 and price >= target_px:
-                    _close_cpr_shadow(tr["id"], price, f"target_hit@{price:.2f}")
+                    _close_cpr_paper(tr["id"], price, f"target_hit@{price:.2f}")
                     log.info(f"[cpr {variant['id']} {asset}] closed {tr['id']} "
                              f"target (fill={price:.2f}, level={target_px:.2f})")
                     results.append({"asset": asset, "status": "closed_target", "trade_id": tr["id"]})
@@ -344,7 +344,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                 entry_time = datetime.fromisoformat(tr["actual_entry_time"])
                 age_days = (clock.now_utc() - entry_time).days
                 if age_days >= TIME_STOP_DAYS:
-                    _close_cpr_shadow(tr["id"], price, f"time_stop_{age_days}d")
+                    _close_cpr_paper(tr["id"], price, f"time_stop_{age_days}d")
                     log.info(f"[cpr {variant['id']} {asset}] closed {tr['id']} time_stop")
                     results.append({"asset": asset, "status": "closed_time", "trade_id": tr["id"]})
                     continue
@@ -399,7 +399,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             "conditions": sig["conditions"],
             "regime": "contrarian_squeeze_long",
         }
-        tid = _open_cpr_shadow(variant, asset, entry_price, target, stop,
+        tid = _open_cpr_paper(variant, asset, entry_price, target, stop,
                                per_asset_alloc, leverage, reason)
         log.info(f"[cpr {variant['id']} {asset}] opened {tid} @ {entry_price:.2f} "
                  f"target={target:.2f} alloc={per_asset_alloc}% lev={leverage:.1f}x")

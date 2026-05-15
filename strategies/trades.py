@@ -1,6 +1,6 @@
-"""strategies.trades — single source of truth for shadow-trade close mechanics.
+"""strategies.trades — single source of truth for paper-trade close mechanics.
 
-Replaces 6 near-identical ``_close_X_shadow`` implementations across the
+Replaces 6 near-identical ``_close_X_paper`` implementations across the
 sleeve services. Each implementation read the trade row, computed price PnL
 direction-conditionally, applied fees, optionally applied perp funding,
 wrote the close, and logged a summary — same 7 steps, six copies.
@@ -18,10 +18,10 @@ Architecture:
                             P&L = funding collected − round-trip fees, no
                             price-PnL component.
 
-Each sleeve's legacy ``_close_X_shadow`` is a thin wrapper that just sets
+Each sleeve's legacy ``_close_X_paper`` is a thin wrapper that just sets
 the sleeve-name parameter (kept so
 ``strategies.support.margin_check._load_close_fn`` doesn't need to change).
-The bug-fix surface for every shadow close is now this one module.
+The bug-fix surface for every paper close is now this one module.
 """
 from __future__ import annotations
 
@@ -83,7 +83,7 @@ def _next_sj_id(con: sqlite3.Connection) -> str:
 
 def get_open_trades(variant_id: str, strategy: str,
                     asset: str | None = None) -> list[dict]:
-    """Return all open shadow trades for (variant_id, strategy[, asset]),
+    """Return all open paper trades for (variant_id, strategy[, asset]),
     newest first.
 
     The single-open invariant most sleeves observe doesn't change the contract
@@ -112,7 +112,7 @@ def get_open_trades(variant_id: str, strategy: str,
     return [dict(r) for r in rows]
 
 
-def open_shadow_trade(*, variant: dict, sleeve_name: str,
+def open_paper_trade(*, variant: dict, sleeve_name: str,
                       asset: str, direction: str,
                       entry_price: float, allocation_pct: float,
                       leverage: float = 1.0,
@@ -120,7 +120,7 @@ def open_shadow_trade(*, variant: dict, sleeve_name: str,
                       scheduled_exit_dt: datetime | None = None,
                       regime_value: str | None = None,
                       entry_dt: datetime | None = None) -> str:
-    """Insert a new shadow trade row and return its trade ID.
+    """Insert a new paper trade row and return its trade ID.
 
     Centralizes the per-sleeve open path: capital lookup, size_usdt math,
     qty math, ID mint, INSERT — previously duplicated 6× across services.
@@ -170,12 +170,12 @@ def open_shadow_trade(*, variant: dict, sleeve_name: str,
                 current_qty, current_leverage, current_size_usdt,
                 realized_pnl_usdt, avg_entry_price)
             VALUES (?, 'SJ', ?, ?, ?, ?, ?, ?, ?, ?, 'open',
-                    'SHADOW', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
+                    'paper', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
         """, (tid, asset, direction.upper(), sleeve_name.upper(),
               regime_value, allocation_pct, leverage,
               now_iso, exit_iso, variant["id"], now_iso,
               entry_price, size_usdt, qty,
-              json.dumps([f"SHADOW-{tid}"]),
+              json.dumps([f"paper-{tid}"]),
               json.dumps(reason, default=str),
               qty, leverage, size_usdt, entry_price))
         # Implicit OPEN event in the adjustment ledger. Idempotency-safe:
@@ -715,12 +715,12 @@ def apply_flip(trade_id: str, *, new_direction: str, price: float,
                 current_qty, current_leverage, current_size_usdt,
                 realized_pnl_usdt, parent_position_id, avg_entry_price)
             VALUES (?, 'SJ', ?, ?, ?, ?, ?, ?, ?, ?, 'open',
-                    'SHADOW', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+                    'paper', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
         """, (new_tid, row["asset"], new_direction, row["strategy"],
               row["regime"], row["allocation_pct"], cur_lev,
               now_iso, row["exit_time"] or _NO_SCHEDULED_EXIT_ISO,
               row["strategy_variant"], now_iso, price, new_size, new_qty,
-              json.dumps([f"SHADOW-{new_tid}"]),
+              json.dumps([f"paper-{new_tid}"]),
               json.dumps((notes or {}) | {"opened_via": "flip",
                                             "parent": trade_id}, default=str),
               new_qty, cur_lev, new_size, trade_id, price))

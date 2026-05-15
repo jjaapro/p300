@@ -79,7 +79,7 @@ The bot ticks every 60s. On each tick:
   sleeve's `try_fire_for_variant()`.
 - All sleeves open / close phantom trades in the `trades` table, tagged
   with `strategy_variant='p300_aggressive_v2_v1_0'` and
-  `execution_mode='SHADOW'`. Realized PnL is the sum of the trade
+  `execution_mode='paper'`. Realized PnL is the sum of the trade
   ledger; there is no parallel theoretical-PnL track.
 - 6 tactical sleeves: S-003 ADX, S-078 Carry, S-096 V4 Thu Bear,
   PDO-L-RF, CPR, S-103 FOMC.

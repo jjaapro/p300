@@ -1,4 +1,4 @@
-"""AI_QUANT sleeve — live shadow service.
+"""AI_QUANT sleeve — live paper service.
 
 Fires once per UTC day at 00:05–00:15. Every minute the orchestrator
 calls try_fire_for_variant; we short-circuit cheaply on the four gates
@@ -20,7 +20,7 @@ Reconciliation matrix (effective_direction ← FLAT if conviction<30):
   LONG        | SHORT     | flipped: close existing, then open SHORT
   SHORT       | FLAT/LONG/SHORT | mirror of LONG cases
 
-This is a SHADOW-ONLY service. Trades route through trades.open_shadow_trade
+This is a paper-ONLY service. Trades route through trades.open_paper_trade
 and trades.close_perp_trade — no exchange orders ever. Sized identically
 to the algorithmic sleeves so PnL is comparable.
 """
@@ -160,7 +160,7 @@ def _reconcile(
     live_price: float | None,
 ) -> tuple[str, dict]:
     """Apply the decision against the current position. Returns
-    (trade_action_string, debug_dict). May open and/or close shadow trades
+    (trade_action_string, debug_dict). May open and/or close paper trades
     as a side effect.
 
     trade_action shapes (consumed by journal & verification):
@@ -191,7 +191,7 @@ def _reconcile(
         if live_price is None:
             return "skipped:no_price", {"reason": "live_price_unavailable"}
         alloc = _allocation_pct_for(conviction, weight_pct)
-        tid = trades.open_shadow_trade(
+        tid = trades.open_paper_trade(
             variant=variant,
             sleeve_name=SLEEVE_NAME,
             asset=asset,
@@ -238,7 +238,7 @@ def _reconcile(
         reason="ai_quant_flip", sleeve_name=SLEEVE_NAME,
     )
     alloc = _allocation_pct_for(conviction, weight_pct)
-    new_tid = trades.open_shadow_trade(
+    new_tid = trades.open_paper_trade(
         variant=variant,
         sleeve_name=SLEEVE_NAME,
         asset=asset,

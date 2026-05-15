@@ -122,7 +122,7 @@ def _insert_trade(p: Path, **kw) -> None:
             "strategy": "AI_QUANT", "regime": "test", "allocation_pct": 5.0,
             "leverage": 3.0, "entry_time": "2026-05-01T00:00:00+00:00",
             "exit_time": "9999-12-31T23:59:59+00:00", "status": "open",
-            "execution_mode": "SHADOW",
+            "execution_mode": "paper",
             "strategy_variant": "p300_test",
             "actual_entry_time": "2026-05-01T00:00:00+00:00",
             "entry_price": 70000.0, "size_usdt": 1500.0, "qty": 0.0214,

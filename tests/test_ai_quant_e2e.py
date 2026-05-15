@@ -6,7 +6,7 @@ What's exercised:
      same dispatch path the live runner uses.
   2. Off-window ticks short-circuit cheaply (no API call, no DB writes).
   3. The first in-window tick fires the LLM (mocked), persists a
-     decision row, and opens a shadow trade.
+     decision row, and opens a paper trade.
   4. The next in-window tick is gated by idempotency — no second API
      call, no second trade.
   5. The next UTC day's in-window tick fires the LLM again with the
@@ -314,7 +314,7 @@ def test_in_window_first_tick_fires_long_opens_trade_journals(e2e_setup):
     # weight 2.0 × 70/100 = 1.4
     assert t["allocation_pct"] == pytest.approx(1.4, rel=1e-6)
     assert t["strategy_variant"] == "p300_e2e_test"
-    assert t["execution_mode"] == "SHADOW"
+    assert t["execution_mode"] == "paper"
 
     # Journal row mirrors the trade action
     j = journal.get_today_decision("p300_e2e_test")
