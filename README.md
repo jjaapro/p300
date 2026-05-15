@@ -8,56 +8,45 @@ REST, scheduled events are computed in-process, and long-short ratio
 history comes from Coinalyze (free tier).
 
 > **Status: paper validation in progress.** All prior upstream backtest
-> numbers are treated as compromised and have been stripped. The earlier
-> headline (Sharpe ≈ 1.73, bootstrap 95% CI [0.96, 2.44]) was computed
-> from a `variant_daily_returns WHERE source='replay'` table that the
-> 2026-05 trade-emitter migration stopped writing — it is **not
-> reproducible from current code** and has been retracted pending
-> regeneration on the realized trade ledger. The migrated tool
-> (`python studies/notebooks/tools_statistical_validation.ipynb`) now runs against
-> closed paper trades directly; paper accumulation is the only real
-> OOS validation path, and the live-window Sharpe stabilises only after
-> ~6+ months of realized data.
+> numbers are treated as compromised and stripped. Open
+> [`studies/notebooks/tools_statistical_validation.ipynb`](studies/notebooks/tools_statistical_validation.ipynb)
+> in Jupyter to compute Sharpe / win-rate / drawdown on the realized
+> trade ledger — that's the only validation path until paper has
+> accumulated ~6+ months of closed trades.
 
 ## What runs live here
 
-Sleeves dispatched per-minute via `strategies/orchestrator.py`. All sleeves
-emit real-time trades to the same `trades` table; realized PnL is the
-trade-ledger sum (no parallel theoretical-return track):
+13 sleeves, dispatched per-minute by
+[`strategies/orchestrator.py`](strategies/orchestrator.py). All sleeves
+write to the same `trades` table; realized PnL is the trade-ledger sum.
 
-- **Core J+ sub-sleeves (50%)** — six discrete-entry sleeves dispatched
-  uniformly with the tactical stack:
-  R4_BTC (Mon wk1-2 06:00→18:00 UTC), R4_ETH (Tue 20:00 → Wed 20:00 UTC
-  wk1-2), R4_BTC_V2 / R4_ETH_V2 (Wed+Fri wk1-2 04:00→14:00 UTC),
-  EMA_BTC (continuous, weekly EMA(5)/EMA(21) crossover), ETH_DAILY
-  (continuous in bull regimes only). Sized per-tick from
-  [`jplus.simulate.today_inputs()`](strategies/support/jplus_inputs.py) — regime-weighted
-  sub-sleeve weights × inner R4 lev × vol-target lev, all from T-1 data.
-- **Six tactical sleeves (50%)** — S-003 ADX, S-078 Carry, S-096 V4 Thu
-  Bear, S-102 PDO-L-RF, S-101 CPR, S-103 FOMC. Discrete entries/exits in
-  BTC and ETH.
-- **AI_QUANT (2%, inside the tactical 50%, default-OFF)** — discretionary
-  LLM trader using Anthropic Opus 4.7 once per UTC day. Gated behind
-  `AI_QUANT_ENABLED` env var; paper-only like every other sleeve; skipped
-  on historical replay. Per-decision markdown archive under
-  `data/ai_quant_archive/`. (Was additive; folded into the 50% cap on
-  2026-05-12 — PDO trimmed from 11% to 9% to make room.)
+| Sleeve | Asset | Schedule | Direction |
+|---|---|---|---|
+| **S-003 ADX** | BTC | signal-driven, continuous | LONG / SHORT |
+| **S-078 CARRY** | BTC | continuous while funding regime is positive | delta-neutral (spot long + perp short) |
+| **S-096 V4 Thu Bear** | BTC, ETH | Thu 00:05 UTC (event-filtered) | SHORT |
+| **S-102 PDO-L-RF** | BTC, ETH | retouch fire on prior-day-open touch | LONG |
+| **S-101 CPR** | BTC, ETH | extreme funding + L/S contrarian | LONG |
+| **S-103 FOMC** | BTC | FOMC day T-10h → T+0.5h (composite filtered) | LONG |
+| **JPLUS_R4_BTC** | BTC | Mon wk1-2 06:00 → 18:00 UTC | LONG |
+| **JPLUS_R4_ETH** | ETH | Tue 20:00 → Wed 20:00 UTC, wk1-2 | LONG |
+| **JPLUS_R4_BTC_V2** | BTC | Wed+Fri wk1-2 04:00 → 14:00 UTC | LONG |
+| **JPLUS_R4_ETH_V2** | ETH | Wed+Fri wk1-2 04:00 → 14:00 UTC | LONG |
+| **JPLUS_EMA_BTC** | BTC | continuous; weekly EMA(5)/EMA(21) crossover | LONG / SHORT |
+| **JPLUS_ETH_DAILY** | ETH | continuous in bull regimes only | LONG |
+| **AI_QUANT** | BTC | 1 LLM decision per UTC day (default-OFF) | LONG / SHORT / FLAT |
 
-See [PORTFOLIO.md](PORTFOLIO.md) for the canonical per-sleeve reference
-(signals, entries, exits, leverage stack, regime weights, edge thesis,
-caveats). It stays in sync with [register_p300.py](register_p300.py); this
-README is intentionally a thin pointer to avoid duplication drift.
+The orchestrator owns cross-sleeve coordination — see
+[`strategies/support/`](strategies/support/): `allocation.py` (regime →
+weight per sleeve), `gating.py` (R4 vol-gate, THU_BEAR V4 event filter),
+`portfolio_vol.py` (vol-target scalar), `margin_headroom.py` (gross-
+notional cap), `conflict_resolver.py` (skip when an opposing-direction
+perp is already open), `signal_aggregator.py` (read-side concordant-
+stack detection). All are injected into each sleeve's dispatch via
+`sleeve_cfg["_effective_*"]` fields.
 
-The original ML gate was replaced with a deterministic vol-percentile rule
-(see [strategies/support/gate.py](strategies/support/gate.py)) after we found the upstream gate's
-features used same-day data and could not be reproduced without look-ahead.
-
-The simulator-driven daily-return accrual and the offline-period catchup
-emitter were removed in the 2026-05-10 live/sim refactor — Core sub-sleeves
-now have the same operational shape as tactical sleeves
-(if the bot is offline during a window, that trade is missed permanently).
-The analytic [`jplus.simulate.simulate()`](strategies/support/jplus_inputs.py) function
-remains as a research-only tool with no runtime caller.
+See [PORTFOLIO.md](PORTFOLIO.md) for per-sleeve detail (signals, entries,
+exits, leverage stack, regime weights, edge thesis, caveats).
 
 ## Bootstrap (one time)
 
@@ -123,32 +112,30 @@ subsequent run is sub-second.
 
 ## Run in sim mode
 
-Sim mode is the same bot binary running against a separate sim trader.db
-and a separate sim dashboard.db, with a deterministic simulated clock —
-no live API calls, no contamination of the live ledger. Identical
-dispatch to live, so a sleeve that fires in sim is exactly the same
-code path that fires in live.
+Same dispatch code, deterministic simulated clock, isolated DBs. No
+live API calls; no contamination of `data/prod.db`. A sleeve that fires
+in sim is exactly the same code path that fires in live.
 
 ```bash
-# 1. Build a date-range slice of trader.db. The result is self-contained;
-#    sim never reaches back to the source DB or the network.
+# 1. Build a date-range slice of the consolidated DB (read-only on
+#    the source). Self-contained; sim never reaches back to network.
 python studies/simulation/build_sim_trader_db.py \
     --start 2024-01-01 --end 2024-12-31 \
-    --output data/trader_sim_2024.db
+    --output data/sim_2024.db
 
-# 2. Register the variant in a fresh dashboard sim DB.
-python register_p300.py --dash-db /tmp/sim_dash.db
+# 2. Register the variant in a fresh sim ledger.
+python register_p300.py --dash-db /tmp/sim_ledger.db
 
 # 3. Run sim mode. Inclusive date range; --sim-tick-seconds advances
 #    the simulated clock per tick (no wall-clock sleep).
 python studies/simulation/sim.py \
     --start 2024-01-01 --end 2024-12-31 \
-    --trader-db data/trader_sim_2024.db \
-    --dash-db /tmp/sim_dash.db \
+    --trader-db data/sim_2024.db \
+    --dash-db /tmp/sim_ledger.db \
     --sim-tick-seconds 60
 
-# 4. Report the sim run from the trade ledger:
-python studies/notebooks/full_portfolio_report.ipynb  # or run the .ipynb
+# 4. Inspect results: open studies/notebooks/full_portfolio_report.ipynb
+#    in Jupyter and point it at the sim ledger.
 ```
 
 ### Choosing `--sim-tick-seconds`
@@ -177,12 +164,12 @@ trades — proving calendar-anchored sleeves are granularity-invariant.
 ### Resuming an interrupted sim run
 
 Sim mode is **idempotent per UTC day** because every sleeve checks
-the trades table for an existing row before opening a new one
-(``services.jplus_live._has_trade_for_day`` and the equivalent in
-each tactical sleeve). So if a long sim run is interrupted — kill
-signal, OOM, you closed the laptop — you can resume by re-launching
-the same command with a `--start` at or before the last completed
-date. Already-fired trades are no-ops on the re-tick.
+the trades table for an existing row before opening a new one (each
+sleeve's own `_has_trade_for_day` / `_trade_today` helper). So if a
+long sim run is interrupted — kill signal, OOM, you closed the
+laptop — you can resume by re-launching the same command with a
+`--start` at or before the last completed date. Already-fired
+trades are no-ops on the re-tick.
 
 ```bash
 # Original run, killed somewhere in mid-2024:
@@ -240,13 +227,17 @@ one fires identically under the other.
 
 ```bash
 # Variant metadata
-python -c "from services import variant_registry as r; print(r.get_variant('p300_aggressive_v2_v1_0')['status'])"
+python -c "from strategies.support import variant_registry as r; print(r.get_variant('p300_aggressive_v2_v1_0')['status'])"
 
 # Open paper positions
 sqlite3 data/prod.db "SELECT id, asset, strategy, direction, entry_price, size_usdt FROM trades WHERE strategy_variant='p300_aggressive_v2_v1_0' AND status='open'"
 
 # Closed trades (newest first)
 sqlite3 data/prod.db "SELECT id, asset, strategy, direction, pnl_pct, actual_exit_time FROM trades WHERE strategy_variant='p300_aggressive_v2_v1_0' AND status='closed' ORDER BY actual_exit_time DESC LIMIT 20"
+
+# Cross-sleeve coordination snapshot — gross/cap/headroom, conflicts,
+# concordant stacks. Same data as the bot's startup banner.
+python -c "from strategies.support.strategy_health import build_report, format_report; print(format_report(build_report('p300_aggressive_v2_v1_0')))"
 ```
 
 ## Architecture
@@ -320,15 +311,17 @@ p300/
 └── requirements.txt               # numpy + (optional) anthropic for AI_QUANT
 ```
 
-## Data the services need
+## Data tables
+
+All tables live in `data/prod.db`. Refresh paths:
 
 | Table | Source | Refresh | Used by |
 |-------|--------|---------|---------|
 | `btc_1m`, `eth_1m` | Binance spot klines | `binance_feed.py` every 60s | pdo, cpr, price_feed (ETH) |
-| `cd_futures_ohlcv` | Binance BTCUSDT perp 1h | `binance_feed.py` every 60s | adx, carry, regime_classifier, price_feed (BTC) |
+| `cd_futures_ohlcv` | Binance BTCUSDT perp 1h | `binance_feed.py` every 60s | adx, carry, regime_tactical, price_feed (BTC) |
 | `cd_spot_binance` | Binance BTCUSDT spot 1h | `binance_feed.py` every 60s | carry |
-| `cd_funding_rate` | Binance BTC perp funding | `binance_feed.py` every 60s | services.funding (BTC: carry, cpr, adx exit, fomc exit) |
-| `cd_funding_rate_eth` | Binance ETH perp funding | `binance_feed.py` every 60s | services.funding (ETH: thu_bear, fomc exit) |
+| `cd_funding_rate` | Binance BTC perp funding | `binance_feed.py` every 60s | strategies.support.funding (BTC sleeves) |
+| `cd_funding_rate_eth` | Binance ETH perp funding | `binance_feed.py` every 60s | strategies.support.funding (ETH sleeves) |
 | `ca_long_short_ratio` | Coinalyze (history) + Binance rolling 30d | `fetch_coinalyze.py` once + `binance_feed.py` every 60s | cpr, regime LS circuit breaker |
 | `scheduled_events` | computed by `fetch_events.py` (FOMC/CPI hardcoded, NFP/OPEX rules) | annual: bump FOMC/CPI lists, re-run | S-096 V4 filter, regime no-FOMC rule |
 
@@ -368,17 +361,16 @@ whether any specific backtest is trusted:
 - **Live BTC-long cap uses skip-if-over**; any future simulator-style
   proportional scale-down will diverge by construction.
 
-## Caveats / what this extraction does NOT do
+## Caveats — what this bot does NOT do
 
-- **No live order placement.** Extending to real MEXC execution would require
-  wiring through an `execution_service` that the stripped `variant_engine`
-  doesn't have — this bot only writes phantom trades.
-- **No dashboard.** Introspection is via sqlite queries (examples above) and
-  `python studies/notebooks/backtest_report.ipynb --variant <id>` for replay metrics.
-- **No prior-backtest equity seed.** Any daily-returns panel present in older
-  versions of this repo has been removed as compromised. Equity attribution
-  begins from the first clean replay or live paper fill.
-- **`ca_long_short_ratio` history beyond Binance's 30d window** must come from
-  Coinalyze. After bootstrap, the rolling 30d refresh from Binance is enough
-  to keep things current; the ~5y of pre-bootstrap history relies on the
-  initial Coinalyze fetch.
+- **No live order placement.** All trades are paper (write-only to the
+  `trades` table); the bot has no exchange-side execution path yet.
+- **No dashboard UI.** Introspection is sqlite queries (examples above)
+  plus the research notebooks under
+  [`studies/notebooks/`](studies/notebooks/).
+- **No backtest equity seed.** Any daily-returns panel present in older
+  versions of this repo has been removed as compromised. Equity
+  attribution starts from the first clean live paper fill.
+- **`ca_long_short_ratio` history beyond Binance's 30d window** depends
+  on the initial Coinalyze fetch — Binance's API can't reach further
+  back than ~30 days.
