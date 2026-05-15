@@ -1,7 +1,7 @@
-"""One-shot bootstrap: build a fresh data/trader.db from scratch.
+"""One-shot bootstrap: build a fresh data/prod.db from scratch.
 
 What it does, in order:
-  1. Create data/trader.db with all required schemas if missing.
+  1. Create data/prod.db with all required schemas if missing.
   2. Rebuild scheduled_events from fetch_events.py (FOMC/CPI/NFP/OPEX —
      pure Python, no external data).
   3. Fetch ca_long_short_ratio history from Coinalyze (~5 years from
@@ -9,6 +9,11 @@ What it does, in order:
   4. Backfill funding rate history (BTC + ETH) from Binance.
   5. Backfill klines (btc_1m, eth_1m, cd_futures_ohlcv, cd_spot_binance)
      from Binance. Slow — ~30-60 minutes for 5 years.
+
+The data/prod.db file holds every table the bot reads or writes
+(P2.6 consolidation, 2026-05-15) — market data + bot state in one
+SQLite file. The previous data/trader.db + data/dashboard.db split
+has been removed.
 
 Idempotent: re-running picks up where the last run left off.
 
@@ -22,7 +27,7 @@ Examples:
                                             # while binance_feed accumulates)
 
 After this:
-  python register_p300.py    # register the variant in dashboard.db
+  python register_p300.py    # register the variant in data/prod.db
   python health.py           # confirm everything is wired up
 """
 from __future__ import annotations
@@ -33,7 +38,7 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent
-DB_PATH = REPO / "data" / "trader.db"
+DB_PATH = REPO / "data" / "prod.db"
 
 # Schemas for tables this repo owns end-to-end. Each fetcher (fetch_events,
 # fetch_coinalyze, binance_feed) creates the tables it writes to via
@@ -192,7 +197,7 @@ def main(argv: list[str] | None = None) -> int:
         backfill_from_binance(since=args.since, skip_klines=args.skip_klines)
     fetch_fomc_sleeve_inputs()
     print("\nBootstrap complete. Next:")
-    print("  python register_p300.py    # register the variant in dashboard.db")
+    print("  python register_p300.py    # register the variant in data/prod.db")
     print("  python health.py           # confirm everything is wired up")
     return 0
 

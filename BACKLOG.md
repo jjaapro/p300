@@ -473,51 +473,39 @@ enum values; the trade row gets one or the other.
 
 ---
 
-## P2.6 — DB consolidation (`trader.db` + `dashboard.db` → `prod.db`)
+## P2.6 — DB consolidation (`trader.db` + `dashboard.db` → `prod.db`) ✅
 
 **Captured:** 2026-05-14.
-**Status:** scope clear, needs a migration plan.
+**Status:** completed 2026-05-15.
 
-### Motivation
+Schema audit confirmed no table-name collisions between the two
+sources (13 trader-side tables + 7 dash-side tables, all distinct).
+Migration script `studies/simulation/migrate_to_prod_db.py` uses
+`ATTACH DATABASE` to copy every table into `data/prod.db` with row-
+count verification + index recreation. Idempotent, dry-run mode
+supported. Applied locally: 6,897,394 trader rows + 37,964 dash rows
++ 9 indexes recreated; row counts match between source and prod.
 
-Per Proposal.md and the decisions captured: one SQLite file for all
-paper+live state. Today there are two:
+`strategies/support/db.py` now exposes `PROD_DB = data/prod.db`;
+`TRADER_DB` and `DASH_DB` are kept as aliases pointing at the same
+file so existing read sites (~26 modules) and test monkeypatches
+work without touching them.
 
-- `data/trader.db` — market data (BTC/ETH klines, funding rates, LSR,
-  scheduled events, cached external feeds).
-- `data/dashboard.db` — bot state (variants, trades, trade_adjustments,
-  ai_quant_decisions, fomc_observer).
+`bootstrap.py` updated to create `data/prod.db` (instead of
+trader.db); `studies/simulation/build_sim_trader_db.py` default
+source now points at `prod.db`; `tests/test_sim_mode.py`
+`LIVE_TRADER_DB` / `LIVE_DASH_DB` constants both resolve to
+`prod.db`. Source files (`data/trader.db`,
+`data/dashboard.db`) remain on disk as backups (renamed
+`.bak_pre_prod_consol`); they can be deleted once forward operation
+on `prod.db` is verified over a paper-trading cycle.
 
-The split is historical and adds friction (two paths to monkeypatch in
-tests, two DBs to back up, two schemas to keep in sync). One DB is
-simpler.
+Sim equivalent of prod.db: tests build temporary sliced DBs via
+`tmp_path` fixtures and monkeypatch `db.{TRADER,DASH}_DB`; that path
+works unchanged since both aliases land on the same constant.
 
-### Scope
-
-- Schema design: namespace tables if any names collide. From inspection
-  none do today, but verify.
-- Migration script: `ATTACH DATABASE` both source DBs, copy tables to
-  `prod.db`, verify row counts.
-- Update `strategies/support/db.py` to expose a single `PROD_DB` (or
-  keep `TRADER_DB` + `DASH_DB` as aliases pointing at the same file —
-  decide).
-- Decide on the sim equivalent: `data/databases/sim.db` per the
-  proposal. `tools/build_sim_trader_db.py` already moved to
-  `studies/simulation/build_sim_trader_db.py`; it builds a sliced
-  trader.db today and needs to build a sliced prod.db instead.
-- Update tests with DB-path fixtures (~10+ test files use either
-  `TRADER_DB` or `DASH_DB` monkeypatches).
-- Update `bootstrap.py` to create one DB instead of two.
-
-### Dependencies
-
-- After P2.5 (paper rename) so we migrate once with clean enum values.
-- Independent of P2.4 (orchestrator).
-
-### Risk
-
-Medium. Hot DBs. Same precondition as P2.5 — bot must be stopped
-during the migration window. Backup before running.
+Tests: full suite passing against prod.db (same count as before; no
+behavioral change).
 
 ---
 

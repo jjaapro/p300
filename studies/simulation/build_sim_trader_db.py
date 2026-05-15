@@ -100,8 +100,11 @@ def main(argv: list[str] | None = None) -> int:
                     help="Sim window start (UTC). Format YYYY-MM-DD.")
     p.add_argument("--end", type=_parse_iso_date, required=True,
                     help="Sim window end (UTC, inclusive). Format YYYY-MM-DD.")
-    p.add_argument("--source", default="data/trader.db",
-                    help="Source trader.db (read-only). Default data/trader.db.")
+    p.add_argument("--source", default="data/prod.db",
+                    help="Source DB (read-only). Default data/prod.db (the "
+                         "consolidated DB; pre-P2.6 callers may still pass "
+                         "data/trader.db, the schema is unchanged for the "
+                         "market-data tables this script reads).")
     p.add_argument("--output", required=True,
                     help="Destination sim trader.db. Overwritten if exists.")
     p.add_argument("--warmup-days", type=int, default=400,

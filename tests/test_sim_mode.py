@@ -33,8 +33,12 @@ from strategies import orchestrator
 from strategies.support import sim_loop
 
 REPO = Path(__file__).resolve().parent.parent
-LIVE_TRADER_DB = REPO / "data" / "trader.db"
-LIVE_DASH_DB = REPO / "data" / "dashboard.db"
+# P2.6 consolidated trader.db + dashboard.db into prod.db; the source
+# build_sim_trader_db copies from this single file. The old per-DB
+# constant names are retained for readability — both point at prod.db.
+LIVE_PROD_DB = REPO / "data" / "prod.db"
+LIVE_TRADER_DB = LIVE_PROD_DB
+LIVE_DASH_DB = LIVE_PROD_DB
 LIVE_VARIANT = "p300_aggressive_v2_v1_0"
 
 
