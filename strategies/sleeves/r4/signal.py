@@ -126,6 +126,16 @@ def r4_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     exit_dt = now.replace(hour=R4_BTC_EXIT_HOUR, minute=0,
                            second=0, microsecond=0)
     capital = float(variant.get("capital_usdt") or 10000)
+    # P2.4d: opt into the variant-level margin-headroom cap.
+    from strategies.support import margin_headroom
+    candidate_notional = capital * weight * stacked_lev
+    ok, mh_reason = margin_headroom.can_open(variant, candidate_notional)
+    if not ok:
+        log.info(f"[jplus_live R4_BTC {variant['id']}] margin-constrained: "
+                 f"{mh_reason} (weight={weight:.3f}, k={stacked_lev:.2f}x)")
+        return {"status": "margin_constrained", "reason": mh_reason,
+                "weight": weight, "stacked_lev": stacked_lev,
+                "candidate_notional_usdt": candidate_notional}
     tid = trades.open_paper_trade(
         variant=variant, sleeve_name=STRATEGY_R4_BTC,
         asset="BTC", direction="LONG",
@@ -203,6 +213,16 @@ def r4_eth_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     exit_dt = tomorrow.replace(hour=R4_ETH_EXIT_HOUR, minute=0,
                                  second=0, microsecond=0)
     capital = float(variant.get("capital_usdt") or 10000)
+    # P2.4d: opt into the variant-level margin-headroom cap.
+    from strategies.support import margin_headroom
+    candidate_notional = capital * weight * stacked_lev
+    ok, mh_reason = margin_headroom.can_open(variant, candidate_notional)
+    if not ok:
+        log.info(f"[jplus_live R4_ETH {variant['id']}] margin-constrained: "
+                 f"{mh_reason} (weight={weight:.3f}, k={stacked_lev:.2f}x)")
+        return {"status": "margin_constrained", "reason": mh_reason,
+                "weight": weight, "stacked_lev": stacked_lev,
+                "candidate_notional_usdt": candidate_notional}
     tid = trades.open_paper_trade(
         variant=variant, sleeve_name=STRATEGY_R4_ETH,
         asset="ETH", direction="LONG",
@@ -282,6 +302,16 @@ def _r4_v2_try_fire(variant: dict, asset: str, strategy: str,
     exit_dt = now.replace(hour=R4_V2_EXIT_HOUR, minute=0,
                            second=0, microsecond=0)
     capital = float(variant.get("capital_usdt") or 10000)
+    # P2.4d: opt into the variant-level margin-headroom cap.
+    from strategies.support import margin_headroom
+    candidate_notional = capital * weight * stacked_lev
+    ok, mh_reason = margin_headroom.can_open(variant, candidate_notional)
+    if not ok:
+        log.info(f"[jplus_live {strategy} {variant['id']}] margin-constrained: "
+                 f"{mh_reason} (weight={weight:.3f}, k={stacked_lev:.2f}x)")
+        return {"status": "margin_constrained", "reason": mh_reason,
+                "weight": weight, "stacked_lev": stacked_lev,
+                "candidate_notional_usdt": candidate_notional}
     tid = trades.open_paper_trade(
         variant=variant, sleeve_name=strategy,
         asset=asset, direction="LONG",

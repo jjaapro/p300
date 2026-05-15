@@ -250,20 +250,19 @@ commit and probably multi-session. A reasonable sub-decomposition:
   `can_open(variant, candidate_notional_usdt) -> (bool, reason)`.
   Orchestrator + backtest_runner inject
   `_effective_margin_headroom_usdt` into every dispatched sleeve_cfg.
-  All 7 non-J+ sleeves have opted in by 2026-05-15: AI_QUANT (first;
-  both entry sites in `_reconcile` — fresh open returns
-  status=`skipped:margin_constrained`, direction flip returns
-  `closed:<old_id>` with `flip_aborted=margin_constrained`), then ADX,
-  CPR, PDO, THU_BEAR, FOMC, CARRY. Per-asset loop sleeves (CPR / PDO /
-  THU_BEAR) cascade correctly across BTC -> ETH within one tick
-  because `can_open` re-reads the DB each call, so the second asset's
-  candidate sees the first asset's just-opened row. Status returned
-  on overrun is `margin_constrained` (or `btc_cap_block` for the
-  older PDO+CPR cap path). 20 tests (16 module + 4 AI_QUANT opt-in).
-  Pending: (a) **J+ family opt-in** — same shape but with the
-  ti["weights"] / stacked_lev arithmetic; daily-firing so most
-  likely to hit the cap. (b) proportional reduce policy instead of
-  skip; (c) explicit sleeve priority (today: spec.composition iteration
+  All 13 dispatched sleeves have opted in by 2026-05-15: tactical
+  (AI_QUANT, ADX, CPR, PDO, THU_BEAR, FOMC, CARRY) check on
+  trade-open inside `try_fire_for_variant`; J+ family
+  (R4_BTC / R4_ETH / R4_BTC_V2 / R4_ETH_V2 / EMA_BTC / ETH_DAILY)
+  check on the fresh-open path (flip / scale on the two continuous
+  sleeves don't grow gross net; close is no-op for the cap). Per-asset
+  loop sleeves (CPR / PDO / THU_BEAR) cascade correctly across
+  BTC -> ETH within one tick because `can_open` re-reads the DB each
+  call, so the second asset's candidate sees the first asset's
+  just-opened row. Status returned on overrun is `margin_constrained`
+  (or `btc_cap_block` for the older PDO+CPR cap path).
+  Pending: (b) proportional reduce policy instead of skip;
+  (c) explicit sleeve priority (today: spec.composition iteration
   order).*
 - **P2.4e** — Cross-sleeve conflict resolver.
   *2026-05-15: detection layer shipped.

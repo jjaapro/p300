@@ -117,6 +117,21 @@ def ema_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
             return {"status": "awaiting_fresh_cross",
                     "ema_p": desired_ema_p, "ema_p_prev": prev_ema_p}
         direction = "LONG" if desired_ema_p > 0 else "SHORT"
+        # P2.4d: opt into the variant-level margin-headroom cap. Only
+        # checked here on the fresh-open case; flip (CASE 3) is a same-
+        # qty rotation that doesn't change gross, and scale (CASE 4)
+        # uses apply_scale which is a separate path the cap doesn't
+        # touch today.
+        from strategies.support import margin_headroom
+        candidate_notional = capital * desired_weight * desired_lev
+        ok, mh_reason = margin_headroom.can_open(variant, candidate_notional)
+        if not ok:
+            log.info(f"[jplus_live EMA_BTC {variant['id']}] margin-constrained: "
+                     f"{mh_reason} (weight={desired_weight:.3f}, "
+                     f"k={desired_lev:.2f}x)")
+            return {"status": "margin_constrained", "reason": mh_reason,
+                    "weight": desired_weight, "lev": desired_lev,
+                    "candidate_notional_usdt": candidate_notional}
         tid = _open_continuous(
             variant, "BTC", direction,
             desired_weight, desired_lev, price, ti["mode"],
