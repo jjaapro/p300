@@ -414,6 +414,13 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
     _load_dispatch()
     spec = variant.get("spec") or {}
     composition = spec.get("composition") or []
+    # P2.4d (c): explicit sleeve priority. Each composition entry MAY
+    # set ``priority`` (lower = higher priority — first crack at the
+    # margin pool / conflict slot / etc.). Stable sort means entries
+    # without ``priority`` keep their registration order, matching the
+    # pre-P2.4d (c) behaviour. Today's composition has no priorities
+    # set so the dispatch order is unchanged from previous releases.
+    composition = sorted(composition, key=lambda s: float(s.get("priority", 100)))
     # Classify regime once per composition pass; ``None`` is OK — sleeves
     # whose strategy_id isn't in the allocation table (or before warmup is
     # complete) fall back to their static composition ``weight_pct``.

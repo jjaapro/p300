@@ -231,6 +231,8 @@ def tick_replay_variant(variant: dict) -> None:
     orchestrator._load_dispatch()
     spec = variant.get("spec") or {}
     composition = spec.get("composition") or []
+    # P2.4d (c): explicit priority — mirror orchestrator._tick_composition.
+    composition = sorted(composition, key=lambda s: float(s.get("priority", 100)))
     # Per-tick regime classification mirrors orchestrator._tick_composition
     # (P2.4a). Backtests honor the same allocation table so dispatch parity
     # with live paper + sim mode is preserved.

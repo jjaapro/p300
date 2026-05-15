@@ -286,8 +286,18 @@ commit and probably multi-session. A reasonable sub-decomposition:
   by replacing `can_open` with `clamp_to_headroom` per sleeve. AI_QUANT
   was the natural pilot because its conviction scaling already varies
   size trade-by-trade.
-  Pending: (c) explicit sleeve priority (today: spec.composition iteration
-  order). The scale-adjustment check (P2.4d (d) in the earlier note)
+  (c) Explicit sleeve priority shipped 2026-05-16: each composition
+  entry may set `priority` (float; lower = higher priority — first
+  crack at margin pool / conflict slot). Orchestrator + backtest_runner
+  stable-sort the composition list by priority at the top of
+  `_tick_composition` / `tick_replay_variant`. Default priority is 100
+  for entries without an explicit field, so stable sort preserves
+  today's registration order. 5 tests in
+  tests/test_orchestrator_priority.py anchor the sort: unset preserves
+  registration order; lower-priority entries dispatch earlier; mixed
+  explicit / default sorts correctly; ties preserve input order; float
+  priorities supported for fine-grained tie-breakers.
+  The scale-adjustment check (P2.4d (d) in the earlier note)
   shipped 2026-05-15: EMA_BTC and ETH_DAILY's daily-rebalance CASE 4
   now checks `can_open` against `(desired_qty - cur_qty) * price`
   before calling `trades.apply_scale`; scale-DOWN is always allowed,
