@@ -255,7 +255,12 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
         if regime not in V3_REGIMES_ALLOWED:
             return {"status": "regime_block", "wed_regime": regime, "actions": actions}
         if version.startswith("V4"):
-            ok, event_reason = _v4_passes(today)
+            # P2.4b: orchestrator-injected gate, _v4_passes fallback for tests.
+            eff_gate = sleeve_cfg.get("_effective_gate")
+            if eff_gate is not None:
+                ok, event_reason = eff_gate.fire, eff_gate.reason
+            else:
+                ok, event_reason = _v4_passes(today)
             if not ok:
                 return {"status": "v4_event_block", "reason": event_reason,
                         "wed_regime": regime, "actions": actions}

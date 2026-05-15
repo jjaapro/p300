@@ -97,6 +97,86 @@ def test_r4_inner_lev_equivalence(monkeypatch):
     assert R4_INNER_LEV_UNGATED * 1.0 == pytest.approx(R4_INNER_LEV_UNGATED)
 
 
+# ─── THU_BEAR V4 event filter ────────────────────────────────────────────────
+
+def test_v4_gate_registered_for_s096():
+    assert "S-096" in gating.GATE_REGISTRY
+
+
+def test_v4_gate_returns_default_on_non_thursday():
+    """V4 only matters on Thursdays. Per-tick orchestrator calls on
+    Mon-Wed/Fri-Sun must be cheap no-ops returning DEFAULT_DECISION."""
+    from datetime import datetime, timezone
+    # 2026-05-13 is Wednesday
+    not_thursday = datetime(2026, 5, 13, 12, 0, tzinfo=timezone.utc)
+    d = gating.get_decision("S-096", "strong_bull", not_thursday)
+    assert d is gating.DEFAULT_DECISION
+
+
+def test_v4_gate_returns_default_when_now_utc_missing():
+    d = gating.get_decision("S-096", "strong_bull", None)
+    assert d is gating.DEFAULT_DECISION
+
+
+def test_v4_gate_passes_when_event_window_includes_today(monkeypatch):
+    """Thursday + today in include set + not in exclude set -> fire=True."""
+    from datetime import datetime, timezone
+    from strategies.sleeves.thu_bear import signal as thu_bear
+    monkeypatch.setattr(thu_bear, "_event_cache", {
+        "include": {"2026-05-14"},
+        "exclude": set(),
+    })
+    # 2026-05-14 is Thursday
+    thursday = datetime(2026, 5, 14, 0, 5, tzinfo=timezone.utc)
+    d = gating.get_decision("S-096", "strong_bull", thursday)
+    assert d.fire is True
+    assert d.reason == "v4_event_adjacent"
+    assert d.metadata == {"today_iso": "2026-05-14"}
+
+
+def test_v4_gate_blocks_when_opex_adjacent(monkeypatch):
+    """Thursday + today in exclude (OPEX-adjacent) -> fire=False."""
+    from datetime import datetime, timezone
+    from strategies.sleeves.thu_bear import signal as thu_bear
+    monkeypatch.setattr(thu_bear, "_event_cache", {
+        "include": {"2026-05-14"},
+        "exclude": {"2026-05-14"},
+    })
+    thursday = datetime(2026, 5, 14, 0, 5, tzinfo=timezone.utc)
+    d = gating.get_decision("S-096", "strong_bull", thursday)
+    assert d.fire is False
+    assert d.reason == "v4_opex_adjacent"
+
+
+def test_v4_gate_blocks_when_not_event_adjacent(monkeypatch):
+    """Thursday + today not in include -> fire=False (no_cpi_nfp)."""
+    from datetime import datetime, timezone
+    from strategies.sleeves.thu_bear import signal as thu_bear
+    monkeypatch.setattr(thu_bear, "_event_cache", {
+        "include": {"2026-05-21"},  # next Thursday, not this one
+        "exclude": set(),
+    })
+    thursday = datetime(2026, 5, 14, 0, 5, tzinfo=timezone.utc)
+    d = gating.get_decision("S-096", "strong_bull", thursday)
+    assert d.fire is False
+    assert d.reason == "v4_no_cpi_nfp_adjacency"
+
+
+def test_v4_gate_fails_closed_when_calendar_missing(monkeypatch):
+    """Empty include set (calendar unavailable) -> fire=False, never silently
+    degrades to V3 unconditional shorts."""
+    from datetime import datetime, timezone
+    from strategies.sleeves.thu_bear import signal as thu_bear
+    monkeypatch.setattr(thu_bear, "_event_cache", {
+        "include": set(),
+        "exclude": set(),
+    })
+    thursday = datetime(2026, 5, 14, 0, 5, tzinfo=timezone.utc)
+    d = gating.get_decision("S-096", "strong_bull", thursday)
+    assert d.fire is False
+    assert d.reason == "v4_event_calendar_unavailable_fail_closed"
+
+
 # ─── Orchestrator injection ──────────────────────────────────────────────────
 
 def test_orchestrator_injects_effective_gate(monkeypatch):

@@ -114,6 +114,35 @@ def _r4_vol_gate(strategy_id: str,
     )
 
 
+# ─── THU_BEAR V4 event filter ─────────────────────────────────────────────────
+
+def _v4_gate(strategy_id: str,
+             regime: Optional[str],
+             now_utc: Optional[datetime]) -> GateDecision:
+    """V4 = "Thursday, with CPI/NFP adjacency, not OPEX-adjacent."
+
+    Only meaningful on Thursdays (S-096's firing day). On other days,
+    returns the pass-through default so the orchestrator's per-tick call
+    is a cheap no-op. On Thursdays, delegates to
+    ``thu_bear.signal._v4_passes`` (the event-window math stays close to
+    its sleeve since it owns the scheduled_events lookup + per-session
+    cache).
+    """
+    if now_utc is None:
+        return DEFAULT_DECISION
+    if now_utc.weekday() != 3:  # 3 = Thursday
+        return DEFAULT_DECISION
+    from strategies.sleeves.thu_bear.signal import _v4_passes
+    today_iso = now_utc.date().isoformat()
+    ok, reason = _v4_passes(today_iso)
+    return GateDecision(
+        fire=ok,
+        leverage_mult=1.0,
+        reason=reason,
+        metadata={"today_iso": today_iso},
+    )
+
+
 # ─── Registry ─────────────────────────────────────────────────────────────────
 
 GATE_REGISTRY: dict[str, GateFn] = {
@@ -121,7 +150,10 @@ GATE_REGISTRY: dict[str, GateFn] = {
     "JPLUS_R4_ETH":    _r4_vol_gate,
     "JPLUS_R4_BTC_V2": _r4_vol_gate,
     "JPLUS_R4_ETH_V2": _r4_vol_gate,
-    # THU_BEAR V4, FOMC composite — pending migration; see module docstring.
+    "S-096":           _v4_gate,
+    # FOMC composite — pending migration; see module docstring. The FOMC
+    # sleeve owns calendar lookups + an observer-table cache for evaluate()
+    # results, so wiring its gate through here cleanly needs its own commit.
 }
 
 
