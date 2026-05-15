@@ -262,7 +262,7 @@ def tick_replay_variant(variant: dict) -> None:
         sleeve_with_k["_effective_gate"] = \
             gating.get_decision(strategy_id, regime, clock.now_utc())
         sleeve_with_k["_effective_vol_scalar"] = \
-            portfolio_vol.current_vol_scalar(strategy_id)
+            portfolio_vol.current_vol_scalar(strategy_id, variant)
         sleeve_with_k["_effective_margin_headroom_usdt"] = headroom_usdt_var
         try:
             dispatcher(variant, sleeve_with_k)

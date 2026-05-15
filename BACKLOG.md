@@ -236,18 +236,22 @@ commit and probably multi-session. A reasonable sub-decomposition:
   benchmark before live-promotion.*
 - **P2.4c** — Portfolio vol-target: replace the J+-only vol-target with
   a portfolio-level scalar applied to every sleeve's notional.
-  *2026-05-15: orchestrator-injection plumbing shipped (parity-
-  preserving). `strategies/support/portfolio_vol.py:current_vol_scalar`
-  returns `today_inputs()["lev"]` for J+ sleeves (matching today's
-  math) and None for tactical (today's behavior — no vol-targeting).
-  Orchestrator + backtest_runner inject `_effective_vol_scalar` per
-  dispatch. 6 J+ sleeves now read `_effective_vol_scalar` with
-  `ti["lev"]` fallback for direct test callers. 21 parity tests
-  anchor the contract. The actual portfolio-vol math (replacing the
-  BTC-only J+ scalar with a true portfolio-vol estimate, applied to
-  every sleeve) is a separate follow-up commit — at that point
-  tactical sleeves opt into consuming `_effective_vol_scalar` and the
-  semantics change. The dispatch wiring above does not.*
+  *2026-05-15: math shipped + opt-in switch.
+  `strategies/support/portfolio_vol.py:compute_portfolio_vol_scalar`
+  reads the variant's realized NAV from the trades ledger (rolling
+  30-day window, 10-obs minimum) and returns
+  ``target_vol_annual / realized_vol`` clamped to ``[0.5, 3.0]``.
+  Default target 30% annualized — matches the J+ family's regime
+  caps. The orchestrator's `current_vol_scalar(strategy_id, variant)`
+  reads the variant's ``spec.allocator_notes.use_portfolio_vol``
+  flag: when True it returns the portfolio scalar for EVERY sleeve;
+  when False (default) it returns legacy J+-only scalar / None for
+  tactical. The opt-in flag lets the operator activate the new math
+  on a paper-trading variant without disturbing the live variant; one
+  paper week of J+ behaviour under the new scalar before extending to
+  tactical. Tactical-sleeve consumption of `_effective_vol_scalar`
+  (i.e. `leverage *= scalar`) is the remaining piece — J+ already
+  reads the field. 29 tests (21 legacy + 8 new math/opt-in).*
 - **P2.4d** — Margin headroom check; deferral policy.
   *2026-05-15: scaffold + first opt-in shipped.
   `strategies/support/margin_headroom.py` exposes

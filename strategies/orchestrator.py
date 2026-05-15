@@ -438,7 +438,7 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
         sleeve_with_k["_effective_leverage"] = _resolve_sleeve_leverage(spec, sleeve)
         sleeve_with_k["_effective_weight_pct"] = _resolve_sleeve_weight(sleeve, regime)
         sleeve_with_k["_effective_gate"] = gating.get_decision(strategy_id, regime, now_utc)
-        sleeve_with_k["_effective_vol_scalar"] = portfolio_vol.current_vol_scalar(strategy_id)
+        sleeve_with_k["_effective_vol_scalar"] = portfolio_vol.current_vol_scalar(strategy_id, variant)
         sleeve_with_k["_effective_margin_headroom_usdt"] = headroom_usdt
         sleeve = sleeve_with_k
         dispatcher = STRATEGY_DISPATCH.get(strategy_id)
