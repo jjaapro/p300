@@ -359,3 +359,69 @@ def test_format_report_renders_without_crashing(synthetic_db):
     # ADX line must be in there with the right N.
     adx_lines = [ln for ln in out.splitlines() if "ADX" in ln and "|" in ln]
     assert adx_lines, "expected at least one ADX row in the formatted output"
+
+
+def test_build_report_handles_missing_variant_for_cross_sleeve(synthetic_db):
+    """The synthetic_db fixture doesn't seed a variants row, so
+    _build_cross_sleeve_state returns None. build_report must NOT raise,
+    and format_report must NOT render the cross-sleeve block."""
+    report = sh.build_report("syn_v", capital_usdt=10000.0)
+    assert report.cross_sleeve is None
+    out = sh.format_report(report)
+    assert "Cross-sleeve state" not in out
+
+
+def test_cross_sleeve_state_renders_with_seeded_variant(tmp_path, monkeypatch):
+    """End-to-end: seed a variants row + a couple of open trades, then
+    confirm the cross-sleeve section appears with the expected numbers."""
+    import sqlite3
+    from strategies.support import trade_db
+    db_path = tmp_path / "prod.db"
+    monkeypatch.setattr("strategies.support.db.DASH_DB", db_path)
+    monkeypatch.setattr("strategies.support.db.TRADER_DB", db_path)
+    monkeypatch.setattr("strategies.support.db.PROD_DB", db_path)
+    monkeypatch.setattr("strategies.support.trade_db.DB_PATH", db_path)
+    trade_db.init_db()
+    from strategies.support import variant_registry
+    variant_registry.init_schema()
+    # Seed a minimal variant row.
+    con = sqlite3.connect(str(db_path))
+    con.execute(
+        "INSERT INTO variants (id, short_name, long_name, kind, version, "
+        "  status, is_primary, capital_usdt, color, spec_json, notes, "
+        "  superseded_by, reconcile_against, enabled, created_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        ("V_test", "test", "test", "full_portfolio", "1.0", "paper", 0,
+         10000.0, "#000",
+         '{"allocator_notes": {"gross_notional_target_x": 2.5}}',
+         None, None, None, 1, "2026-05-15"),
+    )
+    # Two open paper trades, one of each direction → conflict on BTC.
+    for tid, strat, direction, size in (
+        ("T1", "S-003", "LONG", 7500.0),
+        ("T2", "S-096", "SHORT", 3000.0),
+    ):
+        con.execute(
+            "INSERT INTO trades (id, series, strategy_variant, strategy, "
+            "asset, direction, size_usdt, leverage, status, execution_mode, "
+            "actual_entry_time, entry_price) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (tid, "default", "V_test", strat, "BTC", direction, size, 5.0,
+             "open", "paper", "2026-05-15T00:00:00", 100000.0),
+        )
+    con.commit()
+    con.close()
+
+    report = sh.build_report("V_test", capital_usdt=10000.0)
+    assert report.cross_sleeve is not None
+    cs = report.cross_sleeve
+    assert cs.gross_cap_usdt == pytest.approx(25_000.0)
+    assert cs.current_gross_usdt == pytest.approx(10_500.0)
+    assert cs.headroom_usdt == pytest.approx(14_500.0)
+    assert len(cs.conflicts) == 1
+    assert cs.conflicts[0]["asset"] == "BTC"
+
+    out = sh.format_report(report)
+    assert "Cross-sleeve state" in out
+    assert "headroom: $14,500" in out
+    assert "BTC: LONG=[S-003]  SHORT=[S-096]" in out

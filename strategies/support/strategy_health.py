@@ -465,6 +465,20 @@ def ai_quant_window_stats(variant_id: str, window: Window) -> AIQuantWindowStats
 
 
 @dataclass(frozen=True)
+class CrossSleeveState:
+    """Point-in-time snapshot of the P2.4d/e/f cross-sleeve coordination
+    layer. Captures the gross-notional cap state + any open directional
+    conflicts + any concordant stacks. None of these are time-windowed
+    (they describe the variant's open-position book right now)."""
+    current_gross_usdt: float
+    gross_cap_usdt: float
+    headroom_usdt: float
+    headroom_pct_of_cap: float
+    conflicts: list[dict]            # asset -> long/short trade lists
+    concordant_stacks: list[dict]    # asset+direction buckets with N>=2
+
+
+@dataclass(frozen=True)
 class HealthReport:
     """Full health snapshot — portfolio across windows + per-sleeve breakdown."""
     variant_id: str
@@ -475,6 +489,8 @@ class HealthReport:
     sleeves: dict[str, list[SleeveMetrics]]        # {strategy: [per-window]}
     ai_quant: list[AIQuantWindowStats]             # one per window; all-zero rows
                                                     # when the sleeve hasn't fired
+    cross_sleeve: CrossSleeveState | None = None   # P2.4d/e/f state; None if
+                                                    # variant lookup failed
 
 
 def build_report(variant_id: str, capital_usdt: float | None = None,
@@ -498,11 +514,43 @@ def build_report(variant_id: str, capital_usdt: float | None = None,
         sleeves[s] = [sleeve_metrics(variant_id, s, w, capital_usdt)
                        for w in windows]
     ai_quant = [ai_quant_window_stats(variant_id, w) for w in windows]
+    cross = _build_cross_sleeve_state(variant_id)
     return HealthReport(
         variant_id=variant_id, capital_usdt=capital_usdt,
         as_of=clock.now_iso(), windows=windows,
         portfolio=portfolio, sleeves=sleeves, ai_quant=ai_quant,
+        cross_sleeve=cross,
     )
+
+
+def _build_cross_sleeve_state(variant_id: str) -> CrossSleeveState | None:
+    """Snapshot the P2.4d/e/f modules' state for this variant. Returns
+    None when the variant isn't registered (a fresh DB / replay variant
+    without a row, or any other read failure); callers should treat
+    None as "section unavailable". Read-only — must never raise back to
+    the bot's startup banner."""
+    try:
+        from strategies.support import (
+            conflict_resolver, margin_headroom, signal_aggregator,
+            variant_registry,
+        )
+        variant = variant_registry.get_variant(variant_id)
+        if variant is None:
+            return None
+        current = margin_headroom.current_gross_notional_usdt(variant_id)
+        cap = margin_headroom.gross_cap_usdt(variant)
+        headroom = cap - current
+        headroom_pct = (headroom / cap * 100.0) if cap > 0 else 0.0
+        return CrossSleeveState(
+            current_gross_usdt=current,
+            gross_cap_usdt=cap,
+            headroom_usdt=headroom,
+            headroom_pct_of_cap=headroom_pct,
+            conflicts=conflict_resolver.summarize_conflicts(variant_id),
+            concordant_stacks=signal_aggregator.summarize_concordant(variant_id),
+        )
+    except Exception:
+        return None
 
 
 # ─── Formatter ──────────────────────────────────────────────────────────────
@@ -622,6 +670,46 @@ def format_report(report: HealthReport) -> str:
                             f"API ${aq_stats.api_cost_usd:.2f}  "
                             f"net P&L ${net_pnl:+.2f}"
                         )
+    # Cross-sleeve state — P2.4d/e/f summary. Always shown if available
+    # (cheap; no DB-heavy queries). Skipped when build_report ran in a
+    # context where variant lookup failed (cross_sleeve=None).
+    if report.cross_sleeve is not None:
+        cs = report.cross_sleeve
+        lines.append("")
+        lines.append("  Cross-sleeve state  (margin headroom / conflicts / stacks)")
+        lines.append(
+            f"  gross: ${cs.current_gross_usdt:,.0f}  /  "
+            f"cap: ${cs.gross_cap_usdt:,.0f}  /  "
+            f"headroom: ${cs.headroom_usdt:,.0f}  "
+            f"({cs.headroom_pct_of_cap:.0f}% of cap)"
+        )
+        if cs.conflicts:
+            lines.append(
+                f"  WARN: {len(cs.conflicts)} asset(s) with opposing open positions:"
+            )
+            for c in cs.conflicts:
+                longs = ", ".join(t["strategy"] for t in c["long_trades"])
+                shorts = ", ".join(t["strategy"] for t in c["short_trades"])
+                lines.append(
+                    f"    {c['asset']}: LONG=[{longs}]  SHORT=[{shorts}]"
+                )
+        else:
+            lines.append("  no directional conflicts")
+        if cs.concordant_stacks:
+            lines.append(
+                f"  {len(cs.concordant_stacks)} concordant stack(s) "
+                f"(same-asset same-direction, N>=2):"
+            )
+            for bucket in cs.concordant_stacks:
+                strats = ", ".join(t["strategy"] for t in bucket["trades"])
+                lines.append(
+                    f"    {bucket['asset']} {bucket['direction']}  "
+                    f"n={bucket['n']}  total ${bucket['total_notional_usdt']:,.0f}  "
+                    f"[{strats}]"
+                )
+        else:
+            lines.append("  no concordant stacks")
+
     lines.append("")
     lines.append("=" * 78)
     return "\n".join(lines)
