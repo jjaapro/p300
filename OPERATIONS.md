@@ -75,25 +75,24 @@ opt out for a fast restart.
 
 The bot ticks every 60s. On each tick:
 
-- `variant_engine.tick()` closes due phantom trades, then dispatches each
-  sleeve's `try_fire_for_variant()`.
-- All sleeves open / close phantom trades in the `trades` table, tagged
-  with `strategy_variant='p300_aggressive_v2_v1_0'` and
-  `execution_mode='paper'`. Realized PnL is the sum of the trade
-  ledger; there is no parallel theoretical-PnL track.
-- 6 tactical sleeves: S-003 ADX, S-078 Carry, S-096 V4 Thu Bear,
-  PDO-L-RF, CPR, S-103 FOMC.
-- 6 Core J+ sub-sleeves (live since the 2026-05-10 refactor):
-  JPLUS_R4_BTC (Mon wk1-2 06→18 UTC), JPLUS_R4_ETH (Tue→Wed wk1-2 20→20),
-  JPLUS_R4_BTC_V2 / JPLUS_R4_ETH_V2 (Wed+Fri wk1-2 04→14 UTC),
-  JPLUS_EMA_BTC (continuous, weekly EMA cross), JPLUS_ETH_DAILY
-  (continuous in bull regimes only). Sized per-tick from
-  `jplus.simulate.today_inputs()`.
-- AI_QUANT (2% inside the tactical 50% cap; default-OFF via
-  `AI_QUANT_ENABLED` env) — daily Anthropic Opus 4.7 decision at
-  00:05–00:15 UTC.
-- FOMC sleeve fires only on FOMC days (8/yr) and writes a decision-row
-  audit trail to `fomc_observer` regardless of trade decision.
+- `orchestrator.tick()` runs the liquidation sweep, closes paper trades
+  whose scheduled exit_time has passed, then dispatches each sleeve's
+  `try_fire_for_variant()`.
+- Each dispatch carries `sleeve_cfg["_effective_*"]` fields the
+  orchestrator computed once per tick: regime-aware allocation
+  (P2.4a), sleeve gate decision (P2.4b), portfolio vol scalar
+  (P2.4c), and remaining margin headroom (P2.4d). Every sleeve also
+  re-queries `margin_headroom.can_open` + `conflict_resolver.detect_opposing_open`
+  at trade-open so the second sleeve to fire in a tick sees the first's
+  just-opened position.
+- All sleeves open / close paper trades in the `trades` table, tagged
+  `strategy_variant='p300_aggressive_v2_v1_0'`, `execution_mode='paper'`.
+  Realized PnL is the trade-ledger sum; no parallel theoretical track.
+- 13 sleeves dispatch every tick (see [README.md](README.md) for the
+  full table). FOMC writes a decision-row audit trail to
+  `fomc_observer` every FOMC day regardless of whether it trades.
+- AI_QUANT (default-OFF via `AI_QUANT_ENABLED` env) — at most one
+  Anthropic decision per UTC day, 00:05–00:15 UTC window.
 - A broken sleeve logs the exception but does **not** kill the loop
   (per-sleeve try/except in [strategies/orchestrator.py](strategies/orchestrator.py)).
 
@@ -101,10 +100,18 @@ The bot ticks every 60s. On each tick:
 
 **Variant metadata:**
 ```bash
-python -c "from services import variant_registry as r; \
+python -c "from strategies.support import variant_registry as r; \
   v = r.get_variant('p300_aggressive_v2_v1_0'); \
   print(v['short_name'], v['status'], v['enabled'])"
 ```
+
+**Cross-sleeve coordination snapshot** (gross / cap / headroom,
+directional conflicts, concordant stacks):
+```bash
+python -c "from strategies.support.strategy_health import build_report, format_report; \
+  print(format_report(build_report('p300_aggressive_v2_v1_0')))"
+```
+Same content appears in the bot's startup banner.
 
 **Open phantom trades:**
 ```bash
@@ -165,12 +172,23 @@ via `UPDATE trades SET status='closed'` — they're phantom, no exchange
 action needed).
 
 ### `today_inputs` returns None / J+ sub-sleeves don't fire
-`jplus.simulate.today_inputs()` returns None when there isn't enough
-warmup data (regime classifier needs ~50 daily closes; vol-percentile
-gate needs 365 days of BTC daily history). On a cold DB or one whose
-`btc_1m` / `cd_spot_binance` table is more than 1 day stale, J+
-sub-sleeves exit with `status='no_inputs'`. Run
+`strategies.support.jplus_inputs.today_inputs()` returns None when
+there isn't enough warmup data (regime classifier needs ~50 daily
+closes; vol-percentile gate needs 365 days of BTC daily history). On a
+cold DB or one whose `btc_1m` / `cd_spot_binance` table is more than 1
+day stale, J+ sub-sleeves exit with `status='no_inputs'`. Run
 `python binance_feed.py --once` to refresh, then next tick will succeed.
+
+### Sleeves report `margin_constrained` / `directional_conflict`
+Expected behaviour from the P2.4 coordination layer — see the
+cross-sleeve snapshot above for the variant's current gross / cap /
+open conflicts. `margin_constrained` fires when the variant's open
+notional + the candidate notional would exceed
+`gross_notional_target_x × capital`. `directional_conflict` fires when
+an earlier-dispatched sleeve already has an opposing-direction perp
+open on the same asset. Both are safety rails, not bugs — a
+persistent flow of these statuses for one sleeve hints at miscalibrated
+allocation or contradictory signals, not a code defect.
 
 ### Tests fail after a code change
 ```bash
@@ -279,10 +297,10 @@ DELETE FROM variant_daily_returns WHERE variant_id = '<variant_id>';
    "single-open invariant" inline comments). Violation indicates a
    regression in the sleeve logic.
 
-2. **No look-ahead.** Every DB read goes through `services.clock` so the
-   simulated clock can be moved without any module reading future data.
-   Verified by `tests/test_jplus_lookahead.py` — bit-identical output at
-   different clock positions.
+2. **No look-ahead.** Every DB read goes through `strategies.support.clock`
+   so the simulated clock can be moved without any module reading future
+   data. Verified by `tests/test_jplus_lookahead.py` — bit-identical
+   output at different clock positions.
 
 3. **Idempotent registration.** Re-running `register_p300.py` deletes
    and reinserts — never duplicates. Safe to run any time. `--dash-db`
@@ -297,9 +315,10 @@ DELETE FROM variant_daily_returns WHERE variant_id = '<variant_id>';
    every external-API refresh function early-returns its no-op value.
    Verified by `tests/test_sim_network_isolation.py`.
 
-6. **Test suite green.** `python -m pytest tests/` = 518 passing
-   (some sim tests skip if `data/prod.db` / `data/prod.db` are
-   absent, e.g. on a fresh CI checkout). If counts drop, don't deploy.
+6. **Test suite green.** `python -m pytest tests/` — 720+ passing as of
+   2026-05-15 (some sim tests skip if `data/prod.db` is absent, e.g.
+   on a fresh CI checkout). If counts drop after a code change,
+   don't deploy.
 
 ## 8. Contacts / knowledge
 
