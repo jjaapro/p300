@@ -226,6 +226,18 @@ commit and probably multi-session. A reasonable sub-decomposition:
       benchmark before live-promotion.*
 - **P2.4c** — Portfolio vol-target: replace the J+-only vol-target with
   a portfolio-level scalar applied to every sleeve's notional.
+  *2026-05-15: orchestrator-injection plumbing shipped (parity-
+  preserving). `strategies/support/portfolio_vol.py:current_vol_scalar`
+  returns `today_inputs()["lev"]` for J+ sleeves (matching today's
+  math) and None for tactical (today's behavior — no vol-targeting).
+  Orchestrator + backtest_runner inject `_effective_vol_scalar` per
+  dispatch. 6 J+ sleeves now read `_effective_vol_scalar` with
+  `ti["lev"]` fallback for direct test callers. 21 parity tests
+  anchor the contract. The actual portfolio-vol math (replacing the
+  BTC-only J+ scalar with a true portfolio-vol estimate, applied to
+  every sleeve) is a separate follow-up commit — at that point
+  tactical sleeves opt into consuming `_effective_vol_scalar` and the
+  semantics change. The dispatch wiring above does not.*
 - **P2.4d** — Margin headroom check; deferral policy.
 - **P2.4e** — Cross-sleeve conflict resolver.
 - **P2.4f** — Signal aggregator.

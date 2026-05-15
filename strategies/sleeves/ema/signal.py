@@ -92,7 +92,9 @@ def ema_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     eff_w = sleeve_cfg.get("_effective_weight_pct")
     desired_weight = ((eff_w / 100.0) if eff_w is not None
                        else float(ti["weights"]["ema_btc"]))
-    desired_lev = float(ti["lev"])
+    # P2.4c: orchestrator-injected vol scalar, ti["lev"] fallback for tests.
+    eff_vol = sleeve_cfg.get("_effective_vol_scalar")
+    desired_lev = float(eff_vol) if eff_vol is not None else float(ti["lev"])
 
     open_trades = trades.get_open_trades(variant["id"], STRATEGY_EMA_BTC)
     open_pos = open_trades[0] if open_trades else None

@@ -227,7 +227,7 @@ def tick_replay_variant(variant: dict) -> None:
     """Dispatch all sleeves in the replay variant's composition for the
     current simulated clock. Mirrors orchestrator._tick_composition but
     scoped to a single variant so we don't accidentally tick live data."""
-    from strategies.support import allocation, gating
+    from strategies.support import allocation, gating, portfolio_vol
     orchestrator._load_dispatch()
     spec = variant.get("spec") or {}
     composition = spec.get("composition") or []
@@ -260,6 +260,8 @@ def tick_replay_variant(variant: dict) -> None:
             orchestrator._resolve_sleeve_weight(sleeve, regime)
         sleeve_with_k["_effective_gate"] = \
             gating.get_decision(strategy_id, regime, clock.now_utc())
+        sleeve_with_k["_effective_vol_scalar"] = \
+            portfolio_vol.current_vol_scalar(strategy_id)
         try:
             dispatcher(variant, sleeve_with_k)
         except Exception:

@@ -114,7 +114,10 @@ def r4_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
         inner_lev = R4_INNER_LEV_UNGATED * eff_gate.leverage_mult
     else:
         inner_lev = R4_INNER_LEV_GATED if ti["gated"] else R4_INNER_LEV_UNGATED
-    stacked_lev = inner_lev * float(ti["lev"])
+    # P2.4c: orchestrator-injected vol scalar, ti["lev"] fallback for tests.
+    eff_vol = sleeve_cfg.get("_effective_vol_scalar")
+    vol_lev = float(eff_vol) if eff_vol is not None else float(ti["lev"])
+    stacked_lev = inner_lev * vol_lev
 
     price = price_feed.get_current_price("BTC")
     if price is None or price <= 0:
@@ -130,7 +133,7 @@ def r4_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
         allocation_pct=weight * 100.0,
         leverage=stacked_lev,
         reason={"sleeve": STRATEGY_R4_BTC, "mode": ti["mode"],
-                "vol_lev": ti["lev"], "inner_lev": inner_lev,
+                "vol_lev": vol_lev, "inner_lev": inner_lev,
                 "gated": ti["gated"], "trigger": "calendar_open"},
         scheduled_exit_dt=exit_dt,
         regime_value=ti["mode"],
@@ -188,7 +191,10 @@ def r4_eth_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
         inner_lev = R4_INNER_LEV_UNGATED * eff_gate.leverage_mult
     else:
         inner_lev = R4_INNER_LEV_GATED if ti["gated"] else R4_INNER_LEV_UNGATED
-    stacked_lev = inner_lev * float(ti["lev"])
+    # P2.4c: orchestrator-injected vol scalar, ti["lev"] fallback for tests.
+    eff_vol = sleeve_cfg.get("_effective_vol_scalar")
+    vol_lev = float(eff_vol) if eff_vol is not None else float(ti["lev"])
+    stacked_lev = inner_lev * vol_lev
 
     price = price_feed.get_current_price("ETH")
     if price is None or price <= 0:
@@ -204,7 +210,7 @@ def r4_eth_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
         allocation_pct=weight * 100.0,
         leverage=stacked_lev,
         reason={"sleeve": STRATEGY_R4_ETH, "mode": ti["mode"],
-                "vol_lev": ti["lev"], "inner_lev": inner_lev,
+                "vol_lev": vol_lev, "inner_lev": inner_lev,
                 "gated": ti["gated"], "trigger": "calendar_open",
                 "trade_day": tomorrow.date().isoformat()},
         scheduled_exit_dt=exit_dt,
@@ -264,7 +270,10 @@ def _r4_v2_try_fire(variant: dict, asset: str, strategy: str,
         inner_lev = R4_INNER_LEV_UNGATED * eff_gate.leverage_mult
     else:
         inner_lev = R4_INNER_LEV_GATED if ti["gated"] else R4_INNER_LEV_UNGATED
-    stacked_lev = inner_lev * float(ti["lev"])
+    # P2.4c: orchestrator-injected vol scalar, ti["lev"] fallback for tests.
+    eff_vol = sleeve_cfg.get("_effective_vol_scalar")
+    vol_lev = float(eff_vol) if eff_vol is not None else float(ti["lev"])
+    stacked_lev = inner_lev * vol_lev
 
     price = price_feed.get_current_price(asset)
     if price is None or price <= 0:
@@ -280,7 +289,7 @@ def _r4_v2_try_fire(variant: dict, asset: str, strategy: str,
         allocation_pct=weight * 100.0,
         leverage=stacked_lev,
         reason={"sleeve": strategy, "mode": ti["mode"],
-                "vol_lev": ti["lev"], "inner_lev": inner_lev,
+                "vol_lev": vol_lev, "inner_lev": inner_lev,
                 "gated": ti["gated"], "trigger": "calendar_open",
                 "window": "wed_fri_wk1-2_04-14_v2"},
         scheduled_exit_dt=exit_dt,

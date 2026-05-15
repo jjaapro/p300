@@ -402,13 +402,15 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
     the 60% core sleeve) are skipped here to avoid double-firing — they run
     in their own right as separate enabled variants.
 
-    Per-sleeve leverage, per-regime weight, and gate decision (for migrated
-    sleeves) are resolved here and injected into the sleeve_cfg as
-    ``_effective_leverage`` / ``_effective_weight_pct`` / ``_effective_gate``.
-    Downstream sleeves multiply leverage into size_usdt and write to
-    trade.leverage; weight feeds allocation_pct; gate.leverage_mult further
-    modulates leverage; gate.fire=False is a hard entry block."""
-    from strategies.support import allocation, gating
+    Per-sleeve leverage, per-regime weight, gate decision, and vol-target
+    scalar (for migrated sleeves) are resolved here and injected into the
+    sleeve_cfg as ``_effective_leverage`` / ``_effective_weight_pct`` /
+    ``_effective_gate`` / ``_effective_vol_scalar``. Downstream sleeves
+    multiply leverage into size_usdt and write to trade.leverage; weight
+    feeds allocation_pct; gate.leverage_mult further modulates leverage;
+    gate.fire=False is a hard entry block; the vol scalar (J+ family only
+    today; portfolio-wide in a P2.4c follow-up) further scales leverage."""
+    from strategies.support import allocation, gating, portfolio_vol
     _load_dispatch()
     spec = variant.get("spec") or {}
     composition = spec.get("composition") or []
@@ -427,11 +429,12 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
         if not strategy_id:
             continue
         # Resolve and inject per-sleeve leverage + regime-aware weight + gate
-        # (non-destructive copy).
+        # + vol scalar (non-destructive copy).
         sleeve_with_k = dict(sleeve)
         sleeve_with_k["_effective_leverage"] = _resolve_sleeve_leverage(spec, sleeve)
         sleeve_with_k["_effective_weight_pct"] = _resolve_sleeve_weight(sleeve, regime)
         sleeve_with_k["_effective_gate"] = gating.get_decision(strategy_id, regime, now_utc)
+        sleeve_with_k["_effective_vol_scalar"] = portfolio_vol.current_vol_scalar(strategy_id)
         sleeve = sleeve_with_k
         dispatcher = STRATEGY_DISPATCH.get(strategy_id)
         if dispatcher is None:
