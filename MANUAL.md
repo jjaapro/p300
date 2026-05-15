@@ -393,9 +393,14 @@ Where:
 - All four R4 contributions are **multiplied by the gate factor** (2.5× normally; 1.0× when the vol-percentile gate has fired)
 
 > **CORE_ALLOC_CAP = 0.50 (since 2026-05-12).** The raw rows above sum to
-> >1.0 in every non-bear regime. To enforce the Core/Tactical 50/50 cap,
-> `jplus.simulate._cap_core_weights()` rescales every row whose raw sum
-> > 0.50 by `0.50 / raw_sum`, preserving relative weighting. After
+> >1.0 in every non-bear regime. The cap is preserved as a transitional
+> runtime safety on the J+ family (post-P2.4a the Core/Tactical split
+> is dropped; this scalar just bounds the family's raw weights until
+> the orchestrator owns full cross-sleeve allocation logic).
+> `_cap_core_weights()` in
+> [strategies/support/jplus_inputs.py](strategies/support/jplus_inputs.py)
+> rescales every row whose raw sum > 0.50 by `0.50 / raw_sum`, preserving
+> relative weighting. After
 > capping: strong_bull/mild_bull/uncertain all sum to **0.500**; bear is
 > unchanged at 0.30. The capped values are what `today_inputs()`
 > returns and what each Core sub-sleeve sizes its live trade against.
