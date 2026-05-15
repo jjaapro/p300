@@ -358,17 +358,30 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             results.append({"asset": asset, "status": "stale_price_skip"})
             continue
 
-        # P2.4d: opt into the variant-level margin-headroom cap.
+        # P2.4d: opt into the variant-level margin-headroom cap with
+        # the reduce policy (P2.4d (b)). Per-asset sleeves benefit
+        # most: BTC may fit while ETH doesn't (or vice versa); reduce
+        # opens at whatever portion of the candidate fits within
+        # remaining headroom rather than skipping the asset entirely.
         from strategies.support import margin_headroom
         capital = float(variant.get("capital_usdt") or 10000)
         candidate_notional = capital * (per_asset_alloc / 100.0) * leverage
-        ok, mh_reason = margin_headroom.can_open(variant, candidate_notional)
-        if not ok:
+        clamped, status, mh_reason = margin_headroom.clamp_to_headroom(
+            variant, candidate_notional)
+        if status in ("too_small", "no_headroom"):
             log.info(f"[pdo {variant['id']} {asset}] margin-constrained: "
                      f"{mh_reason} (alloc={per_asset_alloc}%, k={leverage}x)")
             results.append({"asset": asset, "status": "margin_constrained",
-                            "reason": mh_reason})
+                            "reason": mh_reason, "headroom_status": status})
             continue
+        if status == "reduced":
+            new_alloc = clamped * 100.0 / (capital * leverage)
+            log.info(f"[pdo {variant['id']} {asset}] margin-reduce: "
+                     f"alloc {per_asset_alloc:.2f}%->{new_alloc:.2f}% "
+                     f"(notional {candidate_notional:,.0f}->{clamped:,.0f})")
+            asset_alloc = new_alloc
+        else:
+            asset_alloc = per_asset_alloc
 
         reason = {
             "trigger": "PDO_retouch",
@@ -380,12 +393,15 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             "btc_30d_pct": round(btc_30d, 2) if btc_30d is not None else None,
             "hold_hours": hold_hours,
             "regime": "gap_up_retrace",
+            **({"headroom_clamped": True,
+                "candidate_notional_usdt_intended": candidate_notional}
+               if status == "reduced" else {}),
         }
-        tid = _open_pdo_paper(variant, asset, entry_price, per_asset_alloc,
+        tid = _open_pdo_paper(variant, asset, entry_price, asset_alloc,
                                leverage, hold_hours, reason)
         log.info(f"[pdo {variant['id']} {asset}] opened {tid} @ {entry_price:.2f} "
                  f"(PDO={sig['pdo']:.2f}, gap={sig['gap_pct']:.2f}%, "
-                 f"alloc={per_asset_alloc}%, lev={leverage:.1f}x)")
+                 f"alloc={asset_alloc}%, lev={leverage:.1f}x)")
         results.append({"asset": asset, "status": "opened", "trade_id": tid,
                         "entry_price": entry_price, "pdo": sig["pdo"]})
 
