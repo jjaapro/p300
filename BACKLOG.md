@@ -272,6 +272,17 @@ commit and probably multi-session. A reasonable sub-decomposition:
   reconciliation with conviction comparison instead of
   first-come-first-served) is a Stage 2 follow-up.*
 - **P2.4f** — Signal aggregator.
+  *2026-05-15: detection layer shipped (dual of P2.4e).
+  `strategies/support/signal_aggregator.py` exposes
+  `detect_concordant_opens(variant_id, asset, direction)` — every open
+  paper trade matching the candidate's direction, sorted by entry time
+  — and `summarize_concordant(variant_id)` — every (asset, direction)
+  bucket with N>=2 stacked positions plus their summed notional + alloc.
+  CARRY excluded (delta-neutral, same as P2.4e). 15 tests anchor the
+  filtering + summary math. No orchestrator wiring yet; sleeves /
+  operator dashboards consume directly. Stage 2 (pool concordant
+  signals into one conviction-weighted exposure before opening)
+  shares the two-phase-dispatch dependency with P2.4e Stage 2.*
 
 ### P2.4a status (2026-05-14)
 
