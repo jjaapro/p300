@@ -214,16 +214,26 @@ commit and probably multi-session. A reasonable sub-decomposition:
   composite / R4 vol-gate to register against it; document expected
   walk-forward CV protocol for new gates.
   *2026-05-15: `strategies/support/gating.py` holds the `GateDecision`
-  dataclass + `GATE_REGISTRY`. Five sleeves migrated — R4_BTC / R4_ETH
-  / R4_BTC_V2 / R4_ETH_V2 (vol-gate; `leverage_mult` modulator) and
-  S-096 / THU_BEAR (V4 event filter; binary `fire`). Orchestrator
-  injects `_effective_gate` per dispatch. Pending:*
-    - *FOMC composite — entangled with the sleeve's observer table +
-      Phase 1/2 caching; deserves its own focused commit so the
-      evaluate() call isn't run blindly per tick.*
-    - *Walk-forward CV protocol for new gates — unwritten. Each gate
-      should have a documented out-of-sample sharpe / expectancy
-      benchmark before live-promotion.*
+  dataclass + `GATE_REGISTRY`. All three originally-scoped gates
+  registered:*
+    - *R4 vol-gate — wraps `today_inputs()['gated']`. Modulator
+      (`leverage_mult` ∈ {0.4, 1.0}, `fire=True` always). Registered
+      for the four R4 sleeves; each consumes `_effective_gate.leverage_mult`
+      directly.*
+    - *V4 event filter — wraps `_v4_passes`. Binary block (`fire=False`
+      for OPEX-adjacent or no-event-adjacency Thursdays). Registered
+      for S-096; THU_BEAR consumes `_effective_gate.fire`.*
+    - *FOMC composite — reads the `fomc_observer` table for the
+      cached `evaluate()` result on the next FOMC date. Cheap on
+      non-FOMC ticks (calendar short-circuit). The FOMC sleeve does
+      not yet consume the gate — its own Phase 1/2 decision logic
+      stays inline — but operator dashboards / `strategy_health`'s
+      cross-sleeve snapshot can now read the same decision via the
+      gate, so the registered surface is uniform across all three
+      gates.*
+  *Walk-forward CV protocol for new gates — unwritten. Each gate
+  should have a documented out-of-sample sharpe / expectancy
+  benchmark before live-promotion.*
 - **P2.4c** — Portfolio vol-target: replace the J+-only vol-target with
   a portfolio-level scalar applied to every sleeve's notional.
   *2026-05-15: orchestrator-injection plumbing shipped (parity-

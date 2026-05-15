@@ -177,6 +177,113 @@ def test_v4_gate_fails_closed_when_calendar_missing(monkeypatch):
     assert d.reason == "v4_event_calendar_unavailable_fail_closed"
 
 
+# ─── FOMC composite filter ───────────────────────────────────────────────────
+
+def test_fomc_gate_registered():
+    assert "FOMC" in gating.GATE_REGISTRY
+
+
+def test_fomc_gate_returns_default_when_no_fomc_due(monkeypatch):
+    """If next_fomc_date returns None (no FOMC within 2 days), gate is a
+    no-op. Most ticks take this path."""
+    from datetime import datetime, timezone
+    import strategies.sleeves.fomc.signal as fomc_signal
+    monkeypatch.setattr(fomc_signal, "next_fomc_date", lambda now, lookahead_days=2: None)
+    now = datetime(2026, 5, 15, 12, 0, tzinfo=timezone.utc)
+    assert gating.get_decision("FOMC", "uncertain", now) is gating.DEFAULT_DECISION
+
+
+def test_fomc_gate_returns_default_when_now_utc_missing():
+    assert gating.get_decision("FOMC", "uncertain", None) is gating.DEFAULT_DECISION
+
+
+def test_fomc_gate_returns_default_when_no_cached_eval(monkeypatch, tmp_path):
+    """FOMC is due but Phase 1 hasn't pre-decided yet — observer row is
+    missing. Gate must not block; the sleeve will run Phase 1 and
+    populate the row, after which subsequent ticks see a non-default
+    decision."""
+    from datetime import datetime, timezone
+    import sqlite3
+    import strategies.sleeves.fomc.signal as fomc_signal
+    monkeypatch.setattr(fomc_signal, "next_fomc_date", lambda now, lookahead_days=2: "2026-06-18")
+    db_path = tmp_path / "prod.db"
+    con = sqlite3.connect(str(db_path))
+    con.execute("CREATE TABLE fomc_observer ("
+                 "  fomc_date TEXT PRIMARY KEY, decision TEXT, reason TEXT, "
+                 "  phase TEXT, fear_greed_bucket TEXT, expected_action TEXT)")
+    con.commit(); con.close()
+    monkeypatch.setattr("strategies.support.db.TRADER_DB", db_path)
+    monkeypatch.setattr("strategies.support.db.PROD_DB", db_path)
+    now = datetime(2026, 6, 17, 12, 0, tzinfo=timezone.utc)
+    assert gating.get_decision("FOMC", "uncertain", now) is gating.DEFAULT_DECISION
+
+
+def test_fomc_gate_fires_when_cached_decision_is_trade(monkeypatch, tmp_path):
+    from datetime import datetime, timezone
+    import sqlite3
+    import strategies.sleeves.fomc.signal as fomc_signal
+    monkeypatch.setattr(fomc_signal, "next_fomc_date", lambda now, lookahead_days=2: "2026-06-18")
+    db_path = tmp_path / "prod.db"
+    con = sqlite3.connect(str(db_path))
+    con.execute("CREATE TABLE fomc_observer ("
+                 "  fomc_date TEXT PRIMARY KEY, decision TEXT, reason TEXT, "
+                 "  phase TEXT, fear_greed_bucket TEXT, expected_action TEXT)")
+    con.execute(
+        "INSERT INTO fomc_observer VALUES (?, ?, ?, ?, ?, ?)",
+        ("2026-06-18", "trade", "phase=peak_hold; fg=neutral",
+         "peak_hold", "neutral", "hold"),
+    )
+    con.commit(); con.close()
+    monkeypatch.setattr("strategies.support.db.TRADER_DB", db_path)
+    monkeypatch.setattr("strategies.support.db.PROD_DB", db_path)
+    now = datetime(2026, 6, 17, 12, 0, tzinfo=timezone.utc)
+    d = gating.get_decision("FOMC", "uncertain", now)
+    assert d.fire is True
+    assert "phase=peak_hold" in d.reason
+    assert d.metadata["fomc_date"] == "2026-06-18"
+    assert d.metadata["phase"] == "peak_hold"
+
+
+def test_fomc_gate_blocks_when_cached_decision_is_skip(monkeypatch, tmp_path):
+    from datetime import datetime, timezone
+    import sqlite3
+    import strategies.sleeves.fomc.signal as fomc_signal
+    monkeypatch.setattr(fomc_signal, "next_fomc_date", lambda now, lookahead_days=2: "2026-06-18")
+    db_path = tmp_path / "prod.db"
+    con = sqlite3.connect(str(db_path))
+    con.execute("CREATE TABLE fomc_observer ("
+                 "  fomc_date TEXT PRIMARY KEY, decision TEXT, reason TEXT, "
+                 "  phase TEXT, fear_greed_bucket TEXT, expected_action TEXT)")
+    con.execute(
+        "INSERT INTO fomc_observer VALUES (?, ?, ?, ?, ?, ?)",
+        ("2026-06-18", "skip", "phase=mid_hold (25% win rate)",
+         "mid_hold", "neutral", "hold"),
+    )
+    con.commit(); con.close()
+    monkeypatch.setattr("strategies.support.db.TRADER_DB", db_path)
+    monkeypatch.setattr("strategies.support.db.PROD_DB", db_path)
+    now = datetime(2026, 6, 17, 12, 0, tzinfo=timezone.utc)
+    d = gating.get_decision("FOMC", "uncertain", now)
+    assert d.fire is False
+    assert "mid_hold" in d.reason
+
+
+def test_fomc_gate_handles_missing_table(monkeypatch, tmp_path):
+    """A bot booting on a fresh DB before fomc_observer is created sees
+    sqlite3.OperationalError. Gate must swallow it and return DEFAULT."""
+    from datetime import datetime, timezone
+    import strategies.sleeves.fomc.signal as fomc_signal
+    monkeypatch.setattr(fomc_signal, "next_fomc_date", lambda now, lookahead_days=2: "2026-06-18")
+    db_path = tmp_path / "prod.db"
+    # Empty DB — no fomc_observer table.
+    import sqlite3
+    sqlite3.connect(str(db_path)).close()
+    monkeypatch.setattr("strategies.support.db.TRADER_DB", db_path)
+    monkeypatch.setattr("strategies.support.db.PROD_DB", db_path)
+    now = datetime(2026, 6, 17, 12, 0, tzinfo=timezone.utc)
+    assert gating.get_decision("FOMC", "uncertain", now) is gating.DEFAULT_DECISION
+
+
 # ─── Orchestrator injection ──────────────────────────────────────────────────
 
 def test_orchestrator_injects_effective_gate(monkeypatch):

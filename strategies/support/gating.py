@@ -18,15 +18,22 @@ classifies regime once per tick and calls :func:`get_decision` per
 sleeve; the result is injected as ``sleeve_cfg["_effective_gate"]``
 alongside the existing ``_effective_leverage`` / ``_effective_weight_pct``.
 
-Migration order:
-  1. **R4 vol-gate** (this commit) — pilot. R4 sleeves consume
-     ``_effective_gate.leverage_mult`` to set inner leverage; fall back
-     to the legacy ``ti["gated"]`` path for direct callers (tests).
-  2. THU_BEAR V4 — convert ``_v4_passes`` into a gate function returning
-     ``GateDecision(fire=False, reason="v4_opex_adjacent")`` etc.
-     Sleeve code shrinks to ``if not eff_gate.fire: return ...``.
-  3. FOMC composite — same shape; ``evaluate``'s ``decision == "skip"``
-     becomes ``fire=False`` with the same reason text.
+Three gates registered:
+  1. **R4 vol-gate** — wraps ``today_inputs()['gated']``. Returns
+     ``leverage_mult=0.4`` (gated) or ``1.0`` (ungated). Always
+     ``fire=True``. Registered for the four R4 sleeves; R4 handlers
+     read ``_effective_gate.leverage_mult`` directly.
+  2. **THU_BEAR V4** — wraps ``_v4_passes``. Calendar-checks
+     Thursday-only, then queries the scheduled_events table for
+     CPI/NFP adjacency + OPEX exclusion. ``fire=False`` blocks entry.
+     Registered for S-096; sleeve consumes via ``_effective_gate``.
+  3. **FOMC composite** — reads the ``fomc_observer`` table for the
+     cached ``evaluate()`` result on the next FOMC date. Calendar-
+     checks for FOMC within 2 days first. Returns ``fire`` based on
+     ``decision == "trade"``. Registered for FOMC; the sleeve still
+     owns its own decision logic (the gate mirrors it for operator
+     visibility — health-report sees the same value the sleeve will
+     act on).
 
 Future work (post-P2.4):
   - Walk-forward CV protocol for gate calibration (each gate should
@@ -143,6 +150,70 @@ def _v4_gate(strategy_id: str,
     )
 
 
+# ─── FOMC composite filter ────────────────────────────────────────────────────
+
+def _fomc_gate(strategy_id: str,
+               regime: Optional[str],
+               now_utc: Optional[datetime]) -> GateDecision:
+    """Composite filter: phase × F&G bucket × Polymarket expected action.
+
+    The FOMC sleeve maintains an observer table
+    (``fomc_observer`` in ``data/prod.db``) where each FOMC date's
+    composite ``evaluate()`` result is cached for the lifetime of that
+    meeting cycle. This gate reads the cache rather than running
+    ``evaluate()`` per tick — the call hits three external services and
+    is expensive.
+
+    On non-FOMC ticks (most), short-circuits to pass-through after a
+    cheap calendar lookup. On FOMC days where the sleeve has not yet
+    pre-decided (Phase 1 runs at T-11h), also returns pass-through;
+    the sleeve's own Phase 1 logic will populate the observer row.
+    """
+    if now_utc is None:
+        return DEFAULT_DECISION
+    # Calendar lookup (~ms). Returns None when no FOMC is within window.
+    try:
+        from strategies.sleeves.fomc.signal import next_fomc_date
+    except ImportError:
+        return DEFAULT_DECISION
+    fomc_date = next_fomc_date(now_utc, lookahead_days=2)
+    if fomc_date is None:
+        return DEFAULT_DECISION
+
+    import sqlite3
+    from strategies.support import db
+    con = sqlite3.connect(str(db.TRADER_DB))
+    con.row_factory = sqlite3.Row
+    try:
+        row = con.execute(
+            "SELECT decision, reason, phase, fear_greed_bucket, expected_action "
+            "FROM fomc_observer WHERE fomc_date = ?",
+            (fomc_date,),
+        ).fetchone()
+    except sqlite3.OperationalError:
+        row = None  # table missing — fall back to pass-through
+    finally:
+        con.close()
+
+    if row is None:
+        return DEFAULT_DECISION
+
+    decision = (row["decision"] or "").lower()
+    fire = (decision == "trade")
+    reason = row["reason"] or ("fomc_eval_trade" if fire else "fomc_eval_skip")
+    return GateDecision(
+        fire=fire,
+        leverage_mult=1.0,
+        reason=reason[:200],
+        metadata={
+            "fomc_date": fomc_date,
+            "phase": row["phase"],
+            "fear_greed_bucket": row["fear_greed_bucket"],
+            "expected_action": row["expected_action"],
+        },
+    )
+
+
 # ─── Registry ─────────────────────────────────────────────────────────────────
 
 GATE_REGISTRY: dict[str, GateFn] = {
@@ -151,9 +222,7 @@ GATE_REGISTRY: dict[str, GateFn] = {
     "JPLUS_R4_BTC_V2": _r4_vol_gate,
     "JPLUS_R4_ETH_V2": _r4_vol_gate,
     "S-096":           _v4_gate,
-    # FOMC composite — pending migration; see module docstring. The FOMC
-    # sleeve owns calendar lookups + an observer-table cache for evaluate()
-    # results, so wiring its gate through here cleanly needs its own commit.
+    "FOMC":            _fomc_gate,
 }
 
 
