@@ -359,8 +359,15 @@ def reset_throttle() -> None:
 
 def latest_oi(hours_back: int = 168) -> list[dict]:
     """Hourly OI rows from the last `hours_back` hours, oldest-first.
-    Empty list if the table doesn't exist or has no rows in the window."""
-    cutoff = int(time.time()) - hours_back * 3600
+    Empty list if the table doesn't exist or has no rows in the window.
+
+    Uses ``clock.now_ts()`` for the cutoff so sim / backtest under a
+    pinned clock see the correct slice of historical rows. Wall
+    ``time.time()`` would yield an empty list (or only the most recent
+    sliver) when the simulated clock is far in the past.
+    """
+    from strategies.support import clock
+    cutoff = clock.now_ts() - hours_back * 3600
     con = sqlite3.connect(str(db.TRADER_DB))
     try:
         _ensure_schema(con)
@@ -375,8 +382,12 @@ def latest_oi(hours_back: int = 168) -> list[dict]:
 
 
 def latest_liquidations(hours_back: int = 168) -> list[dict]:
-    """Hourly liquidation rows from the last `hours_back` hours, oldest-first."""
-    cutoff = int(time.time()) - hours_back * 3600
+    """Hourly liquidation rows from the last `hours_back` hours, oldest-first.
+
+    Uses ``clock.now_ts()`` for the cutoff (same reasoning as :func:`latest_oi`).
+    """
+    from strategies.support import clock
+    cutoff = clock.now_ts() - hours_back * 3600
     con = sqlite3.connect(str(db.TRADER_DB))
     try:
         _ensure_schema(con)
@@ -401,8 +412,13 @@ def latest_liquidations(hours_back: int = 168) -> list[dict]:
 
 
 def latest_dvol(asset: str, days_back: int = 30) -> list[dict]:
-    """Daily DVOL rows for `asset` over the last `days_back` days."""
-    cutoff = int(time.time()) - days_back * 86400
+    """Daily DVOL rows for `asset` over the last `days_back` days.
+
+    Uses ``clock.now_ts()`` so sim / backtest see the right slice when
+    the clock is pinned (same reasoning as :func:`latest_liquidations`).
+    """
+    from strategies.support import clock
+    cutoff = clock.now_ts() - days_back * 86400
     con = sqlite3.connect(str(db.TRADER_DB))
     try:
         _ensure_schema(con)
