@@ -325,7 +325,7 @@ Same gate / leverage logic as R4 BTC V1.
 
 The Mon+Wed R4_BTC original was split: Wednesdays moved to a new
 `R4_BTC_V2` window (04→14 UTC) along with Fridays — the
-[r4_study](tools/r4_study/findings.md) found the Wed+Fri 04→14 cell
+[r4_study](studies/notebooks/r4_study/findings.md) found the Wed+Fri 04→14 cell
 positive across all eras (pre-Binance-perp, Binance-perp, post-ETF),
 unlike the post-ETF-emergent Mon 06→18 V1 cell.
 
@@ -791,5 +791,6 @@ That's your morning briefing in one cell.
 
 This manual is meant to be living documentation. If you start running
 it manually and discover gotchas not listed here, add them. The bot's
-code is in `services/` and `jplus/` if you ever want to verify a rule
-against the canonical implementation.
+code is in `strategies/` (sleeves under `strategies/sleeves/<name>/`,
+shared math + state under `strategies/support/`) if you ever want to
+verify a rule against the canonical implementation.

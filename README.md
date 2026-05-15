@@ -14,14 +14,14 @@ history comes from Coinalyze (free tier).
 > 2026-05 trade-emitter migration stopped writing — it is **not
 > reproducible from current code** and has been retracted pending
 > regeneration on the realized trade ledger. The migrated tool
-> (`python tools/tools_statistical_validation.py`) now runs against
+> (`python studies/notebooks/tools_statistical_validation.ipynb`) now runs against
 > closed paper trades directly; paper accumulation is the only real
 > OOS validation path, and the live-window Sharpe stabilises only after
 > ~6+ months of realized data.
 
 ## What runs live here
 
-Sleeves dispatched per-minute via `services/variant_engine.py`. All sleeves
+Sleeves dispatched per-minute via `strategies/orchestrator.py`. All sleeves
 emit real-time trades to the same `trades` table; realized PnL is the
 trade-ledger sum (no parallel theoretical-return track):
 
@@ -31,7 +31,7 @@ trade-ledger sum (no parallel theoretical-return track):
   wk1-2), R4_BTC_V2 / R4_ETH_V2 (Wed+Fri wk1-2 04:00→14:00 UTC),
   EMA_BTC (continuous, weekly EMA(5)/EMA(21) crossover), ETH_DAILY
   (continuous in bull regimes only). Sized per-tick from
-  [`jplus.simulate.today_inputs()`](jplus/simulate.py) — regime-weighted
+  [`jplus.simulate.today_inputs()`](strategies/support/jplus_inputs.py) — regime-weighted
   sub-sleeve weights × inner R4 lev × vol-target lev, all from T-1 data.
 - **Six tactical sleeves (50%)** — S-003 ADX, S-078 Carry, S-096 V4 Thu
   Bear, S-102 PDO-L-RF, S-101 CPR, S-103 FOMC. Discrete entries/exits in
@@ -49,14 +49,14 @@ caveats). It stays in sync with [register_p300.py](register_p300.py); this
 README is intentionally a thin pointer to avoid duplication drift.
 
 The original ML gate was replaced with a deterministic vol-percentile rule
-(see [jplus/gate.py](jplus/gate.py)) after we found the upstream gate's
+(see [strategies/support/gate.py](strategies/support/gate.py)) after we found the upstream gate's
 features used same-day data and could not be reproduced without look-ahead.
 
 The simulator-driven daily-return accrual and the offline-period catchup
 emitter were removed in the 2026-05-10 live/sim refactor — Core sub-sleeves
 now have the same operational shape as tactical sleeves
 (if the bot is offline during a window, that trade is missed permanently).
-The analytic [`jplus.simulate.simulate()`](jplus/simulate.py) function
+The analytic [`jplus.simulate.simulate()`](strategies/support/jplus_inputs.py) function
 remains as a research-only tool with no runtime caller.
 
 ## Bootstrap (one time)
@@ -69,11 +69,11 @@ pip install -r requirements.txt
 #    Needed once for the initial LSR history fetch (~5 years).
 export COINALYZE_API_KEY=...
 
-# 3. Build data/trader.db from scratch — calendar, LS ratio, klines, funding.
+# 3. Build data/prod.db from scratch — calendar, LS ratio, klines, funding.
 #    Slow on first run (~30-60 min for 5y of 1m klines). Idempotent.
 python bootstrap.py
 
-# 4. Register the P-300 variant in data/dashboard.db
+# 4. Register the P-300 variant in data/prod.db
 python register_p300.py
 ```
 
@@ -213,8 +213,8 @@ features they layer on top**:
 
 |  | `studies/simulation/sim.py` | `backtest_runner.py` |
 |---|---|---|
-| Output ledger | separate `--dash-db` file | live `data/dashboard.db` (variant id suffixed `__replay[_<tag>]`) |
-| Live data isolation | **complete** — separate trader.db + dashboard.db | shares `data/trader.db` (read) + `data/dashboard.db` (writes to its own variant) |
+| Output ledger | separate `--dash-db` file | live `data/prod.db` (variant id suffixed `__replay[_<tag>]`) |
+| Live data isolation | **complete** — separate prod.db | shares `data/prod.db` (read) + `data/prod.db` (writes to its own variant) |
 | Liquidation simulator | YES (via `orchestrator.tick` — same `force_close_liquidations` path) | YES (`force_close_liquidations`) |
 | Mark-to-end-of-window for trades open at end | NO | YES (`mark_remaining_at_end`) |
 | Per-sleeve PnL summary | uses `strategy_health.build_report` | bespoke report block |
@@ -243,82 +243,81 @@ one fires identically under the other.
 python -c "from services import variant_registry as r; print(r.get_variant('p300_aggressive_v2_v1_0')['status'])"
 
 # Open paper positions
-sqlite3 data/dashboard.db "SELECT id, asset, strategy, direction, entry_price, size_usdt FROM trades WHERE strategy_variant='p300_aggressive_v2_v1_0' AND status='open'"
+sqlite3 data/prod.db "SELECT id, asset, strategy, direction, entry_price, size_usdt FROM trades WHERE strategy_variant='p300_aggressive_v2_v1_0' AND status='open'"
 
 # Closed trades (newest first)
-sqlite3 data/dashboard.db "SELECT id, asset, strategy, direction, pnl_pct, actual_exit_time FROM trades WHERE strategy_variant='p300_aggressive_v2_v1_0' AND status='closed' ORDER BY actual_exit_time DESC LIMIT 20"
+sqlite3 data/prod.db "SELECT id, asset, strategy, direction, pnl_pct, actual_exit_time FROM trades WHERE strategy_variant='p300_aggressive_v2_v1_0' AND status='closed' ORDER BY actual_exit_time DESC LIMIT 20"
 ```
 
 ## Architecture
 
 ```
 p300/
-├── bot.py                         # main loop (foreground)
-├── bootstrap.py                   # one-shot data/trader.db builder (no upstream deps)
-├── binance_feed.py                # keeps Binance tables fresh + on-demand backfills
+├── bot.py                         # paper-trading entry point (60s tick, noise-filtered)
+├── bootstrap.py                   # one-shot data/prod.db builder
+├── register_p300.py               # registers the variant in prod.db
+├── health.py                      # 8 invariant checks for live operation
 ├── fetch_events.py                # rebuilds scheduled_events (FOMC/CPI/NFP/OPEX)
 ├── fetch_coinalyze.py             # fetches ca_long_short_ratio history (Coinalyze)
-├── register_p300.py               # registers the variant in dashboard.db
-├── regime_classifier.py           # BTC regime gate (used by S-096 V3/V4)
-├── health.py                      # 8 invariant checks for live operation
-├── backtest_runner.py             # clock-driven hourly replay over a date window
-├── tools/
-│   ├── backtest_report.py          # per-variant deep metrics report (trade ledger)
-│   ├── bitstamp_adx_backtest.py    # Pine S-003 ADX validator (vs TV BITSTAMP)
-│   ├── bitstamp_thu_bear_backtest.py # Pine S-096 THU_BEAR validator
-│   ├── compare_with_fomc.py        # A/B comparison helper
-│   ├── fomc_backtest_drilldown.py  # FOMC trade-by-trade attribution
-│   ├── fomc_leverage_sensitivity.py# FOMC leverage sweep
-│   ├── full_portfolio_report.py    # equity / Sharpe / CAGR + buy-and-hold compare
-│   ├── p300_run.ps1                # PowerShell launcher script
-│   ├── tools_statistical_validation.py # bootstrap Sharpe CI + rolling/year breakdown
-│   ├── build_sim_trader_db.py      # date-slice trader.db → sim trader.db
-│   └── ai_quant_archive_rebuild.py # rebuild data/ai_quant_archive/ .md files from DB
-├── requirements.txt               # numpy only
+├── backtest_runner.py             # clock-driven replay over a date window
 ├── data/
-│   ├── trader.db                  # market data (built by bootstrap; live-refreshed)
-│   ├── dashboard.db               # variant registry + trade log
-│   └── known_unfillable.json      # gaps known to be unfillable (exchange downtime etc.)
-├── jplus/                         # Core J+ sizing inputs + analytic backtester
-│   ├── data.py                    # clock-bounded loaders
-│   ├── regime.py                  # 4-state classifier + LS circuit breaker
-│   ├── r4.py                      # R4 BTC + R4 ETH intraday windows (offline)
-│   ├── ema_sleeve.py              # weekly EMA(5/21) crossover for BTC anchor
-│   ├── voltarget.py               # vol-target leverage with per-regime caps
-│   ├── gate.py                    # rule-based 30d-vol percentile gate (T-1)
-│   └── simulate.py                # today_inputs() (live sizing) + simulate() (research)
-├── services/
-│   ├── variant_engine.py          # scheduler tick + dispatch
-│   ├── variant_registry.py        # variant CRUD + schema
-│   ├── clock.py                   # injectable clock for deterministic replay
-│   ├── db.py                      # DB path constants (TRADER_DB, DASHBOARD_DB)
-│   ├── sleeves.py                 # sleeve name constants + dispatch table
-│   ├── trades.py                  # trade open/close persistence
-│   ├── trade_db.py                # trade log schema + runtime config
-│   ├── price_feed.py              # last-close reader with staleness guard
-│   ├── funding.py                 # funding accrual + daily sums/means (BTC + ETH)
-│   ├── indicators.py              # pure EMA + ADX math (no I/O); used by services + validators + jplus
-│   ├── risk_caps.py               # cross-sleeve BTC-long cap enforcement
-│   ├── risk_config.py             # SL semantic (price-move vs margin-loss)
-│   ├── adx_service.py             # S-003 ADX live dispatcher
-│   ├── adx_service.pine           # Pine Script reference for S-003 ADX
-│   ├── carry_service.py           # S-078 carry live dispatcher
-│   ├── thu_bear_service.py        # S-096 V3/V4 Thu bear live dispatcher
-│   ├── thu_bear_service.pine      # Pine Script reference for S-096 Thu Bear
-│   ├── pdo_retouch_service.py     # PDO-L-RF live dispatcher
-│   ├── pdo_retouch_service.pine   # Pine Script reference for PDO
-│   ├── cpr_service.py             # CPR live dispatcher
-│   ├── fomc_service.py            # FOMC live dispatcher (regime + sentiment filtered)
-│   ├── fed_funds_service.py       # Fed rate-cycle phase classifier
-│   ├── sentiment_index_service.py # Fear & Greed index bucketing
-│   ├── polymarket_service.py      # Polymarket-implied rate expectations
-│   ├── jplus_live.py              # Core J+ sub-sleeve live dispatchers (R4/EMA/ETH_DAILY)
-│   ├── ai_quant_service.py        # AI_QUANT live dispatcher (gates + reconciliation)
-│   ├── ai_quant/                  # AI_QUANT internals: context, chart, prompt,
-│   │                              #   decision loop, journal, archive (.md mirror)
-│   ├── strategy_health.py         # realized-PnL aggregation (trades_daily_returns)
-│   └── sim_loop.py                # deterministic clock-advance loop primitive
-└── tests/                         # ~490 tests incl. look-ahead canary, sim e2e, network-isolation
+│   ├── prod.db                    # consolidated DB — market data + bot state
+│   │                              #   (P2.6 unified trader.db + dashboard.db)
+│   ├── known_unfillable.json      # gaps known to be unfillable
+│   ├── ai_quant_archive/          # per-decision markdown mirror
+│   └── ai_quant_preview/          # context-bundle preview snapshots
+├── data/sources/                  # external-data fetchers
+│   ├── binance.py                 # klines + funding refresh + gap-fix
+│   ├── fed_funds.py               # NY Fed XML + rate-cycle phase classifier
+│   ├── sentiment.py               # Fear & Greed index (alternative.me)
+│   ├── polymarket.py              # Polymarket-implied rate expectations
+│   ├── coindesk.py                # CoinDesk funding / OI / vol / liquidations
+│   └── news.py                    # news headlines (AI_QUANT context)
+├── strategies/                    # ALL strategy code (live + math + state)
+│   ├── orchestrator.py            # per-tick scheduler; injects _effective_*
+│   │                              #   (P2.4 — weight / leverage / gate / vol scalar)
+│   ├── trades.py                  # paper-trade open/close persistence
+│   ├── sleeves/                   # one folder per sleeve
+│   │   ├── adx/                   # S-003 ADX
+│   │   ├── carry/                 # S-078 delta-neutral carry
+│   │   ├── thu_bear/              # S-096 V4 Thursday-bear
+│   │   ├── pdo/                   # PDO-L-RF
+│   │   ├── cpr/                   # CPR
+│   │   ├── fomc/                  # FOMC long T-10h → T+0.5h
+│   │   ├── ai_quant/              # discretionary LLM trader (default-off)
+│   │   ├── r4/                    # JPLUS_R4_BTC / _ETH / _BTC_V2 / _ETH_V2
+│   │   ├── ema/                   # JPLUS_EMA_BTC
+│   │   └── eth_daily/             # JPLUS_ETH_DAILY
+│   └── support/                   # shared math + state services
+│       ├── db.py                  # path constant (PROD_DB; TRADER_DB/DASH_DB alias it)
+│       ├── allocation.py          # per-(sleeve, regime) WEIGHT_TABLE (P2.4a)
+│       ├── gating.py              # GateDecision + GATE_REGISTRY (P2.4b)
+│       ├── portfolio_vol.py       # current_vol_scalar (P2.4c)
+│       ├── clock.py               # injectable clock for deterministic replay
+│       ├── sim_loop.py            # bot.py-shared sim primitive
+│       ├── price_feed.py          # last-close reader with staleness guard
+│       ├── indicators.py          # pure EMA / ADX math (no I/O)
+│       ├── voltarget.py           # vol-target leverage (J+ today)
+│       ├── gate.py                # R4 vol-percentile gate math
+│       ├── jplus_inputs.py        # today_inputs() — regime/lev/gate/ema/weights
+│       ├── regime_jplus.py        # J+ 4-state classifier
+│       ├── regime_tactical.py     # tactical regime (bull/bear/chop/sell_off)
+│       ├── margin_check.py        # liquidation orchestration + math adapter
+│       ├── margin_sim.py          # margin / liquidation simulator
+│       ├── risk_caps.py           # cross-sleeve BTC-long cap
+│       ├── risk_config.py         # SL semantic (price-move vs margin-loss)
+│       ├── strategy_health.py     # realized-PnL aggregation
+│       ├── trade_db.py            # trade log schema
+│       ├── variant_registry.py    # variant CRUD
+│       ├── sleeves.py             # strategy_id constants
+│       └── env.py                 # stdlib .env loader
+├── studies/                       # research-only code
+│   ├── simulation/                # sim.py (sim entry point), migrate_*, build_sim_trader_db.py
+│   ├── notebooks/                 # .ipynb research (per-sleeve backtests, PDO TV validation, R4 study)
+│   ├── reports/                   # ad-hoc report generators
+│   └── jplus_analytic/            # offline simulate() — preserved for research
+├── tests/                         # >670 tests incl. look-ahead canary, sim e2e, parity
+└── requirements.txt               # numpy + (optional) anthropic for AI_QUANT
 ```
 
 ## Data the services need
@@ -375,7 +374,7 @@ whether any specific backtest is trusted:
   wiring through an `execution_service` that the stripped `variant_engine`
   doesn't have — this bot only writes phantom trades.
 - **No dashboard.** Introspection is via sqlite queries (examples above) and
-  `python tools/backtest_report.py --variant <id>` for replay metrics.
+  `python studies/notebooks/backtest_report.ipynb --variant <id>` for replay metrics.
 - **No prior-backtest equity seed.** Any daily-returns panel present in older
   versions of this repo has been removed as compromised. Equity attribution
   begins from the first clean replay or live paper fill.

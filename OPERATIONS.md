@@ -33,7 +33,7 @@ pip install -r requirements.txt
 #    After that, binance_feed keeps the table fresh on its own.
 export COINALYZE_API_KEY=...
 
-# 2. Build data/trader.db from scratch:
+# 2. Build data/prod.db from scratch:
 #    - rebuild scheduled_events from fetch_events.py (calendar)
 #    - fetch ca_long_short_ratio history from Coinalyze
 #    - backfill funding rate (BTC + ETH) from Binance
@@ -44,14 +44,14 @@ python bootstrap.py
 #   python bootstrap.py --skip-coinalyze   # if you don't have a key yet
 #   python bootstrap.py --since 2024-01-01 # shorter history
 
-# 3. Register the variant in dashboard.db
+# 3. Register the variant in data/prod.db
 python register_p300.py
 
 # 4. Sanity
 python health.py
 python bot.py --once          # single tick; should complete in <30s
 python -m pytest tests/ -q    # ~490 tests should pass (some slow sim
-                              # tests run end-to-end against data/trader.db
+                              # tests run end-to-end against data/prod.db
                               # — they skip if the DB is missing)
 ```
 
@@ -95,7 +95,7 @@ The bot ticks every 60s. On each tick:
 - FOMC sleeve fires only on FOMC days (8/yr) and writes a decision-row
   audit trail to `fomc_observer` regardless of trade decision.
 - A broken sleeve logs the exception but does **not** kill the loop
-  (per-sleeve try/except in [services/variant_engine.py](services/variant_engine.py)).
+  (per-sleeve try/except in [strategies/orchestrator.py](strategies/orchestrator.py)).
 
 ## 3. Observing state
 
@@ -108,7 +108,7 @@ python -c "from services import variant_registry as r; \
 
 **Open phantom trades:**
 ```bash
-sqlite3 data/dashboard.db "
+sqlite3 data/prod.db "
   SELECT id, asset, strategy, direction, entry_price, size_usdt, actual_entry_time
   FROM trades
   WHERE strategy_variant='p300_aggressive_v2_v1_0' AND status='open'
@@ -117,7 +117,7 @@ sqlite3 data/dashboard.db "
 
 **Recent closed trades (last 20):**
 ```bash
-sqlite3 data/dashboard.db "
+sqlite3 data/prod.db "
   SELECT id, strategy, asset, direction, pnl_pct, actual_exit_time
   FROM trades
   WHERE strategy_variant='p300_aggressive_v2_v1_0' AND status='closed'
@@ -126,7 +126,7 @@ sqlite3 data/dashboard.db "
 
 **Daily realized PnL (last 14 days):**
 ```bash
-sqlite3 data/dashboard.db "
+sqlite3 data/prod.db "
   SELECT date(actual_exit_time) AS d, ROUND(SUM(pnl_usdt), 2) AS pnl,
          COUNT(*) AS n_closed
   FROM trades
@@ -139,7 +139,7 @@ sqlite3 data/dashboard.db "
 `variant_daily_returns.source='live_computed'` was removed in the
 2026-05-10 live/sim refactor. The trade ledger is the canonical source
 of realized PnL — see
-`services/strategy_health.trades_daily_returns()` for the
+`strategies.support.strategy_health.trades_daily_returns()` for the
 programmatic version of the query above.)
 
 ## 4. Troubleshooting
@@ -187,7 +187,7 @@ python bot.py --once 2>&1 | tee /tmp/p300_once.log
 The crash message should point at the offending sleeve or service.
 Per-sleeve errors are already isolated — a whole-loop crash means the
 orchestrator itself or the variant lookup failed, typically due to a
-corrupted dashboard.db variant row. Recovery:
+corrupted prod.db variant row. Recovery:
 ```bash
 python register_p300.py    # re-registers idempotently
 python health.py           # confirm fresh registration
@@ -209,7 +209,7 @@ python backtest_runner.py --start 2021-07-01 --end 2026-04-15 --reset --tag A
 ```
 
 `--tag A` suffixes the replay variant id so multiple runs coexist in
-the live `data/dashboard.db`. Results live under
+the live `data/prod.db`. Results live under
 `p300_aggressive_v2_v1_0__replay_A`. The replay variant is registered
 with `enabled=0` so the live engine never touches it; only
 `backtest_runner` ticks it.
@@ -249,7 +249,7 @@ P300_STOP_SEMANTICS=margin python backtest_runner.py --start ... --tag B
 `price_move` (default) gave better results than `margin` in our
 2021-07 to 2026-04 replay — but the knob is there for experimentation.
 
-## 6. Variant IDs in `dashboard.db`
+## 6. Variant IDs in `prod.db`
 
 ```
 p300_aggressive_v2_v1_0              LIVE variant (what bot.py ticks)
@@ -298,14 +298,14 @@ DELETE FROM variant_daily_returns WHERE variant_id = '<variant_id>';
    Verified by `tests/test_sim_network_isolation.py`.
 
 6. **Test suite green.** `python -m pytest tests/` = 518 passing
-   (some sim tests skip if `data/trader.db` / `data/dashboard.db` are
+   (some sim tests skip if `data/prod.db` / `data/prod.db` are
    absent, e.g. on a fresh CI checkout). If counts drop, don't deploy.
 
 ## 8. Contacts / knowledge
 
 Everything we know is in-repo:
 - Strategy description and caveats: [README.md](README.md)
-- Core J+ port details: [jplus/__init__.py](jplus/__init__.py)
+- Core J+ port details: [strategies/support/jplus_inputs.py](strategies/support/jplus_inputs.py) (today_inputs) and [studies/jplus_analytic/](studies/jplus_analytic/) (offline simulate)
 - Variant spec rationale: [register_p300.py](register_p300.py) header
 - Look-ahead audit + fix history: [tests/test_jplus_lookahead.py](tests/test_jplus_lookahead.py)
-- Backtest results: run `tools/backtest_report.py` against any replay variant
+- Backtest results: run `studies/notebooks/backtest_report.ipynb` against any replay variant

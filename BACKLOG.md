@@ -524,7 +524,16 @@ behavioral change).
 ## P2.7 — End-of-restructure doc sweep
 
 **Captured:** 2026-05-14 (memory `project_doc_cleanup_planned`).
-**Status:** waiting for everything else to settle. **Last in phase 2.**
+**Status:** 2026-05-15 — path-fix pass shipped (Stage 1). README's
+architecture tree rewritten to reflect the post-restructure layout
+(strategies/sleeves/, strategies/support/, data/sources/, studies/);
+~127 stale `services/*` / `jplus/*` / `tools/*` / `trader.db` /
+`dashboard.db` / `run.py` / `--mode sim` references replaced across
+README, OPERATIONS, PORTFOLIO, MANUAL. Final stale `dashboard.db`
+prose mentions updated to `prod.db` or `--dash-db` flag references.
+Stage 2 (readability rewrite — "messy and hard to read" per user)
+remains outstanding; defer until Phase 2 design-heavy items
+(P2.4d/e/f) settle so the docs describe a stable surface.
 
 ### Motivation
 
