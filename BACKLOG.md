@@ -265,21 +265,31 @@ commit and probably multi-session. A reasonable sub-decomposition:
   (c) explicit sleeve priority (today: spec.composition iteration
   order).*
 - **P2.4e** — Cross-sleeve conflict resolver.
-  *2026-05-15: detection layer shipped.
+  *2026-05-15: detection + first opt-ins shipped.
   `strategies/support/conflict_resolver.py` exposes
   `detect_opposing_open(variant_id, asset, direction)` — returns the
   earliest opposite-direction open paper trade on the same asset, or
   None — and `summarize_conflicts(variant_id)` for one-shot operator
   surveys. CARRY's delta-neutral perp SHORT is excluded from
   conflict detection (it's collateral, not a directional bet). 16
-  tests anchor the SQL filtering (status / variant / asset /
-  direction / neutral exclusion / multi-asset). No sleeve consumes
-  yet; orchestrator wiring is intentionally absent because the check
-  is per-(asset, direction) and only meaningful right before
-  open_paper_trade — sleeves will opt in by calling the function
-  directly. The full P2.4e goal (priority-based two-phase
-  reconciliation with conviction comparison instead of
-  first-come-first-served) is a Stage 2 follow-up.*
+  module tests anchor the SQL filtering (status / variant / asset /
+  direction / neutral exclusion / multi-asset). Two sleeves now opt in:
+    - **AI_QUANT** — fresh open AND flip path. Conflict check runs
+      BEFORE margin check (conflict = correctness, margin = sizing).
+      Returns `skipped:directional_conflict` on fresh,
+      `flip_aborted=directional_conflict` on flip. 4 new tests cover
+      both paths + the CARRY-as-neutral case + concordant-direction
+      (LONG vs LONG) passes through unaffected.
+    - **THU_BEAR (S-096)** — per-asset loop checks for an opposing
+      LONG on each (BTC/ETH) before opening its SHORT. ADX dispatches
+      before THU_BEAR in composition order, so on a Thursday where
+      both signals fire, ADX wins the slot and THU_BEAR yields with
+      `directional_conflict`.
+  Pending: more sleeves opt in (ADX could too — LONG vs an existing
+  SHORT — but the dispatch order makes that rare); the Stage 2 goal
+  (priority-based two-phase reconciliation with conviction comparison
+  instead of first-come-first-served) shares the two-phase dispatch
+  refactor with P2.4f Stage 2.*
 - **P2.4f** — Signal aggregator.
   *2026-05-15: detection layer shipped (dual of P2.4e).
   `strategies/support/signal_aggregator.py` exposes

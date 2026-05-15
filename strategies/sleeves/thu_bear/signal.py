@@ -276,6 +276,22 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             if price is None:
                 log.warning(f"[thu_bear {variant['id']}] no {asset} price — skip entry")
                 continue
+            # P2.4e: THU_BEAR opens SHORT; if ADX (or any other directional
+            # sleeve) already has a LONG open on this asset, skip rather
+            # than opening a net-cancelling position. First-come-first-
+            # served — today ADX dispatches before THU_BEAR per the
+            # composition order in register_p300.
+            from strategies.support import conflict_resolver
+            opposing = conflict_resolver.detect_opposing_open(
+                variant["id"], asset, "SHORT")
+            if opposing is not None:
+                log.info(f"[thu_bear {variant['id']} {asset}] directional-conflict: "
+                         f"opposing {opposing['strategy']} {opposing['direction']} "
+                         f"already open ({opposing['id']})")
+                actions.append({"status": "directional_conflict", "asset": asset,
+                                "conflicting_trade_id": opposing["id"],
+                                "conflicting_strategy": opposing["strategy"]})
+                continue
             # P2.4d: opt into the variant-level margin-headroom cap.
             from strategies.support import margin_headroom
             capital = float(variant.get("capital_usdt") or 10000)

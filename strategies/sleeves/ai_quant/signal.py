@@ -191,6 +191,21 @@ def _reconcile(
         if live_price is None:
             return "skipped:no_price", {"reason": "live_price_unavailable"}
         alloc = _allocation_pct_for(conviction, weight_pct)
+        # P2.4e: AI_QUANT can go LONG or SHORT (LLM-discretionary). Skip if
+        # another sleeve already has an opposite-direction perp open on
+        # this asset — first-come-first-served. CARRY's perp SHORT is
+        # excluded inside conflict_resolver (delta-neutral collateral).
+        from strategies.support import conflict_resolver
+        opposing = conflict_resolver.detect_opposing_open(
+            variant["id"], asset, eff_direction)
+        if opposing is not None:
+            return "skipped:directional_conflict", {
+                "reason": "directional_conflict",
+                "intended_direction": eff_direction,
+                "conflicting_trade_id": opposing["id"],
+                "conflicting_strategy": opposing["strategy"],
+                "conflicting_direction": opposing["direction"],
+            }
         # P2.4d: AI_QUANT is the first sleeve to opt into the margin-headroom
         # cap (lowest-priority sleeve — additive 2%, default-OFF, naturally
         # yields when the variant's notional pool is tight). Skip the open
@@ -253,6 +268,25 @@ def _reconcile(
         reason="ai_quant_flip", sleeve_name=SLEEVE_NAME,
     )
     alloc = _allocation_pct_for(conviction, weight_pct)
+    # P2.4e: after the close, the AI_QUANT position is gone but other
+    # sleeves may have an opposite-direction open on this asset. Abort
+    # the new opposite open if so — leaves the variant FLAT on this
+    # asset for AI_QUANT until the next tick.
+    from strategies.support import conflict_resolver
+    opposing = conflict_resolver.detect_opposing_open(
+        variant["id"], asset, eff_direction)
+    if opposing is not None:
+        return (
+            f"closed:{open_trade['id']}",
+            {
+                "closed_trade_id": open_trade["id"],
+                "flip_aborted": "directional_conflict",
+                "intended_direction": eff_direction,
+                "conflicting_trade_id": opposing["id"],
+                "conflicting_strategy": opposing["strategy"],
+                "conflicting_direction": opposing["direction"],
+            },
+        )
     # P2.4d: same margin-headroom check as the fresh-entry path. Note
     # the prior position is already closed at this point, so the
     # candidate adds back into the variant's pool without netting

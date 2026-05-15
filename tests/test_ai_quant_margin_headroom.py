@@ -1,14 +1,20 @@
-"""P2.4d — AI_QUANT honors margin_headroom.can_open before opening.
+"""P2.4d + P2.4e — AI_QUANT honors margin_headroom and conflict_resolver
+before opening.
 
-AI_QUANT is the first sleeve to opt into the cross-sleeve margin
-budget. Two entry sites in `_reconcile`:
+Two cross-sleeve checks AI_QUANT runs in _reconcile:
 
-  - Fresh entry (no open position) — checked.
-  - Direction flip (close existing, open opposite) — checked. The
-    close happens first; the opposite open is the candidate against
-    headroom.
+  - **conflict_resolver** (P2.4e): if another sleeve already has an
+    opposite-direction open on this asset, skip with
+    `skipped:directional_conflict` (or `flip_aborted=directional_conflict`
+    on the flip path). First-come-first-served.
 
-Tests don't need the full e2e wiring; they call ``_reconcile`` directly
+  - **margin_headroom** (P2.4d): if opening would push the variant
+    over `gross_notional_target_x`, skip with
+    `skipped:margin_constrained`. Run AFTER the conflict check so a
+    conflict block dominates a margin block (conflicts are correctness
+    signals; margin is sizing).
+
+Tests don't need the full e2e wiring; they call `_reconcile` directly
 with synthetic inputs and assert the (trade_action, debug_dict) shape.
 """
 from __future__ import annotations
@@ -159,10 +165,11 @@ def test_flip_aborts_open_when_margin_constrained(temp_db):
         size_usdt=600.0, leverage=3.0, allocation_pct=2.0,
     )
     # Seed another big open trade so headroom after the LONG closes
-    # is still less than the candidate notional.
+    # is still less than the candidate notional. SHORT direction so it
+    # doesn't trip the conflict check before margin.
     _insert_open_paper_trade(
         temp_db, id="T_other_big",
-        strategy="S-003", direction="LONG",
+        strategy="S-096", direction="SHORT",
         size_usdt=19_700.0, leverage=5,
     )
     open_lookup = {
@@ -186,3 +193,97 @@ def test_flip_aborts_open_when_margin_constrained(temp_db):
         "SELECT COUNT(*) FROM trades WHERE status='open'").fetchone()[0]
     con.close()
     assert n_open == 1
+
+
+# ─── P2.4e: directional conflict ─────────────────────────────────────────────
+
+def test_fresh_open_skipped_when_opposing_already_open(temp_db):
+    """Another sleeve has a LONG BTC perp open; AI_QUANT decides SHORT
+    on BTC — skip with directional_conflict and do NOT open the SHORT."""
+    variant = _variant()
+    _insert_open_paper_trade(
+        temp_db, id="T_S003_LONG",
+        strategy="S-003", direction="LONG", size_usdt=7500.0, leverage=5,
+    )
+    action, debug = ai_quant_signal._reconcile(
+        variant=variant,
+        sleeve_cfg=_sleeve_cfg(),
+        asset="BTC",
+        current_open=[],
+        decision_payload=_decision(direction="SHORT", conviction=100),
+        live_price=80_000.0,
+    )
+    assert action == "skipped:directional_conflict"
+    assert debug["intended_direction"] == "SHORT"
+    assert debug["conflicting_trade_id"] == "T_S003_LONG"
+    assert debug["conflicting_strategy"] == "S-003"
+
+
+def test_fresh_open_proceeds_when_same_direction_already_open(temp_db):
+    """Another sleeve LONG on BTC is concordant, not conflicting —
+    AI_QUANT can also go LONG. No skip; trade opens."""
+    variant = _variant()
+    _insert_open_paper_trade(
+        temp_db, id="T_S003_LONG",
+        strategy="S-003", direction="LONG", size_usdt=7500.0, leverage=5,
+    )
+    action, _ = ai_quant_signal._reconcile(
+        variant=variant,
+        sleeve_cfg=_sleeve_cfg(),
+        asset="BTC",
+        current_open=[],
+        decision_payload=_decision(direction="LONG", conviction=100),
+        live_price=80_000.0,
+    )
+    assert action.startswith("opened:")
+
+
+def test_carry_short_does_not_count_as_conflict(temp_db):
+    """CARRY's SHORT perp is delta-neutral collateral; an AI_QUANT
+    LONG candidate should NOT be flagged as conflicting with CARRY."""
+    variant = _variant()
+    _insert_open_paper_trade(
+        temp_db, id="T_CARRY",
+        strategy="CARRY", direction="SHORT", size_usdt=4000.0, leverage=5,
+    )
+    action, _ = ai_quant_signal._reconcile(
+        variant=variant,
+        sleeve_cfg=_sleeve_cfg(),
+        asset="BTC",
+        current_open=[],
+        decision_payload=_decision(direction="LONG", conviction=100),
+        live_price=80_000.0,
+    )
+    assert action.startswith("opened:")
+
+
+def test_flip_aborts_open_when_other_sleeve_has_opposing(temp_db):
+    """AI_QUANT was LONG, decides to flip to SHORT, but a DIFFERENT
+    sleeve also has LONG open. The flip:
+      - closes the AI_QUANT LONG (correct — that decision is its own)
+      - aborts the SHORT open because S-003's LONG would conflict
+    Returns closed:<old_id> with flip_aborted=directional_conflict."""
+    variant = _variant()
+    _insert_open_paper_trade(
+        temp_db, id="SJ-AIQ-OLD",
+        strategy="AI_QUANT", direction="LONG", size_usdt=600.0, leverage=3.0,
+    )
+    _insert_open_paper_trade(
+        temp_db, id="T_S003",
+        strategy="S-003", direction="LONG", size_usdt=7500.0, leverage=5,
+    )
+    open_lookup = {
+        "id": "SJ-AIQ-OLD", "direction": "LONG", "asset": "BTC",
+        "entry_price": 80_000.0, "size_usdt": 600.0, "leverage": 3.0,
+    }
+    action, debug = ai_quant_signal._reconcile(
+        variant=variant,
+        sleeve_cfg=_sleeve_cfg(),
+        asset="BTC",
+        current_open=[open_lookup],
+        decision_payload=_decision(direction="SHORT", conviction=100),
+        live_price=80_000.0,
+    )
+    assert action == "closed:SJ-AIQ-OLD"
+    assert debug["flip_aborted"] == "directional_conflict"
+    assert debug["conflicting_strategy"] == "S-003"
