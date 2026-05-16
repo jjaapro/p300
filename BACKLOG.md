@@ -385,6 +385,16 @@ commit and probably multi-session. A reasonable sub-decomposition:
   approved intents) is the next sub-commit; depends on AI_QUANT's
   decide()/execute() implementation.*
 
+  *2026-05-16 — PDO-L-RF migrated to two-phase. Fourth sleeve on
+  two-phase. Side-effects in decide(): hold-window exits per asset
+  (BTC=24h, ETH=4h). Inline `margin_headroom.clamp_to_headroom` removed
+  — reconcile handles partial-fit via `approved_reduced` (same math,
+  same cascade behavior across BTC + ETH because reconcile's loop
+  tracks `approved_notional` cumulatively). Cross-sleeve BTC LONG cap
+  (`risk_caps.btc_long_cap_allows`) stays inline as a pre-Intent gate
+  — separate per-asset cap not yet owned by reconcile. Registration
+  test extended to PDO-L-RF.*
+
   *2026-05-16 — Contract bump + THU_BEAR (S-096) migrated to two-phase.
   Third sleeve on two-phase. `try_decide_for_variant` contract bumped
   from `Intent | None` to `list[Intent]` so multi-asset sleeves emit

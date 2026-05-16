@@ -243,16 +243,48 @@ def _close_pdo_paper(trade_id: str, exit_price: float, reason: str) -> None:
 # ─── Public tick ─────────────────────────────────────────────────────────────
 
 def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
-    """Per-tick dispatch: check for PDO retouch opportunity on BTC+ETH.
+    """Variant-engine dispatch entry point. Returns a status dict.
 
-    sleeve_cfg.params:
-      assets: list, default ['BTC','ETH']
-      leverage: per-sleeve multiplier (via _effective_leverage)
+    Backward-compatible wrapper: runs the decide phase (side-effect
+    hold-window exits + per-asset Intent list), then executes each
+    Intent. Callers that don't know about the two-phase protocol —
+    including backtest_runner and any legacy unit test — keep working.
+    """
+    intents, status = try_decide_for_variant(variant, sleeve_cfg)
+    if not intents:
+        return status
+    open_results: list[dict] = []
+    for intent in intents:
+        open_results.append(execute_for_variant(variant, sleeve_cfg, intent))
+    merged = list(status.get("assets") or [])
+    for r in open_results:
+        if r:
+            merged.append(r)
+    return {
+        "status": "dispatched",
+        "date": status.get("date"),
+        "btc_30d_pct": status.get("btc_30d_pct"),
+        "regime_ok": status.get("regime_ok"),
+        "assets": merged,
+    }
 
-    Idempotent per (variant, asset, day) — one trade per day max.
-    Hourly-granular touch detection (service expected to tick at <=1h cadence).
+
+def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
+    """Phase-1 of the two-phase dispatch (P2.4e/f Stage 2).
+
+    Side-effects (always run, not subject to reconcile):
+      - Hold-window exit close on every open PDO trade whose hold_hours
+        has elapsed. BTC hold = 24h, ETH = 4h (per ``HOLD_BARS_BY_ASSET``).
+
+    Returns ``(list[Intent], status_dict)``. Per-asset Intent emitted
+    only when all PDO-specific gates pass (no still-open, not already
+    fired today, regime OK, gap >= threshold, hourly bar touches PDO,
+    BTC cross-sleeve cap satisfied). Reconcile owns margin-headroom
+    (now uses approved_reduced when partial-fit) and directional
+    conflict; both inline calls REMOVED.
     """
     from strategies.support.price_feed import _get_current_price
+    from strategies.support.dispatch import Intent
 
     params = sleeve_cfg.get("params") or {}
     assets = params.get("assets", ["BTC", "ETH"])
@@ -264,25 +296,21 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     now_utc = clock.now_utc()
     bar_day_start = _bar_day_start(now_utc)
     bar_day_str = bar_day_start.strftime("%Y-%m-%d")
-    results = []
+    results: list[dict] = []
 
-    # Regime check once
     btc_30d = _btc_30d_return_pct()
     regime_ok = btc_30d is not None and btc_30d >= REGIME_THRESHOLD_PCT
 
+    intents: list = []
     for asset in assets:
         hold_hours = HOLD_BARS_BY_ASSET.get(asset, 24)
 
-        # Manage existing open positions first — iterate ALL open PDO trades
-        # for this (variant, asset); close any whose hold_hours has elapsed.
-        # Invariant is single-open; sweeping the full list cleans up any
-        # stray legacy opens.
+        # Side-effect: hold-window exits on existing open trades.
         open_trades = _get_open_pdo_trades(variant["id"], asset)
         still_open: list[dict] = []
         for tr in open_trades:
             entry_time = datetime.fromisoformat(tr["actual_entry_time"])
-            now = clock.now_utc()
-            if (now - entry_time).total_seconds() >= hold_hours * 3600:
+            if (now_utc - entry_time).total_seconds() >= hold_hours * 3600:
                 exit_price = _get_current_price(asset)
                 if exit_price is None:
                     still_open.append(tr)
@@ -297,40 +325,29 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             else:
                 still_open.append(tr)
         if still_open:
-            # At least one trade still within its hold window — no new entry.
             results.append({"asset": asset, "status": "open_waiting",
                             "open_count": len(still_open)})
             continue
 
-        # Already fired for this bar_day's setupDay (one-trade-per-day rule)
         if _pdo_action_for_bar_day(variant["id"], asset, bar_day_start):
             results.append({"asset": asset, "status": "already_fired_today"})
             continue
 
-        # Regime filter
         if not regime_ok:
             results.append({"asset": asset, "status": "regime_block",
                             "btc_30d_pct": btc_30d})
             continue
 
-        # Load bar_day's open + PDO (PDO=prev day's open, CDO=bar_day's open)
         sig = _load_today_open_and_pdo(asset)
         if sig is None:
             results.append({"asset": asset, "status": "data_missing"})
             continue
 
-        # Gap filter
         if sig["gap_pct"] < GAP_THRESHOLD_PCT:
             results.append({"asset": asset, "status": "no_gap",
                             "gap_pct": round(sig["gap_pct"], 2)})
             continue
 
-        # Touch detection: just-closed 1H bar's range contains PDO?
-        # At clock HH:00..HH:59, _get_hourly_bar_for_today returns the bar
-        # that closed at HH:00, i.e. covering [HH-1:00, HH:00). At HH=0 that
-        # bar belongs to yesterday — which is correctly bar_day for the
-        # PDO/CDO/idempotency above, so we evaluate Pine's last-hour-of-day
-        # entry opportunity here too.
         hr = _get_hourly_bar_for_today(asset)
         if hr is None:
             results.append({"asset": asset, "status": "no_hour_bar"})
@@ -345,43 +362,19 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                             "hour_high": round(hr["high"], 2)})
             continue
 
-        # Cross-sleeve BTC-long cap (max_net_btc) — pre-leverage % of capital.
+        # Cross-sleeve BTC-long cap (max_net_btc) stays here — it's a
+        # separate per-asset cap not yet owned by reconcile. PDO + CPR
+        # share it.
         if asset == "BTC":
             from strategies.support.risk_caps import btc_long_cap_allows
             if not btc_long_cap_allows(variant, per_asset_alloc):
                 results.append({"asset": asset, "status": "btc_cap_block"})
                 continue
 
-        # Fire
         entry_price = _get_current_price(asset)
         if entry_price is None:
             results.append({"asset": asset, "status": "stale_price_skip"})
             continue
-
-        # P2.4d: opt into the variant-level margin-headroom cap with
-        # the reduce policy (P2.4d (b)). Per-asset sleeves benefit
-        # most: BTC may fit while ETH doesn't (or vice versa); reduce
-        # opens at whatever portion of the candidate fits within
-        # remaining headroom rather than skipping the asset entirely.
-        from strategies.support import margin_headroom
-        capital = float(variant.get("capital_usdt") or 10000)
-        candidate_notional = capital * (per_asset_alloc / 100.0) * leverage
-        clamped, status, mh_reason = margin_headroom.clamp_to_headroom(
-            variant, candidate_notional)
-        if status in ("too_small", "no_headroom"):
-            log.info(f"[pdo {variant['id']} {asset}] margin-constrained: "
-                     f"{mh_reason} (alloc={per_asset_alloc}%, k={leverage}x)")
-            results.append({"asset": asset, "status": "margin_constrained",
-                            "reason": mh_reason, "headroom_status": status})
-            continue
-        if status == "reduced":
-            new_alloc = clamped * 100.0 / (capital * leverage)
-            log.info(f"[pdo {variant['id']} {asset}] margin-reduce: "
-                     f"alloc {per_asset_alloc:.2f}%->{new_alloc:.2f}% "
-                     f"(notional {candidate_notional:,.0f}->{clamped:,.0f})")
-            asset_alloc = new_alloc
-        else:
-            asset_alloc = per_asset_alloc
 
         reason = {
             "trigger": "PDO_retouch",
@@ -393,25 +386,39 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             "btc_30d_pct": round(btc_30d, 2) if btc_30d is not None else None,
             "hold_hours": hold_hours,
             "regime": "gap_up_retrace",
-            **({"headroom_clamped": True,
-                "candidate_notional_usdt_intended": candidate_notional}
-               if status == "reduced" else {}),
+            "_entry_price": entry_price,
+            "_hold_hours": hold_hours,
         }
-        tid = _open_pdo_paper(variant, asset, entry_price, asset_alloc,
-                               leverage, hold_hours, reason)
-        log.info(f"[pdo {variant['id']} {asset}] opened {tid} @ {entry_price:.2f} "
-                 f"(PDO={sig['pdo']:.2f}, gap={sig['gap_pct']:.2f}%, "
-                 f"alloc={asset_alloc}%, lev={leverage:.1f}x)")
-        results.append({"asset": asset, "status": "opened", "trade_id": tid,
-                        "entry_price": entry_price, "pdo": sig["pdo"]})
+        intents.append(Intent(
+            asset=asset, direction="LONG",
+            allocation_pct=per_asset_alloc, leverage=leverage,
+            conviction=100,
+            priority=float(sleeve_cfg.get("priority", 100)),
+            reason=reason, scheduled_exit_dt=None,
+        ))
 
-    non_neutral = [r for r in results if r["status"] not in
-                   ("no_gap", "no_touch", "regime_block",
-                    "already_fired_today", "open_waiting")]
-    return {
-        "status": "dispatched" if non_neutral else "no_action",
+    return intents, {
+        "status": "decided" if intents else "no_action",
         "date": bar_day_str,
         "btc_30d_pct": btc_30d,
         "regime_ok": regime_ok,
         "assets": results,
     }
+
+
+def execute_for_variant(variant: dict, sleeve_cfg: dict, intent) -> dict:
+    """Phase-2 of the two-phase dispatch — open the per-asset LONG
+    described by ``intent`` (post-reconcile)."""
+    reason = dict(intent.reason or {})
+    entry_price = float(reason.pop("_entry_price"))
+    hold_hours = int(reason.pop("_hold_hours"))
+    tid = _open_pdo_paper(
+        variant, intent.asset, entry_price, intent.allocation_pct,
+        intent.leverage, hold_hours, reason,
+    )
+    log.info(f"[pdo {variant['id']} {intent.asset}] opened {tid} @ "
+             f"{entry_price:.2f} (PDO={reason.get('pdo')}, "
+             f"gap={reason.get('gap_pct')}%, alloc={intent.allocation_pct}%, "
+             f"lev={intent.leverage:.1f}x)")
+    return {"asset": intent.asset, "status": "opened", "trade_id": tid,
+             "entry_price": entry_price, "pdo": reason.get("pdo")}

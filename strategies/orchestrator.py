@@ -364,6 +364,12 @@ def _load_dispatch():
             thu_bear_sleeve.try_decide_for_variant,
             thu_bear_sleeve.execute_for_variant,
         )
+    if (hasattr(pdo_sleeve, "try_decide_for_variant")
+            and hasattr(pdo_sleeve, "execute_for_variant")):
+        STRATEGY_TWO_PHASE_DISPATCH["PDO-L-RF"] = (
+            pdo_sleeve.try_decide_for_variant,
+            pdo_sleeve.execute_for_variant,
+        )
 
 
 _warned_missing: set[tuple[str, str]] = set()
