@@ -353,6 +353,47 @@ def test_reconcile_pooled_then_margin_reduce():
     assert by_id["B"].intent.allocation_pct == pytest.approx(6.0)
 
 
+def test_reconcile_existing_directional_open_blocks_opposite_intent():
+    """Reconcile seeds its directional-conflict state from legacy-sleeve
+    DB opens so a migrated sleeve's intent gets rejected when an
+    already-open opposite-direction position exists on the same asset."""
+    intents = [
+        ("S-003", _intent(asset="BTC", direction="LONG", alloc=15.0, lev=5.0)),
+    ]
+    results = reconcile_intents(
+        intents, 0.0, 25_000.0, 10_000.0,
+        existing_directional_opens={"BTC": "SHORT"},
+    )
+    assert results[0].status == "rejected_directional_conflict"
+    assert "SHORT" in results[0].reason
+
+
+def test_reconcile_existing_directional_open_concordant_passes():
+    """Existing SHORT BTC + new SHORT BTC intent: concordant, not
+    conflicting. Single-intent input means pooling doesn't fire — the
+    new intent passes through at full size."""
+    intents = [
+        ("S-003", _intent(asset="BTC", direction="SHORT", alloc=15.0, lev=5.0)),
+    ]
+    results = reconcile_intents(
+        intents, 0.0, 25_000.0, 10_000.0,
+        existing_directional_opens={"BTC": "SHORT"},
+    )
+    assert results[0].status == "approved"
+
+
+def test_reconcile_existing_open_does_not_affect_other_asset():
+    """A LONG BTC existing-open does NOT block a SHORT ETH intent."""
+    intents = [
+        ("S-003", _intent(asset="ETH", direction="SHORT", alloc=10.0, lev=2.5)),
+    ]
+    results = reconcile_intents(
+        intents, 0.0, 25_000.0, 10_000.0,
+        existing_directional_opens={"BTC": "LONG"},
+    )
+    assert results[0].status == "approved"
+
+
 def test_reconcile_concordant_three_assets_independent_pools():
     """Pooling is per (asset, direction). LONG BTC pool + LONG ETH pool
     are independent — each pool computes its own conviction-weighted avg."""

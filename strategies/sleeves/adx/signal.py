@@ -246,54 +246,59 @@ def _close_adx_paper(trade_id: str, exit_price: float, reason: str) -> None:
 # ─── Public tick ─────────────────────────────────────────────────────────────
 
 def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
-    """Evaluate today's S-003 signal and open/close paper trades for this
-    variant. Returns a status dict (for logging).
+    """Variant-engine dispatch entry point. Returns a status dict.
 
-    variant:    registry row (dict with id, capital_usdt, ...)
-    sleeve_cfg: composition entry for this sleeve. Reads:
-                  _effective_weight_pct — regime-aware allocation injected by
-                                  orchestrator (P2.4a). Falls back to the
-                                  static composition ``weight_pct`` for callers
-                                  that don't go through orchestrator dispatch
-                                  (unit tests, cold-boot warmup).
-                  params.stop_loss_pct — hard stop (positive number, e.g. 10.0)
+    Backward-compatible wrapper: calls the two-phase entry points
+    (:func:`try_decide_for_variant` then :func:`execute_for_variant`)
+    so callers that don't know about the new protocol — including every
+    legacy unit test and the backtest runner — keep working unchanged.
+    """
+    from strategies.support.dispatch import Intent
 
-    Idempotent: caller may invoke every minute; this function will only act
-    on the first tick of a new day when a signal changes.
+    intent, status = try_decide_for_variant(variant, sleeve_cfg)
+    if intent is None:
+        return status
+    return execute_for_variant(variant, sleeve_cfg, intent)
+
+
+def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
+    """Phase-1 of the two-phase dispatch (P2.4e/f Stage 2).
+
+    Side-effects (always run, not subject to reconcile):
+      - Stop-loss sweep on every open ADX trade.
+      - Exit-signal close (ADX < 20) on remaining open trades.
+      - Direction-flip close when today's signal disagrees with open dir.
+
+    Returns ``(Intent | None, status_dict)``. None means "no entry this
+    tick" (warmup / already-fired-today / no entry signal / trend filter
+    block / flip-only-no-new-entry). When the signal fires fresh and
+    the open-trade count is zero post-flip, returns an ``Intent`` for
+    the orchestrator's reconcile pass — directional-conflict and
+    margin-headroom checks now live there.
+
+    Idempotent within a UTC day: once an ADX trade has entered or
+    exited today, subsequent ticks short-circuit.
     """
     from strategies.support.price_feed import _get_current_price
     from strategies.support.risk_config import effective_price_move_sl_pct
+    from strategies.support.dispatch import Intent
 
     alloc_pct = float(sleeve_cfg.get("_effective_weight_pct",
                                        sleeve_cfg.get("weight_pct", 0.0)))
     params = sleeve_cfg.get("params") or {}
     stop_loss_pct = float(params.get("stop_loss_pct", 10.0))
-    # Per-sleeve leverage injected by orchestrator._tick_composition.
-    # Defaults to 1.0 when called outside the composition tick (tests, etc.).
     leverage = float(sleeve_cfg.get("_effective_leverage", 1.0))
-    # Translate the configured SL through the active semantic (price-move vs
-    # margin-loss). In 'price_move' mode this is a no-op; in 'margin' mode
-    # the threshold is divided by leverage so a 10% margin loss becomes a
-    # 2% price-move trigger at k=5x.
     sl_price_thresh = effective_price_move_sl_pct(stop_loss_pct, leverage)
 
     candles = _load_btc_daily_candles()
     sig = _current_signal(candles)
     if sig is None:
-        return {"status": "warmup", "reason": "insufficient history"}
+        return None, {"status": "warmup", "reason": "insufficient history"}
 
-    # "today" is the wall-clock UTC day — NOT sig["date"] (which is yesterday,
-    # since today's partial daily candle is dropped). Using sig["date"] here
-    # was the cause of the accumulated-open-trades bug: the idempotency gate
-    # was looking for "entries on yesterday" and never found one, so every
-    # hourly tick opened another trade on the real today.
     today = clock.now_utc().strftime("%Y-%m-%d")
     open_trades = _get_open_adx_trades(variant["id"])
 
-    # Step 1: stop-loss sweep — iterate ALL open ADX trades for this variant.
-    # Even though the invariant is single-open, we sweep the full set so a
-    # stray leaked trade from a prior-version run gets cleaned up instead of
-    # ignored forever.
+    # Step 1: stop-loss sweep.
     from strategies.support.sleeves import is_sl_hit
     current_price = _get_current_price("BTC") or sig["close"]
     still_open: list[dict] = []
@@ -310,13 +315,11 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             still_open.append(tr)
     open_trades = still_open
 
-    # Step 2: once-per-day signal check (daily cadence).
-    # Uses the wall-clock today so hourly ticks within the same day don't
-    # re-evaluate entries after an action.
+    # Step 2: once-per-day idempotency.
     if _adx_trade_exists_today(variant["id"], today):
-        return {"status": "already_fired_today", "date": today}
+        return None, {"status": "already_fired_today", "date": today}
 
-    # Step 3: Exit signal — close ALL remaining open ADX trades if ADX < 20.
+    # Step 3: Exit signal — close remaining opens if ADX < 20.
     if open_trades and sig["exit_sig"]:
         for tr in open_trades:
             _close_adx_paper(tr["id"], current_price, "ADX < 20")
@@ -324,92 +327,83 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                      f"at {current_price:.2f}")
         open_trades = []
 
-    # Step 4: Entry signal — direction flip closes any opposite-direction
-    # trades; new entry only fires when the open-trade count is zero.
+    # Step 4a: trend-filter block diagnostic (no Intent emitted).
     if sig.get("entry_blocked_by_trend"):
-        # Diagnostic: cross-up event happened today but the EMA(150) trend
-        # filter rejected the direction. Log so the decision is visible in
-        # the dashboard / log files even though no trade is opened.
         sig_key = (sig["date"], round(sig["close"], 2), sig["trend_ema"])
         if _trend_block_logged.get(variant["id"]) != sig_key:
             _trend_block_logged[variant["id"]] = sig_key
             log.info(f"[adx {variant['id']}] trend-filter BLOCKED entry: "
                      f"close={sig['close']:.2f} vs EMA({TREND_EMA_LEN})="
                      f"{sig['trend_ema']} (ADX={sig['adx']}, EMA50={sig['ema']})")
-        return {"status": "trend_filter_block",
-                "date": today, "adx": sig["adx"],
-                "close": sig["close"], "trend_ema": sig["trend_ema"]}
+        return None, {"status": "trend_filter_block",
+                       "date": today, "adx": sig["adx"],
+                       "close": sig["close"], "trend_ema": sig["trend_ema"]}
 
-    if sig["entry_sig"]:
-        new_dir = sig["entry_sig"].upper()
-        # Close every trade whose direction disagrees with the new signal.
-        for tr in list(open_trades):
-            if tr["direction"] != new_dir:
-                _close_adx_paper(tr["id"], current_price, "direction flip")
-                log.info(f"[adx {variant['id']}] reversal: closed {tr['id']} "
-                         f"{tr['direction']} -> new {new_dir}")
-                open_trades.remove(tr)
-        # Single-open invariant: only open if NO trades remain.
-        if not open_trades:
-            entry_price = current_price
-            # P2.4e: check for opposing directional perp opens (e.g.
-            # THU_BEAR SHORT BTC from a Thursday 00:05 fire). On the
-            # cross-day boundary where THU_BEAR fires first and ADX's
-            # signal crosses later in the day, ADX yields here rather
-            # than opening a net-cancelling LONG. Same first-come-first-
-            # served semantics the other opt-in sleeves use.
-            from strategies.support import conflict_resolver
-            opposing = conflict_resolver.detect_opposing_open(
-                variant["id"], "BTC", new_dir)
-            if opposing is not None:
-                log.info(f"[adx {variant['id']}] directional-conflict: "
-                         f"opposing {opposing['strategy']} "
-                         f"{opposing['direction']} already open "
-                         f"({opposing['id']})")
-                return {"status": "directional_conflict",
-                        "intended_direction": new_dir,
-                        "conflicting_trade_id": opposing["id"],
-                        "conflicting_strategy": opposing["strategy"],
-                        "conflicting_direction": opposing["direction"]}
-            # P2.4d: ADX opts into the variant-level margin-headroom cap.
-            # Candidate notional = capital × alloc_pct/100 × leverage; if
-            # opening would push the variant over gross_notional_target_x,
-            # skip rather than opening.
-            from strategies.support import margin_headroom
-            capital = float(variant.get("capital_usdt") or 10000)
-            candidate_notional = capital * (alloc_pct / 100.0) * leverage
-            ok, mh_reason = margin_headroom.can_open(variant, candidate_notional)
-            if not ok:
-                log.info(f"[adx {variant['id']}] margin-constrained: "
-                         f"{mh_reason} (alloc={alloc_pct}%, k={leverage}x)")
-                return {"status": "margin_constrained", "reason": mh_reason,
-                        "alloc_pct_intended": alloc_pct,
-                        "candidate_notional_usdt": candidate_notional}
-            reason = {
-                "trigger": "S-003_ADX_entry",
-                "variant_id": variant["id"],
-                "sleeve": "ADX",
-                "adx": sig["adx"],
-                "ema50": sig["ema"],
-                "trend_ema": sig.get("trend_ema"),
-                "trend_ema_len": TREND_EMA_LEN,
-                "close": sig["close"],
-                "direction_rule": (
-                    f"close > EMA(50) AND close > EMA({TREND_EMA_LEN})"
-                    if new_dir == "LONG"
-                    else f"close < EMA(50)  [SHORT: trend filter not applied]"
-                ),
-                "regime": "unknown",
-                "stop_loss_pct": stop_loss_pct,
-                "sl_semantic_price_thresh_pct": sl_price_thresh,
-            }
-            tid = _open_adx_paper(variant, new_dir, entry_price, "BTC",
-                                   alloc_pct, reason, leverage=leverage)
-            log.info(f"[adx {variant['id']}] opened {tid} BTC {new_dir} @ "
-                     f"{entry_price:.2f} (ADX={sig['adx']}, EMA50={sig['ema']}, "
-                     f"EMA{TREND_EMA_LEN}={sig.get('trend_ema')}, "
-                     f"alloc={alloc_pct}%, k={leverage}x)")
-            return {"status": "opened", "trade_id": tid, "direction": new_dir}
+    if not sig["entry_sig"]:
+        return None, {"status": "no_action", "date": today, "adx": sig["adx"],
+                       "open_count": len(open_trades)}
 
-    return {"status": "no_action", "date": today, "adx": sig["adx"],
-            "open_count": len(open_trades)}
+    new_dir = sig["entry_sig"].upper()
+    # Step 4b: direction-flip close on still-open opposite-direction trades.
+    for tr in list(open_trades):
+        if tr["direction"] != new_dir:
+            _close_adx_paper(tr["id"], current_price, "direction flip")
+            log.info(f"[adx {variant['id']}] reversal: closed {tr['id']} "
+                     f"{tr['direction']} -> new {new_dir}")
+            open_trades.remove(tr)
+
+    # Single-open invariant: only emit an Intent when no trades remain.
+    if open_trades:
+        return None, {"status": "no_action", "date": today, "adx": sig["adx"],
+                       "open_count": len(open_trades)}
+
+    reason = {
+        "trigger": "S-003_ADX_entry",
+        "variant_id": variant["id"],
+        "sleeve": "ADX",
+        "adx": sig["adx"],
+        "ema50": sig["ema"],
+        "trend_ema": sig.get("trend_ema"),
+        "trend_ema_len": TREND_EMA_LEN,
+        "close": sig["close"],
+        "direction_rule": (
+            f"close > EMA(50) AND close > EMA({TREND_EMA_LEN})"
+            if new_dir == "LONG"
+            else f"close < EMA(50)  [SHORT: trend filter not applied]"
+        ),
+        "regime": "unknown",
+        "stop_loss_pct": stop_loss_pct,
+        "sl_semantic_price_thresh_pct": sl_price_thresh,
+        # Private payload the execute phase consumes to write the trade
+        # without redoing the candle/indicator work.
+        "_entry_price": current_price,
+    }
+    intent = Intent(
+        asset="BTC",
+        direction=new_dir,
+        allocation_pct=alloc_pct,
+        leverage=leverage,
+        conviction=100,  # ADX has no graded conviction; fixed-signal sleeve.
+        priority=float(sleeve_cfg.get("priority", 100)),
+        reason=reason,
+        scheduled_exit_dt=None,
+    )
+    return intent, {"status": "decided", "direction": new_dir,
+                     "adx": sig["adx"], "ema50": sig["ema"]}
+
+
+def execute_for_variant(variant: dict, sleeve_cfg: dict, intent) -> dict:
+    """Phase-2 of the two-phase dispatch — open the trade described by
+    ``intent`` (post-reconcile, so allocation_pct / leverage already
+    account for cross-sleeve margin / conflict / pooling).
+    """
+    reason = dict(intent.reason or {})
+    entry_price = float(reason.pop("_entry_price"))
+    tid = _open_adx_paper(
+        variant, intent.direction, entry_price, intent.asset,
+        intent.allocation_pct, reason, leverage=intent.leverage,
+    )
+    log.info(f"[adx {variant['id']}] opened {tid} {intent.asset} "
+             f"{intent.direction} @ {entry_price:.2f} "
+             f"(alloc={intent.allocation_pct}%, k={intent.leverage}x)")
+    return {"status": "opened", "trade_id": tid, "direction": intent.direction}

@@ -19,17 +19,20 @@ from strategies import orchestrator
 from strategies.support.dispatch import Intent
 
 
-def test_load_dispatch_registers_ai_quant_two_phase(monkeypatch):
-    """After _load_dispatch, AI_QUANT must be in STRATEGY_TWO_PHASE_DISPATCH
-    (the migration pilot)."""
+def test_load_dispatch_registers_two_phase_sleeves(monkeypatch):
+    """After _load_dispatch, the migrated sleeves (AI_QUANT and S-003 ADX
+    as of 2026-05-16) must appear in STRATEGY_TWO_PHASE_DISPATCH with
+    both decide and execute callables."""
     # Reset state so _load_dispatch repopulates.
     monkeypatch.setattr(orchestrator, "STRATEGY_DISPATCH", {})
     monkeypatch.setattr(orchestrator, "STRATEGY_TWO_PHASE_DISPATCH", {})
     orchestrator._load_dispatch()
-    assert "AI_QUANT" in orchestrator.STRATEGY_TWO_PHASE_DISPATCH
-    decide_fn, execute_fn = orchestrator.STRATEGY_TWO_PHASE_DISPATCH["AI_QUANT"]
-    assert callable(decide_fn)
-    assert callable(execute_fn)
+    for sid in ("AI_QUANT", "S-003"):
+        assert sid in orchestrator.STRATEGY_TWO_PHASE_DISPATCH, (
+            f"{sid} not registered as two-phase")
+        decide_fn, execute_fn = orchestrator.STRATEGY_TWO_PHASE_DISPATCH[sid]
+        assert callable(decide_fn)
+        assert callable(execute_fn)
 
 
 def test_two_phase_skips_execute_when_decide_returns_none(monkeypatch):

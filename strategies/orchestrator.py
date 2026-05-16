@@ -343,14 +343,20 @@ def _load_dispatch():
         # cost is incurred until the user explicitly opts in.
         "AI_QUANT":        ai_quant_sleeve.try_fire_for_variant,
     }
-    # AI_QUANT migrated to two-phase 2026-05-16 (P2.4e/f Stage 2).
-    # Other sleeves follow as they're refactored; until then they stay
-    # on the legacy STRATEGY_DISPATCH path and skip the reconcile pass.
+    # Two-phase migrations (P2.4e/f Stage 2). Other sleeves follow as
+    # they're refactored; until then they stay on the legacy
+    # STRATEGY_DISPATCH path and skip the reconcile pass.
     if (hasattr(ai_quant_sleeve, "try_decide_for_variant")
             and hasattr(ai_quant_sleeve, "execute_for_variant")):
         STRATEGY_TWO_PHASE_DISPATCH["AI_QUANT"] = (
             ai_quant_sleeve.try_decide_for_variant,
             ai_quant_sleeve.execute_for_variant,
+        )
+    if (hasattr(adx_sleeve, "try_decide_for_variant")
+            and hasattr(adx_sleeve, "execute_for_variant")):
+        STRATEGY_TWO_PHASE_DISPATCH["S-003"] = (
+            adx_sleeve.try_decide_for_variant,
+            adx_sleeve.execute_for_variant,
         )
 
 
@@ -515,13 +521,19 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
     # trades; the reconcile reads the post-legacy variant state.
     if _pending_intents:
         from strategies.support import dispatch as dispatch_mod
+        from strategies.support import conflict_resolver
         # Recompute headroom + capital from fresh DB after legacy opens.
         post_used = margin_headroom.current_gross_notional_usdt(variant["id"])
         cap = margin_headroom.gross_cap_usdt(variant)
         capital = float(variant.get("capital_usdt") or 10000)
+        # Seed reconcile's directional-conflict state with DB opens from
+        # legacy (non-two-phase) sleeves, so migrated sleeves' intents
+        # are rejected against them too.
+        existing = conflict_resolver.current_directional_opens(variant["id"])
         intents_only = [(sid, intent) for sid, intent, _, _ in _pending_intents]
         results = dispatch_mod.reconcile_intents(
             intents_only, post_used, cap, capital,
+            existing_directional_opens=existing,
         )
         # Map results back to (sleeve_cfg, execute_fn). The order in
         # `results` is by priority sort; build a dict by sleeve_id +

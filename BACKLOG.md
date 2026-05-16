@@ -374,6 +374,25 @@ commit and probably multi-session. A reasonable sub-decomposition:
   approved intents) is the next sub-commit; depends on AI_QUANT's
   decide()/execute() implementation.*
 
+  *2026-05-16 — ADX (S-003) migrated to two-phase + reconcile seeded
+  from legacy DB opens. Second sleeve on two-phase after AI_QUANT.
+  `try_fire_for_variant` becomes a thin wrapper calling
+  `try_decide_for_variant` → `execute_for_variant`. Side-effects in
+  decide() (always run, not subject to reconcile): SL sweep, exit-signal
+  close on ADX < 20, direction-flip close on signal reversal. Returns
+  an `Intent` when a fresh signal fires AND open-trade count is zero
+  post-flip; otherwise returns `(None, status)`. Inline conflict_resolver
+  + margin_headroom opt-ins removed — reconcile owns those now.
+  To prevent regression against legacy sleeves whose DB opens land
+  BEFORE the reconcile pass, `reconcile_intents` gained an
+  `existing_directional_opens: dict[asset, direction]` arg; orchestrator
+  builds it via the new
+  `conflict_resolver.current_directional_opens(variant_id)` helper.
+  Migrated sleeves' intents now collide against legacy DB positions
+  uniformly. 3 new dispatch tests + 6 new conflict_resolver tests
+  + ADX added to the existing two-phase registration test. Full fast
+  suite 789 tests green (was 780; +9 net).*
+
   *2026-05-16 — Signal pooling (P2.4f Stage 2) shipped in reconcile_intents.
   `_pool_concordant_allocations` runs as the first step of the reconcile
   pass and redistributes allocations among same-(asset, direction) intents

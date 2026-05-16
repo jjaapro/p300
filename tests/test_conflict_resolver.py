@@ -178,3 +178,51 @@ def test_summarize_handles_multi_asset(temp_db):
     out = conflict_resolver.summarize_conflicts("V")
     assets = {row["asset"] for row in out}
     assert assets == {"BTC", "ETH"}
+
+
+# ─── current_directional_opens (P2.4e/f Stage 2 ADX migration) ──────────────
+
+def test_current_directional_opens_empty(temp_db):
+    assert conflict_resolver.current_directional_opens("V") == {}
+
+
+def test_current_directional_opens_returns_per_asset_direction(temp_db):
+    _insert(temp_db, id="T1", asset="BTC", direction="LONG", strategy="S-003")
+    _insert(temp_db, id="T2", asset="ETH", direction="SHORT", strategy="S-096",
+            actual_entry_time="2026-05-15T01:00:00")
+    out = conflict_resolver.current_directional_opens("V")
+    assert out == {"BTC": "LONG", "ETH": "SHORT"}
+
+
+def test_current_directional_opens_excludes_carry(temp_db):
+    """CARRY's perp SHORT is excluded (delta-neutral)."""
+    _insert(temp_db, id="T_carry", asset="BTC", direction="SHORT", strategy="CARRY")
+    assert conflict_resolver.current_directional_opens("V") == {}
+
+
+def test_current_directional_opens_carry_does_not_mask_directional(temp_db):
+    """CARRY SHORT on BTC + directional LONG on BTC — the dict reflects
+    only the directional sleeve (LONG)."""
+    _insert(temp_db, id="T_carry", asset="BTC", direction="SHORT",
+            strategy="CARRY", actual_entry_time="2026-05-15T00:00:00")
+    _insert(temp_db, id="T_long",  asset="BTC", direction="LONG",
+            strategy="S-003", actual_entry_time="2026-05-15T01:00:00")
+    assert conflict_resolver.current_directional_opens("V") == {"BTC": "LONG"}
+
+
+def test_current_directional_opens_ignores_closed_and_other_variants(temp_db):
+    _insert(temp_db, id="T_closed", asset="BTC", direction="LONG",
+            strategy="S-003", status="closed")
+    _insert(temp_db, id="T_other_v", asset="BTC", direction="SHORT",
+            strategy="S-096", strategy_variant="OTHER")
+    assert conflict_resolver.current_directional_opens("V") == {}
+
+
+def test_current_directional_opens_earliest_wins_on_race(temp_db):
+    """If a malformed state shows two directions on one asset, the
+    earlier open wins the slot (deterministic tie-break)."""
+    _insert(temp_db, id="T_short_first", asset="BTC", direction="SHORT",
+            strategy="S-096", actual_entry_time="2026-05-15T00:00:00")
+    _insert(temp_db, id="T_long_later", asset="BTC", direction="LONG",
+            strategy="S-003", actual_entry_time="2026-05-15T01:00:00")
+    assert conflict_resolver.current_directional_opens("V") == {"BTC": "SHORT"}

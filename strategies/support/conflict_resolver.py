@@ -117,6 +117,43 @@ def detect_opposing_open(variant_id: str,
     return dict(row)
 
 
+def current_directional_opens(variant_id: str) -> dict[str, str]:
+    """Return ``{asset: direction}`` for currently-open directional perps
+    in ``variant_id``. CARRY's delta-neutral SHORT is excluded.
+
+    Used by :func:`strategies.support.dispatch.reconcile_intents` to seed
+    its directional-conflict state with positions opened by legacy
+    (non-two-phase) sleeves before the reconcile pass — so a migrated
+    sleeve's intent (e.g. ADX LONG BTC) gets rejected when a legacy
+    sleeve (e.g. THU_BEAR SHORT BTC) already holds the asset's
+    directional slot. Returns the EARLIEST open's direction per asset;
+    in well-formed state there's at most one direction per asset (the
+    full purpose of conflict resolution), but two-direction race
+    conditions degrade gracefully — the earlier wins.
+    """
+    excluded = list(_NEUTRAL_STRATEGIES)
+    placeholders = ",".join("?" * len(excluded))
+    con = sqlite3.connect(str(db.DASH_DB))
+    try:
+        rows = con.execute(
+            f"SELECT asset, direction "
+            f"FROM trades "
+            f"WHERE strategy_variant = ? AND status = 'open' "
+            f"  AND execution_mode = 'paper' "
+            f"  AND direction IN ('LONG', 'SHORT') "
+            f"  AND strategy NOT IN ({placeholders}) "
+            f"ORDER BY actual_entry_time",
+            (variant_id, *excluded),
+        ).fetchall()
+    finally:
+        con.close()
+    out: dict[str, str] = {}
+    for asset, direction in rows:
+        if asset not in out:
+            out[asset] = direction
+    return out
+
+
 def summarize_conflicts(variant_id: str) -> list[dict]:
     """List every (asset, [LONG-trade, SHORT-trade]) pair currently open
     in ``variant_id`` where directional perp positions on the same asset

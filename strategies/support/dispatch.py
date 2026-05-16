@@ -233,6 +233,7 @@ def reconcile_intents(
     gross_cap_usdt: float,
     capital_usdt: float,
     min_reduce_fraction: float = 0.50,
+    existing_directional_opens: Optional[dict[str, str]] = None,
 ) -> list[ReconcileResult]:
     """Run the cross-sleeve reconciliation pass over a tick's intents.
 
@@ -246,6 +247,13 @@ def reconcile_intents(
         min_reduce_fraction: Below this fraction of the intended notional,
             the reduce policy rejects rather than opening a token-sized
             position. Mirrors :data:`strategies.support.margin_headroom.DEFAULT_MIN_REDUCE_FRACTION`.
+        existing_directional_opens: ``{asset: direction}`` mapping
+            currently-open directional perps in the variant. Seeds the
+            directional-conflict state so intents collide against legacy
+            (non-two-phase) sleeves' DB positions, not just other
+            in-reconcile intents. Pass ``None`` (default) for tests /
+            standalone callers; the orchestrator builds it via
+            :func:`strategies.support.conflict_resolver.current_directional_opens`.
 
     Returns:
         A list of :class:`ReconcileResult`, ordered by priority (winner
@@ -276,7 +284,14 @@ def reconcile_intents(
     also fires for the same intent.
     """
     # Already-approved per asset → {asset: ("LONG"|"SHORT", notional_taken)}
+    # Seeded with legacy-sleeve DB opens so a migrated sleeve's intent
+    # collides against them via the same directional-conflict check.
     approved_by_asset: dict[str, tuple[str, float]] = {}
+    if existing_directional_opens:
+        for asset, direction in existing_directional_opens.items():
+            if direction in ("LONG", "SHORT"):
+                # Notional 0 — it's already counted in current_gross_used_usdt.
+                approved_by_asset[asset] = (direction, 0.0)
     approved_notional = 0.0
     results: list[ReconcileResult] = []
 
