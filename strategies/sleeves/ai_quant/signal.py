@@ -376,24 +376,25 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
       decision_error      — LLM call failed; ERROR row written
       decided             — decision recorded; trade_action shows what we did
     """
-    intent, status = try_decide_for_variant(variant, sleeve_cfg)
-    if intent is None:
+    intents, status = try_decide_for_variant(variant, sleeve_cfg)
+    if not intents:
         return status
-    return execute_for_variant(variant, sleeve_cfg, intent)
+    # AI_QUANT emits at most one intent per tick.
+    return execute_for_variant(variant, sleeve_cfg, intents[0])
 
 
 def try_decide_for_variant(variant: dict, sleeve_cfg: dict
-                            ) -> tuple[Any, dict]:
+                            ) -> tuple[list, dict]:
     """Phase-1 of the two-phase dispatch (P2.4e/f Stage 2).
 
     Runs the gates + Anthropic decision call; returns
-    ``(Intent | None, status_dict)``. Caller (orchestrator) inspects
-    ``Intent`` — None means "no trade this tick, status_dict is the
-    final dispatch result" (disabled / off_window / cost_capped /
-    error / deferred). A non-None Intent encodes the LLM's decision
-    and carries the underlying ``DecisionResult`` + context bundle in
-    ``Intent.reason`` so :func:`execute_for_variant` can write the
-    final journal row + run the open/close logic.
+    ``(list[Intent], status_dict)``. Empty list means "no trade this
+    tick, status_dict is the final dispatch result" (disabled /
+    off_window / cost_capped / error / deferred). A non-empty list
+    (always exactly one Intent for AI_QUANT) encodes the LLM's
+    decision and carries the underlying ``DecisionResult`` + context
+    bundle in ``Intent.reason`` so :func:`execute_for_variant` can
+    write the final journal row + run the open/close logic.
 
     ``status_dict`` for the Intent path is a stub — only
     ``status="decided"`` plus echoes of the decision. The orchestrator
@@ -406,7 +407,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict
     asset = (sleeve_cfg.get("params") or {}).get("asset") or DEFAULT_ASSET
 
     if not _kill_switch_on():
-        return None, {"status": "disabled"}
+        return [], {"status": "disabled"}
 
     # Defer-aware idempotency: if today's latest row is an active defer,
     # block; if it's an expired defer, allow re-fire and bypass the entry
@@ -419,7 +420,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict
             defer_until = today_row.get("defer_until_utc")
             now_ts = clock.now_ts()
             if defer_until is not None and now_ts < int(defer_until):
-                return None, {
+                return [], {
                     "status": "deferred_waiting",
                     "until_utc": int(defer_until),
                     "waiting_for": today_row.get("confidence_caveats"),
@@ -427,17 +428,17 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict
             # Defer expired — proceed without re-checking the entry window.
             bypass_entry_window = True
         else:
-            return None, {"status": "already_fired_today"}
+            return [], {"status": "already_fired_today"}
 
     if not bypass_entry_window and not _in_entry_window():
-        return None, {"status": "off_window"}
+        return [], {"status": "off_window"}
 
     cap = _daily_cost_cap_usd()
     spent = journal.get_today_cost_usd(variant_id)
     if spent >= cap:
         log.warning(f"AI_QUANT cost cap hit for {variant_id}: "
                      f"${spent:.4f} >= ${cap:.4f}")
-        return None, {"status": "cost_capped", "spent_usd": spent, "cap_usd": cap}
+        return [], {"status": "cost_capped", "spent_usd": spent, "cap_usd": cap}
 
     # Heavy lifting from here on.
     current_open = trades.get_open_trades(variant_id, SLEEVE_NAME, asset)
@@ -457,7 +458,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict
             error=f"context_build: {type(e).__name__}: {e}",
             context_bundle=None, trade_action="error",
         )
-        return None, {"status": "decision_error", "error": "context_build"}
+        return [], {"status": "decision_error", "error": "context_build"}
 
     try:
         baseline_png = chart.render_chart(
@@ -471,7 +472,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict
             error=f"chart_render: {type(e).__name__}: {e}",
             context_bundle=context_bundle, trade_action="error",
         )
-        return None, {"status": "decision_error", "error": "chart_render"}
+        return [], {"status": "decision_error", "error": "chart_render"}
 
     defers_today = journal.count_today_defers(variant_id)
     allow_defer = defers_today < MAX_DEFERS_PER_DAY
@@ -498,7 +499,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict
             trade_action="deferred",
             defer_until_utc=defer_until,
         )
-        return None, {
+        return [], {
             "status": "deferred",
             "asset": asset,
             "waiting_for": result.deferred.get("waiting_for"),
@@ -514,7 +515,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict
             decision_result=result, context_bundle=context_bundle,
             trade_action="error",
         )
-        return None, {"status": "decision_error", "error": result.error}
+        return [], {"status": "decision_error", "error": result.error}
 
     # Successful decision — package as an Intent. The decision_result +
     # context_bundle ride along in Intent.reason so execute_for_variant
@@ -542,7 +543,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict
         scheduled_exit_dt=None,
     )
     # Stub status — execute returns the canonical success status_dict.
-    return intent, {
+    return [intent], {
         "status": "decided",
         "asset": asset,
         "decision": result.decision["direction"],

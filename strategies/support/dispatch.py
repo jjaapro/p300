@@ -11,10 +11,15 @@ orchestrator side — it's all baked into each sleeve's own checks.
 
 The Stage 2 design splits each sleeve into two phases:
 
-  1. ``try_decide_for_variant(variant, sleeve_cfg) -> Intent | None``
-     reads inputs, evaluates signals, returns a structured
-     description of "what I'd open if approved". No DB writes; no
-     trade opens.
+  1. ``try_decide_for_variant(variant, sleeve_cfg) -> tuple[list[Intent], dict]``
+     reads inputs, evaluates signals, returns a list of "what I'd
+     open if approved" intents (zero, one, or many — multi-asset
+     sleeves like THU_BEAR can emit one per asset on the same tick).
+     The accompanying status dict carries telemetry-only info (kept
+     for parity with the legacy ``try_fire_for_variant`` status
+     surface). No DB writes; no trade opens here — only cheap
+     side-effects (SL sweeps, scheduled closes) when the sleeve owns
+     position-management routines that don't pass through reconcile.
 
   2. The orchestrator collects intents across every sleeve, applies
      reconciliation:
@@ -111,8 +116,8 @@ class Intent:
 #: The orchestrator looks for the attribute and routes through it
 #: when present. See module docstring for the contract.
 #:
-#:     def try_decide_for_variant(variant: dict, sleeve_cfg: dict) -> Intent | None: ...
-#:     def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Intent | None) -> dict: ...
+#:     def try_decide_for_variant(variant, sleeve_cfg) -> tuple[list[Intent], dict]: ...
+#:     def execute_for_variant(variant, sleeve_cfg, intent) -> dict: ...
 TWO_PHASE_PROTOCOL = "(documented contract; no runtime enforcement)"
 
 

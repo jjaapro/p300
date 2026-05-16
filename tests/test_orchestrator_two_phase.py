@@ -43,7 +43,7 @@ def test_two_phase_skips_execute_when_decide_returns_none(monkeypatch):
 
     def stub_decide(variant, sleeve_cfg):
         decide_calls.append(sleeve_cfg.get("strategy_id"))
-        return None, {"status": "disabled"}
+        return [], {"status": "disabled"}
 
     def stub_execute(variant, sleeve_cfg, intent):
         execute_calls.append(sleeve_cfg.get("strategy_id"))
@@ -96,9 +96,9 @@ def test_two_phase_runs_execute_on_approved_intent(monkeypatch):
     execute_args: list = []
 
     def stub_decide(variant, sleeve_cfg):
-        return Intent(asset="BTC", direction="LONG",
-                       allocation_pct=1.5, leverage=3.0,
-                       conviction=80, reason={"sleeve": "AI_QUANT"}), \
+        return [Intent(asset="BTC", direction="LONG",
+                        allocation_pct=1.5, leverage=3.0,
+                        conviction=80, reason={"sleeve": "AI_QUANT"})], \
                {"status": "decided"}
 
     def stub_execute(variant, sleeve_cfg, intent):
@@ -141,9 +141,9 @@ def test_two_phase_skips_execute_when_reconcile_rejects_margin(monkeypatch):
 
     def stub_decide(variant, sleeve_cfg):
         # Intent that won't fit: 30% × 10x = 300% of capital on a 250% cap.
-        return Intent(asset="BTC", direction="LONG",
-                       allocation_pct=30.0, leverage=10.0,
-                       conviction=80, reason={"sleeve": "AI_QUANT"}), \
+        return [Intent(asset="BTC", direction="LONG",
+                        allocation_pct=30.0, leverage=10.0,
+                        conviction=80, reason={"sleeve": "AI_QUANT"})], \
                {"status": "decided"}
 
     def stub_execute(variant, sleeve_cfg, intent):
@@ -175,3 +175,53 @@ def test_two_phase_skips_execute_when_reconcile_rejects_margin(monkeypatch):
     orchestrator._tick_composition(variant, datetime(2026, 5, 16, 0, 10,
                                                        tzinfo=timezone.utc))
     assert execute_args == []  # reconcile rejected -> execute skipped
+
+
+def test_two_phase_multi_intent_sleeve_executes_each(monkeypatch):
+    """A sleeve that returns multiple intents (THU_BEAR-style per-asset
+    fan-out) gets execute called once per approved intent — the
+    orchestrator's pending-queue pop preserves intent-to-execute pairing
+    across same-sleeve-id entries."""
+    execute_args: list = []
+
+    def stub_decide(variant, sleeve_cfg):
+        return [
+            Intent(asset="BTC", direction="SHORT", allocation_pct=3.0,
+                    leverage=5.0, conviction=100,
+                    reason={"sleeve": "THU_BEAR", "asset": "BTC"}),
+            Intent(asset="ETH", direction="SHORT", allocation_pct=3.0,
+                    leverage=5.0, conviction=100,
+                    reason={"sleeve": "THU_BEAR", "asset": "ETH"}),
+        ], {"status": "decided"}
+
+    def stub_execute(variant, sleeve_cfg, intent):
+        execute_args.append(intent)
+        return {"status": "decided", "trade_action": "opened"}
+
+    monkeypatch.setattr(orchestrator, "STRATEGY_DISPATCH", {})
+    monkeypatch.setattr(orchestrator, "STRATEGY_TWO_PHASE_DISPATCH", {
+        "THU_BEAR_TEST": (stub_decide, stub_execute),
+    })
+    monkeypatch.setattr(orchestrator, "_load_dispatch", lambda: None)
+
+    from strategies.support import allocation, gating, margin_headroom, portfolio_vol
+    monkeypatch.setattr(allocation, "current_regime", lambda *a, **kw: "uncertain")
+    monkeypatch.setattr(gating, "get_decision",
+                          lambda *a, **kw: gating.DEFAULT_DECISION)
+    monkeypatch.setattr(portfolio_vol, "current_vol_scalar",
+                          lambda *a, **kw: None)
+    monkeypatch.setattr(margin_headroom, "headroom_usdt", lambda v: 25_000.0)
+    monkeypatch.setattr(margin_headroom, "current_gross_notional_usdt",
+                          lambda vid: 0.0)
+    monkeypatch.setattr(margin_headroom, "gross_cap_usdt", lambda v: 25_000.0)
+
+    variant = {
+        "id": "V", "kind": "full_portfolio", "capital_usdt": 10000.0,
+        "spec": {"composition": [{"strategy_id": "THU_BEAR_TEST"}]},
+    }
+    from datetime import datetime, timezone
+    orchestrator._tick_composition(variant, datetime(2026, 5, 16, 0, 10,
+                                                       tzinfo=timezone.utc))
+    assert len(execute_args) == 2
+    assets = {i.asset for i in execute_args}
+    assert assets == {"BTC", "ETH"}

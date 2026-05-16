@@ -253,12 +253,11 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     so callers that don't know about the new protocol — including every
     legacy unit test and the backtest runner — keep working unchanged.
     """
-    from strategies.support.dispatch import Intent
-
-    intent, status = try_decide_for_variant(variant, sleeve_cfg)
-    if intent is None:
+    intents, status = try_decide_for_variant(variant, sleeve_cfg)
+    if not intents:
         return status
-    return execute_for_variant(variant, sleeve_cfg, intent)
+    # ADX emits at most one intent per tick (single-asset, single-open).
+    return execute_for_variant(variant, sleeve_cfg, intents[0])
 
 
 def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
@@ -293,7 +292,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
     candles = _load_btc_daily_candles()
     sig = _current_signal(candles)
     if sig is None:
-        return None, {"status": "warmup", "reason": "insufficient history"}
+        return [], {"status": "warmup", "reason": "insufficient history"}
 
     today = clock.now_utc().strftime("%Y-%m-%d")
     open_trades = _get_open_adx_trades(variant["id"])
@@ -317,7 +316,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
 
     # Step 2: once-per-day idempotency.
     if _adx_trade_exists_today(variant["id"], today):
-        return None, {"status": "already_fired_today", "date": today}
+        return [], {"status": "already_fired_today", "date": today}
 
     # Step 3: Exit signal — close remaining opens if ADX < 20.
     if open_trades and sig["exit_sig"]:
@@ -335,12 +334,12 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
             log.info(f"[adx {variant['id']}] trend-filter BLOCKED entry: "
                      f"close={sig['close']:.2f} vs EMA({TREND_EMA_LEN})="
                      f"{sig['trend_ema']} (ADX={sig['adx']}, EMA50={sig['ema']})")
-        return None, {"status": "trend_filter_block",
+        return [], {"status": "trend_filter_block",
                        "date": today, "adx": sig["adx"],
                        "close": sig["close"], "trend_ema": sig["trend_ema"]}
 
     if not sig["entry_sig"]:
-        return None, {"status": "no_action", "date": today, "adx": sig["adx"],
+        return [], {"status": "no_action", "date": today, "adx": sig["adx"],
                        "open_count": len(open_trades)}
 
     new_dir = sig["entry_sig"].upper()
@@ -354,7 +353,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
 
     # Single-open invariant: only emit an Intent when no trades remain.
     if open_trades:
-        return None, {"status": "no_action", "date": today, "adx": sig["adx"],
+        return [], {"status": "no_action", "date": today, "adx": sig["adx"],
                        "open_count": len(open_trades)}
 
     reason = {
@@ -388,7 +387,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
         reason=reason,
         scheduled_exit_dt=None,
     )
-    return intent, {"status": "decided", "direction": new_dir,
+    return [intent], {"status": "decided", "direction": new_dir,
                      "adx": sig["adx"], "ema50": sig["ema"]}
 
 

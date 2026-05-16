@@ -493,7 +493,7 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
         if two_phase is not None:
             decide_fn, execute_fn = two_phase
             try:
-                intent, status = decide_fn(variant, sleeve)
+                intents, status = decide_fn(variant, sleeve)
             except Exception as e:
                 log.exception(f"[{variant['id']}] {strategy_id} decide error: {e}")
                 continue
@@ -505,7 +505,9 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
                 "deferred_waiting",
             ):
                 log.info(f"[{variant['id']}] {strategy_id} decide -> {status}")
-            if intent is not None:
+            # Flatten multi-asset sleeves (e.g. THU_BEAR returning
+            # BTC + ETH intents) into the pending list.
+            for intent in (intents or []):
                 _pending_intents.append((strategy_id, intent, sleeve, execute_fn))
             continue
         dispatcher = STRATEGY_DISPATCH.get(strategy_id)
@@ -544,21 +546,25 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
             intents_only, post_used, cap, capital,
             existing_directional_opens=existing,
         )
-        # Map results back to (sleeve_cfg, execute_fn). The order in
-        # `results` is by priority sort; build a dict by sleeve_id +
-        # iterate the pending list in original order so each sleeve's
-        # execute_fn pairs with its own result.
-        results_by_sid = {r.sleeve_id: r for r in results}
-        for strategy_id, intent, sleeve, execute_fn in _pending_intents:
-            r = results_by_sid.get(strategy_id)
-            if r is None:
+        # Pair each result with its pending entry. Multi-asset sleeves
+        # (e.g. THU_BEAR) emit multiple intents under the same sleeve_id,
+        # so we can't use a dict-by-sid. Build a per-sleeve FIFO queue
+        # and pop one entry per result; reconcile preserves input order
+        # within a sleeve, so this gives a stable pairing.
+        pending_by_sid: dict[str, list] = {}
+        for entry in _pending_intents:
+            pending_by_sid.setdefault(entry[0], []).append(entry)
+        for r in results:
+            queue = pending_by_sid.get(r.sleeve_id)
+            if not queue:
                 continue
+            strategy_id, intent, sleeve, execute_fn = queue.pop(0)
             if r.status in ("rejected_directional_conflict", "rejected_margin"):
                 log.info(f"[{variant['id']}] {strategy_id} reconcile -> "
                          f"{r.status}: {r.reason}")
                 continue
-            # approved / approved_reduced — execute with the (possibly
-            # reduced) intent.
+            # approved / approved_reduced / approved_pooled — execute
+            # with the (possibly reduced) intent.
             try:
                 result = execute_fn(variant, sleeve, r.intent)
                 if result and result.get("status") not in (
