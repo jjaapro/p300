@@ -473,6 +473,15 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
         sleeve_with_k["_effective_gate"] = gating.get_decision(strategy_id, regime, now_utc)
         sleeve_with_k["_effective_vol_scalar"] = portfolio_vol.current_vol_scalar(strategy_id, variant)
         sleeve_with_k["_effective_margin_headroom_usdt"] = headroom_usdt
+        # P2.4c remainder: tactical-sleeve consumption of the vol scalar.
+        # Tactical sleeves read `_effective_leverage` directly; scaling it
+        # here lets them inherit portfolio-vol targeting without per-sleeve
+        # code changes. J+ family ignores `_effective_leverage` for vol
+        # purposes and reads `_effective_vol_scalar` as its leverage, so
+        # no double-counting.
+        scalar = sleeve_with_k["_effective_vol_scalar"]
+        if scalar is not None and strategy_id not in portfolio_vol._JPLUS_SLEEVES:
+            sleeve_with_k["_effective_leverage"] *= float(scalar)
         sleeve = sleeve_with_k
         # P2.4e/f Stage 2: route through the two-phase protocol if the
         # sleeve has migrated. Phase-1 (decide) runs in-loop; intents

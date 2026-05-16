@@ -206,3 +206,147 @@ def test_current_vol_scalar_flag_off_keeps_legacy(monkeypatch):
     v = _variant(use_portfolio_vol=False)
     assert portfolio_vol.current_vol_scalar("S-003", v) is None
     assert portfolio_vol.current_vol_scalar("JPLUS_R4_BTC", v) == pytest.approx(1.23)
+
+
+# ─── P2.4c remainder: tactical-sleeve consumption via _effective_leverage ─────
+
+def test_orchestrator_scales_tactical_leverage_by_vol_scalar(monkeypatch):
+    """When the portfolio-vol scalar is non-None, _tick_composition
+    multiplies tactical sleeves' `_effective_leverage` by the scalar
+    before dispatch. Tactical sleeves consume `_effective_leverage`
+    transparently, so portfolio-vol now flows end-to-end without
+    per-sleeve code changes."""
+    from strategies import orchestrator
+    from strategies.support import allocation, gating, margin_headroom
+
+    captured: list[dict] = []
+
+    def stub_dispatcher(variant, sleeve_cfg):
+        captured.append(dict(sleeve_cfg))
+        return {"status": "no_action"}
+
+    monkeypatch.setattr(orchestrator, "STRATEGY_DISPATCH", {
+        "S-003": stub_dispatcher,
+    })
+    monkeypatch.setattr(orchestrator, "STRATEGY_TWO_PHASE_DISPATCH", {})
+    monkeypatch.setattr(orchestrator, "_load_dispatch", lambda: None)
+    monkeypatch.setattr(allocation, "current_regime", lambda *a, **kw: "uncertain")
+    monkeypatch.setattr(gating, "get_decision",
+                         lambda *a, **kw: gating.DEFAULT_DECISION)
+    monkeypatch.setattr(margin_headroom, "headroom_usdt", lambda v: 20_000.0)
+    monkeypatch.setattr(margin_headroom, "current_gross_notional_usdt",
+                         lambda vid: 0.0)
+    monkeypatch.setattr(margin_headroom, "gross_cap_usdt", lambda v: 25_000.0)
+    # Force vol scalar = 0.5 for S-003.
+    monkeypatch.setattr(portfolio_vol, "current_vol_scalar",
+                         lambda sid, var: 0.5 if sid == "S-003" else None)
+
+    variant = {
+        "id": "V", "kind": "full_portfolio", "capital_usdt": 10_000.0,
+        "spec": {
+            "composition": [
+                {"strategy_id": "S-003", "params": {"leverage": 5.0}},
+            ],
+            "sleeve_leverages": {"s003": 5.0},
+        },
+    }
+    from datetime import datetime, timezone
+    orchestrator._tick_composition(
+        variant, datetime(2026, 5, 16, 0, 10, tzinfo=timezone.utc),
+    )
+    assert len(captured) == 1
+    # Base leverage 5.0 × scalar 0.5 = 2.5.
+    assert captured[0]["_effective_leverage"] == pytest.approx(2.5)
+    assert captured[0]["_effective_vol_scalar"] == pytest.approx(0.5)
+
+
+def test_orchestrator_does_not_scale_jplus_leverage(monkeypatch):
+    """J+ sleeves consume `_effective_vol_scalar` directly as their
+    leverage (ti['lev'] replacement). The orchestrator must NOT also
+    multiply their `_effective_leverage` by the scalar — that would
+    double-count vol targeting."""
+    from strategies import orchestrator
+    from strategies.support import allocation, gating, margin_headroom
+
+    captured: list[dict] = []
+
+    def stub_dispatcher(variant, sleeve_cfg):
+        captured.append(dict(sleeve_cfg))
+        return {"status": "no_action"}
+
+    monkeypatch.setattr(orchestrator, "STRATEGY_DISPATCH", {
+        "JPLUS_R4_BTC": stub_dispatcher,
+    })
+    monkeypatch.setattr(orchestrator, "STRATEGY_TWO_PHASE_DISPATCH", {})
+    monkeypatch.setattr(orchestrator, "_load_dispatch", lambda: None)
+    monkeypatch.setattr(allocation, "current_regime", lambda *a, **kw: "uncertain")
+    monkeypatch.setattr(gating, "get_decision",
+                         lambda *a, **kw: gating.DEFAULT_DECISION)
+    monkeypatch.setattr(margin_headroom, "headroom_usdt", lambda v: 20_000.0)
+    monkeypatch.setattr(margin_headroom, "current_gross_notional_usdt",
+                         lambda vid: 0.0)
+    monkeypatch.setattr(margin_headroom, "gross_cap_usdt", lambda v: 25_000.0)
+    monkeypatch.setattr(portfolio_vol, "current_vol_scalar", lambda sid, var: 0.5)
+
+    variant = {
+        "id": "V", "kind": "full_portfolio", "capital_usdt": 10_000.0,
+        "spec": {
+            "composition": [
+                {"strategy_id": "JPLUS_R4_BTC", "params": {}},
+            ],
+            "sleeve_leverages": {"r4_btc": 1.0},
+        },
+    }
+    from datetime import datetime, timezone
+    orchestrator._tick_composition(
+        variant, datetime(2026, 5, 16, 0, 10, tzinfo=timezone.utc),
+    )
+    assert len(captured) == 1
+    # J+ leverage stays at base 1.0 — orchestrator did NOT multiply.
+    # (J+ handler reads `_effective_vol_scalar` separately for the
+    # actual leverage it applies.)
+    assert captured[0]["_effective_leverage"] == pytest.approx(1.0)
+    assert captured[0]["_effective_vol_scalar"] == pytest.approx(0.5)
+
+
+def test_orchestrator_no_scaling_when_scalar_is_none(monkeypatch):
+    """Scalar None (default, no opt-in) → leverage unchanged."""
+    from strategies import orchestrator
+    from strategies.support import allocation, gating, margin_headroom
+
+    captured: list[dict] = []
+
+    def stub_dispatcher(variant, sleeve_cfg):
+        captured.append(dict(sleeve_cfg))
+        return {"status": "no_action"}
+
+    monkeypatch.setattr(orchestrator, "STRATEGY_DISPATCH", {
+        "S-003": stub_dispatcher,
+    })
+    monkeypatch.setattr(orchestrator, "STRATEGY_TWO_PHASE_DISPATCH", {})
+    monkeypatch.setattr(orchestrator, "_load_dispatch", lambda: None)
+    monkeypatch.setattr(allocation, "current_regime", lambda *a, **kw: "uncertain")
+    monkeypatch.setattr(gating, "get_decision",
+                         lambda *a, **kw: gating.DEFAULT_DECISION)
+    monkeypatch.setattr(margin_headroom, "headroom_usdt", lambda v: 20_000.0)
+    monkeypatch.setattr(margin_headroom, "current_gross_notional_usdt",
+                         lambda vid: 0.0)
+    monkeypatch.setattr(margin_headroom, "gross_cap_usdt", lambda v: 25_000.0)
+    monkeypatch.setattr(portfolio_vol, "current_vol_scalar",
+                         lambda sid, var: None)
+
+    variant = {
+        "id": "V", "kind": "full_portfolio", "capital_usdt": 10_000.0,
+        "spec": {
+            "composition": [
+                {"strategy_id": "S-003", "params": {"leverage": 5.0}},
+            ],
+            "sleeve_leverages": {"s003": 5.0},
+        },
+    }
+    from datetime import datetime, timezone
+    orchestrator._tick_composition(
+        variant, datetime(2026, 5, 16, 0, 10, tzinfo=timezone.utc),
+    )
+    assert captured[0]["_effective_leverage"] == pytest.approx(5.0)
+    assert captured[0]["_effective_vol_scalar"] is None

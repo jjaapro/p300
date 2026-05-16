@@ -252,6 +252,17 @@ commit and probably multi-session. A reasonable sub-decomposition:
   tactical. Tactical-sleeve consumption of `_effective_vol_scalar`
   (i.e. `leverage *= scalar`) is the remaining piece — J+ already
   reads the field. 29 tests (21 legacy + 8 new math/opt-in).*
+  *2026-05-16: tactical consumption shipped. Done at orchestrator-
+  injection time (NOT per-sleeve): `_tick_composition` multiplies
+  `_effective_leverage` by `_effective_vol_scalar` when the scalar
+  is non-None and the sleeve isn't in the J+ family. Tactical sleeves
+  (ADX, CARRY, THU_BEAR, PDO, CPR, FOMC, AI_QUANT) consume
+  `_effective_leverage` transparently — zero per-sleeve code changes.
+  J+ family is bypassed because it reads `_effective_vol_scalar`
+  directly as its leverage (replaces `ti["lev"]`) and would
+  double-count if the orchestrator also scaled `_effective_leverage`.
+  3 new tests in test_portfolio_vol.py: tactical scaling, J+ bypass,
+  scalar-None no-op.*
 - **P2.4d** — Margin headroom check; deferral policy.
   *2026-05-15: scaffold + first opt-in shipped.
   `strategies/support/margin_headroom.py` exposes
