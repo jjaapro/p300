@@ -278,39 +278,65 @@ def _close_cpr_paper(trade_id: str, exit_price: float, reason: str) -> None:
 # ─── Public tick ─────────────────────────────────────────────────────────────
 
 def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
-    """Daily-idempotent CPR dispatch for this variant.
+    """Variant-engine dispatch entry point. Returns a status dict.
 
-    sleeve_cfg.params:
-      assets   — list, default ['BTC','ETH']
-      leverage — per-sleeve leverage (provided as _effective_leverage)
+    Backward-compatible wrapper: runs decide (side-effect exits + entry
+    Intent list), then executes each Intent.
+    """
+    intents, status = try_decide_for_variant(variant, sleeve_cfg)
+    if not intents:
+        return status
+    open_results: list[dict] = []
+    for intent in intents:
+        open_results.append(execute_for_variant(variant, sleeve_cfg, intent))
+    merged = list(status.get("assets") or [])
+    for r in open_results:
+        if r:
+            merged.append(r)
+    return {
+        "status": "dispatched",
+        "date": status.get("date"),
+        "assets": merged,
+    }
+
+
+def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
+    """Phase-1 of the two-phase dispatch (P2.4e/f Stage 2).
+
+    Side-effects (always run, not subject to reconcile):
+      - Stop / target / time-stop close on every open CPR trade.
+
+    Returns ``(list[Intent], status_dict)``. Per-asset Intent emitted
+    only when signal fires AND idempotency clear AND BTC cross-sleeve
+    cap allows. Inline `margin_headroom.clamp_to_headroom` removed —
+    reconcile handles partial-fit via `approved_reduced`.
     """
     from strategies.support.price_feed import _get_current_price
+    from strategies.support.dispatch import Intent
 
     params = sleeve_cfg.get("params") or {}
     assets = params.get("assets", ["BTC", "ETH"])
     alloc_pct = float(sleeve_cfg.get("_effective_weight_pct",
                                        sleeve_cfg.get("weight_pct", 0.0)))
     leverage = float(sleeve_cfg.get("_effective_leverage", 1.0))
-
-    # Split allocation across assets (default: even split)
     per_asset_alloc = alloc_pct / max(1, len(assets))
     today_utc = clock.now_utc().strftime("%Y-%m-%d")
 
-    results = []
+    results: list[dict] = []
+    intents: list = []
     for asset in assets:
         try:
             sig = _evaluate_today(asset)
         except Exception as e:
             log.exception(f"[cpr {variant['id']} {asset}] eval error: {e}")
             continue
-        if sig is None or sig.get("reason") in ("warmup", "missing_data", "pctile_window_too_thin"):
-            results.append({"asset": asset, "status": "no_signal", "reason": sig.get("reason") if sig else "none"})
+        if sig is None or sig.get("reason") in (
+                "warmup", "missing_data", "pctile_window_too_thin"):
+            results.append({"asset": asset, "status": "no_signal",
+                            "reason": sig.get("reason") if sig else "none"})
             continue
 
-        # Manage ALL open CPR positions for this (variant, asset). For each,
-        # check stop / target / time-stop; close any that trigger. Invariant
-        # is single-open; sweeping the full list guards against stray legacy
-        # opens.
+        # Side-effect: stop/target/time-stop sweep on open positions.
         open_trades = _get_open_cpr_trades(variant["id"], asset)
         still_open: list[dict] = []
         price = _get_current_price(asset) if open_trades else None
@@ -333,20 +359,23 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                     _close_cpr_paper(tr["id"], price, f"stop_hit@{price:.2f}")
                     log.info(f"[cpr {variant['id']} {asset}] closed {tr['id']} "
                              f"stop (fill={price:.2f}, level={stop_px:.2f})")
-                    results.append({"asset": asset, "status": "closed_stop", "trade_id": tr["id"]})
+                    results.append({"asset": asset, "status": "closed_stop",
+                                    "trade_id": tr["id"]})
                     continue
                 if target_px > 0 and price >= target_px:
                     _close_cpr_paper(tr["id"], price, f"target_hit@{price:.2f}")
                     log.info(f"[cpr {variant['id']} {asset}] closed {tr['id']} "
                              f"target (fill={price:.2f}, level={target_px:.2f})")
-                    results.append({"asset": asset, "status": "closed_target", "trade_id": tr["id"]})
+                    results.append({"asset": asset, "status": "closed_target",
+                                    "trade_id": tr["id"]})
                     continue
                 entry_time = datetime.fromisoformat(tr["actual_entry_time"])
                 age_days = (clock.now_utc() - entry_time).days
                 if age_days >= TIME_STOP_DAYS:
                     _close_cpr_paper(tr["id"], price, f"time_stop_{age_days}d")
                     log.info(f"[cpr {variant['id']} {asset}] closed {tr['id']} time_stop")
-                    results.append({"asset": asset, "status": "closed_time", "trade_id": tr["id"]})
+                    results.append({"asset": asset, "status": "closed_time",
+                                    "trade_id": tr["id"]})
                     continue
                 still_open.append(tr)
             except Exception as e:
@@ -355,12 +384,10 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                 results.append({"asset": asset, "status": "error", "error": str(e)})
 
         if still_open:
-            # Single-open invariant: if any trade remains open, skip new entry.
             results.append({"asset": asset, "status": "open_waiting",
                             "open_count": len(still_open)})
             continue
 
-        # No open position — check if signal fired today
         if not sig.get("fire"):
             results.append({"asset": asset, "status": "no_signal",
                             "conditions": sig.get("conditions")})
@@ -369,14 +396,12 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             results.append({"asset": asset, "status": "already_fired_today"})
             continue
 
-        # Cross-sleeve BTC-long cap — shared with PDO_RETOUCH.
         if asset == "BTC":
             from strategies.support.risk_caps import btc_long_cap_allows
             if not btc_long_cap_allows(variant, per_asset_alloc):
                 results.append({"asset": asset, "status": "btc_cap_block"})
                 continue
 
-        # Fire entry
         entry_price = _get_current_price(asset)
         if entry_price is None:
             results.append({"asset": asset, "status": "stale_price_skip"})
@@ -389,31 +414,6 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                             "entry": entry_price, "target": target})
             continue
 
-        # P2.4d: opt into the variant-level margin-headroom cap with
-        # the reduce policy (P2.4d (b)). clamp_to_headroom re-reads
-        # the DB each call, so the second asset on this tick sees the
-        # first asset's just-opened row when computing remaining
-        # headroom — multi-asset opens cascade correctly.
-        from strategies.support import margin_headroom
-        capital = float(variant.get("capital_usdt") or 10000)
-        candidate_notional = capital * (per_asset_alloc / 100.0) * leverage
-        clamped, status, mh_reason = margin_headroom.clamp_to_headroom(
-            variant, candidate_notional)
-        if status in ("too_small", "no_headroom"):
-            log.info(f"[cpr {variant['id']} {asset}] margin-constrained: "
-                     f"{mh_reason} (alloc={per_asset_alloc}%, k={leverage}x)")
-            results.append({"asset": asset, "status": "margin_constrained",
-                            "reason": mh_reason, "headroom_status": status})
-            continue
-        if status == "reduced":
-            new_alloc = clamped * 100.0 / (capital * leverage)
-            log.info(f"[cpr {variant['id']} {asset}] margin-reduce: "
-                     f"alloc {per_asset_alloc:.2f}%->{new_alloc:.2f}% "
-                     f"(notional {candidate_notional:,.0f}->{clamped:,.0f})")
-            asset_alloc = new_alloc
-        else:
-            asset_alloc = per_asset_alloc
-
         reason = {
             "trigger": "CPR_entry",
             "variant_id": variant["id"],
@@ -423,21 +423,37 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             "ls_ratio": sig["ls_ratio"], "ls_20pctile": sig["ls_20pctile"],
             "conditions": sig["conditions"],
             "regime": "contrarian_squeeze_long",
-            **({"headroom_clamped": True,
-                "candidate_notional_usdt_intended": candidate_notional}
-               if status == "reduced" else {}),
+            "_entry_price": entry_price,
+            "_target": target, "_stop": stop,
         }
-        tid = _open_cpr_paper(variant, asset, entry_price, target, stop,
-                               asset_alloc, leverage, reason)
-        log.info(f"[cpr {variant['id']} {asset}] opened {tid} @ {entry_price:.2f} "
-                 f"target={target:.2f} alloc={asset_alloc}% lev={leverage:.1f}x")
-        results.append({"asset": asset, "status": "opened", "trade_id": tid,
-                        "entry_price": entry_price, "target": target})
+        intents.append(Intent(
+            asset=asset, direction="LONG",
+            allocation_pct=per_asset_alloc, leverage=leverage,
+            conviction=100,
+            priority=float(sleeve_cfg.get("priority", 100)),
+            reason=reason, scheduled_exit_dt=None,
+        ))
 
-    # Summarize
-    non_neutral = [r for r in results if r["status"] not in ("no_signal", "open_waiting", "already_fired_today")]
-    return {
-        "status": "dispatched" if non_neutral else "no_action",
+    return intents, {
+        "status": "decided" if intents else "no_action",
         "date": today_utc,
         "assets": results,
     }
+
+
+def execute_for_variant(variant: dict, sleeve_cfg: dict, intent) -> dict:
+    """Phase-2 of the two-phase dispatch — open the per-asset LONG
+    described by ``intent`` (post-reconcile)."""
+    reason = dict(intent.reason or {})
+    entry_price = float(reason.pop("_entry_price"))
+    target = float(reason.pop("_target"))
+    stop = float(reason.pop("_stop"))
+    tid = _open_cpr_paper(
+        variant, intent.asset, entry_price, target, stop,
+        intent.allocation_pct, intent.leverage, reason,
+    )
+    log.info(f"[cpr {variant['id']} {intent.asset}] opened {tid} @ "
+             f"{entry_price:.2f} target={target:.2f} "
+             f"alloc={intent.allocation_pct}% lev={intent.leverage:.1f}x")
+    return {"asset": intent.asset, "status": "opened", "trade_id": tid,
+             "entry_price": entry_price, "target": target}

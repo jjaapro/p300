@@ -385,6 +385,12 @@ commit and probably multi-session. A reasonable sub-decomposition:
   approved intents) is the next sub-commit; depends on AI_QUANT's
   decide()/execute() implementation.*
 
+  *2026-05-16 — CPR migrated to two-phase. Fifth sleeve. Same pattern
+  as PDO: side-effects in decide() are stop/target/time-stop closes;
+  entry path emits per-asset Intents; inline margin-headroom
+  `clamp_to_headroom` removed (reconcile owns it). BTC cross-sleeve cap
+  stays inline. Registration test extended to CPR.*
+
   *2026-05-16 — PDO-L-RF migrated to two-phase. Fourth sleeve on
   two-phase. Side-effects in decide(): hold-window exits per asset
   (BTC=24h, ETH=4h). Inline `margin_headroom.clamp_to_headroom` removed
