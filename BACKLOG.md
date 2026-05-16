@@ -385,6 +385,22 @@ commit and probably multi-session. A reasonable sub-decomposition:
   approved intents) is the next sub-commit; depends on AI_QUANT's
   decide()/execute() implementation.*
 
+  *2026-05-16 — Contract bump + THU_BEAR (S-096) migrated to two-phase.
+  Third sleeve on two-phase. `try_decide_for_variant` contract bumped
+  from `Intent | None` to `list[Intent]` so multi-asset sleeves emit
+  one intent per asset on the same tick (BTC + ETH SHORT on Thursday
+  00:xx). AI_QUANT and ADX updated to wrap their single Intent in a
+  list. Orchestrator's two-phase loop flattens lists; result-to-execute
+  mapping switched from dict-by-sleeve-id to per-sleeve FIFO queue
+  (reconcile's stable sort preserves input order within a sleeve, so
+  pairing is deterministic). THU_BEAR's `try_fire_for_variant` becomes
+  a wrapper running decide() then executing each Intent. Side-effects
+  inside decide(): SL sweep on every open trade, Friday-EXIT_HOUR
+  scheduled close. Inline conflict_resolver + margin_headroom removed
+  from THU_BEAR — reconcile owns them. 1 new orchestrator test
+  exercises the multi-intent fan-out (BTC + ETH both approved, 2
+  execute calls). Registration test extended to S-096.*
+
   *2026-05-16 — ADX (S-003) migrated to two-phase + reconcile seeded
   from legacy DB opens. Second sleeve on two-phase after AI_QUANT.
   `try_fire_for_variant` becomes a thin wrapper calling

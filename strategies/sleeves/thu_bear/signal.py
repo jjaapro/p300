@@ -183,18 +183,44 @@ def _close_thu_bear_paper(trade_id: str, exit_price: float, reason: str) -> None
 # ─── Public tick ─────────────────────────────────────────────────────────────
 
 def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
-    """Evaluate S-096 signals for this variant. Called per-minute by orchestrator.
+    """Variant-engine dispatch entry point. Returns a status dict.
 
-    Parameters via sleeve_cfg.params:
-      stop_loss_pct   — hard floor on per-trade loss (positive %, default 5.0)
-      assets          — list, defaults to ['BTC', 'ETH']
+    Backward-compatible wrapper: runs the decide phase (side-effect SL
+    sweep + Friday-exit + entry-Intent list), then executes each Intent
+    in turn. Callers that don't know about the two-phase protocol —
+    including backtest_runner and any legacy unit test — keep working.
+    """
+    intents, status = try_decide_for_variant(variant, sleeve_cfg)
+    if not intents:
+        return status
+    results: list[dict] = []
+    for intent in intents:
+        results.append(execute_for_variant(variant, sleeve_cfg, intent))
+    # Merge status_dict from decide with per-asset open results.
+    merged_actions = list(status.get("actions") or [])
+    for r in results:
+        if r:
+            merged_actions.append(r)
+    return {"status": "ok", "actions": merged_actions}
 
-    Opens SHORTs at the first tick of Thursday 00:xx UTC. Closes at the first
-    tick of Friday EXIT_HOUR:xx UTC (= 01:xx, matching Pine), or immediately
-    on stop-loss hit.
+
+def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
+    """Phase-1 of the two-phase dispatch (P2.4e/f Stage 2).
+
+    Side-effects (always run, not subject to reconcile):
+      - SL sweep on every open THU_BEAR trade in the variant.
+      - Friday-EXIT_HOUR scheduled close of every still-open THU_BEAR
+        trade (matches Pine ref close).
+
+    Returns ``(list[Intent], status_dict)``. The Intent list is one
+    per (asset) with a fresh signal — at most ``len(assets)`` per
+    Thursday-00:xx tick, possibly empty (regime block / V4 block /
+    already-fired-today / price missing). Inline conflict-resolver +
+    margin-headroom checks are removed; reconcile owns them now.
     """
     from strategies.support.price_feed import _get_current_price
     from strategies.support.risk_config import effective_price_move_sl_pct
+    from strategies.support.dispatch import Intent
 
     now = clock.now_utc()
     today = now.strftime("%Y-%m-%d")
@@ -208,18 +234,12 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     alloc_pct = float(sleeve_cfg.get("_effective_weight_pct",
                                        sleeve_cfg.get("weight_pct", 0.0)))
     leverage = float(sleeve_cfg.get("_effective_leverage", 1.0))
-    # SL semantic: price_move leaves the configured pct as-is; margin divides
-    # by leverage so a 10% margin-loss trigger = 2% price-move at k=5x.
     sl_price_thresh = effective_price_move_sl_pct(stop_loss_pct, leverage)
-    # Split allocation across both legs (half per asset so total risk per
-    # Thursday equals sleeve weight, not 2x it)
     per_asset_alloc = alloc_pct / max(len(assets), 1)
 
     actions: list[dict] = []
 
-    # Step 1: SL + stray-open sweep for every open THU_BEAR trade in this
-    # (variant, asset). Iterate the FULL list so trades left open by previous
-    # Thursdays (the old bug) get stopped out instead of accumulating.
+    # Step 1: SL sweep on existing opens (side-effect).
     open_by_asset: dict[str, list[dict]] = {
         asset: _get_open_thu_bear_trades(variant["id"], asset) for asset in assets
     }
@@ -243,95 +263,9 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                 still_open.append(tr)
         open_by_asset[asset] = still_open
 
-    # Outside the entry/exit windows we still want SL coverage (handled above)
-    # but no entry/exit action.
-    if not (is_thursday or is_friday):
-        return {"status": "not_thursday_or_friday", "actions": actions}
-
-    # Step 2: Entry window — fire at Thursday 00:xx UTC. Single-open invariant:
-    # only open if NO open THU_BEAR trade for (variant, asset) exists.
-    if is_thursday and now.hour == ENTRY_HOUR:
-        regime = _get_regime_for_prev_day(now)
-        if regime not in V3_REGIMES_ALLOWED:
-            return {"status": "regime_block", "wed_regime": regime, "actions": actions}
-        if version.startswith("V4"):
-            # P2.4b: orchestrator-injected gate, _v4_passes fallback for tests.
-            eff_gate = sleeve_cfg.get("_effective_gate")
-            if eff_gate is not None:
-                ok, event_reason = eff_gate.fire, eff_gate.reason
-            else:
-                ok, event_reason = _v4_passes(today)
-            if not ok:
-                return {"status": "v4_event_block", "reason": event_reason,
-                        "wed_regime": regime, "actions": actions}
-        for asset in assets:
-            # Block if any trade already open for this asset — invariant.
-            if open_by_asset.get(asset):
-                continue
-            # Also respect per-Thursday idempotency: no second open if a
-            # THU_BEAR trade was entered today on this asset (even if closed).
-            if _thu_bear_trade_today(variant["id"], today, asset) is not None:
-                continue
-            price = _get_current_price(asset)
-            if price is None:
-                log.warning(f"[thu_bear {variant['id']}] no {asset} price — skip entry")
-                continue
-            # P2.4e: THU_BEAR opens SHORT; if ADX (or any other directional
-            # sleeve) already has a LONG open on this asset, skip rather
-            # than opening a net-cancelling position. First-come-first-
-            # served — today ADX dispatches before THU_BEAR per the
-            # composition order in register_p300.
-            from strategies.support import conflict_resolver
-            opposing = conflict_resolver.detect_opposing_open(
-                variant["id"], asset, "SHORT")
-            if opposing is not None:
-                log.info(f"[thu_bear {variant['id']} {asset}] directional-conflict: "
-                         f"opposing {opposing['strategy']} {opposing['direction']} "
-                         f"already open ({opposing['id']})")
-                actions.append({"status": "directional_conflict", "asset": asset,
-                                "conflicting_trade_id": opposing["id"],
-                                "conflicting_strategy": opposing["strategy"]})
-                continue
-            # P2.4d: opt into the variant-level margin-headroom cap.
-            from strategies.support import margin_headroom
-            capital = float(variant.get("capital_usdt") or 10000)
-            candidate_notional = capital * (per_asset_alloc / 100.0) * leverage
-            ok, mh_reason = margin_headroom.can_open(variant, candidate_notional)
-            if not ok:
-                log.info(f"[thu_bear {variant['id']} {asset}] margin-constrained: "
-                         f"{mh_reason} (alloc={per_asset_alloc}%, k={leverage}x)")
-                actions.append({"status": "margin_constrained", "asset": asset,
-                                "reason": mh_reason})
-                continue
-            reason = {
-                "trigger": f"S-096_thu_bear_{version.lower()}",
-                "variant_id": variant["id"],
-                "sleeve": "THU_BEAR",
-                "version": version,
-                "regime_prev_day": regime,
-                "entry_hour_utc": ENTRY_HOUR,
-                "exit_hour_utc": EXIT_HOUR,
-                "stop_loss_pct": stop_loss_pct,
-                "sl_semantic_price_thresh_pct": sl_price_thresh,
-                "regime": regime,
-            }
-            tid = _open_thu_bear_paper(variant, asset, price, per_asset_alloc,
-                                         reason, leverage=leverage)
-            # Track in memory so a subsequent within-tick exit pass sees it.
-            open_by_asset.setdefault(asset, []).append({
-                "id": tid, "entry_price": price, "direction": "SHORT",
-                "asset": asset, "status": "open",
-            })
-            actions.append({"status": "opened", "asset": asset, "trade_id": tid,
-                             "entry_price": price, "regime_prev_day": regime})
-            log.info(f"[thu_bear {variant['id']}] opened {tid} {asset} SHORT @ "
-                     f"{price:.2f} (prev-day regime={regime}, "
-                     f"alloc={per_asset_alloc}%, k={leverage}x)")
-
-    # Step 3: Exit window — close EVERY open THU_BEAR trade for (variant, asset)
-    # at Friday EXIT_HOUR:xx UTC. Sweeping all open trades (not just this
-    # Thursday's) ensures any trade left open by a prior Thursday's missed
-    # close gets picked up here.
+    # Step 3: Friday-exit (also side-effect — close-only, no reconcile).
+    # Done before the entry check so a degenerate Thu/Fri overlap can
+    # never re-open into a position we're about to close.
     if is_friday and now.hour == EXIT_HOUR:
         for asset in assets:
             opens = open_by_asset.get(asset) or []
@@ -348,4 +282,71 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                          f"{asset} @ {price:.2f}")
             open_by_asset[asset] = []
 
-    return {"status": "ok", "actions": actions}
+    # Outside the entry window: no Intent emission.
+    if not (is_thursday and now.hour == ENTRY_HOUR):
+        return [], {"status": "ok", "actions": actions}
+
+    # Step 2: Entry window — Thursday 00:xx UTC.
+    regime = _get_regime_for_prev_day(now)
+    if regime not in V3_REGIMES_ALLOWED:
+        return [], {"status": "regime_block", "wed_regime": regime,
+                     "actions": actions}
+    if version.startswith("V4"):
+        eff_gate = sleeve_cfg.get("_effective_gate")
+        if eff_gate is not None:
+            ok, event_reason = eff_gate.fire, eff_gate.reason
+        else:
+            ok, event_reason = _v4_passes(today)
+        if not ok:
+            return [], {"status": "v4_event_block", "reason": event_reason,
+                         "wed_regime": regime, "actions": actions}
+
+    intents: list = []
+    for asset in assets:
+        if open_by_asset.get(asset):
+            continue
+        if _thu_bear_trade_today(variant["id"], today, asset) is not None:
+            continue
+        price = _get_current_price(asset)
+        if price is None:
+            log.warning(f"[thu_bear {variant['id']}] no {asset} price — skip entry")
+            continue
+        reason = {
+            "trigger": f"S-096_thu_bear_{version.lower()}",
+            "variant_id": variant["id"],
+            "sleeve": "THU_BEAR",
+            "version": version,
+            "regime_prev_day": regime,
+            "entry_hour_utc": ENTRY_HOUR,
+            "exit_hour_utc": EXIT_HOUR,
+            "stop_loss_pct": stop_loss_pct,
+            "sl_semantic_price_thresh_pct": sl_price_thresh,
+            "regime": regime,
+            "_entry_price": price,  # consumed by execute_for_variant
+        }
+        intents.append(Intent(
+            asset=asset, direction="SHORT",
+            allocation_pct=per_asset_alloc, leverage=leverage,
+            conviction=100,  # event-conditioned fixed signal
+            priority=float(sleeve_cfg.get("priority", 100)),
+            reason=reason, scheduled_exit_dt=None,
+        ))
+    return intents, {"status": "decided", "actions": actions,
+                      "regime_prev_day": regime, "n_intents": len(intents)}
+
+
+def execute_for_variant(variant: dict, sleeve_cfg: dict, intent) -> dict:
+    """Phase-2 of the two-phase dispatch — open the per-asset SHORT
+    described by ``intent`` (post-reconcile)."""
+    reason = dict(intent.reason or {})
+    entry_price = float(reason.pop("_entry_price"))
+    tid = _open_thu_bear_paper(
+        variant, intent.asset, entry_price, intent.allocation_pct,
+        reason, leverage=intent.leverage,
+    )
+    log.info(f"[thu_bear {variant['id']}] opened {tid} {intent.asset} SHORT @ "
+             f"{entry_price:.2f} (regime={reason.get('regime_prev_day')}, "
+             f"alloc={intent.allocation_pct}%, k={intent.leverage}x)")
+    return {"status": "opened", "asset": intent.asset, "trade_id": tid,
+             "entry_price": entry_price,
+             "regime_prev_day": reason.get("regime_prev_day")}

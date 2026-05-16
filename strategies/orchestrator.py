@@ -358,6 +358,12 @@ def _load_dispatch():
             adx_sleeve.try_decide_for_variant,
             adx_sleeve.execute_for_variant,
         )
+    if (hasattr(thu_bear_sleeve, "try_decide_for_variant")
+            and hasattr(thu_bear_sleeve, "execute_for_variant")):
+        STRATEGY_TWO_PHASE_DISPATCH["S-096"] = (
+            thu_bear_sleeve.try_decide_for_variant,
+            thu_bear_sleeve.execute_for_variant,
+        )
 
 
 _warned_missing: set[tuple[str, str]] = set()

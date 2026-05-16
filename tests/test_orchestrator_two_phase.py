@@ -20,14 +20,14 @@ from strategies.support.dispatch import Intent
 
 
 def test_load_dispatch_registers_two_phase_sleeves(monkeypatch):
-    """After _load_dispatch, the migrated sleeves (AI_QUANT and S-003 ADX
-    as of 2026-05-16) must appear in STRATEGY_TWO_PHASE_DISPATCH with
-    both decide and execute callables."""
+    """After _load_dispatch, the migrated sleeves (AI_QUANT, S-003 ADX,
+    S-096 THU_BEAR as of 2026-05-16) must appear in
+    STRATEGY_TWO_PHASE_DISPATCH with both decide and execute callables."""
     # Reset state so _load_dispatch repopulates.
     monkeypatch.setattr(orchestrator, "STRATEGY_DISPATCH", {})
     monkeypatch.setattr(orchestrator, "STRATEGY_TWO_PHASE_DISPATCH", {})
     orchestrator._load_dispatch()
-    for sid in ("AI_QUANT", "S-003"):
+    for sid in ("AI_QUANT", "S-003", "S-096"):
         assert sid in orchestrator.STRATEGY_TWO_PHASE_DISPATCH, (
             f"{sid} not registered as two-phase")
         decide_fn, execute_fn = orchestrator.STRATEGY_TWO_PHASE_DISPATCH[sid]
