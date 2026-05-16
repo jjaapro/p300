@@ -382,6 +382,12 @@ def _load_dispatch():
             fomc_sleeve.try_decide_for_variant,
             fomc_sleeve.execute_for_variant,
         )
+    if (hasattr(carry_sleeve, "try_decide_for_variant")
+            and hasattr(carry_sleeve, "execute_for_variant")):
+        STRATEGY_TWO_PHASE_DISPATCH["S-078"] = (
+            carry_sleeve.try_decide_for_variant,
+            carry_sleeve.execute_for_variant,
+        )
 
 
 _warned_missing: set[tuple[str, str]] = set()

@@ -385,6 +385,18 @@ commit and probably multi-session. A reasonable sub-decomposition:
   approved intents) is the next sub-commit; depends on AI_QUANT's
   decide()/execute() implementation.*
 
+  *2026-05-16 — CARRY (S-078) migrated to two-phase. Seventh sleeve.
+  All tactical sleeves now on two-phase. Side-effect in decide(): exit
+  sweep on 3-day negative-funding-streak. Entry path emits a single
+  Intent on entry conditions (no open, entry_ok, no exit_trigger,
+  daily idempotency clear). Inline margin_headroom.can_open removed
+  — reconcile owns it. CARRY's perp leg is in
+  `dispatch._NEUTRAL_STRATEGIES`, so reconcile exempts it from
+  directional-conflict checks (the SHORT is delta-neutral collateral,
+  not a directional bet) while still enforcing margin headroom (the
+  perp notional consumes real gross budget). Registration test
+  extended to S-078.*
+
   *2026-05-16 — FOMC migrated to two-phase. Sixth sleeve. Single-asset
   BTC; side-effect in decide() is the stuck-open self-sweep (closes
   any trade past its scheduled exit_time, defense-in-depth against a

@@ -186,11 +186,34 @@ def _close_carry_paper(trade_id: str, exit_price: float, reason: str) -> None:
 # ─── Public tick ─────────────────────────────────────────────────────────────
 
 def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
-    """Evaluate S-078 carry signal for this variant. Daily idempotent.
+    """Variant-engine dispatch entry point. Returns a status dict.
 
-    Opens / closes a paired CARRY paper trade based on funding rate regime.
-    P&L is computed at close from accumulated funding minus fees.
+    Backward-compatible wrapper: runs decide (side-effect exit sweep +
+    entry Intent), then executes any returned Intent.
     """
+    intents, status = try_decide_for_variant(variant, sleeve_cfg)
+    if not intents:
+        return status
+    return execute_for_variant(variant, sleeve_cfg, intents[0])
+
+
+def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
+    """Phase-1 of the two-phase dispatch (P2.4e/f Stage 2).
+
+    Side-effect (always run, not subject to reconcile):
+      - Exit sweep: close every open carry trade when the 3-day
+        negative-streak exit signal fires.
+
+    Returns ``(list[Intent], status_dict)``. Single Intent on entry
+    conditions (no open trade, entry_ok, no exit_trigger, idempotency
+    clear). CARRY is in `_NEUTRAL_STRATEGIES` in dispatch.py — the
+    reconcile pass exempts it from directional-conflict checks (its
+    perp SHORT is delta-neutral collateral, not a directional bet).
+    Reconcile still enforces margin headroom against CARRY's notional
+    since the perp leg consumes real gross budget.
+    """
+    from strategies.support.dispatch import Intent
+
     alloc_pct = float(sleeve_cfg.get("_effective_weight_pct",
                                        sleeve_cfg.get("weight_pct", 0.0)))
     leverage = float(sleeve_cfg.get("_effective_leverage", 1.0))
@@ -198,17 +221,13 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     records = _load_recent_daily_funding(days=FR_WINDOW_DAYS + EXIT_NEG_DAYS + 7)
     sig = _evaluate_today(records)
     if sig is None:
-        return {"status": "warmup", "reason": "insufficient funding history"}
+        return [], {"status": "warmup", "reason": "insufficient funding history"}
 
-    # Wall-clock UTC today for idempotency (NOT sig["date"] which is the
-    # last completed funding day — typically yesterday).
     today = clock.now_utc().strftime("%Y-%m-%d")
     already_acted_today = _carry_action_today(variant["id"], today)
     open_trades = _get_open_carry_trades(variant["id"])
 
-    # Exit sweep: close every open carry trade if the 3-day negative-streak
-    # exit signal fires. Funding collected is computed per-settlement inside
-    # _close_carry_paper.
+    # Side-effect: exit sweep on 3-day negative-streak.
     if open_trades and sig["exit_trigger"]:
         exit_price = sig["spot_close"]
         closed_ids = []
@@ -218,29 +237,11 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             closed_ids.append(tr["id"])
             log.info(f"[carry {variant['id']}] closed {tr['id']} @ "
                      f"{exit_price:.2f} (neg_streak={sig['neg_streak_days']}d)")
-        return {"status": "closed", "trade_ids": closed_ids}
+        return [], {"status": "closed", "trade_ids": closed_ids}
 
-    # Entry: only open if ZERO open carry trades exist (single-open invariant)
-    # AND no action happened yet today AND the 7d avg funding is above threshold
-    # AND exit signal is not active (prevents same-day exit→re-entry cycle).
     if (not open_trades and sig["entry_ok"]
             and not sig["exit_trigger"] and not already_acted_today):
         entry_price = sig["spot_close"]
-        # P2.4d: opt into the variant-level margin-headroom cap. CARRY's
-        # perp leg is real notional on the perp margin account (the
-        # spot leg sits in a wallet / spot account, not on the perp
-        # exchange), so it competes for the same gross budget as
-        # directional sleeves.
-        from strategies.support import margin_headroom
-        capital = float(variant.get("capital_usdt") or 10000)
-        candidate_notional = capital * (alloc_pct / 100.0) * leverage
-        ok, mh_reason = margin_headroom.can_open(variant, candidate_notional)
-        if not ok:
-            log.info(f"[carry {variant['id']}] margin-constrained: "
-                     f"{mh_reason} (alloc={alloc_pct}%, k={leverage}x)")
-            return {"status": "margin_constrained", "reason": mh_reason,
-                    "alloc_pct_intended": alloc_pct,
-                    "candidate_notional_usdt": candidate_notional}
         reason = {
             "trigger": "S-078_carry_entry",
             "variant_id": variant["id"],
@@ -250,16 +251,36 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             "fr_window_days": FR_WINDOW_DAYS,
             "structure": "long_spot_short_perp_delta_neutral",
             "regime": "unknown",
+            "_entry_price": entry_price,
+            "_fr_7d_avg_pct": sig["fr_7d_avg_pct"],
         }
-        tid = _open_carry_paper(variant, entry_price, alloc_pct, reason,
-                                  leverage=leverage)
-        log.info(f"[carry {variant['id']}] opened {tid} @ {entry_price:.2f} "
-                 f"(7d avg FR = {sig['fr_7d_avg_pct']:.4f}%, alloc={alloc_pct}%)")
-        return {"status": "opened", "trade_id": tid,
-                "fr_7d_avg_pct": sig["fr_7d_avg_pct"]}
+        intent = Intent(
+            asset="BTC", direction="LONG",
+            allocation_pct=alloc_pct, leverage=leverage,
+            conviction=100,
+            priority=float(sleeve_cfg.get("priority", 100)),
+            reason=reason, scheduled_exit_dt=None,
+        )
+        return [intent], {"status": "decided",
+                            "fr_7d_avg_pct": sig["fr_7d_avg_pct"]}
 
-    return {"status": "no_action",
-            "date": today,
-            "open_count": len(open_trades),
-            "fr_7d_avg_pct": sig["fr_7d_avg_pct"],
-            "neg_streak": sig["neg_streak_days"]}
+    return [], {"status": "no_action",
+                 "date": today,
+                 "open_count": len(open_trades),
+                 "fr_7d_avg_pct": sig["fr_7d_avg_pct"],
+                 "neg_streak": sig["neg_streak_days"]}
+
+
+def execute_for_variant(variant: dict, sleeve_cfg: dict, intent) -> dict:
+    """Phase-2 of the two-phase dispatch — open the delta-neutral
+    carry pair described by ``intent`` (post-reconcile)."""
+    reason = dict(intent.reason or {})
+    entry_price = float(reason.pop("_entry_price"))
+    fr_7d = reason.pop("_fr_7d_avg_pct")
+    tid = _open_carry_paper(
+        variant, entry_price, intent.allocation_pct, reason,
+        leverage=intent.leverage,
+    )
+    log.info(f"[carry {variant['id']}] opened {tid} @ {entry_price:.2f} "
+             f"(7d avg FR = {fr_7d:.4f}%, alloc={intent.allocation_pct}%)")
+    return {"status": "opened", "trade_id": tid, "fr_7d_avg_pct": fr_7d}
