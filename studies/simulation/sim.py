@@ -122,8 +122,26 @@ def main(argv: list[str] | None = None) -> int:
     # mutation of strategies.support.db propagates everywhere because every
     # consumer reads db.DASH_DB / db.TRADER_DB at call time, not import time.
     from strategies.support import db as _db_mod
-    _db_mod.TRADER_DB = Path(args.trader_db).resolve()
-    _db_mod.DASH_DB = Path(args.dash_db).resolve()
+    trader_path = Path(args.trader_db).resolve()
+    dash_path = Path(args.dash_db).resolve()
+    # Isolation guard: sim must NEVER read or write the live consolidated DB.
+    # The original design (per BACKLOG / sim docstring) routes sim against
+    # an isolated sliced DB built with build_sim_trader_db.py and an
+    # ephemeral sim dashboard.db. Passing prod.db here would silently mix
+    # sim trade rows into the live ledger and is almost certainly a typo.
+    prod_path = _db_mod.PROD_DB.resolve()
+    for label, path in (("--trader-db", trader_path), ("--dash-db", dash_path)):
+        if path == prod_path:
+            log.error(
+                f"{label}={path} points at the live prod.db. Sim must run "
+                f"against isolated DBs only — build a sliced trader.db via "
+                f"studies/simulation/build_sim_trader_db.py and use a "
+                f"throwaway dash-db path (e.g. /tmp/sim_dash.db). Refusing "
+                f"to proceed."
+            )
+            return 2
+    _db_mod.TRADER_DB = trader_path
+    _db_mod.DASH_DB = dash_path
     log.info(
         f"=== sim mode === redirected strategies.support.db.TRADER_DB="
         f"{_db_mod.TRADER_DB} strategies.support.db.DASH_DB={_db_mod.DASH_DB}"

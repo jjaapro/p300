@@ -9,13 +9,23 @@ Minimal subset of the original dashboard `trade_db.py`:
 All dashboard-only extras (fills, audit_log, heartbeat, recovery_log,
 chart markers/bands/hover helpers) are omitted — P-300 paper never calls
 them. Re-add on demand.
+
+``DB_PATH`` aliases ``strategies.support.db.PROD_DB`` so this module
+writes to the same consolidated DB as the rest of the bot (P2.6,
+2026-05-15). Before that fix the constant was hardcoded to
+``data/dashboard.db`` and ``init_db()`` silently wrote schema migrations
+to a stale file — caught 2026-05-16 when the M2a column failed to land
+on prod.db. Tests that monkeypatch ``trade_db.DB_PATH`` keep working;
+production callers get the live consolidated path.
 """
 from __future__ import annotations
 
 import sqlite3
 from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parents[2] / "data" / "dashboard.db"
+from strategies.support import db as _db_mod
+
+DB_PATH = _db_mod.PROD_DB
 
 
 def _con() -> sqlite3.Connection:
