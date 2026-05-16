@@ -33,7 +33,7 @@ pip install -r requirements.txt
 #    After that, binance_feed keeps the table fresh on its own.
 export COINALYZE_API_KEY=...
 
-# 2. Build data/prod.db from scratch:
+# 2. Build data/databases/prod.db from scratch:
 #    - rebuild scheduled_events from fetch_events.py (calendar)
 #    - fetch ca_long_short_ratio history from Coinalyze
 #    - backfill funding rate (BTC + ETH) from Binance
@@ -48,7 +48,7 @@ python bootstrap.py
 python health.py
 python bot.py --once          # single tick; should complete in <30s
 python -m pytest tests/ -q    # ~490 tests should pass (some slow sim
-                              # tests run end-to-end against data/prod.db
+                              # tests run end-to-end against data/databases/prod.db
                               # — they skip if the DB is missing)
 ```
 
@@ -112,7 +112,7 @@ Same content appears in the bot's startup banner.
 
 **Open phantom trades:**
 ```bash
-sqlite3 data/prod.db "
+sqlite3 data/databases/prod.db "
   SELECT id, asset, strategy, direction, entry_price, size_usdt, actual_entry_time
   FROM trades
   WHERE strategy_variant='p300_aggressive_v2_v1_0' AND status='open'
@@ -121,7 +121,7 @@ sqlite3 data/prod.db "
 
 **Recent closed trades (last 20):**
 ```bash
-sqlite3 data/prod.db "
+sqlite3 data/databases/prod.db "
   SELECT id, strategy, asset, direction, pnl_pct, actual_exit_time
   FROM trades
   WHERE strategy_variant='p300_aggressive_v2_v1_0' AND status='closed'
@@ -130,7 +130,7 @@ sqlite3 data/prod.db "
 
 **Daily realized PnL (last 14 days):**
 ```bash
-sqlite3 data/prod.db "
+sqlite3 data/databases/prod.db "
   SELECT date(actual_exit_time) AS d, ROUND(SUM(pnl_usdt), 2) AS pnl,
          COUNT(*) AS n_closed
   FROM trades
@@ -204,7 +204,7 @@ Per-sleeve errors are already isolated — a whole-loop crash means the
 orchestrator itself or the variant lookup failed, typically due to a
 corrupted prod.db variant row. Recovery:
 ```bash
-sqlite3 data/prod.db "DELETE FROM variants WHERE id='p300_aggressive_v2_v1_0'"
+sqlite3 data/databases/prod.db "DELETE FROM variants WHERE id='p300_aggressive_v2_v1_0'"
 python bot.py --once       # re-registers via strategies.p300_spec.register
 python health.py           # confirm fresh registration
 ```
@@ -225,7 +225,7 @@ python backtest_runner.py --start 2021-07-01 --end 2026-04-15 --reset --tag A
 ```
 
 `--tag A` suffixes the replay variant id so multiple runs coexist in
-the live `data/prod.db`. Results live under
+the live `data/databases/prod.db`. Results live under
 `p300_aggressive_v2_v1_0__replay_A`. The replay variant is registered
 with `enabled=0` so the live engine never touches it; only
 `backtest_runner` ticks it.
@@ -312,7 +312,7 @@ DELETE FROM variant_daily_returns WHERE variant_id = '<variant_id>';
    Verified by `tests/test_sim_network_isolation.py`.
 
 6. **Test suite green.** `python -m pytest tests/` — 720+ passing as of
-   2026-05-15 (some sim tests skip if `data/prod.db` is absent, e.g.
+   2026-05-15 (some sim tests skip if `data/databases/prod.db` is absent, e.g.
    on a fresh CI checkout). If counts drop after a code change,
    don't deploy.
 

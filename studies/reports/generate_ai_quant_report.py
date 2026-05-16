@@ -49,7 +49,10 @@ PREVIEW_TRADE_ACTION = "PREVIEW (no DB row, no trade emitted)"
 
 
 def _preview_dir() -> Path:
-    return Path(db.DASH_DB).parent / PREVIEW_DIRNAME
+    # Anchored on db.DATA_DIR (not DASH_DB.parent) since 2026-05-16 —
+    # prod.db now lives under data/databases/ but the preview dir stays
+    # at the data root for symmetry with ai_quant_archive/.
+    return Path(db.DATA_DIR) / PREVIEW_DIRNAME
 
 
 def _preview_filename(*, decision_date: str, variant_id: str, asset: str,

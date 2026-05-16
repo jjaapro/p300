@@ -130,7 +130,7 @@ revision for backwards-compatible cross-references.
   - **Phase**: from [data/sources/fed_funds.py](data/sources/fed_funds.py) — NY Fed XML, classified as `zirp_hold / hiking / peak_hold / cutting / mid_hold`.
   - **F&G**: from [data/sources/sentiment.py](data/sources/sentiment.py) — alternative.me daily Fear & Greed.
   - **Expected action**: from [data/sources/polymarket.py](data/sources/polymarket.py) — implied per-meeting cut probability from the "How many Fed rate cuts in 2026?" market.
-- **Audit trail**: every FOMC date writes a row to `fomc_observer` in `data/prod.db` with the decision + reason + inputs, even when the decision is SKIP.
+- **Audit trail**: every FOMC date writes a row to `fomc_observer` in `data/databases/prod.db` with the decision + reason + inputs, even when the decision is SKIP.
 - **Edge thesis**: short-window event trade. Drift up into the announcement, partial fade after. Filter weeds out the regimes where this fails.
 - **Caveat**: filter was tuned on the same 52-event historical cohort the in-sample backtest is drawn from. Going-forward edge unproven.
 
@@ -761,7 +761,7 @@ were affected by the data-source switch.
 | Core J+ analytic backtest (research-only) | [studies/jplus_analytic/](studies/jplus_analytic/) — `simulate()` for parameter sweeps / walk-forward |
 | AI_QUANT discretionary trader | [strategies/sleeves/ai_quant/signal.py](strategies/sleeves/ai_quant/signal.py) + [strategies/sleeves/ai_quant/](strategies/sleeves/ai_quant/) |
 | Decision rule for FOMC | [strategies/sleeves/fomc/signal.py:evaluate()](strategies/sleeves/fomc/signal.py) |
-| FOMC observer audit log | `data/prod.db:fomc_observer` |
+| FOMC observer audit log | `data/databases/prod.db:fomc_observer` |
 | Look-ahead clock infrastructure | [strategies/support/clock.py](strategies/support/clock.py) |
 | Sim-mode loop primitive | [strategies/support/sim_loop.py](strategies/support/sim_loop.py) |
 | Build a sim trader.db | [studies/simulation/build_sim_trader_db.py](studies/simulation/build_sim_trader_db.py) |
@@ -783,8 +783,8 @@ identical dispatch logic — only the data source and clock differ:
 | | LIVE ([`bot.py`](bot.py)) | SIM ([`studies/simulation/sim.py`](studies/simulation/sim.py)) |
 |---|---|---|
 | Clock | wall clock | simulated, advanced deterministically |
-| Market data | `data/prod.db` (kept fresh by `binance_feed`) | `--trader-db <path>` (built by `studies/simulation/build_sim_trader_db.py`) |
-| Trade ledger | `data/prod.db` | `--dash-db <path>` (separate file) |
+| Market data | `data/databases/prod.db` (kept fresh by `binance_feed`) | `--trader-db <path>` (built by `studies/simulation/build_sim_trader_db.py`) |
+| Trade ledger | `data/databases/prod.db` | `--dash-db <path>` (separate file) |
 | External APIs | NY Fed XML, Polymarket, F&G, news | all blocked — sim must be reproducible offline |
 | Loop | wall-clock 60s tick | `strategies.support.sim_loop.run_sim` (no sleep) |
 

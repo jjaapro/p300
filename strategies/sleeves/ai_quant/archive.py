@@ -35,10 +35,13 @@ ARCHIVE_DIRNAME = "ai_quant_archive"
 
 
 def _archive_dir() -> Path:
-    """``data/ai_quant_archive/`` next to ``dashboard.db``. Resolved
-    dynamically so test monkeypatches of ``strategies.support.db.DASH_DB`` flow
-    through here too."""
-    return Path(db.DASH_DB).parent / ARCHIVE_DIRNAME
+    """``data/ai_quant_archive/`` under ``db.DATA_DIR``. Resolved
+    dynamically so test monkeypatches of
+    ``strategies.support.db.DATA_DIR`` flow through here too. Anchored
+    on DATA_DIR rather than ``DASH_DB.parent`` (the pre-2026-05-16
+    convention) so the archive stays at the data-root level even
+    though ``prod.db`` itself lives under ``data/databases/`` now."""
+    return Path(db.DATA_DIR) / ARCHIVE_DIRNAME
 
 
 def _safe_token(s: str | None, fallback: str = "UNKNOWN") -> str:

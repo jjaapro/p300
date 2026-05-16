@@ -58,7 +58,7 @@ pip install -r requirements.txt
 #    Needed once for the initial LSR history fetch (~5 years).
 export COINALYZE_API_KEY=...
 
-# 3. Build data/prod.db from scratch — calendar, LS ratio, klines, funding.
+# 3. Build data/databases/prod.db from scratch — calendar, LS ratio, klines, funding.
 #    Slow on first run (~30-60 min for 5y of 1m klines). Idempotent.
 python bootstrap.py
 
@@ -113,7 +113,7 @@ subsequent run is sub-second.
 ## Run in sim mode
 
 Same dispatch code, deterministic simulated clock, isolated DBs. No
-live API calls; no contamination of `data/prod.db`. A sleeve that fires
+live API calls; no contamination of `data/databases/prod.db`. A sleeve that fires
 in sim is exactly the same code path that fires in live.
 
 ```bash
@@ -197,8 +197,8 @@ features they layer on top**:
 
 |  | `studies/simulation/sim.py` | `backtest_runner.py` |
 |---|---|---|
-| Output ledger | separate `--dash-db` file | live `data/prod.db` (variant id suffixed `__replay[_<tag>]`) |
-| Live data isolation | **complete** — separate prod.db | shares `data/prod.db` (read) + `data/prod.db` (writes to its own variant) |
+| Output ledger | separate `--dash-db` file | live `data/databases/prod.db` (variant id suffixed `__replay[_<tag>]`) |
+| Live data isolation | **complete** — separate prod.db | shares `data/databases/prod.db` (read) + `data/databases/prod.db` (writes to its own variant) |
 | Liquidation simulator | YES (via `orchestrator.tick` — same `force_close_liquidations` path) | YES (`force_close_liquidations`) |
 | Mark-to-end-of-window for trades open at end | NO | YES (`mark_remaining_at_end`) |
 | Per-sleeve PnL summary | uses `strategy_health.build_report` | bespoke report block |
@@ -227,10 +227,10 @@ one fires identically under the other.
 python -c "from strategies.support import variant_registry as r; print(r.get_variant('p300_aggressive_v2_v1_0')['status'])"
 
 # Open paper positions
-sqlite3 data/prod.db "SELECT id, asset, strategy, direction, entry_price, size_usdt FROM trades WHERE strategy_variant='p300_aggressive_v2_v1_0' AND status='open'"
+sqlite3 data/databases/prod.db "SELECT id, asset, strategy, direction, entry_price, size_usdt FROM trades WHERE strategy_variant='p300_aggressive_v2_v1_0' AND status='open'"
 
 # Closed trades (newest first)
-sqlite3 data/prod.db "SELECT id, asset, strategy, direction, pnl_pct, actual_exit_time FROM trades WHERE strategy_variant='p300_aggressive_v2_v1_0' AND status='closed' ORDER BY actual_exit_time DESC LIMIT 20"
+sqlite3 data/databases/prod.db "SELECT id, asset, strategy, direction, pnl_pct, actual_exit_time FROM trades WHERE strategy_variant='p300_aggressive_v2_v1_0' AND status='closed' ORDER BY actual_exit_time DESC LIMIT 20"
 
 # Cross-sleeve coordination snapshot — gross/cap/headroom, conflicts,
 # concordant stacks. Same data as the bot's startup banner.
@@ -242,7 +242,7 @@ python -c "from strategies.support.strategy_health import build_report, format_r
 ```
 p300/
 ├── bot.py                         # paper-trading entry point (60s tick, noise-filtered)
-├── bootstrap.py                   # one-shot data/prod.db builder
+├── bootstrap.py                   # one-shot data/databases/prod.db builder
 ├── health.py                      # 8 invariant checks for live operation
 ├── fetch_events.py                # rebuilds scheduled_events (FOMC/CPI/NFP/OPEX)
 ├── fetch_coinalyze.py             # fetches ca_long_short_ratio history (Coinalyze)
@@ -309,7 +309,7 @@ p300/
 
 ## Data tables
 
-All tables live in `data/prod.db`. Refresh paths:
+All tables live in `data/databases/prod.db`. Refresh paths:
 
 | Table | Source | Refresh | Used by |
 |-------|--------|---------|---------|

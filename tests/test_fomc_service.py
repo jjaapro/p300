@@ -150,7 +150,8 @@ def test_phase_classifier_known_dates():
     from pathlib import Path
     from data.sources import fed_funds as fed_funds_service
 
-    json_path = Path(__file__).resolve().parent.parent / "data" / "fed_funds_target_upper.json"
+    json_path = (Path(__file__).resolve().parent.parent
+                  / "data" / "archive" / "fed_funds_target_upper.json")
     if not json_path.exists():
         pytest.skip("fed_funds_target_upper.json not present")
 

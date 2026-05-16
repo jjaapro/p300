@@ -127,7 +127,7 @@ def register(dash_db: Optional[str] = None,
     True on a fresh insert, False if the row already existed.
 
     Path resolution: ``dash_db`` arg → ``P300_DASHBOARD_DB`` env →
-    default ``data/prod.db``.
+    default ``data/databases/prod.db``.
 
     Called by :mod:`bot` and :mod:`studies.simulation.sim` on startup —
     the operator never runs this directly.

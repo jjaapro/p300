@@ -25,7 +25,9 @@ from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
 REPO = Path(__file__).resolve().parents[2]
-CACHE_PATH = REPO / "data" / "polymarket_fed_2026.json"
+# 2026-05-16 reorg: generated/cached external feeds live under
+# ``data/archive/`` so the data-dir root stays readable.
+CACHE_PATH = REPO / "data" / "archive" / "polymarket_fed_2026.json"
 GAMMA_BASE = "https://gamma-api.polymarket.com"
 ANCHOR_SLUG = "how-many-fed-rate-cuts-in-2026"
 

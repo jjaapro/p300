@@ -8,6 +8,9 @@ data/*.db-wal
 data/*.db-shm
 data/*.db.bak
 data/*.db.bak_*
+data/databases/*.db
+data/databases/*.db-wal
+data/databases/*.db-shm
 *.log
 .idea/
 .vscode/

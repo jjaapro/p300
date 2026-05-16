@@ -34,8 +34,10 @@ from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 REPO = Path(__file__).resolve().parents[2]
-XML_PATH = REPO / "data" / "nyfed_rates.xml"
-JSON_PATH = REPO / "data" / "fed_funds_target_upper.json"
+# 2026-05-16 reorg: generated/cached external feeds live under
+# ``data/archive/`` so the data-dir root stays readable.
+XML_PATH = REPO / "data" / "archive" / "nyfed_rates.xml"
+JSON_PATH = REPO / "data" / "archive" / "fed_funds_target_upper.json"
 
 NYFED_URL = (
     "https://markets.newyorkfed.org/read"

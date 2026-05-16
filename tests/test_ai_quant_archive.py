@@ -28,6 +28,10 @@ def fixture_db(tmp_path, monkeypatch):
     p = tmp_path / "dashboard.db"
     sqlite3.connect(str(p)).close()
     monkeypatch.setattr("strategies.support.db.DASH_DB", p)
+    # 2026-05-16: archive.py anchors on db.DATA_DIR, not DASH_DB.parent.
+    # Tests want the archive at <tmp>/ai_quant_archive/, so point
+    # DATA_DIR at the tmp_path root.
+    monkeypatch.setattr("strategies.support.db.DATA_DIR", tmp_path)
     clock.set_simulated_now(datetime(2026, 5, 8, 0, 12, 34, tzinfo=timezone.utc))
     yield p
 

@@ -38,7 +38,9 @@ import sys
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent
-DB_PATH = REPO / "data" / "prod.db"
+# 2026-05-16 reorg: prod.db lives under data/databases/ alongside any
+# transient sim DBs the operator builds via build_sim_trader_db.py.
+DB_PATH = REPO / "data" / "databases" / "prod.db"
 
 # Schemas for tables this repo owns end-to-end. Each fetcher (fetch_events,
 # fetch_coinalyze, binance_feed) creates the tables it writes to via

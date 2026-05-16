@@ -161,7 +161,7 @@ def _fomc_gate(strategy_id: str,
     """Composite filter: phase × F&G bucket × Polymarket expected action.
 
     The FOMC sleeve maintains an observer table
-    (``fomc_observer`` in ``data/prod.db``) where each FOMC date's
+    (``fomc_observer`` in ``data/databases/prod.db``) where each FOMC date's
     composite ``evaluate()`` result is cached for the lifetime of that
     meeting cycle. This gate reads the cache rather than running
     ``evaluate()`` per tick — the call hits three external services and
