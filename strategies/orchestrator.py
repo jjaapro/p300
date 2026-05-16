@@ -297,11 +297,19 @@ def _maybe_open_r4_window(variant: dict, sleeve: str, asset: str,
 # (logged once per tick but doesn't crash the engine).
 STRATEGY_DISPATCH: dict[str, Any] = {}
 
+# P2.4e/f Stage 2 — sleeves that implement the two-phase protocol
+# (try_decide_for_variant + execute_for_variant) populate this parallel
+# registry. When a strategy_id appears here, _tick_composition uses the
+# new path (decide -> reconcile -> execute) instead of the legacy
+# one-shot try_fire_for_variant in STRATEGY_DISPATCH. Migration is
+# incremental — every sleeve eventually moves over.
+STRATEGY_TWO_PHASE_DISPATCH: dict[str, tuple[Any, Any]] = {}
+
 
 def _load_dispatch():
     """Lazy import services so a broken service module doesn't prevent module
     import. Called from tick()."""
-    global STRATEGY_DISPATCH
+    global STRATEGY_DISPATCH, STRATEGY_TWO_PHASE_DISPATCH
     if STRATEGY_DISPATCH:
         return
     from strategies.sleeves.adx import signal as adx_sleeve
@@ -335,6 +343,15 @@ def _load_dispatch():
         # cost is incurred until the user explicitly opts in.
         "AI_QUANT":        ai_quant_sleeve.try_fire_for_variant,
     }
+    # AI_QUANT migrated to two-phase 2026-05-16 (P2.4e/f Stage 2).
+    # Other sleeves follow as they're refactored; until then they stay
+    # on the legacy STRATEGY_DISPATCH path and skip the reconcile pass.
+    if (hasattr(ai_quant_sleeve, "try_decide_for_variant")
+            and hasattr(ai_quant_sleeve, "execute_for_variant")):
+        STRATEGY_TWO_PHASE_DISPATCH["AI_QUANT"] = (
+            ai_quant_sleeve.try_decide_for_variant,
+            ai_quant_sleeve.execute_for_variant,
+        )
 
 
 _warned_missing: set[tuple[str, str]] = set()
@@ -429,6 +446,9 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
     # opt into P2.4d enforcement read this to skip when their candidate
     # notional would push the variant above gross_notional_target_x.
     headroom_usdt = margin_headroom.headroom_usdt(variant)
+    # P2.4e/f Stage 2: intents collected during the decide-phase of
+    # two-phase sleeves. Reconciled + executed after the iteration.
+    _pending_intents: list[tuple[str, Any, dict, Any]] = []
     for sleeve in composition:
         portfolio_id = sleeve.get("portfolio_id")
         strategy_id = sleeve.get("strategy_id")
@@ -448,6 +468,31 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
         sleeve_with_k["_effective_vol_scalar"] = portfolio_vol.current_vol_scalar(strategy_id, variant)
         sleeve_with_k["_effective_margin_headroom_usdt"] = headroom_usdt
         sleeve = sleeve_with_k
+        # P2.4e/f Stage 2: route through the two-phase protocol if the
+        # sleeve has migrated. Phase-1 (decide) runs in-loop; intents
+        # are collected and reconciled together after the iteration,
+        # then Phase-2 (execute) opens the approved trades. Legacy
+        # sleeves continue to dispatch immediately via try_fire — they
+        # open before the two-phase reconcile sees the variant state.
+        two_phase = STRATEGY_TWO_PHASE_DISPATCH.get(strategy_id)
+        if two_phase is not None:
+            decide_fn, execute_fn = two_phase
+            try:
+                intent, status = decide_fn(variant, sleeve)
+            except Exception as e:
+                log.exception(f"[{variant['id']}] {strategy_id} decide error: {e}")
+                continue
+            # Log non-trivial gate / error / deferral statuses so the
+            # operator sees decide-side rejections in the standard
+            # tick log.
+            if status and status.get("status") not in (
+                "disabled", "off_window", "already_fired_today",
+                "deferred_waiting",
+            ):
+                log.info(f"[{variant['id']}] {strategy_id} decide -> {status}")
+            if intent is not None:
+                _pending_intents.append((strategy_id, intent, sleeve, execute_fn))
+            continue
         dispatcher = STRATEGY_DISPATCH.get(strategy_id)
         if dispatcher is None:
             key = (variant["id"], strategy_id)
@@ -464,6 +509,43 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
                 log.info(f"[{variant['id']}] {strategy_id} -> {result}")
         except Exception as e:
             log.exception(f"[{variant['id']}] {strategy_id} dispatch error: {e}")
+
+    # P2.4e/f Stage 2 reconcile pass: run on the two-phase intents only.
+    # Legacy sleeves above have already opened (or skipped) their
+    # trades; the reconcile reads the post-legacy variant state.
+    if _pending_intents:
+        from strategies.support import dispatch as dispatch_mod
+        # Recompute headroom + capital from fresh DB after legacy opens.
+        post_used = margin_headroom.current_gross_notional_usdt(variant["id"])
+        cap = margin_headroom.gross_cap_usdt(variant)
+        capital = float(variant.get("capital_usdt") or 10000)
+        intents_only = [(sid, intent) for sid, intent, _, _ in _pending_intents]
+        results = dispatch_mod.reconcile_intents(
+            intents_only, post_used, cap, capital,
+        )
+        # Map results back to (sleeve_cfg, execute_fn). The order in
+        # `results` is by priority sort; build a dict by sleeve_id +
+        # iterate the pending list in original order so each sleeve's
+        # execute_fn pairs with its own result.
+        results_by_sid = {r.sleeve_id: r for r in results}
+        for strategy_id, intent, sleeve, execute_fn in _pending_intents:
+            r = results_by_sid.get(strategy_id)
+            if r is None:
+                continue
+            if r.status in ("rejected_directional_conflict", "rejected_margin"):
+                log.info(f"[{variant['id']}] {strategy_id} reconcile -> "
+                         f"{r.status}: {r.reason}")
+                continue
+            # approved / approved_reduced — execute with the (possibly
+            # reduced) intent.
+            try:
+                result = execute_fn(variant, sleeve, r.intent)
+                if result and result.get("status") not in (
+                    "no_action", "warmup",
+                ):
+                    log.info(f"[{variant['id']}] {strategy_id} -> {result}")
+            except Exception as e:
+                log.exception(f"[{variant['id']}] {strategy_id} execute error: {e}")
 
 
 def _check_liquidations_all_variants(now_utc) -> int:

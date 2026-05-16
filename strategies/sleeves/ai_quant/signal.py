@@ -363,6 +363,11 @@ def _summarize_payload(payload: dict) -> dict:
 def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
     """Variant-engine dispatch entry point. Returns a status dict.
 
+    Backward-compatible wrapper: calls the two-phase entry points
+    (:func:`try_decide_for_variant` then :func:`execute_for_variant`)
+    so callers that don't know about the new protocol — including
+    every legacy unit test — keep working unchanged.
+
     Status values:
       disabled            — kill switch off
       off_window          — outside the 00:05–00:15 UTC entry window
@@ -371,11 +376,37 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
       decision_error      — LLM call failed; ERROR row written
       decided             — decision recorded; trade_action shows what we did
     """
+    intent, status = try_decide_for_variant(variant, sleeve_cfg)
+    if intent is None:
+        return status
+    return execute_for_variant(variant, sleeve_cfg, intent)
+
+
+def try_decide_for_variant(variant: dict, sleeve_cfg: dict
+                            ) -> tuple[Any, dict]:
+    """Phase-1 of the two-phase dispatch (P2.4e/f Stage 2).
+
+    Runs the gates + Anthropic decision call; returns
+    ``(Intent | None, status_dict)``. Caller (orchestrator) inspects
+    ``Intent`` — None means "no trade this tick, status_dict is the
+    final dispatch result" (disabled / off_window / cost_capped /
+    error / deferred). A non-None Intent encodes the LLM's decision
+    and carries the underlying ``DecisionResult`` + context bundle in
+    ``Intent.reason`` so :func:`execute_for_variant` can write the
+    final journal row + run the open/close logic.
+
+    ``status_dict`` for the Intent path is a stub — only
+    ``status="decided"`` plus echoes of the decision. The orchestrator
+    discards it; :func:`execute_for_variant` returns the canonical
+    success status_dict.
+    """
+    from strategies.support.dispatch import Intent
+
     variant_id = variant["id"]
     asset = (sleeve_cfg.get("params") or {}).get("asset") or DEFAULT_ASSET
 
     if not _kill_switch_on():
-        return {"status": "disabled"}
+        return None, {"status": "disabled"}
 
     # Defer-aware idempotency: if today's latest row is an active defer,
     # block; if it's an expired defer, allow re-fire and bypass the entry
@@ -388,7 +419,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             defer_until = today_row.get("defer_until_utc")
             now_ts = clock.now_ts()
             if defer_until is not None and now_ts < int(defer_until):
-                return {
+                return None, {
                     "status": "deferred_waiting",
                     "until_utc": int(defer_until),
                     "waiting_for": today_row.get("confidence_caveats"),
@@ -396,17 +427,17 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             # Defer expired — proceed without re-checking the entry window.
             bypass_entry_window = True
         else:
-            return {"status": "already_fired_today"}
+            return None, {"status": "already_fired_today"}
 
     if not bypass_entry_window and not _in_entry_window():
-        return {"status": "off_window"}
+        return None, {"status": "off_window"}
 
     cap = _daily_cost_cap_usd()
     spent = journal.get_today_cost_usd(variant_id)
     if spent >= cap:
         log.warning(f"AI_QUANT cost cap hit for {variant_id}: "
                      f"${spent:.4f} >= ${cap:.4f}")
-        return {"status": "cost_capped", "spent_usd": spent, "cap_usd": cap}
+        return None, {"status": "cost_capped", "spent_usd": spent, "cap_usd": cap}
 
     # Heavy lifting from here on.
     current_open = trades.get_open_trades(variant_id, SLEEVE_NAME, asset)
@@ -426,7 +457,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             error=f"context_build: {type(e).__name__}: {e}",
             context_bundle=None, trade_action="error",
         )
-        return {"status": "decision_error", "error": "context_build"}
+        return None, {"status": "decision_error", "error": "context_build"}
 
     try:
         baseline_png = chart.render_chart(
@@ -440,7 +471,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             error=f"chart_render: {type(e).__name__}: {e}",
             context_bundle=context_bundle, trade_action="error",
         )
-        return {"status": "decision_error", "error": "chart_render"}
+        return None, {"status": "decision_error", "error": "chart_render"}
 
     defers_today = journal.count_today_defers(variant_id)
     allow_defer = defers_today < MAX_DEFERS_PER_DAY
@@ -467,7 +498,7 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             trade_action="deferred",
             defer_until_utc=defer_until,
         )
-        return {
+        return None, {
             "status": "deferred",
             "asset": asset,
             "waiting_for": result.deferred.get("waiting_for"),
@@ -483,27 +514,87 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             decision_result=result, context_bundle=context_bundle,
             trade_action="error",
         )
-        return {"status": "decision_error", "error": result.error}
+        return None, {"status": "decision_error", "error": result.error}
+
+    # Successful decision — package as an Intent. The decision_result +
+    # context_bundle ride along in Intent.reason so execute_for_variant
+    # can write the canonical journal row + run the open/close logic
+    # without having to redo the Anthropic call.
+    weight_pct = float(sleeve_cfg.get("_effective_weight_pct",
+                                        sleeve_cfg.get("weight_pct", 0.0)))
+    leverage = _resolve_leverage(sleeve_cfg)
+    eff_direction = _effective_direction(result.decision)
+    conviction = int(result.decision.get("conviction_0_100") or 0)
+    alloc = _allocation_pct_for(conviction, weight_pct)
+    intent = Intent(
+        asset=asset,
+        direction=eff_direction,
+        allocation_pct=alloc,
+        leverage=leverage,
+        conviction=conviction,
+        priority=float(sleeve_cfg.get("priority", 100)),
+        reason={
+            "sleeve": SLEEVE_NAME,
+            "_decision_result": result,         # private — execute consumes
+            "_context_bundle": context_bundle,  # private — execute consumes
+            "_current_open": current_open,      # snapshot for execute
+        },
+        scheduled_exit_dt=None,
+    )
+    # Stub status — execute returns the canonical success status_dict.
+    return intent, {
+        "status": "decided",
+        "asset": asset,
+        "decision": result.decision["direction"],
+        "conviction": conviction,
+        "horizon_days": result.decision.get("time_horizon_days"),
+        "turns": result.turns,
+    }
+
+
+def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Any) -> dict:
+    """Phase-2 of the two-phase dispatch — open / close / flip based on
+    an Intent produced by :func:`try_decide_for_variant`.
+
+    Runs the existing :func:`_reconcile` logic against the variant's
+    current open AI_QUANT trade (looked up at execute time, since the
+    orchestrator's reconcile pass + execute can occur on the same
+    tick — the snapshot in ``intent.reason['_current_open']`` is a
+    fallback for tests that call execute directly).
+
+    Always writes the canonical journal row with the final
+    ``trade_action`` and returns the same status dict shape the legacy
+    :func:`try_fire_for_variant` produced.
+    """
+    variant_id = variant["id"]
+    asset = intent.asset
+    decision_result = intent.reason.get("_decision_result")
+    context_bundle = intent.reason.get("_context_bundle")
+
+    # Fresh DB look-up — between decide and execute the orchestrator
+    # may have run its reconcile pass; we trust the live state.
+    current_open = trades.get_open_trades(variant_id, SLEEVE_NAME, asset)
 
     live_price = price_feed.get_current_price(asset)
     trade_action, debug = _reconcile(
         variant=variant, sleeve_cfg=sleeve_cfg, asset=asset,
-        current_open=current_open, decision_payload=result.decision,
+        current_open=current_open,
+        decision_payload=decision_result.decision,
         live_price=live_price,
     )
     journal.save_decision(
         variant_id=variant_id, asset=asset,
-        decision_result=result, context_bundle=context_bundle,
+        decision_result=decision_result, context_bundle=context_bundle,
         trade_action=trade_action,
     )
     return {
         "status": "decided",
         "asset": asset,
-        "decision": result.decision["direction"],
-        "conviction": result.decision["conviction_0_100"],
-        "horizon_days": result.decision.get("time_horizon_days"),
+        "decision": decision_result.decision["direction"],
+        "conviction": decision_result.decision["conviction_0_100"],
+        "horizon_days": decision_result.decision.get("time_horizon_days"),
         "trade_action": trade_action,
-        "turns": result.turns,
+        "turns": decision_result.turns,
         **debug,
     }
 

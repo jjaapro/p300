@@ -374,6 +374,30 @@ commit and probably multi-session. A reasonable sub-decomposition:
   approved intents) is the next sub-commit; depends on AI_QUANT's
   decide()/execute() implementation.*
 
+  *2026-05-16 — AI_QUANT pilot migration + orchestrator routing shipped.
+  `strategies/sleeves/ai_quant/signal.py` now exposes
+  `try_decide_for_variant(variant, sleeve_cfg) -> (Intent | None, dict)`
+  and `execute_for_variant(variant, sleeve_cfg, intent) -> dict`; the
+  legacy `try_fire_for_variant` is preserved as a thin wrapper
+  (decide → execute) so backtest_runner + any direct callers are
+  unchanged. Decide runs every gate (kill switch / defer-aware
+  idempotency / entry window / cost cap), builds the context bundle,
+  calls Anthropic, and packs the result into an `Intent` (asset /
+  direction / allocation_pct / leverage / conviction / priority /
+  reason). Execute does a fresh DB read of current_open and calls
+  the existing `_reconcile()` to write the trade + journal row.
+  Orchestrator adds parallel `STRATEGY_TWO_PHASE_DISPATCH` dict;
+  `_load_dispatch` registers AI_QUANT into it when both `decide` +
+  `execute` are exported. `_tick_composition` collects pending
+  intents from migrated sleeves into a list, runs `reconcile_intents()`
+  on the full set, then calls `execute_fn` on each approved /
+  approved_reduced result. Legacy sleeves continue using
+  `try_fire_for_variant` in the same loop. 4 new integration tests
+  in `tests/test_orchestrator_two_phase.py` cover: registry
+  registration, decide=None skips execute, approved Intent triggers
+  execute with correct args, reconcile-rejected Intent skips execute.
+  Full fast suite 768 tests green.*
+
 ### P2.4a status (2026-05-14)
 
 **Complete.** ✅ All 13 sleeves migrated. `strategies/support/allocation.py`
