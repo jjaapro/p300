@@ -28,7 +28,9 @@ def test_load_dispatch_registers_two_phase_sleeves(monkeypatch):
     monkeypatch.setattr(orchestrator, "STRATEGY_TWO_PHASE_DISPATCH", {})
     orchestrator._load_dispatch()
     for sid in ("AI_QUANT", "S-003", "S-096", "PDO-L-RF", "CPR", "FOMC",
-                  "S-078", "JPLUS_ETH_DAILY", "JPLUS_EMA_BTC"):
+                  "S-078", "JPLUS_ETH_DAILY", "JPLUS_EMA_BTC",
+                  "JPLUS_R4_BTC", "JPLUS_R4_ETH",
+                  "JPLUS_R4_BTC_V2", "JPLUS_R4_ETH_V2"):
         assert sid in orchestrator.STRATEGY_TWO_PHASE_DISPATCH, (
             f"{sid} not registered as two-phase")
         decide_fn, execute_fn = orchestrator.STRATEGY_TWO_PHASE_DISPATCH[sid]

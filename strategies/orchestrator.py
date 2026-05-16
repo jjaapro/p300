@@ -400,6 +400,15 @@ def _load_dispatch():
             ema_sleeve.try_decide_for_variant,
             ema_sleeve.execute_for_variant,
         )
+    # R4 family: per-variant decide functions share `_r4_execute`.
+    for sid, decide_fn in (
+        ("JPLUS_R4_BTC",    getattr(r4_sleeve, "r4_btc_decide", None)),
+        ("JPLUS_R4_ETH",    getattr(r4_sleeve, "r4_eth_decide", None)),
+        ("JPLUS_R4_BTC_V2", getattr(r4_sleeve, "r4_btc_v2_decide", None)),
+        ("JPLUS_R4_ETH_V2", getattr(r4_sleeve, "r4_eth_v2_decide", None)),
+    ):
+        if decide_fn is not None and hasattr(r4_sleeve, "_r4_execute"):
+            STRATEGY_TWO_PHASE_DISPATCH[sid] = (decide_fn, r4_sleeve._r4_execute)
 
 
 _warned_missing: set[tuple[str, str]] = set()

@@ -385,6 +385,17 @@ commit and probably multi-session. A reasonable sub-decomposition:
   approved intents) is the next sub-commit; depends on AI_QUANT's
   decide()/execute() implementation.*
 
+  *2026-05-16 — R4 family migrated to two-phase. ALL 13 dispatched
+  sleeves now on two-phase. R4_BTC / R4_ETH / R4_BTC_V2 / R4_ETH_V2:
+  pure calendar-bounded entries, no maintenance side-effects (scheduled
+  exit via `orchestrator._close_due_paper_trades`). Shared `_r4_decide`
+  + `_r4_execute` helpers; per-variant decide functions handle the
+  calendar / weekday / hour gates and delegate to the shared decide.
+  Inline margin_headroom.can_open REMOVED — reconcile owns it across
+  all 4 R4 sleeves. Single registration loop in orchestrator
+  iterates all 4 R4 (sid, decide_fn) pairs. Registration test extended
+  to all 4 JPLUS_R4_* sleeves.*
+
   *2026-05-16 — EMA_BTC (JPLUS_EMA_BTC) migrated to two-phase. Ninth
   sleeve. Adds the FLIP case to the J+ pattern: weekly EMA cross
   rotates the existing position's direction via atomic `apply_flip`
