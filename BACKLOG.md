@@ -231,9 +231,17 @@ commit and probably multi-session. A reasonable sub-decomposition:
       cross-sleeve snapshot can now read the same decision via the
       gate, so the registered surface is uniform across all three
       gates.*
-  *Walk-forward CV protocol for new gates — unwritten. Each gate
-  should have a documented out-of-sample sharpe / expectancy
-  benchmark before live-promotion.*
+  *Walk-forward CV protocol for new gates — shipped 2026-05-16 in
+  [GATE_VALIDATION.md](GATE_VALIDATION.md). Five-step protocol:
+  signature → pre-register parameter grid → walk-forward fold
+  structure → metrics (expectancy / Sharpe / hit-rate, deflated by
+  search budget) → promotion criteria (Sharpe uplift ≥ 0.2 deflated,
+  per-fold sign stability ≥ 2/3). Documents the in-sample status of
+  the three existing gates (R4 vol-gate validated-ish, V4 + FOMC
+  composite both in-sample by construction) and the artifacts every
+  new gate's PR must include (study notebook under
+  studies/notebooks/gates/, docstring uplift figure, BACKLOG entry).
+  Linked from strategies/support/gating.py module docstring.*
 - **P2.4c** — Portfolio vol-target: replace the J+-only vol-target with
   a portfolio-level scalar applied to every sleeve's notional.
   *2026-05-15: math shipped + opt-in switch.

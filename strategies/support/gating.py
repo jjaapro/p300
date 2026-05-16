@@ -35,9 +35,12 @@ Three gates registered:
      visibility — health-report sees the same value the sleeve will
      act on).
 
+Walk-forward CV protocol for new gates: see ``GATE_VALIDATION.md`` at
+the repo root. Future gates (and re-builds of the in-sample V4 /
+FOMC composite) must produce a stitched-OOS notebook + a docstring
+uplift figure before live promotion.
+
 Future work (post-P2.4):
-  - Walk-forward CV protocol for gate calibration (each gate should
-    have a documented out-of-sample sharpe/expectancy benchmark).
   - Compose gates: ``ChainGate([g1, g2])`` so a sleeve can register
     multiple gates and the orchestrator AND-merges their decisions.
 """
