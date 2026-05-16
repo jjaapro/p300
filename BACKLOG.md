@@ -355,12 +355,24 @@ commit and probably multi-session. A reasonable sub-decomposition:
   is the natural pilot (its LLM decision is already separate from
   the trade open) and other sleeves follow as time permits. Migration
   is incremental: the orchestrator falls back to legacy
-  ``try_fire_for_variant`` when a sleeve doesn't expose decide().
-  Once enough sleeves are migrated, the reconcile pass replaces the
-  first-come-first-served conflict check (P2.4e enforcement) with
-  intent-based reconciliation and adds active pooling (P2.4f Stage 2).
-  3 tests anchor the Intent dataclass shape; reconcile pass +
-  orchestrator routing are the next sub-commits.*
+  ``try_fire_for_variant`` when a sleeve doesn't expose decide().*
+
+  *2026-05-16 — `reconcile_intents()` pure function shipped.
+  Takes a list of ``(strategy_id, Intent)`` collected from migrated
+  sleeves + the variant's current gross / cap / capital. Returns a
+  parallel list of `ReconcileResult` (approved / approved_reduced /
+  rejected_directional_conflict / rejected_margin). Pass logic:
+  sort by (priority, -conviction), then for each intent: directional
+  conflict against earlier-approved on the same asset; margin headroom
+  with reduce policy (50% floor); CARRY's neutral SHORT excluded from
+  conflict checks. The function is pure — no DB writes — so it's
+  fully unit-testable. 11 tests cover empty input, single approve,
+  priority order, conviction tie-break, margin reject / reduce / floor,
+  subsequent-intent consumption, CARRY neutral, FLAT passthrough,
+  concordant stack approval. The orchestrator routing (call decide()
+  on migrated sleeves, run reconcile_intents, call execute() on
+  approved intents) is the next sub-commit; depends on AI_QUANT's
+  decide()/execute() implementation.*
 
 ### P2.4a status (2026-05-14)
 
