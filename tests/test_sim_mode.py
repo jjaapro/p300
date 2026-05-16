@@ -70,7 +70,7 @@ def sim_dashboard_db(tmp_path):
     """Fresh dashboard sim DB with the live variant config copied across
     and trade-tables emptied. Per-test scope so tests start clean."""
     if not LIVE_DASH_DB.exists():
-        pytest.skip(f"requires {LIVE_DASH_DB} (run register_p300.py first)")
+        pytest.skip(f"requires {LIVE_DASH_DB} (start bot.py to auto-register)")
     out = tmp_path / "sim_dash.db"
     shutil.copy(LIVE_DASH_DB, out)
     con = sqlite3.connect(str(out))

@@ -8,9 +8,9 @@ shared with ``backtest_runner.py`` so both paths walk the same calendar
 through the same per-tick callback.
 
 Build a sliced sim trader.db with
-``studies.simulation.build_sim_trader_db`` before running. Pre-register
-the variant in the sim dashboard.db with
-``python register_p300.py --dash-db <path>``.
+``studies.simulation.build_sim_trader_db`` before running. The P-300
+variant is auto-registered in the sim dashboard.db on startup via
+``strategies.p300_spec.register`` — no separate registration step.
 
 Usage:
   python studies/simulation/sim.py \\
@@ -66,12 +66,13 @@ def _parse_iso_utc(s: str) -> datetime:
 
 
 def _ensure_variant_registered() -> None:
+    """Auto-register the P-300 variant in the sim dashboard.db. Idempotent."""
+    from strategies import p300_spec
+    if p300_spec.register(quiet=True):
+        log.info(f"Variant {VARIANT_ID} auto-registered in sim dashboard.db.")
     v = variant_registry.get_variant(VARIANT_ID)
     if v is None:
-        log.error(
-            f"Variant {VARIANT_ID} not registered in sim dashboard.db. "
-            f"Run `python register_p300.py --dash-db <path>` first."
-        )
+        log.error(f"Variant {VARIANT_ID} registration failed in sim DB.")
         sys.exit(2)
     if not v["enabled"]:
         log.error(f"Variant {VARIANT_ID} is disabled in sim DB — cannot tick.")
@@ -106,8 +107,7 @@ def main(argv: list[str] | None = None) -> int:
                          "Build with studies/simulation/build_sim_trader_db.py.")
     ap.add_argument("--dash-db", required=True, type=str,
                     help="Path to the sim dashboard.db (variant + trade ledger "
-                         "destination). Pre-register the variant via "
-                         "`python register_p300.py --dash-db <path>`.")
+                         "destination). Auto-registered on startup if absent.")
     ap.add_argument("--sim-tick-seconds", type=int, default=60,
                     help="Simulated-clock advance per tick in seconds "
                          "(default 60). Lower = finer granularity.")

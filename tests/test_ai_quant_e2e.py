@@ -22,7 +22,6 @@ config / backtest skip) surfaces here.
 """
 from __future__ import annotations
 
-import importlib
 import os
 import sqlite3
 import sys
@@ -452,32 +451,22 @@ def test_backtest_runner_skips_non_deterministic_sleeves(monkeypatch):
     assert "DET_TEST" in fired, "deterministic sleeves should still fire"
 
 
-# ─── E2E #8: register_p300 spec includes AI_QUANT ──────────────────────────
+# ─── E2E #8: P-300 spec includes AI_QUANT ────────────────────────────────
 
-def test_register_p300_spec_includes_ai_quant_with_correct_shape():
+def test_p300_spec_includes_ai_quant_with_correct_shape():
     """Confirm the production composition spec has AI_QUANT, with
     deterministic=False and the expected weight."""
-    spec = _import_register_p300().build_spec()
+    from strategies import p300_spec
+    spec = p300_spec.build_spec()
     comp = spec["composition"]
     aq = next((c for c in comp if c.get("strategy_id") == "AI_QUANT"), None)
-    assert aq is not None, "register_p300 spec must include AI_QUANT"
+    assert aq is not None, "p300_spec must include AI_QUANT"
     assert aq["weight_pct"] == 2.0
     assert aq["params"]["asset"] == "BTC"
     assert aq["params"]["deterministic"] is False
     assert aq["params"]["leverage"] == 3.0
     # Listed in sleeves_live for the runtime banner
     assert "AI_QUANT" in spec["sleeves_live"]
-
-
-def _import_register_p300():
-    """register_p300 lives at repo root, not inside a package; load via
-    importlib so the test works no matter the cwd."""
-    repo = Path(__file__).resolve().parent.parent
-    if str(repo) not in sys.path:
-        sys.path.insert(0, str(repo))
-    if "register_p300" in sys.modules:
-        return importlib.reload(sys.modules["register_p300"])
-    return importlib.import_module("register_p300")
 
 
 # ─── E2E #9: defer flow — defer at 00:07, wait, re-fire later in the day ──

@@ -2,7 +2,7 @@
 
 Today there are two parallel allocation code paths: tactical sleeves
 read a static ``weight_pct`` from the composition spec in
-``register_p300.py``; J+ sub-sleeves read regime-weighted sizing from
+``strategies/p300_spec.py``; J+ sub-sleeves read regime-weighted sizing from
 ``today_inputs()``. This module unifies both into a single
 ``WEIGHT_TABLE[strategy_id][regime] -> float`` lookup that any sleeve
 can consume identically.
@@ -65,7 +65,7 @@ CORE_ALLOC_CAP = 0.50
 # J+ rows: copied from jplus_inputs.REGIME_WEIGHTS_FULL — raw values before
 # CORE_ALLOC_CAP scaling. get_weight_pct() applies the cap at lookup time.
 WEIGHT_TABLE: dict[str, dict[str, float]] = {
-    # Tactical — values mirror register_p300.py composition weight_pct/100.
+    # Tactical — values mirror strategies/p300_spec.py composition weight_pct/100.
     "S-003":           {r: 0.15 for r in REGIMES},   # ADX
     "S-078":           {r: 0.08 for r in REGIMES},   # CARRY
     "S-096":           {r: 0.06 for r in REGIMES},   # THU_BEAR V4

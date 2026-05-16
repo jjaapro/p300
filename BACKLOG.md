@@ -385,6 +385,20 @@ commit and probably multi-session. A reasonable sub-decomposition:
   approved intents) is the next sub-commit; depends on AI_QUANT's
   decide()/execute() implementation.*
 
+  *2026-05-16 — `register_p300.py` retired. Moved `build_spec` +
+  idempotent `register` to `strategies/p300_spec.py`. bot.py and
+  studies/simulation/sim.py call `p300_spec.register(quiet=True)` on
+  startup — auto-registers on first run, no-op when the variant row
+  already exists. Operator workflow simplifies from
+  `bootstrap.py → register_p300.py → bot.py` to `bootstrap.py → bot.py`.
+  test_ai_quant_e2e.py updated to import from new location;
+  test_allocation_parity.py comment references still point at the
+  module (now p300_spec). Text references in health.py, bootstrap.py,
+  backtest_runner.py, README, OPERATIONS, PORTFOLIO updated. The
+  `weight_pct` field in each composition entry stays (parity tests
+  + operator docs read it) but is informational — the live allocator
+  is `strategies.support.allocation` (P2.4a).*
+
   *2026-05-16 — R4 family migrated to two-phase. ALL 13 dispatched
   sleeves now on two-phase. R4_BTC / R4_ETH / R4_BTC_V2 / R4_ETH_V2:
   pure calendar-bounded entries, no maintenance side-effects (scheduled

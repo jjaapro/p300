@@ -27,8 +27,8 @@ Examples:
                                             # while binance_feed accumulates)
 
 After this:
-  python register_p300.py    # register the variant in data/prod.db
   python health.py           # confirm everything is wired up
+  python bot.py              # starts the bot; auto-registers the variant
 """
 from __future__ import annotations
 
@@ -197,8 +197,8 @@ def main(argv: list[str] | None = None) -> int:
         backfill_from_binance(since=args.since, skip_klines=args.skip_klines)
     fetch_fomc_sleeve_inputs()
     print("\nBootstrap complete. Next:")
-    print("  python register_p300.py    # register the variant in data/prod.db")
     print("  python health.py           # confirm everything is wired up")
+    print("  python bot.py              # starts the bot; auto-registers the variant")
     return 0
 
 

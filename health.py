@@ -181,7 +181,7 @@ def check_dashboard_tables() -> None:
     ).fetchall()}
     for t in required:
         if t not in tables:
-            _fail(t, "MISSING — run register_p300.py", 2)
+            _fail(t, "MISSING — run bootstrap.py / start bot.py", 2)
         else:
             n = con.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
             _ok(t, f"{n:,} rows")
@@ -198,7 +198,7 @@ def check_variant_registration() -> None:
     ).fetchone()
     con.close()
     if row is None:
-        _fail("variant", f"{VARIANT_ID} NOT REGISTERED — run register_p300.py", 3)
+        _fail("variant", f"{VARIANT_ID} NOT REGISTERED — start bot.py to auto-register", 3)
     if row["enabled"] != 1:
         _fail("variant", f"{VARIANT_ID} DISABLED", 3)
     _ok("variant", f"{VARIANT_ID} ({row['short_name']}, status={row['status']})")

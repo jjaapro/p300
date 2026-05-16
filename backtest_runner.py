@@ -75,7 +75,7 @@ def ensure_replay_variant(variant_id: str, reset: bool = False) -> dict:
     live = variant_registry.get_variant(LIVE_VARIANT_ID)
     if live is None:
         raise SystemExit(f"Live variant {LIVE_VARIANT_ID} not registered — "
-                         f"run `python register_p300.py` first.")
+                         f"start `python bot.py` to auto-register.")
 
     con = sqlite3.connect(str(db.DASH_DB))
     cur = con.cursor()

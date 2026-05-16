@@ -753,7 +753,7 @@ were affected by the data-source switch.
 
 | Concern | File |
 |---|---|
-| Variant registration + weights | [register_p300.py](register_p300.py) |
+| Variant registration + weights | [strategies/p300_spec.py](strategies/p300_spec.py) |
 | Sleeve dispatch + spec resolution | [strategies/orchestrator.py](strategies/orchestrator.py) |
 | Per-tactical-sleeve services | [strategies/sleeves/](strategies/sleeves/) — adx, carry, cpr, fomc, pdo_retouch, thu_bear |
 | Core J+ live handlers | [strategies/sleeves/r4/signal.py](strategies/sleeves/r4/signal.py) (R4 family), [strategies/sleeves/ema/signal.py](strategies/sleeves/ema/signal.py) (EMA_BTC), [strategies/sleeves/eth_daily/signal.py](strategies/sleeves/eth_daily/signal.py) |
@@ -792,12 +792,11 @@ identical dispatch logic — only the data source and clock differ:
 # Live (default; binance_feed runs in-process):
 python bot.py
 
-# Sim — build a sliced trader.db, register the variant in a fresh
-# dashboard sim DB, then run the bot under a fake clock:
+# Sim — build a sliced trader.db, then run the bot under a fake clock.
+# The P-300 variant is auto-registered into the sim ledger DB on startup.
 python studies/simulation/build_sim_trader_db.py \
     --start 2024-01-01 --end 2024-12-31 \
     --output data/trader_sim_2024.db
-python register_p300.py --dash-db /tmp/sim_dash.db
 python studies/simulation/sim.py \
     --start 2024-01-01 --end 2024-12-31 \
     --trader-db data/trader_sim_2024.db \

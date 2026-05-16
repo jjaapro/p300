@@ -62,8 +62,8 @@ export COINALYZE_API_KEY=...
 #    Slow on first run (~30-60 min for 5y of 1m klines). Idempotent.
 python bootstrap.py
 
-# 4. Register the P-300 variant in data/prod.db
-python register_p300.py
+# 4. Start the bot — auto-registers the P-300 variant on first run.
+python bot.py
 ```
 
 For a faster bootstrap that defers the slow kline backfill:
@@ -123,10 +123,7 @@ python studies/simulation/build_sim_trader_db.py \
     --start 2024-01-01 --end 2024-12-31 \
     --output data/sim_2024.db
 
-# 2. Register the variant in a fresh sim ledger.
-python register_p300.py --dash-db /tmp/sim_ledger.db
-
-# 3. Run sim mode. Inclusive date range; --sim-tick-seconds advances
+# 2. Run sim mode. Inclusive date range; --sim-tick-seconds advances
 #    the simulated clock per tick (no wall-clock sleep).
 python studies/simulation/sim.py \
     --start 2024-01-01 --end 2024-12-31 \
@@ -134,7 +131,7 @@ python studies/simulation/sim.py \
     --dash-db /tmp/sim_ledger.db \
     --sim-tick-seconds 60
 
-# 4. Inspect results: open studies/notebooks/full_portfolio_report.ipynb
+# 3. Inspect results: open studies/notebooks/full_portfolio_report.ipynb
 #    in Jupyter and point it at the sim ledger.
 ```
 
@@ -246,7 +243,6 @@ python -c "from strategies.support.strategy_health import build_report, format_r
 p300/
 ├── bot.py                         # paper-trading entry point (60s tick, noise-filtered)
 ├── bootstrap.py                   # one-shot data/prod.db builder
-├── register_p300.py               # registers the variant in prod.db
 ├── health.py                      # 8 invariant checks for live operation
 ├── fetch_events.py                # rebuilds scheduled_events (FOMC/CPI/NFP/OPEX)
 ├── fetch_coinalyze.py             # fetches ca_long_short_ratio history (Coinalyze)

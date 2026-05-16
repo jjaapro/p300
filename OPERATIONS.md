@@ -7,7 +7,7 @@
 
 | What | Command |
 |---|---|
-| One-time setup | `export COINALYZE_API_KEY=...` → `python bootstrap.py` → `python register_p300.py` |
+| One-time setup | `export COINALYZE_API_KEY=...` → `python bootstrap.py` |
 | Start live loop | `python bot.py` |
 | Single tick (test) | `python bot.py --once` |
 | Health check | `python health.py` |
@@ -44,10 +44,7 @@ python bootstrap.py
 #   python bootstrap.py --skip-coinalyze   # if you don't have a key yet
 #   python bootstrap.py --since 2024-01-01 # shorter history
 
-# 3. Register the variant in data/prod.db
-python register_p300.py
-
-# 4. Sanity
+# 3. Sanity (P-300 variant auto-registers on first bot.py run)
 python health.py
 python bot.py --once          # single tick; should complete in <30s
 python -m pytest tests/ -q    # ~490 tests should pass (some slow sim
@@ -207,7 +204,8 @@ Per-sleeve errors are already isolated — a whole-loop crash means the
 orchestrator itself or the variant lookup failed, typically due to a
 corrupted prod.db variant row. Recovery:
 ```bash
-python register_p300.py    # re-registers idempotently
+sqlite3 data/prod.db "DELETE FROM variants WHERE id='p300_aggressive_v2_v1_0'"
+python bot.py --once       # re-registers via strategies.p300_spec.register
 python health.py           # confirm fresh registration
 ```
 
@@ -245,10 +243,8 @@ equity curves from the trade ledger via
 python studies/simulation/build_sim_trader_db.py --start 2024-01-01 --end 2024-12-31 \
     --output data/trader_sim_2024.db
 
-# Register the variant in a fresh sim ledger DB
-python register_p300.py --dash-db /tmp/sim_dash.db
-
-# Run the bot under a simulated clock — no contact with the live DBs
+# Run the bot under a simulated clock — no contact with the live DBs.
+# The P-300 variant is auto-registered into the sim ledger DB on startup.
 python studies/simulation/sim.py --start 2024-01-01 --end 2024-12-31 \
     --trader-db data/trader_sim_2024.db --dash-db /tmp/sim_dash.db \
     --sim-tick-seconds 60
@@ -302,9 +298,9 @@ DELETE FROM variant_daily_returns WHERE variant_id = '<variant_id>';
    data. Verified by `tests/test_jplus_lookahead.py` — bit-identical
    output at different clock positions.
 
-3. **Idempotent registration.** Re-running `register_p300.py` deletes
-   and reinserts — never duplicates. Safe to run any time. `--dash-db`
-   flag lets you target a sim DB.
+3. **Idempotent registration.** `strategies.p300_spec.register` is a
+   no-op when the variant row already exists. Called automatically on
+   bot.py / sim.py startup; manual invocation is not needed.
 
 4. **Sim/live dispatch parity.** `studies/simulation/sim.py` and
    `backtest_runner.py` produce byte-identical J+ sub-sleeve trades
@@ -325,6 +321,6 @@ DELETE FROM variant_daily_returns WHERE variant_id = '<variant_id>';
 Everything we know is in-repo:
 - Strategy description and caveats: [README.md](README.md)
 - Core J+ port details: [strategies/support/jplus_inputs.py](strategies/support/jplus_inputs.py) (today_inputs) and [studies/jplus_analytic/](studies/jplus_analytic/) (offline simulate)
-- Variant spec rationale: [register_p300.py](register_p300.py) header
+- Variant spec rationale: [strategies/p300_spec.py](strategies/p300_spec.py) header + build_spec
 - Look-ahead audit + fix history: [tests/test_jplus_lookahead.py](tests/test_jplus_lookahead.py)
 - Backtest results: run `studies/notebooks/backtest_report.ipynb` against any replay variant

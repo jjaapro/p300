@@ -24,9 +24,11 @@ sleeves (``no_signal`` / ``not_thursday`` / ``tick ok`` / ``[feed]`` /
 etc.) is filtered out by default; pass ``--verbose`` to see everything.
 
 Prerequisites (one-shot bootstrap):
-  python bootstrap.py           # build data/trader.db from scratch
+  python bootstrap.py           # build data/prod.db from scratch
                                 # (reads COINALYZE_API_KEY from .env)
-  python register_p300.py       # register variant in data/dashboard.db
+
+The P-300 variant is auto-registered on first bot startup via
+``strategies.p300_spec.register`` — no separate registration step.
 
 Daily operation:
   python bot.py                 # bot + binance_feed, with startup gap-fix
@@ -60,7 +62,7 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent
 sys.path.insert(0, str(REPO))
 
-from strategies import orchestrator
+from strategies import orchestrator, p300_spec
 from strategies.support import trade_db, variant_registry  # noqa: E402
 
 log = logging.getLogger("p300")
@@ -140,11 +142,14 @@ def _feed_thread(interval: int) -> None:
 
 
 def _ensure_variant_registered() -> None:
+    """Auto-register the P-300 variant on startup. Idempotent — no-op if
+    the row already exists. Replaces the pre-2026-05-16 workflow that
+    required `python register_p300.py` as a separate step."""
+    if p300_spec.register(quiet=True):
+        log.info(f"Variant {VARIANT_ID} auto-registered.")
     v = variant_registry.get_variant(VARIANT_ID)
     if v is None:
-        log.error(
-            f"Variant {VARIANT_ID} not registered. Run `python register_p300.py` first."
-        )
+        log.error(f"Variant {VARIANT_ID} registration failed.")
         sys.exit(2)
     if not v["enabled"]:
         log.error(f"Variant {VARIANT_ID} is disabled — cannot tick.")
