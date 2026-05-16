@@ -488,22 +488,229 @@ So R4 ETH's effective leverage on that day is **0.74× of raw spot move**, appli
 
 ---
 
-## 4. Regime classifier ([strategies/support/regime_jplus.py](strategies/support/regime_jplus.py))
+## 4. Cross-sleeve coordinators
 
-Classifies each day into one of 4 modes using **only T-1 data** (look-ahead-safe).
+Sleeves only own their own decision logic. Everything that has to look
+across sleeves — regime, sizing, leverage, gating, margin, directional
+conflict, signal pooling, trade ordering — lives in
+[`strategies/support/`](strategies/support/) and is injected into each
+sleeve's dispatch as `sleeve_cfg["_effective_*"]` fields by
+[`strategies/orchestrator.py`](strategies/orchestrator.py). This
+section walks the layers in the order they apply each tick.
+
+### 4.1 Regime classifiers
+
+Two parallel classifiers run on the same BTC daily series; each
+sleeve consumes whichever fits its trade thesis. Both are strictly
+T-1 (look-ahead-safe) and read from `cd_spot_binance` (BTC spot 1h
+aggregated to daily) so they agree with TradingView's `BTCUSDT 1D`
+feed within rounding.
+
+**J+ classifier** ([strategies/support/regime_jplus.py](strategies/support/regime_jplus.py))
+— 4 modes consumed by the allocation table and by every J+
+sub-sleeve's weight resolution:
 
 | Mode | Trigger |
 |---|---|
 | **strong_bull** | close > EMA(50) AND close > EMA(20) AND m30 > 0 AND m7 > 0 |
 | **mild_bull** | close > EMA(50) AND (m30 > 0 OR close > EMA(20)) |
 | **bear** | close < EMA(50) AND m30 < 0 |
-| **uncertain** | otherwise — OR peak-DD > 5% while bullish, OR LS circuit-breaker active |
+| **uncertain** | otherwise; or peak-DD > 5% while bullish; or LS circuit-breaker active |
 
-Two override rules:
-- **LS circuit breaker**: if 7-day LSR delta < -15 (long crowd unwinding), force `uncertain` for next 7 calendar days.
-- **Peak-DD override**: if current close is > 5% off trailing peak AND mode would otherwise be bullish, demote to `uncertain`.
+Two override rules layered on top:
+- **LS circuit breaker** — 7-day LSR delta < −15 (long crowd unwinding)
+  forces `uncertain` for the next 7 calendar days.
+- **Peak-DD override** — close > 5% off trailing peak demotes any
+  bullish label to `uncertain`.
 
-Inputs: BTC daily close, EMA(20), EMA(50), 30-day momentum, 7-day momentum, LSR snapshots, spot peak — all at T-1.
+**Tactical classifier** ([strategies/support/regime_tactical.py](strategies/support/regime_tactical.py))
+— 4 modes consumed by THU_BEAR's V3 prev-day filter and PDO's
+`regime_threshold_pct` skip:
+
+| Mode | Trigger |
+|---|---|
+| **bull_trend** | 50d SMA 10-day slope > +0.5% of price, RV not extreme |
+| **bear_trend** | 50d SMA 10-day slope < −0.5% of price, RV not extreme |
+| **chop** | \|slope\| ≤ 0.5% (dead-band) |
+| **sell_off** | RV percentile ≥ 75th AND close < 50d MA AND slope < 0 |
+
+Why two vocabularies — the J+ family was ported from upstream P-100
+research with its own regime taxonomy; the tactical sleeves came from
+the trader-repo gate that uses RV-percentile + slope. Unifying them
+is on the backlog as a follow-on to P2.4a but isn't load-bearing.
+
+### 4.2 Allocation table ([strategies/support/allocation.py](strategies/support/allocation.py))
+
+Single source of truth for `weight[sleeve][regime] → fraction-of-capital`.
+The J+ regime mode is computed once per tick by
+[`allocation.current_regime()`](strategies/support/allocation.py)
+and injected as `_effective_weight_pct` into every sleeve dispatch.
+Tactical sleeves were regime-independent until P2.4a shipped; their
+rows hold the same constant across all four regimes (e.g. ADX = 15%
+everywhere). J+ sub-sleeve rows mirror
+[`jplus_inputs.REGIME_WEIGHTS_FULL`](strategies/support/jplus_inputs.py)
+after the CORE_ALLOC_CAP scaling described in §3.4.
+
+`CORE_ALLOC_CAP = 0.50` (enforced 2026-05-13, commit 43b9c45) caps
+total Core gross at 50% of variant capital. Raw J+ weights sum to
+1.10–1.35 in non-bear regimes; the cap scales every row by
+`0.50 / sum(row)`. Pre-cap, R4_ETH sized 0.40 × 5x stacked = 200%
+notional on $10k — the cap brings sizing in line with the documented
+Core/Tactical 50/50 split.
+
+### 4.3 Gating framework ([strategies/support/gating.py](strategies/support/gating.py))
+
+A gate decides whether a sleeve fires at all and, optionally, scales
+its leverage. Each gate registers a `(strategy_id, regime, now_utc) →
+GateDecision(fire, leverage_mult, reason)` callable in
+`GATE_REGISTRY`; the orchestrator looks it up per sleeve per tick and
+injects the result as `_effective_gate`. Three gates registered:
+
+| Gate | Type | What it does |
+|---|---|---|
+| R4 vol-gate | modulator | BTC 30d realized-vol > 75th-percentile (365d window) → R4 inner leverage 1.0× instead of 2.5× |
+| THU_BEAR V4 | binary | CPI/NFP-adjacent Thursday + ex-OPEX → fire; otherwise block |
+| FOMC composite | binary | Phase × F&G × Polymarket-cut-prob filter via [`fomc_observer`](strategies/sleeves/fomc/signal.py) table |
+
+Walk-forward CV protocol for adding/rebuilding a gate:
+[GATE_VALIDATION.md](GATE_VALIDATION.md). The R4 vol-gate is
+calibrated on BTC vol percentile (not the R4 trade series), so it
+carries less in-sample selection-bias risk than V4 / FOMC composite,
+both of which were derived post-hoc from the same data they were
+backtested on.
+
+### 4.4 Portfolio vol-target scalar ([strategies/support/portfolio_vol.py](strategies/support/portfolio_vol.py))
+
+Per-tick scalar that re-targets the variant's gross exposure to a
+documented annualized-vol budget (default 30%). Computed from realized
+NAV over a 30-day rolling window of the trades-ledger daily returns:
+`scalar = target_vol_annual / realized_vol_annual`, clamped to
+`[LEV_FLOOR=0.5, LEV_CAP=3.0]`. Falls back to None (no scaling) when
+the variant has < 10 observations of NAV history.
+
+The scalar is opt-in per variant via
+`spec.allocator_notes.use_portfolio_vol`. When True, the orchestrator
+multiplies every tactical sleeve's `_effective_leverage` by the
+scalar at injection time; J+ sleeves read `_effective_vol_scalar`
+directly as their inner vol-target leverage (not multiplied through
+`_effective_leverage`, to avoid double-counting).
+
+### 4.5 Margin headroom ([strategies/support/margin_headroom.py](strategies/support/margin_headroom.py))
+
+Tracks the variant's gross perp-notional vs cap and tells sleeves how
+much room they have. Cap defaults to `2.5 × capital_usdt` via
+`spec.allocator_notes.gross_notional_target_x`. Sums `size_usdt`
+across open paper trades (already-leveraged notional from
+`trades.open_paper_trade`) — no double-leveraging.
+
+Two policies, both available:
+- **`can_open(variant, candidate_notional)` — skip policy.** Returns
+  `(False, reason)` if `current_used + candidate > cap`. Tactical
+  sleeves use this on fresh opens.
+- **`clamp_to_headroom(variant, candidate_notional,
+  min_reduce_fraction=0.5)` — reduce policy.** Returns
+  `(clamped, "full"|"reduced"|"too_small"|"no_headroom", reason)`.
+  Above the floor (≥50% of intended) the sleeve opens at the
+  clamped size; below the floor it skips. AI_QUANT and the
+  multi-asset sleeves (PDO, CPR, THU_BEAR) use this when fresh-opening.
+
+Migrated sleeves (two-phase dispatch, §4.7) **don't call either of these directly**;
+the reconcile pass enforces margin uniformly across all candidates
+per tick.
+
+### 4.6 Conflict resolver ([strategies/support/conflict_resolver.py](strategies/support/conflict_resolver.py))
+
+Catches opposing-direction perp opens on the same asset within a
+variant — e.g. ADX wants LONG BTC while THU_BEAR wants SHORT BTC on
+the same Thursday. Two surfaces:
+- `detect_opposing_open(variant_id, asset, direction)` — returns the
+  earliest open trade with opposite direction, or None. Used by the
+  reconcile pass to seed its conflict state with positions opened
+  by legacy (non-two-phase) sleeves before reconcile ran.
+- `current_directional_opens(variant_id) → {asset: direction}` —
+  one-shot snapshot for the reconcile seed and operator dashboards.
+
+CARRY's perp SHORT is excluded by design — it's delta-neutral
+collateral against the spot leg, not a directional bet. The exclusion
+list is the same one used by [signal_aggregator.py](strategies/support/signal_aggregator.py)
+and by [dispatch.py](strategies/support/dispatch.py)'s reconcile loop.
+
+### 4.7 Signal aggregator + reconcile pass
+
+**Detect-only** ([strategies/support/signal_aggregator.py](strategies/support/signal_aggregator.py))
+— the read-side dual of conflict-resolver. Surfaces same-asset,
+same-direction stacks (e.g. ADX LONG BTC + AI_QUANT LONG BTC) for
+audit / operator dashboards. Doesn't pool; that happens in reconcile.
+
+**Active reconcile** ([strategies/support/dispatch.py](strategies/support/dispatch.py))
+— the orchestrator collects `Intent` objects from every two-phase-
+migrated sleeve, then runs `reconcile_intents()` once per tick:
+
+1. **Conviction-weighted signal pooling** (`_pool_concordant_allocations`).
+   Same-(asset, direction) intents have their allocations redistributed
+   so the *total* equals the conviction-weighted average alloc rather
+   than the sum: `new_alloc_i = (c_i / Σc) × Σ(c × a) / Σc`. Two
+   sleeves agreeing LONG BTC don't produce 2× exposure; they produce
+   the conviction-weighted-avg sleeve's full size, split by share.
+2. **Sort** by `(priority asc, −conviction desc)`. Sleeves declare
+   `priority` in composition (default 100); ties break on conviction.
+3. **Per-intent loop**, in priority order:
+   - **Directional conflict check** — reject if a higher-priority
+     intent already approved the opposite direction on this asset.
+     Pre-seeded with `existing_directional_opens` from the DB so
+     legacy sleeves' positions count too.
+   - **Margin headroom** — full size if fits; clamp + `approved_reduced`
+     if it fits at ≥50% of intended; reject otherwise.
+4. **Returns** parallel `ReconcileResult` list. The orchestrator
+   calls each sleeve's `execute_for_variant(intent)` for approved /
+   approved_reduced / approved_pooled results; logs the rest.
+
+CARRY's perp SHORT is excluded from both conflict and pool checks
+(delta-neutral collateral). FLAT intents (close-existing) always
+pass through.
+
+### 4.8 Two-phase dispatch contract ([strategies/support/dispatch.py](strategies/support/dispatch.py))
+
+Each migrated sleeve exposes two callables:
+
+- `try_decide_for_variant(variant, sleeve_cfg) → (list[Intent], status_dict)`
+   reads inputs, evaluates signals, runs any side-effect bookkeeping
+   (SL sweeps, scheduled closes, daily rebalances, FLIPs), and returns
+   the entry intents it would open if approved. **No fresh-open
+   side-effects** at this phase.
+- `execute_for_variant(variant, sleeve_cfg, intent) → status_dict`
+  opens the trade described by an `Intent` returned from reconcile.
+
+All 13 dispatched sleeves are migrated as of 2026-05-16. The
+`Intent` dataclass is frozen — `asset`, `direction`, `allocation_pct`,
+`leverage`, `conviction (0-100)`, `priority`, `reason` (free-form
+dict persisted to `trades.notes`), `scheduled_exit_dt`. The
+orchestrator's reconcile pass operates on these uniformly across
+sleeves; sleeves themselves no longer need to call conflict-resolver
+or margin-headroom inline (the reconcile owns both).
+
+### 4.9 External data feeds ([data/sources/](data/sources/))
+
+Cached caches of upstream public APIs the bot polls daily. Refreshes
+are throttled to once per UTC day by
+[`binance.py:_refresh_daily_external`](data/sources/binance.py) and
+are sim-mode-aware (no-op when `clock.is_simulated()`).
+
+| Feed | Cache | Consumer |
+|---|---|---|
+| Crypto Fear & Greed | `prod.db:fear_greed_index` table (migrated from JSON 2026-05-16) | FOMC composite gate, AI_QUANT context |
+| Fed Funds target rate | [`data/archive/fed_funds_target_upper.json`](data/archive/) (parsed from `nyfed_rates.xml`) | FOMC phase classifier |
+| Polymarket cut-probability | [`data/archive/polymarket_fed_2026.json`](data/archive/) | FOMC composite gate |
+| Binance klines / funding | `prod.db` (btc_1m, eth_1m, cd_funding_rate, cd_spot_binance, ca_long_short_ratio) | every sleeve + regime classifier |
+| News headlines | `prod.db:news_headlines` | AI_QUANT context only |
+| CoinDesk derivatives | `prod.db` (cd_open_interest, cd_liquidations, cd_dvol) | AI_QUANT context only |
+
+Two CSVs / static caches survive as files rather than DB tables:
+[`known_unfillable.json`](data/known_unfillable.json) is a
+hand-curated gap-tracking config read by `health.py`; the
+[`pdo_tv_validate_trades.csv`](data/archive/pdo_tv_validate_trades.csv)
+is a research artifact from
+[`studies/notebooks/pdo_tv_validate_dump.ipynb`](studies/notebooks/pdo_tv_validate_dump.ipynb).
 
 ---
 
@@ -751,26 +958,60 @@ were affected by the data-source switch.
 
 ## 8. Where to look in the code
 
+**Entry points and orchestration**
+
 | Concern | File |
 |---|---|
-| Variant registration + weights | [strategies/p300_spec.py](strategies/p300_spec.py) |
-| Sleeve dispatch + spec resolution | [strategies/orchestrator.py](strategies/orchestrator.py) |
-| Per-tactical-sleeve services | [strategies/sleeves/](strategies/sleeves/) — adx, carry, cpr, fomc, pdo_retouch, thu_bear |
-| Core J+ live handlers | [strategies/sleeves/r4/signal.py](strategies/sleeves/r4/signal.py) (R4 family), [strategies/sleeves/ema/signal.py](strategies/sleeves/ema/signal.py) (EMA_BTC), [strategies/sleeves/eth_daily/signal.py](strategies/sleeves/eth_daily/signal.py) |
-| Core J+ sizing inputs | [jplus_inputs.today_inputs()](strategies/support/jplus_inputs.py) — regime/lev/gate/ema_p/weights from T-1 data |
-| Core J+ analytic backtest (research-only) | [studies/jplus_analytic/](studies/jplus_analytic/) — `simulate()` for parameter sweeps / walk-forward |
-| AI_QUANT discretionary trader | [strategies/sleeves/ai_quant/signal.py](strategies/sleeves/ai_quant/signal.py) + [strategies/sleeves/ai_quant/](strategies/sleeves/ai_quant/) |
-| Decision rule for FOMC | [strategies/sleeves/fomc/signal.py:evaluate()](strategies/sleeves/fomc/signal.py) |
-| FOMC observer audit log | `data/databases/prod.db:fomc_observer` |
-| Look-ahead clock infrastructure | [strategies/support/clock.py](strategies/support/clock.py) |
-| Sim-mode loop primitive | [strategies/support/sim_loop.py](strategies/support/sim_loop.py) |
-| Build a sim trader.db | [studies/simulation/build_sim_trader_db.py](studies/simulation/build_sim_trader_db.py) |
-| Price feed (1m spot, strict-`<`) | [strategies/support/price_feed.py](strategies/support/price_feed.py) |
-| Realized PnL aggregation | [strategies/support/strategy_health.py:trades_daily_returns](strategies/support/strategy_health.py) |
-| Standardized close log | [strategies/support/trade_db.py:format_close_summary()](strategies/support/trade_db.py) |
+| Variant registration + composition | [strategies/p300_spec.py](strategies/p300_spec.py) |
+| Per-tick sleeve dispatch + reconcile | [strategies/orchestrator.py](strategies/orchestrator.py) |
+| Bot entry point (live) | [bot.py](bot.py) |
+| Sim entry point | [studies/simulation/sim.py](studies/simulation/sim.py) |
 | Backtest replay engine | [backtest_runner.py](backtest_runner.py) |
-| Per-decision AI_QUANT archive | [strategies/sleeves/ai_quant/archive.py](strategies/sleeves/ai_quant/archive.py) + [strategies/sleeves/ai_quant/archive_rebuild.py](strategies/sleeves/ai_quant/archive_rebuild.py) |
-| Data-layer health checks | [health.py](health.py) |
+| Build a sim trader.db | [studies/simulation/build_sim_trader_db.py](studies/simulation/build_sim_trader_db.py) |
+| Health invariants | [health.py](health.py) |
+| One-time data bootstrap | [bootstrap.py](bootstrap.py) |
+
+**Sleeves (per-asset / per-event decision logic)**
+
+| Concern | File |
+|---|---|
+| Tactical sleeves | [strategies/sleeves/](strategies/sleeves/) — adx, carry, thu_bear, pdo, cpr, fomc |
+| Core J+ live handlers | [strategies/sleeves/r4/signal.py](strategies/sleeves/r4/signal.py) (R4 family), [strategies/sleeves/ema/signal.py](strategies/sleeves/ema/signal.py) (EMA_BTC), [strategies/sleeves/eth_daily/signal.py](strategies/sleeves/eth_daily/signal.py) |
+| AI_QUANT discretionary trader | [strategies/sleeves/ai_quant/](strategies/sleeves/ai_quant/) — signal, decision, context, prompt, chart, journal, archive |
+| Decision rule for FOMC | [strategies/sleeves/fomc/signal.py:evaluate()](strategies/sleeves/fomc/signal.py) |
+| Two-phase dispatch contract (Intent + reconcile) | [strategies/support/dispatch.py](strategies/support/dispatch.py) |
+
+**Cross-sleeve coordinators (§4)**
+
+| Concern | File |
+|---|---|
+| J+ regime classifier (4 modes) | [strategies/support/regime_jplus.py](strategies/support/regime_jplus.py) |
+| Tactical regime classifier (4 modes) | [strategies/support/regime_tactical.py](strategies/support/regime_tactical.py) |
+| Per-tick allocation table | [strategies/support/allocation.py](strategies/support/allocation.py) |
+| Gating framework (R4 vol-gate, V4, FOMC) | [strategies/support/gating.py](strategies/support/gating.py) |
+| Portfolio vol-target scalar | [strategies/support/portfolio_vol.py](strategies/support/portfolio_vol.py) |
+| Margin headroom (skip + reduce policies) | [strategies/support/margin_headroom.py](strategies/support/margin_headroom.py) |
+| Directional conflict resolver | [strategies/support/conflict_resolver.py](strategies/support/conflict_resolver.py) |
+| Concordant signal aggregator | [strategies/support/signal_aggregator.py](strategies/support/signal_aggregator.py) |
+| Reconcile pass (pool + conflict + margin) | [strategies/support/dispatch.py:reconcile_intents](strategies/support/dispatch.py) |
+| Gate validation protocol | [GATE_VALIDATION.md](GATE_VALIDATION.md) |
+| Core J+ sizing inputs (regime/lev/gate/ema_p) | [strategies/support/jplus_inputs.py](strategies/support/jplus_inputs.py) (`today_inputs()`) |
+| Core J+ analytic backtest (research-only) | [studies/jplus_analytic/simulate.py](studies/jplus_analytic/simulate.py) |
+| Vol-target leverage (J+ family) | [strategies/support/voltarget.py](strategies/support/voltarget.py) |
+| BTC-LONG cross-sleeve cap (PDO + CPR) | [strategies/support/risk_caps.py](strategies/support/risk_caps.py) |
+
+**Plumbing**
+
+| Concern | File |
+|---|---|
+| Look-ahead-safe clock | [strategies/support/clock.py](strategies/support/clock.py) |
+| Sim-mode tick primitive | [strategies/support/sim_loop.py](strategies/support/sim_loop.py) |
+| Live price feed (1m spot, strict-`<`) | [strategies/support/price_feed.py](strategies/support/price_feed.py) |
+| Realized PnL aggregation | [strategies/support/strategy_health.py:trades_daily_returns](strategies/support/strategy_health.py) |
+| Trade-row schema + standardized close log | [strategies/support/trade_db.py](strategies/support/trade_db.py) |
+| AI_QUANT decision archive (markdown mirror) | [strategies/sleeves/ai_quant/archive.py](strategies/sleeves/ai_quant/archive.py) + [strategies/sleeves/ai_quant/archive_rebuild.py](strategies/sleeves/ai_quant/archive_rebuild.py) |
+| External data fetchers (Binance, Coinalyze, NY Fed, F&G, Polymarket, news, CoinDesk) | [data/sources/](data/sources/) |
+| FOMC observer audit log | `data/databases/prod.db:fomc_observer` |
 
 ---
 
