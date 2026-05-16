@@ -83,6 +83,12 @@ def init_db() -> None:
         ("current_size_usdt",   "REAL"),
         ("realized_pnl_usdt",   "REAL DEFAULT 0"),
         ("avg_entry_price",     "REAL"),
+        # AI_QUANT M2a (2026-05-16): stable join from a trade row back
+        # to the ai_quant_decisions row that spawned it. NULL on every
+        # non-AI_QUANT trade and on AI_QUANT trades opened pre-migration
+        # (the backfill tool in studies/tools/backfill_ai_quant_decision_id.py
+        # fuzzy-matches those).
+        ("ai_quant_decision_id", "INTEGER"),
     ]:
         if not _column_exists(con, "trades", col):
             con.execute(f"ALTER TABLE trades ADD COLUMN {col} {ddl}")

@@ -566,6 +566,11 @@ def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Any) -> dict:
     Always writes the canonical journal row with the final
     ``trade_action`` and returns the same status dict shape the legacy
     :func:`try_fire_for_variant` produced.
+
+    M2a (2026-05-16): when the trade_action opens (or flip-opens) a
+    fresh trade, the row in ``trades`` is updated with the decision
+    row id via ``ai_quant_decision_id``. This is the stable join the
+    track-record section (M2b) reads from.
     """
     variant_id = variant["id"]
     asset = intent.asset
@@ -583,11 +588,14 @@ def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Any) -> dict:
         decision_payload=decision_result.decision,
         live_price=live_price,
     )
-    journal.save_decision(
+    decision_row_id = journal.save_decision(
         variant_id=variant_id, asset=asset,
         decision_result=decision_result, context_bundle=context_bundle,
         trade_action=trade_action,
     )
+    spawned_tid = _spawned_trade_id(trade_action)
+    if spawned_tid is not None:
+        _tag_trade_with_decision(spawned_tid, decision_row_id)
     return {
         "status": "decided",
         "asset": asset,
@@ -598,6 +606,51 @@ def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Any) -> dict:
         "turns": decision_result.turns,
         **debug,
     }
+
+
+def _spawned_trade_id(trade_action: str) -> str | None:
+    """Extract the trade id of the trade *spawned* by this decision,
+    or None if the decision didn't open one.
+
+      "opened:SJ-X"                -> "SJ-X"
+      "flipped:SJ-old->SJ-new"     -> "SJ-new"  (the new direction)
+      "closed:SJ-X"                -> None  (the decision closed, didn't spawn)
+      "held" / "noop" / "skipped:*" -> None
+    """
+    if not isinstance(trade_action, str) or ":" not in trade_action:
+        return None
+    kind, tail = trade_action.split(":", 1)
+    if kind == "opened":
+        return tail.strip() or None
+    if kind == "flipped":
+        # Format: "SJ-old->SJ-new" — take the post-arrow id.
+        new_part = tail.split("->")[-1].strip()
+        return new_part or None
+    return None
+
+
+def _tag_trade_with_decision(trade_id: str, decision_row_id: int) -> None:
+    """Write ``ai_quant_decision_id`` onto an existing trades row.
+    Best-effort: a failure here is logged but does not break the
+    decide→execute cycle (the trade exists, the journal row exists,
+    only the join is missing — backfill can recover later)."""
+    import sqlite3
+    from strategies.support import db as _db
+    try:
+        con = sqlite3.connect(str(_db.DASH_DB))
+        try:
+            con.execute(
+                "UPDATE trades SET ai_quant_decision_id=? WHERE id=?",
+                (decision_row_id, trade_id),
+            )
+            con.commit()
+        finally:
+            con.close()
+    except Exception:
+        log.exception(
+            f"[ai_quant] failed to tag trade {trade_id} with decision "
+            f"id {decision_row_id} — backfill tool can recover."
+        )
 
 
 def _persist_error(

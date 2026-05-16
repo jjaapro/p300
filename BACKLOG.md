@@ -1018,10 +1018,31 @@ anchoring bias by excluding the prose rationale.
 
 Two phases because the decision→trade linkage is fuzzy today.
 
-#### Phase 2a — instrument the link (one-time)
+#### Phase 2a — instrument the link (one-time) ✅
 
-The clean version needs a stable join between `ai_quant_decisions` rows
-and `trades` rows.
+**Status:** shipped 2026-05-16. The decision↔trade join now exists:
+- `trades.ai_quant_decision_id INTEGER` column added in
+  `strategies/support/trade_db.py:init_db` (idempotent ALTER on existing
+  DBs).
+- `execute_for_variant` in `strategies/sleeves/ai_quant/signal.py`
+  parses the `trade_action` string (`opened:SJ-X` /
+  `flipped:SJ-old->SJ-new`), extracts the spawned trade id, and writes
+  the decision id back via a small `_tag_trade_with_decision` helper.
+  Failure of the tagging UPDATE is best-effort (logged, not raised) —
+  the trade and the journal row are already durable; only the join is
+  missing, which the backfill tool can recover.
+- One-shot backfill in
+  `studies/simulation/backfill_ai_quant_decision_id.py` fuzzy-matches
+  legacy rows by `(variant_id, asset, time-within-±2min)`. Dry-run by
+  default; `--apply` commits. Idempotent: skips already-linked rows.
+- 12 new tests: 4 unit tests on `_spawned_trade_id` parsing, 3
+  integration tests on the wiring (opened tag / flipped tag-new-only /
+  FLAT noop doesn't tag), 8 tests on the backfill tool (match /
+  apply / no-match / ambiguous / cross-variant exclusion / unparseable
+  time / idempotency).
+
+**Goal (historical):** the clean version needs a stable join between
+`ai_quant_decisions` rows and `trades` rows.
 
 - Add column `ai_quant_decision_id INTEGER` to `trades` (migration in
   `strategies/support/trade_db.py::init_db` + `ALTER TABLE` for existing DBs, same

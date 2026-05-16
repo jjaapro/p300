@@ -55,7 +55,8 @@ def _setup_dash_db(p) -> None:
                 created_at TEXT DEFAULT (datetime('now')),
                 parent_position_id TEXT, current_qty REAL, current_leverage REAL,
                 current_size_usdt REAL, realized_pnl_usdt REAL DEFAULT 0,
-                avg_entry_price REAL
+                avg_entry_price REAL,
+                ai_quant_decision_id INTEGER
             );
             CREATE TABLE IF NOT EXISTS trade_adjustments (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -676,3 +677,94 @@ def test_resolve_leverage_prefers_effective_then_params():
         {"_effective_leverage": 2.5, "params": {"leverage": 5.0}}) == 2.5
     assert svc._resolve_leverage({"params": {"leverage": 5.0}}) == 5.0
     assert svc._resolve_leverage({}) == 1.0
+
+
+# ─── M2a — decision↔trade link (ai_quant_decision_id) ──────────────────────
+
+def test_spawned_trade_id_parses_opened():
+    from strategies.sleeves.ai_quant import signal as svc
+    assert svc._spawned_trade_id("opened:SJ-123") == "SJ-123"
+
+
+def test_spawned_trade_id_parses_flipped_to_new():
+    """flipped:SJ-old->SJ-new returns SJ-new (the decision spawned the
+    new direction, not the closed-out old one)."""
+    from strategies.sleeves.ai_quant import signal as svc
+    assert svc._spawned_trade_id("flipped:SJ-OLD->SJ-NEW") == "SJ-NEW"
+
+
+def test_spawned_trade_id_none_for_close_held_noop_skipped():
+    from strategies.sleeves.ai_quant import signal as svc
+    assert svc._spawned_trade_id("closed:SJ-X") is None
+    assert svc._spawned_trade_id("held") is None
+    assert svc._spawned_trade_id("noop") is None
+    assert svc._spawned_trade_id("skipped:no_price") is None
+    assert svc._spawned_trade_id("") is None
+
+
+def test_opened_trade_gets_ai_quant_decision_id(fixture):
+    """End-to-end: a fresh LONG opens a trade and the row carries the
+    journal decision id back."""
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
+    client = MockClient([_scripted_decision("LONG", conviction=70)])
+    out = ai_quant_service.try_fire_for_variant(_variant(),
+                                                  _sleeve_cfg(client=client))
+    assert out["trade_action"].startswith("opened:SJ-")
+    con = sqlite3.connect(str(fixture["dash_db"]))
+    try:
+        row = con.execute(
+            "SELECT id, ai_quant_decision_id FROM trades "
+            "WHERE strategy='AI_QUANT' AND status='open'"
+        ).fetchone()
+    finally:
+        con.close()
+    assert row is not None
+    trade_id, decision_id = row
+    assert decision_id is not None
+    # The decision_id should match the just-written decision row.
+    journal_row = journal.get_today_decision("p300_test_variant")
+    assert decision_id == journal_row["id"]
+
+
+def test_flipped_trade_tags_new_trade_only(fixture):
+    """flipped:SJ-OLD->SJ-NEW writes the decision id onto SJ-NEW. SJ-OLD
+    stays unchanged (its decision_id reflects whichever earlier decision
+    spawned it, which here is None — it was seeded directly)."""
+    _seed_open_trade(fixture["dash_db"], direction="LONG", tid="SJ-OLD")
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
+    client = MockClient([_scripted_decision("SHORT", conviction=80)])
+    out = ai_quant_service.try_fire_for_variant(_variant(),
+                                                  _sleeve_cfg(client=client))
+    assert out["trade_action"].startswith("flipped:SJ-OLD->")
+    new_tid = out["trade_action"].split("->", 1)[1]
+    con = sqlite3.connect(str(fixture["dash_db"]))
+    try:
+        old_id = con.execute(
+            "SELECT ai_quant_decision_id FROM trades WHERE id='SJ-OLD'"
+        ).fetchone()[0]
+        new_id = con.execute(
+            "SELECT ai_quant_decision_id FROM trades WHERE id=?", (new_tid,),
+        ).fetchone()[0]
+    finally:
+        con.close()
+    # Pre-existing trade keeps its NULL link; the new direction is tagged.
+    assert old_id is None
+    assert new_id is not None
+
+
+def test_flat_decision_does_not_tag_anything(fixture):
+    """A FLAT decision when no position is open is a noop — no trade is
+    spawned, so no UPDATE happens."""
+    from strategies.sleeves.ai_quant import signal as ai_quant_service
+    client = MockClient([_scripted_decision("FLAT", conviction=80)])
+    out = ai_quant_service.try_fire_for_variant(_variant(),
+                                                  _sleeve_cfg(client=client))
+    assert out["trade_action"] == "noop"
+    con = sqlite3.connect(str(fixture["dash_db"]))
+    try:
+        cnt = con.execute(
+            "SELECT COUNT(*) FROM trades WHERE ai_quant_decision_id IS NOT NULL"
+        ).fetchone()[0]
+    finally:
+        con.close()
+    assert cnt == 0
