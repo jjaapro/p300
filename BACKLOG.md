@@ -385,6 +385,21 @@ commit and probably multi-session. A reasonable sub-decomposition:
   approved intents) is the next sub-commit; depends on AI_QUANT's
   decide()/execute() implementation.*
 
+  *2026-05-16 — ETH_DAILY (JPLUS_ETH_DAILY) migrated to two-phase.
+  Eighth sleeve. First J+ family migration. User insight: there's no
+  such thing as a "continuous sleeve" — every position has a triggered
+  entry and a triggered exit. The position can hold for months, but
+  something started it. Under that framing, J+ sleeves fit the same
+  two-phase pattern as tactical: CASE 2 (regime turning bullish from
+  flat) is the entry → Intent. CASE 3 (regime exit) and CASE 4 (daily
+  size rebalance) are side-effects in decide() — they don't re-decide
+  whether the position should exist, they just maintain its size or
+  close it on the exit signal. Inline margin_headroom.can_open on
+  fresh-open removed — reconcile owns it. CASE 4 scale-up keeps its
+  inline margin check because reconcile only sees fresh opens, not
+  size adjustments. Tests anchor the entry / close / rebalance paths
+  unchanged. Registration test extended to JPLUS_ETH_DAILY.*
+
   *2026-05-16 — CARRY (S-078) migrated to two-phase. Seventh sleeve.
   All tactical sleeves now on two-phase. Side-effect in decide(): exit
   sweep on 3-day negative-funding-streak. Entry path emits a single

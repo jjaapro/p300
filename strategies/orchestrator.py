@@ -388,6 +388,12 @@ def _load_dispatch():
             carry_sleeve.try_decide_for_variant,
             carry_sleeve.execute_for_variant,
         )
+    if (hasattr(eth_daily_sleeve, "try_decide_for_variant")
+            and hasattr(eth_daily_sleeve, "execute_for_variant")):
+        STRATEGY_TWO_PHASE_DISPATCH["JPLUS_ETH_DAILY"] = (
+            eth_daily_sleeve.try_decide_for_variant,
+            eth_daily_sleeve.execute_for_variant,
+        )
 
 
 _warned_missing: set[tuple[str, str]] = set()
