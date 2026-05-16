@@ -412,32 +412,45 @@ def _sweep_stuck_opens(variant_id: str) -> int:
 
 
 def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
-    """Sleeve interface — called once per tick by orchestrator and the
-    replay runner. Trades BTC long T-10h to T+0.5h on FOMC days that pass
-    the regime filter.
+    """Variant-engine dispatch entry point. Returns a status dict.
 
-    Idempotency: one FOMC trade per (variant_id, fomc_date), keyed on the
-    entry_time being the announcement T-10h timestamp.
+    Backward-compatible wrapper: runs decide (side-effect stuck-open
+    sweep + entry Intent on FOMC ticks), then executes any returned
+    Intent.
+    """
+    intents, status = try_decide_for_variant(variant, sleeve_cfg)
+    if not intents:
+        return status
+    # FOMC emits at most one intent per tick (single asset, single open).
+    return execute_for_variant(variant, sleeve_cfg, intents[0])
 
-    Returns a status dict with the same shape as other sleeves.
+
+def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
+    """Phase-1 of the two-phase dispatch (P2.4e/f Stage 2).
+
+    Side-effects (always run, not subject to reconcile):
+      - Self-sweep of stuck opens past their scheduled exit_time.
+
+    Returns ``(list[Intent], status_dict)``. List has at most one
+    Intent — fires on the first tick in [target_entry, target_exit)
+    when the observer decision is ``trade`` and no FOMC trade for
+    this variant/date already exists. Inline margin_headroom.can_open
+    REMOVED; reconcile owns it.
     """
     from strategies.support.price_feed import get_current_price
+    from strategies.support.dispatch import Intent
 
     now = clock.now_utc()
-    # Always sweep stuck opens first — independent of next_fomc_date so a
-    # post-event tick can still close trades from the just-finished meeting.
     swept = _sweep_stuck_opens(variant["id"])
 
     fomc_date = next_fomc_date(now, lookahead_days=2)
     if fomc_date is None:
-        return {"status": "no_upcoming_fomc", "swept": swept}
+        return [], {"status": "no_upcoming_fomc", "swept": swept}
 
     announcement = announcement_dt_utc(fomc_date)
     target_entry = announcement + timedelta(minutes=ENTRY_OFFSET_MIN)
     target_exit = announcement + timedelta(minutes=EXIT_OFFSET_MIN)
 
-    # Always keep the observer row in sync (idempotent insert) so the
-    # decision log is populated even if we ultimately skip.
     if not _has_observer_record(fomc_date):
         eval_result = evaluate(fomc_date)
         _upsert_observer_decision(fomc_date, eval_result, announcement)
@@ -451,9 +464,6 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
                 "FROM fomc_observer WHERE fomc_date=?", (fomc_date,)).fetchone()
         finally:
             con.close()
-        # _has_observer_record returned True moments ago; if the row is
-        # gone now (concurrent delete or schema reset between the two
-        # calls), fall back to a fresh evaluation rather than crashing.
         if r is None:
             eval_result = evaluate(fomc_date)
             _upsert_observer_decision(fomc_date, eval_result, announcement)
@@ -465,42 +475,24 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
             }
 
     if eval_result["decision"] != "trade":
-        return {"status": "skip", "fomc_date": fomc_date,
-                "reason": eval_result.get("reason", "see_observer_table")}
+        return [], {"status": "skip", "fomc_date": fomc_date,
+                     "reason": eval_result.get("reason", "see_observer_table")}
 
-    # Open at the FIRST tick where now >= target_entry (and before target_exit).
-    # Idempotency keeps subsequent ticks within the entry window from
-    # opening duplicates.
     if not (target_entry <= now < target_exit):
-        return {"status": "outside_window", "fomc_date": fomc_date}
+        return [], {"status": "outside_window", "fomc_date": fomc_date}
     if _has_fomc_trade(variant["id"], fomc_date):
-        return {"status": "already_open", "fomc_date": fomc_date}
+        return [], {"status": "already_open", "fomc_date": fomc_date}
 
     asset = "BTC"
     price = get_current_price(asset)
     if price is None:
         log.warning(f"[fomc {variant['id']}] no {asset} price at "
                     f"{now.isoformat()} — skip entry")
-        return {"status": "no_price", "fomc_date": fomc_date}
+        return [], {"status": "no_price", "fomc_date": fomc_date}
 
     alloc_pct = float(sleeve_cfg.get("_effective_weight_pct",
                                        sleeve_cfg.get("weight_pct", 0.0)))
     leverage = float(sleeve_cfg.get("_effective_leverage", 1.0))
-    # P2.4d: opt into the variant-level margin-headroom cap. FOMC runs at
-    # high leverage (10× by default); a single entry can consume a large
-    # slice of the gross budget, so the cap matters here even though FOMC
-    # fires only ~8 times/year.
-    from strategies.support import margin_headroom
-    capital = float(variant.get("capital_usdt") or 10000)
-    candidate_notional = capital * (alloc_pct / 100.0) * leverage
-    ok, mh_reason = margin_headroom.can_open(variant, candidate_notional)
-    if not ok:
-        log.info(f"[fomc {variant['id']}] margin-constrained: "
-                 f"{mh_reason} (alloc={alloc_pct}%, k={leverage}x)")
-        return {"status": "margin_constrained", "fomc_date": fomc_date,
-                "reason": mh_reason,
-                "alloc_pct_intended": alloc_pct,
-                "candidate_notional_usdt": candidate_notional}
     reason = {
         "trigger": "FOMC_long",
         "variant_id": variant["id"],
@@ -511,16 +503,37 @@ def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
         "expected_action": eval_result.get("expected_action"),
         "target_entry_utc": target_entry.isoformat(),
         "target_exit_utc": target_exit.isoformat(),
+        "_entry_price": price,
+        "_target_exit_iso": target_exit.isoformat(),
+        "_fomc_date": fomc_date,
     }
-    tid = _open_fomc_long(variant, asset, price, alloc_pct, leverage,
-                           reason, target_exit.isoformat())
-    # also record the entry price into the observer table for audit
-    _record_entry_price(fomc_date, price)
-    log.info(f"[fomc {variant['id']}] opened {tid} BTC LONG @ {price:.2f} "
-             f"(fomc={fomc_date}, alloc={alloc_pct}%, k={leverage}x, "
-             f"phase={eval_result.get('phase')})")
+    intent = Intent(
+        asset=asset, direction="LONG",
+        allocation_pct=alloc_pct, leverage=leverage,
+        conviction=100,
+        priority=float(sleeve_cfg.get("priority", 100)),
+        reason=reason, scheduled_exit_dt=target_exit,
+    )
+    return [intent], {"status": "decided", "fomc_date": fomc_date}
+
+
+def execute_for_variant(variant: dict, sleeve_cfg: dict, intent) -> dict:
+    """Phase-2 of the two-phase dispatch — open the BTC LONG described
+    by ``intent`` (post-reconcile)."""
+    reason = dict(intent.reason or {})
+    entry_price = float(reason.pop("_entry_price"))
+    target_exit_iso = reason.pop("_target_exit_iso")
+    fomc_date = reason.pop("_fomc_date")
+    tid = _open_fomc_long(
+        variant, intent.asset, entry_price, intent.allocation_pct,
+        intent.leverage, reason, target_exit_iso,
+    )
+    _record_entry_price(fomc_date, entry_price)
+    log.info(f"[fomc {variant['id']}] opened {tid} BTC LONG @ {entry_price:.2f} "
+             f"(fomc={fomc_date}, alloc={intent.allocation_pct}%, "
+             f"k={intent.leverage}x, phase={reason.get('phase')})")
     return {"status": "opened", "trade_id": tid, "fomc_date": fomc_date,
-            "entry_price": price}
+             "entry_price": entry_price}
 
 
 def get_decisions(limit: int = 20) -> list[dict]:

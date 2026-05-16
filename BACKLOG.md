@@ -385,6 +385,17 @@ commit and probably multi-session. A reasonable sub-decomposition:
   approved intents) is the next sub-commit; depends on AI_QUANT's
   decide()/execute() implementation.*
 
+  *2026-05-16 — FOMC migrated to two-phase. Sixth sleeve. Single-asset
+  BTC; side-effect in decide() is the stuck-open self-sweep (closes
+  any trade past its scheduled exit_time, defense-in-depth against a
+  missed close_due_for_variant pass). Entry path emits at most one
+  Intent on FOMC ticks in [target_entry, target_exit) when the observer
+  decision is `trade` and no trade exists for this fomc_date.
+  `_record_entry_price` (observer-table audit write) moved to execute()
+  so it only fires on the approved Intent. Inline margin_headroom.can_open
+  REMOVED — reconcile owns it (matters at FOMC's 10× leverage). 
+  Registration test extended to FOMC.*
+
   *2026-05-16 — CPR migrated to two-phase. Fifth sleeve. Same pattern
   as PDO: side-effects in decide() are stop/target/time-stop closes;
   entry path emits per-asset Intents; inline margin-headroom
