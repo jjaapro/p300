@@ -343,6 +343,25 @@ commit and probably multi-session. A reasonable sub-decomposition:
   signals into one conviction-weighted exposure before opening)
   shares the two-phase-dispatch dependency with P2.4e Stage 2.*
 
+  *2026-05-16 — Two-phase dispatch scaffold shipped.
+  `strategies/support/dispatch.py` ships the `Intent` dataclass
+  (frozen; asset / direction / allocation_pct / leverage / conviction /
+  priority / reason / scheduled_exit_dt) and the documented
+  two-phase contract — sleeves implement
+  ``try_decide_for_variant(variant, sleeve_cfg) -> Intent | None``
+  alongside the existing ``try_fire_for_variant``, and the
+  orchestrator's reconcile pass collects intents across sleeves
+  before any of them open. No sleeve has migrated yet — AI_QUANT
+  is the natural pilot (its LLM decision is already separate from
+  the trade open) and other sleeves follow as time permits. Migration
+  is incremental: the orchestrator falls back to legacy
+  ``try_fire_for_variant`` when a sleeve doesn't expose decide().
+  Once enough sleeves are migrated, the reconcile pass replaces the
+  first-come-first-served conflict check (P2.4e enforcement) with
+  intent-based reconciliation and adds active pooling (P2.4f Stage 2).
+  3 tests anchor the Intent dataclass shape; reconcile pass +
+  orchestrator routing are the next sub-commits.*
+
 ### P2.4a status (2026-05-14)
 
 **Complete.** ✅ All 13 sleeves migrated. `strategies/support/allocation.py`
