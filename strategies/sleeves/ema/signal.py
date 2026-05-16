@@ -64,35 +64,49 @@ def _open_continuous(variant: dict, asset: str, direction: str,
 
 
 def ema_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
-    """Continuous BTC position whose direction follows ``today_inputs.ema_p``.
+    """Variant-engine dispatch entry point. Returns a status dict.
 
-    Per-tick state machine:
-      - No open trade + ema_p != 0:        OPEN at current price.
-      - Open trade, direction = ema_p sign: SCALE/LEVERAGE_ADJUST if
-        regime weight or vol-target lev changed (idempotent per UTC
-        day via UNIQUE on adjustment events).
-      - Open trade, direction != ema_p:    FLIP — close the current
-        trade and open the opposite-direction trade at current price.
-      - Open trade, ema_p == 0:            CLOSE (defensive; rare).
-
-    Active in all four regimes (every regime gives EMA_BTC a positive
-    weight in REGIME_WEIGHTS_FULL).
+    Backward-compatible wrapper: runs decide (side-effect close on
+    ema_p=0, FLIP on weekly EMA cross, SCALE+LEV on daily rebalance),
+    then executes the OPEN Intent on a fresh cross-from-zero entry.
     """
+    intents, status = try_decide_for_variant(variant, sleeve_cfg)
+    if not intents:
+        return status
+    return execute_for_variant(variant, sleeve_cfg, intents[0])
+
+
+def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
+    """Phase-1 of the two-phase dispatch (P2.4e/f Stage 2).
+
+    Side-effects (always run, not subject to reconcile):
+      - CASE 2 (ema_p went to 0): defensive close.
+      - CASE 3 (FLIP on weekly EMA cross): qty-preserving rotation —
+        ``apply_flip`` is atomic and doesn't grow gross notional, so
+        it stays as a side-effect. The signal (EMA weekly cross) IS
+        the triggered entry/exit pair for the new and old direction.
+      - CASE 4 (daily rebalance): SCALE + LEVERAGE_ADJUST.
+
+    Returns ``(list[Intent], status_dict)``. Intent emitted only on
+    CASE 1 — fresh weekly cross from a flat state. The position-
+    existence question has a triggered entry (cross) and a triggered
+    exit (later cross or regime-driven close).
+    """
+    from strategies.support.dispatch import Intent
+
     now = clock.now_utc()
     today_iso = now.date().isoformat()
 
     from strategies.support import jplus_inputs as core_sim
     ti = core_sim.today_inputs()
     if ti is None:
-        return {"status": "no_inputs"}
+        return [], {"status": "no_inputs"}
 
     desired_ema_p = int(ti["ema_p"])
     prev_ema_p = int(ti.get("ema_p_prev", 0))
-    # P2.4a: orchestrator-injected allocation, ti["weights"] fallback for tests.
     eff_w = sleeve_cfg.get("_effective_weight_pct")
     desired_weight = ((eff_w / 100.0) if eff_w is not None
                        else float(ti["weights"]["ema_btc"]))
-    # P2.4c: orchestrator-injected vol scalar, ti["lev"] fallback for tests.
     eff_vol = sleeve_cfg.get("_effective_vol_scalar")
     desired_lev = float(eff_vol) if eff_vol is not None else float(ti["lev"])
 
@@ -101,47 +115,37 @@ def ema_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
 
     price = price_feed.get_current_price("BTC")
     if price is None or price <= 0:
-        return {"status": "no_price"}
+        return [], {"status": "no_price"}
 
     capital = float(variant.get("capital_usdt") or 10000)
 
-    # CASE 1: nothing open.
+    # CASE 1: nothing open — emit Intent on fresh cross.
     if open_pos is None:
         if desired_ema_p == 0 or desired_weight <= 0:
-            return {"status": "no_position_needed"}
-        # Cold-start guard: only open at a fresh weekly EMA cross. If
-        # yesterday's ema_p already had today's value, the cross fired
-        # before this variant was emitting trades — wait for the next
-        # cross rather than entering offside at today's price.
+            return [], {"status": "no_position_needed"}
         if prev_ema_p == desired_ema_p:
-            return {"status": "awaiting_fresh_cross",
-                    "ema_p": desired_ema_p, "ema_p_prev": prev_ema_p}
+            return [], {"status": "awaiting_fresh_cross",
+                         "ema_p": desired_ema_p, "ema_p_prev": prev_ema_p}
         direction = "LONG" if desired_ema_p > 0 else "SHORT"
-        # P2.4d: opt into the variant-level margin-headroom cap. Only
-        # checked here on the fresh-open case; flip (CASE 3) is a same-
-        # qty rotation that doesn't change gross, and scale (CASE 4)
-        # uses apply_scale which is a separate path the cap doesn't
-        # touch today.
-        from strategies.support import margin_headroom
-        candidate_notional = capital * desired_weight * desired_lev
-        ok, mh_reason = margin_headroom.can_open(variant, candidate_notional)
-        if not ok:
-            log.info(f"[jplus_live EMA_BTC {variant['id']}] margin-constrained: "
-                     f"{mh_reason} (weight={desired_weight:.3f}, "
-                     f"k={desired_lev:.2f}x)")
-            return {"status": "margin_constrained", "reason": mh_reason,
-                    "weight": desired_weight, "lev": desired_lev,
-                    "candidate_notional_usdt": candidate_notional}
-        tid = _open_continuous(
-            variant, "BTC", direction,
-            desired_weight, desired_lev, price, ti["mode"],
-            desired_ema_p, now,
+        intent = Intent(
+            asset="BTC", direction=direction,
+            allocation_pct=desired_weight * 100.0,
+            leverage=desired_lev,
+            conviction=100,
+            priority=float(sleeve_cfg.get("priority", 100)),
+            reason={
+                "sleeve": STRATEGY_EMA_BTC, "mode": ti["mode"],
+                "ema_p": desired_ema_p, "vol_lev": desired_lev,
+                "trigger": "live_open",
+                "_entry_price": price,
+                "_mode": ti["mode"],
+                "_ema_p": desired_ema_p,
+                "_ema_p_prev": prev_ema_p,
+                "_now_iso": now.isoformat(),
+            },
+            scheduled_exit_dt=None,
         )
-        log.info(f"[jplus_live EMA_BTC {variant['id']}] OPENED {tid} BTC "
-                 f"{direction} @ ${price:,.2f}  k={desired_lev:.2f}x  "
-                 f"weight={desired_weight}  ema_p={desired_ema_p} "
-                 f"(fresh cross from {prev_ema_p:+d})")
-        return {"status": "opened", "trade_id": tid}
+        return [intent], {"status": "decided", "ema_p": desired_ema_p}
 
     # CASE 2: position open but ema_p went to 0 — defensive close.
     if desired_ema_p == 0:
@@ -152,14 +156,14 @@ def ema_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
         )
         log.info(f"[jplus_live EMA_BTC {variant['id']}] CLOSED {open_pos['id']} "
                  f"@ ${price:,.2f} reason=ema_p_zero")
-        return {"status": "closed", "trade_id": open_pos["id"]}
+        return [], {"status": "closed", "trade_id": open_pos["id"]}
 
-    # CASE 3: direction flipped (weekly EMA cross).
+    # CASE 3: direction flipped (weekly EMA cross) — atomic rotation.
     cur_dir = (open_pos["direction"] or "").upper()
     desired_dir = "LONG" if desired_ema_p > 0 else "SHORT"
     if cur_dir != desired_dir:
         if _has_adjustment_today(open_pos["id"], today_iso, ("FLIP",)):
-            return {"status": "flip_already_today"}
+            return [], {"status": "flip_already_today"}
         new_tid = trades.apply_flip(
             open_pos["id"], new_direction=desired_dir,
             price=price, fee_usdt=0.0,
@@ -169,8 +173,8 @@ def ema_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
         )
         log.info(f"[jplus_live EMA_BTC {variant['id']}] FLIPPED {open_pos['id']} "
                  f"-> {new_tid} {desired_dir} @ ${price:,.2f}")
-        return {"status": "flipped", "old_trade_id": open_pos["id"],
-                "new_trade_id": new_tid}
+        return [], {"status": "flipped", "old_trade_id": open_pos["id"],
+                     "new_trade_id": new_tid}
 
     # CASE 4: same direction — daily rebalance.
     desired_qty = (capital * desired_weight * desired_lev) / price
@@ -183,10 +187,6 @@ def ema_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
     if abs(desired_qty - cur_qty) > max(1e-9, 1e-9 * abs(cur_qty)):
         if not _has_adjustment_today(open_pos["id"], today_iso,
                                       ("SCALE_UP", "SCALE_DOWN")):
-            # P2.4d (d): guard scale-UP against the variant cap. Scale-DOWN
-            # reduces gross and is always allowed. The candidate notional
-            # for can_open is the qty delta × price (not the new total —
-            # the existing qty is already counted in current_gross_notional).
             qty_delta = desired_qty - cur_qty
             if qty_delta > 0:
                 from strategies.support import margin_headroom
@@ -198,10 +198,8 @@ def ema_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
                              f"(delta_qty={qty_delta:.6f}, "
                              f"delta_notional={delta_notional:,.2f})")
                     actions.append("scale_up_margin_constrained")
-                    qty_delta = 0.0  # signal: skip the apply_scale call below
+                    qty_delta = 0.0
             if qty_delta != 0.0 or desired_qty < cur_qty:
-                # Either we're scaling down (always allowed) or scale-up
-                # passed the check. Either way, apply.
                 trades.apply_scale(
                     open_pos["id"], new_qty=desired_qty, price=price,
                     fee_usdt=0.0,
@@ -223,6 +221,28 @@ def ema_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
             actions.append("leverage_adjusted")
 
     if not actions:
-        return {"status": "in_sync", "trade_id": open_pos["id"]}
-    return {"status": "rebalanced", "actions": actions,
-            "trade_id": open_pos["id"]}
+        return [], {"status": "in_sync", "trade_id": open_pos["id"]}
+    return [], {"status": "rebalanced", "actions": actions,
+                 "trade_id": open_pos["id"]}
+
+
+def execute_for_variant(variant: dict, sleeve_cfg: dict, intent) -> dict:
+    """Phase-2 of the two-phase dispatch — open the fresh EMA-cross
+    BTC trade described by ``intent`` (post-reconcile)."""
+    reason = dict(intent.reason or {})
+    entry_price = float(reason.pop("_entry_price"))
+    mode = reason.pop("_mode")
+    ema_p = int(reason.pop("_ema_p"))
+    ema_p_prev = int(reason.pop("_ema_p_prev"))
+    now_iso = reason.pop("_now_iso")
+    now = datetime.fromisoformat(now_iso)
+    desired_weight = intent.allocation_pct / 100.0
+    tid = _open_continuous(
+        variant, intent.asset, intent.direction,
+        desired_weight, intent.leverage, entry_price, mode, ema_p, now,
+    )
+    log.info(f"[jplus_live EMA_BTC {variant['id']}] OPENED {tid} "
+             f"{intent.asset} {intent.direction} @ ${entry_price:,.2f}  "
+             f"k={intent.leverage:.2f}x  weight={desired_weight}  "
+             f"ema_p={ema_p} (fresh cross from {ema_p_prev:+d})")
+    return {"status": "opened", "trade_id": tid}

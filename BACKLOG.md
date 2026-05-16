@@ -385,6 +385,17 @@ commit and probably multi-session. A reasonable sub-decomposition:
   approved intents) is the next sub-commit; depends on AI_QUANT's
   decide()/execute() implementation.*
 
+  *2026-05-16 — EMA_BTC (JPLUS_EMA_BTC) migrated to two-phase. Ninth
+  sleeve. Adds the FLIP case to the J+ pattern: weekly EMA cross
+  rotates the existing position's direction via atomic `apply_flip`
+  (qty-preserving, no gross-notional growth). FLIP stays as a
+  side-effect in decide() — reconcile only sees fresh opens. The
+  signal (weekly cross) IS the triggered entry/exit pair: the old
+  direction's exit signal is the same cross that triggers the new
+  direction's entry. Inline margin_headroom.can_open on fresh-open
+  removed; CASE 4 scale-up keeps inline margin (existing-position
+  size adjustment, not a fresh open).*
+
   *2026-05-16 — ETH_DAILY (JPLUS_ETH_DAILY) migrated to two-phase.
   Eighth sleeve. First J+ family migration. User insight: there's no
   such thing as a "continuous sleeve" — every position has a triggered

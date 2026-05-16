@@ -394,6 +394,12 @@ def _load_dispatch():
             eth_daily_sleeve.try_decide_for_variant,
             eth_daily_sleeve.execute_for_variant,
         )
+    if (hasattr(ema_sleeve, "try_decide_for_variant")
+            and hasattr(ema_sleeve, "execute_for_variant")):
+        STRATEGY_TWO_PHASE_DISPATCH["JPLUS_EMA_BTC"] = (
+            ema_sleeve.try_decide_for_variant,
+            ema_sleeve.execute_for_variant,
+        )
 
 
 _warned_missing: set[tuple[str, str]] = set()
