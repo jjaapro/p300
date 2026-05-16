@@ -282,6 +282,23 @@ def _run_decision_loop() -> tuple[dict[str, dict], dict]:
     return out, final_state
 
 
+# Per-UTC-date cache for today_inputs(). The result depends only on the
+# current UTC date — the underlying _run_decision_loop walks ~2000+ days
+# of history each call (~1-2s in live, much more in sim where it's the
+# inner loop of the 6 J+ sleeves x 17500 ticks of a 2-year backtest).
+# Cache hits make sim backtests tractable (152s/tick → sub-second);
+# live ticks save ~95% CPU since the same date repeats for 1440 min.
+# Invalidates automatically on UTC date rollover.
+_TODAY_INPUTS_CACHE: tuple[str, dict | None] | None = None
+
+
+def _invalidate_today_inputs_cache() -> None:
+    """Reset the today_inputs() cache. Useful for tests that monkeypatch
+    the clock and want a clean read."""
+    global _TODAY_INPUTS_CACHE
+    _TODAY_INPUTS_CACHE = None
+
+
 def today_inputs() -> dict | None:
     """Decision inputs (regime mode, vol-target leverage, R4 gate, EMA
     position, sub-sleeve weights) for the CURRENT UTC date, derived from
@@ -299,13 +316,24 @@ def today_inputs() -> dict | None:
     Look-ahead safety: every input here is derived strictly from data
     available at yesterday's UTC close (regime/EMA cross/gate/vol-target
     all use T-1 windows by construction). Calling at any time today
-    returns the same answer until midnight UTC tomorrow."""
+    returns the same answer until midnight UTC tomorrow.
+
+    Performance: the result is cached by UTC date — the first call of a
+    new UTC day pays the full ``_run_decision_loop`` walk (~1-2s), every
+    subsequent call until midnight returns the cached dict in O(1).
+    Sim mode (fast-advancing fake clock) and live mode (1440 calls/day)
+    both benefit. ``_invalidate_today_inputs_cache()`` flushes for tests."""
+    global _TODAY_INPUTS_CACHE
+    today_iso = clock.now_utc().date().isoformat()
+    if _TODAY_INPUTS_CACHE is not None and _TODAY_INPUTS_CACHE[0] == today_iso:
+        return _TODAY_INPUTS_CACHE[1]
+
     out, state = _run_decision_loop()
     dates = state["dates"]
     if len(dates) < 60:  # need warmup for regime + vol-target
+        _TODAY_INPUTS_CACHE = (today_iso, None)
         return None
 
-    today_iso = clock.now_utc().date().isoformat()
     yesterday_iso = (clock.now_utc().date() - timedelta(days=1)).isoformat()
 
     # det_i = index of yesterday in `dates` = len(dates) - 1. The simulator
@@ -343,7 +371,7 @@ def today_inputs() -> dict | None:
         mode_prev, {"ema_btc": 0.0, "eth_daily": 0.0, "r4_btc": 0.0, "r4_eth": 0.0,
                      "r4_btc_v2": 0.0, "r4_eth_v2": 0.0}))
 
-    return {
+    result = {
         "date": today_iso,
         "mode": mode,
         "mode_prev": mode_prev,
@@ -354,3 +382,5 @@ def today_inputs() -> dict | None:
         "weights": weights,
         "weights_prev": weights_prev,
     }
+    _TODAY_INPUTS_CACHE = (today_iso, result)
+    return result
