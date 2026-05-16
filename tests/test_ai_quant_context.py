@@ -194,7 +194,8 @@ def test_build_context_returns_all_expected_sections(fixture_dbs):
     expected_sections = {
         "as_of_utc", "variant_id", "asset", "market", "funding", "lsr",
         "open_interest", "cvd", "liquidations", "dvol",
-        "calendar", "sentiment", "macro", "news", "portfolio", "data_freshness",
+        "calendar", "sentiment", "macro", "news", "portfolio",
+        "decision_history", "data_freshness",
     }
     assert set(bundle) == expected_sections
     assert bundle["asset"] == "BTC"
@@ -363,6 +364,203 @@ def test_safe_returns_dict_on_exception():
     assert isinstance(out, dict)
     assert "error" in out
     assert "ValueError" in out["error"]
+
+
+# ─── Decision history section (M1 — carryover commitments) ─────────────────
+
+def _insert_decision(p: Path, **kw) -> None:
+    """Seed an ai_quant_decisions row. The journal module creates the
+    table on first save_decision; here we drive the DDL manually to
+    keep the test isolated from journal's _ensure_schema path."""
+    con = sqlite3.connect(str(p))
+    try:
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS ai_quant_decisions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                variant_id TEXT NOT NULL,
+                asset TEXT NOT NULL,
+                decision_utc INTEGER NOT NULL,
+                decision_date TEXT NOT NULL,
+                decided TEXT NOT NULL,
+                conviction INTEGER,
+                time_horizon_days INTEGER,
+                key_drivers_json TEXT,
+                exit_conditions TEXT,
+                confidence_caveats TEXT,
+                rationale_md TEXT,
+                model_id TEXT,
+                input_tokens INTEGER,
+                output_tokens INTEGER,
+                cache_read_tokens INTEGER,
+                cache_creation_tokens INTEGER,
+                context_json TEXT,
+                cost_usd REAL,
+                turns INTEGER,
+                trade_action TEXT,
+                error TEXT,
+                defer_until_utc INTEGER
+            )
+        """)
+        defaults = {
+            "variant_id": "p300_test", "asset": "BTC",
+            "decided": "LONG", "conviction": 70,
+            "time_horizon_days": 5,
+            "key_drivers_json": "[]",
+            "exit_conditions": "close if BTC daily < 70000",
+            "confidence_caveats": "thin sample",
+            "rationale_md": "PRIVATE prose — must NOT leak into history",
+            "model_id": "test", "input_tokens": 0, "output_tokens": 0,
+            "cache_read_tokens": 0, "cache_creation_tokens": 0,
+            "context_json": "{}", "cost_usd": 0.0, "turns": 1,
+            "trade_action": "opened:SJ-9001", "error": None,
+            "defer_until_utc": None,
+        }
+        defaults.update(kw)
+        cols = list(defaults.keys())
+        con.execute(
+            f"INSERT INTO ai_quant_decisions ({','.join(cols)}) "
+            f"VALUES ({','.join('?' * len(cols))})",
+            tuple(defaults[c] for c in cols),
+        )
+        con.commit()
+    finally:
+        con.close()
+
+
+def test_decision_history_empty_when_no_rows(fixture_dbs):
+    section = ctx_mod._decision_history_section("p300_test", "BTC")
+    assert section == {"n_rows": 0, "rows": []}
+
+
+def test_decision_history_open_status_when_trade_still_open(fixture_dbs):
+    """Latest decision opened SJ-9001 (which the fixture has as still open)
+    → status_now == 'open'."""
+    dash = fixture_dbs["dash"]
+    now_ts = int(datetime(2026, 5, 8, 12, 0, tzinfo=timezone.utc).timestamp())
+    _insert_decision(dash,
+                      decision_utc=now_ts - 86400,
+                      decision_date="2026-05-07",
+                      decided="LONG", time_horizon_days=5,
+                      trade_action="opened:SJ-9001")
+    section = ctx_mod._decision_history_section("p300_test", "BTC")
+    assert section["n_rows"] == 1
+    assert section["rows"][0]["status_now"] == "open"
+    assert section["rows"][0]["decided"] == "LONG"
+    # rationale_md must NOT leak into the section (anchoring risk).
+    assert "rationale_md" not in section["rows"][0]
+
+
+def test_decision_history_superseded_when_later_decision_replaces(fixture_dbs):
+    """Two decisions, both with trade_action='noop' (no open trade) — the
+    older one is superseded by the newer."""
+    dash = fixture_dbs["dash"]
+    now_ts = int(datetime(2026, 5, 8, 12, 0, tzinfo=timezone.utc).timestamp())
+    _insert_decision(dash,
+                      decision_utc=now_ts - 2 * 86400,
+                      decision_date="2026-05-06",
+                      decided="FLAT", trade_action="noop",
+                      time_horizon_days=3)
+    _insert_decision(dash,
+                      decision_utc=now_ts - 86400,
+                      decision_date="2026-05-07",
+                      decided="FLAT", trade_action="noop",
+                      time_horizon_days=3)
+    section = ctx_mod._decision_history_section("p300_test", "BTC")
+    assert section["n_rows"] == 2
+    # newest first
+    assert section["rows"][0]["date"] == "2026-05-07"
+    statuses = [r["status_now"] for r in section["rows"]]
+    # Latest is closed (FLAT noop = no live commitment), older is superseded.
+    assert statuses[1] == "superseded"
+
+
+def test_decision_history_expired_horizon(fixture_dbs):
+    """A 2-day-horizon decision 5 days ago with no trade → expired_horizon."""
+    dash = fixture_dbs["dash"]
+    now_ts = int(datetime(2026, 5, 8, 12, 0, tzinfo=timezone.utc).timestamp())
+    _insert_decision(dash,
+                      decision_utc=now_ts - 5 * 86400,
+                      decision_date="2026-05-03",
+                      decided="LONG", trade_action="opened:SJ-EXPIRED",
+                      time_horizon_days=2)
+    section = ctx_mod._decision_history_section("p300_test", "BTC")
+    # Still within 7-day window so it gets surfaced; status_now reflects
+    # horizon expiry.
+    assert section["n_rows"] == 1
+    assert section["rows"][0]["status_now"] == "expired_horizon"
+
+
+def test_decision_history_deferred_active_and_expired(fixture_dbs):
+    """Two DEFER decisions — one with defer_until_utc in the future
+    (active) and one with defer_until_utc in the past (expired)."""
+    dash = fixture_dbs["dash"]
+    now_ts = int(datetime(2026, 5, 8, 12, 0, tzinfo=timezone.utc).timestamp())
+    # Active defer: re-fire scheduled 2h ahead.
+    _insert_decision(dash,
+                      decision_utc=now_ts - 600,
+                      decision_date="2026-05-08",
+                      decided="DEFER", trade_action="deferred",
+                      defer_until_utc=now_ts + 7200)
+    # Expired defer: re-fire was 1d ago, no successor row.
+    _insert_decision(dash,
+                      decision_utc=now_ts - 3 * 86400,
+                      decision_date="2026-05-05",
+                      decided="DEFER", trade_action="deferred",
+                      defer_until_utc=now_ts - 86400)
+    section = ctx_mod._decision_history_section("p300_test", "BTC")
+    by_date = {r["date"]: r for r in section["rows"]}
+    assert by_date["2026-05-08"]["status_now"] == "deferred_active"
+    assert by_date["2026-05-05"]["status_now"] == "deferred_expired"
+
+
+def test_decision_history_excludes_error_rows(fixture_dbs):
+    """ERROR rows should never appear in the carryover section."""
+    dash = fixture_dbs["dash"]
+    now_ts = int(datetime(2026, 5, 8, 12, 0, tzinfo=timezone.utc).timestamp())
+    _insert_decision(dash,
+                      decision_utc=now_ts - 86400,
+                      decision_date="2026-05-07",
+                      decided="ERROR", trade_action="error",
+                      error="context_build failed",
+                      time_horizon_days=0)
+    _insert_decision(dash,
+                      decision_utc=now_ts - 600,
+                      decision_date="2026-05-08",
+                      decided="LONG", trade_action="opened:SJ-9001",
+                      time_horizon_days=5)
+    section = ctx_mod._decision_history_section("p300_test", "BTC")
+    # Only the LONG row, ERROR filtered out.
+    assert section["n_rows"] == 1
+    assert section["rows"][0]["decided"] == "LONG"
+
+
+def test_decision_history_caps_at_seven_entries(fixture_dbs):
+    """More than 7 retained rows ⇒ cap at 7."""
+    dash = fixture_dbs["dash"]
+    now_ts = int(datetime(2026, 5, 8, 12, 0, tzinfo=timezone.utc).timestamp())
+    for i in range(10):
+        _insert_decision(dash,
+                          decision_utc=now_ts - (i + 1) * 3600,
+                          decision_date=f"2026-05-{8 - i:02d}",
+                          decided="FLAT", trade_action="noop",
+                          time_horizon_days=30)
+    section = ctx_mod._decision_history_section("p300_test", "BTC")
+    assert section["n_rows"] == 7
+
+
+def test_decision_history_window_keeps_within_horizon(fixture_dbs):
+    """A 14-day horizon decision 10 days ago is still within its horizon
+    even though >7 days old — should be retained."""
+    dash = fixture_dbs["dash"]
+    now_ts = int(datetime(2026, 5, 8, 12, 0, tzinfo=timezone.utc).timestamp())
+    _insert_decision(dash,
+                      decision_utc=now_ts - 10 * 86400,
+                      decision_date="2026-04-28",
+                      decided="LONG", trade_action="opened:SJ-9001",
+                      time_horizon_days=14)
+    section = ctx_mod._decision_history_section("p300_test", "BTC")
+    assert section["n_rows"] == 1
+    assert section["rows"][0]["status_now"] == "open"
 
 
 # ─── Open Interest section ─────────────────────────────────────────────────

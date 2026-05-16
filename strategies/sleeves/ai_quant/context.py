@@ -562,6 +562,136 @@ def _portfolio_section(variant_id: str, asset: str) -> dict:
     }
 
 
+# ─── Section: decision history (M1 — carryover commitments) ────────────────
+
+def _decision_history_section(variant_id: str, asset: str) -> dict:
+    """Surface the recent AI_QUANT decision history so today's call can
+    evaluate the ``exit_conditions`` and ``time_horizon`` it committed
+    to on prior open positions. Excludes ``rationale_md`` (anchoring
+    risk — the model should re-derive the WHY from current data).
+
+    For each retained decision, computes a ``status_now``:
+
+    - ``open``              — the trade row for this decision is still open.
+    - ``closed``            — the trade row is closed (any reason).
+    - ``expired_horizon``   — decision_utc + time_horizon_days × 86400 < now
+                              and there's no trade row to mark closed.
+    - ``superseded``        — a later decision on a later UTC day (or same
+                              day, later utc) overrode this one — keeps
+                              the surfaced rows focused on what's still
+                              relevant. The latest row is never marked
+                              superseded.
+    - ``deferred_active``   — ``decided=DEFER`` and ``defer_until_utc`` is
+                              in the future.
+    - ``deferred_expired``  — ``decided=DEFER`` and ``defer_until_utc`` is
+                              in the past (re-fire window has passed
+                              without a successor row).
+
+    Window: last 7 days OR while any decision's
+    ``decision_utc + time_horizon_days × 86400 >= now`` is still in play
+    (so a 21-day horizon decision stays visible until day 22). Cap 7
+    entries total; ERROR rows excluded.
+    """
+    from . import journal
+
+    now_ts = int(clock.now_utc().timestamp())
+    # Pull a wide window (30d) and let the horizon / cap filter narrow
+    # it. 30d is enough to catch most realistic time horizons.
+    raw = journal.get_recent_decisions(variant_id, days=30)
+    raw = [r for r in raw if (r.get("decided") or "").upper() != "ERROR"
+            and not (r.get("error"))]
+
+    if not raw:
+        return {"n_rows": 0, "rows": []}
+
+    # Compute open trade IDs by AI_QUANT for this variant for quick
+    # status-now lookup. We use the DB directly rather than reach into
+    # trades.get_open_trades to keep this section read-only.
+    open_trade_ids: set[str] = set()
+    closed_trade_ids: set[str] = set()
+    con = sqlite3.connect(str(db.DASH_DB))
+    try:
+        rows = con.execute(
+            "SELECT id, status FROM trades "
+            "WHERE strategy_variant=? AND strategy='AI_QUANT'",
+            (variant_id,),
+        ).fetchall()
+    finally:
+        con.close()
+    for tid, status in rows:
+        if status == "open":
+            open_trade_ids.add(tid)
+        else:
+            closed_trade_ids.add(tid)
+
+    # Newest first from journal; tag supersession on the older rows.
+    latest_decision_utc = raw[0]["decision_utc"]
+    horizon_cutoff_secs = 7 * 86400
+
+    out_rows: list[dict] = []
+    for i, r in enumerate(raw):
+        decided = (r.get("decided") or "").upper()
+        horizon_days = int(r.get("time_horizon_days") or 0)
+        decision_utc = int(r.get("decision_utc") or 0)
+        horizon_expires_at = decision_utc + horizon_days * 86400
+        age_secs = now_ts - decision_utc
+
+        # Keep within 7d unless still within its declared horizon.
+        if age_secs > horizon_cutoff_secs and horizon_expires_at < now_ts:
+            continue
+
+        # Trade-action format from journal.save_decision is
+        # "opened:SJ-..." or "flipped:SJ-old->SJ-new" or "closed:SJ-..." or
+        # "noop"/"held"/etc. Extract the latest trade id if present.
+        trade_action = r.get("trade_action") or ""
+        trade_id = None
+        if ":" in trade_action:
+            tail = trade_action.split(":", 1)[1]
+            trade_id = tail.split("->")[-1].strip()
+
+        if decided == "DEFER":
+            defer_until = r.get("defer_until_utc")
+            if defer_until is None:
+                status_now = "deferred_expired"
+            elif now_ts < int(defer_until):
+                status_now = "deferred_active"
+            else:
+                status_now = "deferred_expired"
+        elif trade_id and trade_id in open_trade_ids:
+            status_now = "open"
+        elif trade_id and trade_id in closed_trade_ids:
+            status_now = "closed"
+        elif decision_utc < latest_decision_utc and decided in ("LONG", "SHORT", "FLAT"):
+            # A later decision exists and this one didn't open a trade —
+            # the later one supersedes it.
+            status_now = "superseded"
+        elif horizon_expires_at < now_ts and horizon_days > 0:
+            status_now = "expired_horizon"
+        elif trade_id is None and decided in ("LONG", "SHORT", "FLAT"):
+            # Decided but no trade — typically FLAT-on-flat (noop) or
+            # skipped:no_price. Treat as superseded once a later row
+            # exists, else closed (no live commitment).
+            status_now = "closed"
+        else:
+            status_now = "open" if i == 0 else "superseded"
+
+        out_rows.append({
+            "date": r.get("decision_date"),
+            "decision_utc": decision_utc,
+            "decided": decided,
+            "conviction": r.get("conviction"),
+            "time_horizon_days": horizon_days,
+            "trade_action": trade_action,
+            "exit_conditions": r.get("exit_conditions"),
+            "confidence_caveats": r.get("confidence_caveats"),
+            "status_now": status_now,
+        })
+        if len(out_rows) >= 7:
+            break
+
+    return {"n_rows": len(out_rows), "rows": out_rows}
+
+
 # ─── Section: data freshness ────────────────────────────────────────────────
 
 def _freshness_section() -> dict:
@@ -645,5 +775,8 @@ def build_context(variant_id: str, asset: str = "BTC") -> dict:
         "news": _safe("news", lambda: _news_section(asset)),
         "portfolio": _safe("portfolio",
                             lambda: _portfolio_section(variant_id, asset)),
+        "decision_history": _safe("decision_history",
+                                    lambda: _decision_history_section(
+                                        variant_id, asset)),
         "data_freshness": _safe("data_freshness", _freshness_section),
     }

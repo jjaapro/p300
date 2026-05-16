@@ -272,8 +272,14 @@ def get_today_cost_usd(variant_id: str) -> float:
 
 def get_recent_decisions(variant_id: str, days: int = 14) -> list[dict]:
     """Most-recent-first list of the last `days` of decisions for the
-    variant. Future use: feeding decision history into the context
-    bundle so the LLM can see what it decided yesterday."""
+    variant. Consumed by :func:`context._decision_history_section` so
+    today's LLM call can see what it decided yesterday.
+
+    Excludes ``rationale_md`` by design — the M1 carryover-history
+    section deliberately omits the prose so the model re-derives the
+    *why* from current data rather than anchoring on its prior
+    narrative.
+    """
     cutoff = int((clock.now_utc().timestamp())) - days * 86400
     con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
@@ -281,7 +287,9 @@ def get_recent_decisions(variant_id: str, days: int = 14) -> list[dict]:
         _ensure_schema(con)
         rows = con.execute(
             "SELECT id, decision_utc, decision_date, decided, conviction, "
-            "       time_horizon_days, trade_action, cost_usd "
+            "       time_horizon_days, trade_action, cost_usd, "
+            "       exit_conditions, confidence_caveats, defer_until_utc, "
+            "       error "
             "FROM ai_quant_decisions WHERE variant_id = ? AND decision_utc >= ? "
             "ORDER BY decision_utc DESC",
             (variant_id, cutoff),

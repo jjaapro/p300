@@ -210,6 +210,16 @@ the P-300 data sources at the timestamp shown in `as_of_utc`. The image
 that follows is the baseline daily chart (BTC, last 90 daily bars, EMA50
 + EMA150 + funding + L/S ratio panels).
 
+**Carryover check.** `bundle.decision_history` carries the
+`exit_conditions` and `time_horizon_days` you committed to on prior
+decisions. Before calling submit_decision, explicitly evaluate every
+`status_now=open` row's exit_conditions against today's bundle. If any
+fire, your decision today should be FLAT. If none fire and the position
+is still within its `time_horizon_days`, your default is to keep the
+call; argue explicitly when rescinding. The section omits `rationale_md`
+on purpose — re-derive the WHY from today's data each day rather than
+anchoring on the prior narrative.
+
 When you have a clear view, call submit_decision exactly once. If the
 moment is wrong but a specific trigger is hours away (a macro release,
 a level break, a confirmation candle), call defer_decision instead and

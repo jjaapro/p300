@@ -947,11 +947,22 @@ on accumulated trade history that doesn't exist yet.
 
 ---
 
-### Milestone 1 — Decision history (carryover commitments)
+### Milestone 1 — Decision history (carryover commitments) ✅
 
-**Goal:** today's model sees what its prior self committed to, so it can
-honor or rescind those commitments. Avoid anchoring bias by excluding
-the prose rationale.
+**Status:** shipped 2026-05-16. The carryover-commitments loop is
+closed: today's call sees its prior `exit_conditions` /
+`time_horizon_days` / `confidence_caveats` and a derived `status_now`
+(open / closed / expired_horizon / superseded / deferred_active /
+deferred_expired). `rationale_md` is excluded by design (anchoring
+risk — the model must re-derive the WHY from current data). Window:
+last 7 days OR while any decision is still within its declared
+`time_horizon_days`. ERROR rows excluded. Cap 7 entries. 8 new tests
+cover the status_now matrix + caps + horizon-window retention + the
+no-rationale-leak invariant.
+
+**Goal (historical):** today's model sees what its prior self
+committed to, so it can honor or rescind those commitments. Avoid
+anchoring bias by excluding the prose rationale.
 
 **Files to change:**
 
