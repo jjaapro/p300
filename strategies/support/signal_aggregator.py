@@ -18,21 +18,24 @@ roughly 1/3 the friction.
 
 P2.4f ships in stages:
 
-  1. **This commit (detect-only).**
+  1. **Stage 1 — detect-only (shipped 2026-05-15).**
      :func:`detect_concordant_opens` and :func:`summarize_concordant`
-     do the read-side accounting. No orchestrator wiring; sleeves
-     don't consume yet. CARRY's perp SHORT is excluded (delta-neutral,
-     same reasoning as :mod:`conflict_resolver`).
+     do the read-side accounting against the trades ledger. CARRY's
+     perp SHORT is excluded (delta-neutral, same reasoning as
+     :mod:`conflict_resolver`). Operator dashboards / sleeves consume
+     directly.
 
-  2. **Stage 2 — orchestrator pooling.** Before any sleeve opens, the
-     orchestrator collects intents (asset, direction, conviction proxy)
-     across sleeves and decides whether to open one pooled position or
-     N independent ones. Needs the two-phase dispatch refactor the
-     conflict resolver also waits on. A reasonable conviction proxy in
-     today's code is ``_effective_weight_pct`` from
-     :mod:`strategies.support.allocation` — bigger weight = stronger
-     signal. AI_QUANT additionally provides ``conviction_0_100`` from
-     the LLM payload; the aggregator could plug that in directly.
+  2. **Stage 2 — active pooling (shipped 2026-05-16).** The
+     orchestrator's two-phase reconcile pass
+     (:func:`strategies.support.dispatch.reconcile_intents` →
+     :func:`strategies.support.dispatch._pool_concordant_allocations`)
+     redistributes pre-open allocations among same-(asset, direction)
+     intents via conviction-weighted averaging. Each participating
+     sleeve still opens its own trade row (so per-sleeve close
+     semantics survive); total exposure converges to the conviction-
+     weighted average alloc rather than the sum. This module's
+     post-open detection layer is still useful as a telemetry /
+     audit surface on the live ledger.
 
 Scope: directional perp positions only. CARRY's neutral leg is
 excluded.

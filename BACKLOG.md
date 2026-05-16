@@ -374,6 +374,24 @@ commit and probably multi-session. A reasonable sub-decomposition:
   approved intents) is the next sub-commit; depends on AI_QUANT's
   decide()/execute() implementation.*
 
+  *2026-05-16 — Signal pooling (P2.4f Stage 2) shipped in reconcile_intents.
+  `_pool_concordant_allocations` runs as the first step of the reconcile
+  pass and redistributes allocations among same-(asset, direction) intents
+  via conviction-weighted averaging: `cw_avg = Σ(c_i × a_i) / Σ(c_i)`,
+  each intent gets `share_i × cw_avg`. Sum invariant: total pooled alloc
+  equals cw_avg, not the sum — so two LONG BTC sleeves agreeing on
+  direction produce conviction-weighted-avg exposure rather than 2×.
+  Each sleeve keeps its own leverage / priority / conviction; only alloc
+  changes. Excluded: FLAT direction, CARRY (delta-neutral, same as
+  conflict-resolver), singletons. Zero-conviction fallback uses equal
+  weighting. New status `approved_pooled` distinguishes pooled approvals
+  from plain ``approved``; ``approved_reduced`` still wins the label
+  when margin clamp also fires for the same intent. 13 new tests in
+  test_dispatch_intent.py cover the redistribution math, exclusions,
+  fallbacks, multi-asset bucket independence, and the pool-then-margin
+  interaction. Existing concordant test rewritten to assert pooled
+  semantics. Total 26 dispatch tests green.*
+
   *2026-05-16 — AI_QUANT pilot migration + orchestrator routing shipped.
   `strategies/sleeves/ai_quant/signal.py` now exposes
   `try_decide_for_variant(variant, sleeve_cfg) -> (Intent | None, dict)`

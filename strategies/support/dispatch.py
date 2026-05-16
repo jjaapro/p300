@@ -46,10 +46,14 @@ intent-based reconciliation. AI_QUANT's LLM-derived ``conviction_0_100``
 becomes the natural priority for that sleeve; other sleeves can
 expose a fixed conviction or read it from regime / params.
 
-P2.4f Stage 2 goal: replace the read-only concordant-detection in
-:mod:`strategies.support.signal_aggregator` with active pooling —
-the orchestrator collects N concordant intents and opens ONE pooled
-trade at their combined size, conviction-weighted.
+P2.4f Stage 2 (shipped 2026-05-16): :func:`reconcile_intents`'s first
+pass — :func:`_pool_concordant_allocations` — redistributes
+allocations among same-(asset, direction) intents via conviction-
+weighted averaging. Each participating sleeve still opens its own
+trade row (so per-sleeve close semantics survive); total budgeted
+alloc converges to the conviction-weighted average rather than the
+sum. Pooled approvals carry status ``approved_pooled`` to
+distinguish from plain ``approved`` in telemetry.
 """
 from __future__ import annotations
 
@@ -126,9 +130,13 @@ class ReconcileResult:
     Attributes:
         intent: The (possibly modified) intent to execute. ``None``
             when the intent was rejected entirely.
-        status: One of ``approved``, ``approved_reduced``,
-            ``rejected_directional_conflict``,
-            ``rejected_margin``, ``approved_pooled`` (P2.4f Stage 2).
+        status: One of ``approved``, ``approved_pooled``,
+            ``approved_reduced``, ``rejected_directional_conflict``,
+            ``rejected_margin``. ``approved_pooled`` means the
+            allocation was reduced by the P2.4f Stage 2 conviction-
+            weighted pooling pass; ``approved_reduced`` means the
+            margin-headroom clamp shrunk it. The latter wins the label
+            when both fire (the post-pool alloc still didn't fit margin).
         reason: Human-readable reason string (for logs / status dicts).
         sleeve_id: Strategy ID of the originator (helps the orchestrator
             map back to its dispatch entry).
@@ -144,6 +152,79 @@ def _priority_key(item: tuple[str, Intent]) -> tuple[float, float]:
     conviction. Returns (priority, -conviction) so default sort works."""
     _, intent = item
     return (intent.priority, -float(intent.conviction))
+
+
+def _pool_concordant_allocations(
+    intents: list[tuple[str, Intent]],
+) -> tuple[list[tuple[str, Intent]], set[int]]:
+    """P2.4f Stage 2 — conviction-weighted pooling of concordant signals.
+
+    Group input intents by (asset, direction). For groups with N>=2,
+    redistribute allocations so that TOTAL exposure across the group
+    converges to the conviction-weighted average allocation, rather than
+    summing. Each participant keeps its own leverage / priority /
+    conviction; only ``allocation_pct`` is reduced.
+
+    Math per group of N≥2 members:
+        cw_avg = sum(c_i × a_i) / sum(c_i)
+        share_i = c_i / sum(c)
+        new_alloc_i = share_i × cw_avg
+
+    Sum invariant: ``sum(new_alloc_i) == cw_avg`` — so when N sleeves
+    agree on direction, total budgeted alloc equals what the
+    conviction-weighted-average sleeve would have asked for alone. The
+    higher-conviction sleeves keep proportionally more of that budget.
+
+    Excluded from pooling (passed through unchanged):
+      - ``FLAT`` direction (close-existing intents).
+      - Neutral strategies (CARRY) — their SHORT is delta-neutral
+        collateral, not a directional bet, so concordance doesn't
+        represent signal agreement.
+      - Singleton (asset, direction) groups.
+
+    Returns a new ``intents`` list (same order, possibly mutated
+    allocations) and a set of indices that were actually pooled. The
+    indices let :func:`reconcile_intents` mark those results as
+    ``approved_pooled`` instead of plain ``approved``.
+    """
+    from collections import defaultdict
+    buckets: dict[tuple[str, str], list[int]] = defaultdict(list)
+    for i, (sid, intent) in enumerate(intents):
+        if intent.direction not in ("LONG", "SHORT"):
+            continue
+        if sid in _NEUTRAL_STRATEGIES:
+            continue
+        buckets[(intent.asset, intent.direction)].append(i)
+
+    out = list(intents)
+    pooled_idxs: set[int] = set()
+    for idxs in buckets.values():
+        if len(idxs) < 2:
+            continue
+        members = [intents[i][1] for i in idxs]
+        sum_conv = sum(m.conviction for m in members)
+        if sum_conv <= 0:
+            # All-zero conviction → equal-weight redistribution.
+            cw_avg = sum(m.allocation_pct for m in members) / len(members)
+            shares = [1.0 / len(members)] * len(members)
+        else:
+            cw_avg = sum(
+                m.conviction * m.allocation_pct for m in members
+            ) / sum_conv
+            shares = [m.conviction / sum_conv for m in members]
+        for i, share in zip(idxs, shares):
+            sid, intent = intents[i]
+            new_alloc = share * cw_avg
+            pooled = Intent(
+                asset=intent.asset, direction=intent.direction,
+                allocation_pct=new_alloc, leverage=intent.leverage,
+                conviction=intent.conviction, priority=intent.priority,
+                reason=intent.reason,
+                scheduled_exit_dt=intent.scheduled_exit_dt,
+            )
+            out[i] = (sid, pooled)
+            pooled_idxs.add(i)
+    return out, pooled_idxs
 
 
 def reconcile_intents(
@@ -187,19 +268,31 @@ def reconcile_intents(
               to ``headroom``.
             - Otherwise reject (margin).
 
-    Signal pooling (P2.4f Stage 2 follow-up): when multiple concordant
-    intents land on the same (asset, direction) pair, today this pass
-    treats them as separate trades that stack. A future iteration will
-    merge them into one weighted intent before running the margin check.
+    Signal pooling (P2.4f Stage 2): when multiple concordant intents
+    land on the same (asset, direction) pair, allocations are
+    redistributed via conviction-weighted averaging BEFORE the margin
+    check. Pooled intents carry status ``approved_pooled`` (replacing
+    the plain ``approved``); margin-reduce still wins the label if it
+    also fires for the same intent.
     """
     # Already-approved per asset → {asset: ("LONG"|"SHORT", notional_taken)}
     approved_by_asset: dict[str, tuple[str, float]] = {}
     approved_notional = 0.0
     results: list[ReconcileResult] = []
 
-    ordered = sorted(intents, key=_priority_key)
+    # Pool concordant signals first (alloc redistribution), then sort.
+    pooled_intents, pooled_idxs = _pool_concordant_allocations(intents)
+    # Track which (sleeve_id, intent_identity_marker) was pooled so we
+    # can flag the result status. Since Intent is frozen we identify by
+    # original index — preserve that mapping via a parallel list.
+    pooled_keys: set[tuple[str, int]] = {
+        (pooled_intents[i][0], id(pooled_intents[i][1])) for i in pooled_idxs
+    }
+
+    ordered = sorted(pooled_intents, key=_priority_key)
 
     for sleeve_id, intent in ordered:
+        is_pooled = (sleeve_id, id(intent)) in pooled_keys
         if intent.direction not in ("LONG", "SHORT"):
             # FLAT intents (close-existing) don't go through the
             # reconcile pass — they're always approved as-is.
@@ -237,7 +330,10 @@ def reconcile_intents(
         if used + candidate_notional <= gross_cap_usdt + 1e-9:
             # Full size fits.
             results.append(ReconcileResult(
-                intent=intent, status="approved", sleeve_id=sleeve_id,
+                intent=intent,
+                status="approved_pooled" if is_pooled else "approved",
+                reason="conviction-weighted-pooled" if is_pooled else "",
+                sleeve_id=sleeve_id,
             ))
             if sleeve_id not in _NEUTRAL_STRATEGIES:
                 approved_by_asset[intent.asset] = (intent.direction, candidate_notional)

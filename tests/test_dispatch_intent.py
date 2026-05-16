@@ -181,13 +181,197 @@ def test_reconcile_flat_intent_always_passes_through():
     assert results[0].intent.direction == "FLAT"
 
 
-def test_reconcile_concordant_directions_both_approved():
-    """Same-direction intents on the same asset don't conflict; both
-    approved (subject to margin). Future Stage 2 will pool them; today
-    they stack."""
+def test_reconcile_concordant_directions_pooled():
+    """P2.4f Stage 2: same-direction intents on the same asset are
+    conviction-weighted-pooled. Each gets ``approved_pooled`` with a
+    reduced allocation so total alloc converges to the conviction-
+    weighted average rather than the sum."""
+    # Both at conv=100 (default), allocs 15% / 10% — cw_avg = 12.5%,
+    # share = 0.5 each → each gets 6.25% alloc.
     intents = [
-        ("S-003", _intent(direction="LONG", alloc=15.0, lev=5.0)),   # 7500
-        ("R4",    _intent(direction="LONG", alloc=10.0, lev=2.5)),   # 2500
+        ("S-003", _intent(direction="LONG", alloc=15.0, lev=5.0)),
+        ("R4",    _intent(direction="LONG", alloc=10.0, lev=2.5)),
     ]
     results = reconcile_intents(intents, 0.0, 25_000.0, 10_000.0)
-    assert [r.status for r in results] == ["approved", "approved"]
+    assert [r.status for r in results] == ["approved_pooled", "approved_pooled"]
+    by_id = {r.sleeve_id: r for r in results}
+    assert by_id["S-003"].intent.allocation_pct == pytest.approx(6.25)
+    assert by_id["R4"].intent.allocation_pct == pytest.approx(6.25)
+    # Leverages preserved (only alloc is pooled).
+    assert by_id["S-003"].intent.leverage == 5.0
+    assert by_id["R4"].intent.leverage == 2.5
+
+
+# ─── _pool_concordant_allocations (P2.4f Stage 2) ───────────────────────────
+
+from strategies.support.dispatch import _pool_concordant_allocations
+
+
+def test_pool_empty():
+    out, idxs = _pool_concordant_allocations([])
+    assert out == []
+    assert idxs == set()
+
+
+def test_pool_singleton_unchanged():
+    """Single intent on (asset, direction) — no pooling."""
+    intents = [("S-003", _intent(direction="LONG", alloc=15.0))]
+    out, idxs = _pool_concordant_allocations(intents)
+    assert out == intents
+    assert idxs == set()
+
+
+def test_pool_equal_conviction_equal_share():
+    """Two LONG BTC at equal conv=100, allocs 10/10 → each → 5/5."""
+    intents = [
+        ("A", _intent(direction="LONG", alloc=10.0, conviction=100)),
+        ("B", _intent(direction="LONG", alloc=10.0, conviction=100)),
+    ]
+    out, idxs = _pool_concordant_allocations(intents)
+    assert idxs == {0, 1}
+    assert out[0][1].allocation_pct == pytest.approx(5.0)
+    assert out[1][1].allocation_pct == pytest.approx(5.0)
+
+
+def test_pool_unequal_conviction_share_proportional():
+    """Higher-conviction sleeve keeps proportionally more of the pool."""
+    # cw_avg = (80×10 + 60×15) / 140 = 1700/140 ≈ 12.143
+    # share_a = 80/140 = 4/7; share_b = 60/140 = 3/7
+    # new_alloc_a = 4/7 × 12.143 ≈ 6.939
+    # new_alloc_b = 3/7 × 12.143 ≈ 5.204
+    intents = [
+        ("A", _intent(direction="LONG", alloc=10.0, conviction=80)),
+        ("B", _intent(direction="LONG", alloc=15.0, conviction=60)),
+    ]
+    out, idxs = _pool_concordant_allocations(intents)
+    assert idxs == {0, 1}
+    a_alloc = out[0][1].allocation_pct
+    b_alloc = out[1][1].allocation_pct
+    assert a_alloc == pytest.approx(80 * (80 * 10 + 60 * 15) / (140 * 140))
+    assert b_alloc == pytest.approx(60 * (80 * 10 + 60 * 15) / (140 * 140))
+    # Sum invariant: post-pool total = cw_avg.
+    assert a_alloc + b_alloc == pytest.approx((80 * 10 + 60 * 15) / 140)
+
+
+def test_pool_three_members_redistribute():
+    """Three LONG BTC, mixed conviction. Total post-pool = cw_avg."""
+    intents = [
+        ("A", _intent(direction="LONG", alloc=10.0, conviction=100)),
+        ("B", _intent(direction="LONG", alloc=10.0, conviction=50)),
+        ("C", _intent(direction="LONG", alloc=10.0, conviction=50)),
+    ]
+    out, idxs = _pool_concordant_allocations(intents)
+    assert idxs == {0, 1, 2}
+    # cw_avg = (100*10 + 50*10 + 50*10) / 200 = 10
+    # new A = 100/200 × 10 = 5; B/C = 50/200 × 10 = 2.5 each.
+    assert out[0][1].allocation_pct == pytest.approx(5.0)
+    assert out[1][1].allocation_pct == pytest.approx(2.5)
+    assert out[2][1].allocation_pct == pytest.approx(2.5)
+
+
+def test_pool_opposing_directions_not_pooled():
+    """LONG + SHORT on same asset → different buckets → no pooling
+    (conflict resolution handles them in reconcile)."""
+    intents = [
+        ("A", _intent(direction="LONG", alloc=10.0)),
+        ("B", _intent(direction="SHORT", alloc=10.0)),
+    ]
+    out, idxs = _pool_concordant_allocations(intents)
+    assert idxs == set()
+    assert out == intents
+
+
+def test_pool_different_assets_not_pooled():
+    """LONG BTC + LONG ETH → different buckets → no pooling."""
+    intents = [
+        ("A", _intent(asset="BTC", direction="LONG", alloc=10.0)),
+        ("B", _intent(asset="ETH", direction="LONG", alloc=10.0)),
+    ]
+    out, idxs = _pool_concordant_allocations(intents)
+    assert idxs == set()
+
+
+def test_pool_carry_neutral_excluded():
+    """CARRY's SHORT is delta-neutral collateral; not paired with
+    another sleeve's directional SHORT on the same asset."""
+    intents = [
+        ("CARRY", _intent(direction="SHORT", alloc=8.0)),
+        ("S-096", _intent(direction="SHORT", alloc=6.0)),
+    ]
+    out, idxs = _pool_concordant_allocations(intents)
+    # S-096 stands alone in its (BTC, SHORT) bucket post-exclusion → no pool.
+    assert idxs == set()
+    assert out[0][1].allocation_pct == 8.0
+    assert out[1][1].allocation_pct == 6.0
+
+
+def test_pool_flat_not_pooled():
+    """FLAT direction means close-existing; never pooled."""
+    intents = [
+        ("A", _intent(direction="FLAT", alloc=0.0)),
+        ("B", _intent(direction="FLAT", alloc=0.0)),
+    ]
+    out, idxs = _pool_concordant_allocations(intents)
+    assert idxs == set()
+
+
+def test_pool_zero_conviction_equal_weight_fallback():
+    """If all members have conv=0, fall back to equal-weight redistribution
+    rather than dividing by zero."""
+    intents = [
+        ("A", _intent(direction="LONG", alloc=10.0, conviction=0)),
+        ("B", _intent(direction="LONG", alloc=20.0, conviction=0)),
+    ]
+    out, idxs = _pool_concordant_allocations(intents)
+    assert idxs == {0, 1}
+    # cw_avg fallback = (10 + 20) / 2 = 15; share = 0.5 each → 7.5 each.
+    assert out[0][1].allocation_pct == pytest.approx(7.5)
+    assert out[1][1].allocation_pct == pytest.approx(7.5)
+
+
+def test_reconcile_pooled_then_margin_reduce():
+    """Pooling happens BEFORE margin. If the pooled alloc still doesn't
+    fit headroom, ``approved_reduced`` wins the label (margin clamp is
+    the more-specific signal)."""
+    # Two LONG BTC at conv=100, alloc=20%/20%, lev=5x → pre-pool notional
+    # 10k×20%×5=10k each. cw_avg = 20%, share=0.5 → post-pool alloc=10%
+    # each → notional 5000 each. Total pooled exposure: 10000.
+    # With cap=8000 and used=0, first 5000 fits; second 5000 doesn't but
+    # headroom 3000 >= 0.5×5000=2500 → reduced to 3000.
+    intents = [
+        ("A", _intent(direction="LONG", alloc=20.0, lev=5.0,
+                     conviction=100, priority=50)),
+        ("B", _intent(direction="LONG", alloc=20.0, lev=5.0,
+                     conviction=100, priority=100)),
+    ]
+    results = reconcile_intents(intents, 0.0, 8_000.0, 10_000.0)
+    by_id = {r.sleeve_id: r for r in results}
+    assert by_id["A"].status == "approved_pooled"
+    assert by_id["A"].intent.allocation_pct == pytest.approx(10.0)
+    assert by_id["B"].status == "approved_reduced"
+    # B's notional clamped to remaining 3000 → alloc = 3000 × 100 / (10k × 5x) = 6%
+    assert by_id["B"].intent.allocation_pct == pytest.approx(6.0)
+
+
+def test_reconcile_concordant_three_assets_independent_pools():
+    """Pooling is per (asset, direction). LONG BTC pool + LONG ETH pool
+    are independent — each pool computes its own conviction-weighted avg."""
+    intents = [
+        ("A", _intent(asset="BTC", direction="LONG", alloc=10.0,
+                     conviction=100)),
+        ("B", _intent(asset="BTC", direction="LONG", alloc=20.0,
+                     conviction=100)),
+        ("C", _intent(asset="ETH", direction="LONG", alloc=5.0,
+                     conviction=80)),
+        ("D", _intent(asset="ETH", direction="LONG", alloc=15.0,
+                     conviction=60)),
+    ]
+    results = reconcile_intents(intents, 0.0, 100_000.0, 10_000.0)
+    by_id = {r.sleeve_id: r for r in results}
+    # BTC pool: cw_avg = (100*10+100*20)/200 = 15; each gets 7.5.
+    assert by_id["A"].intent.allocation_pct == pytest.approx(7.5)
+    assert by_id["B"].intent.allocation_pct == pytest.approx(7.5)
+    # ETH pool: cw_avg = (80*5+60*15)/140 = 1300/140 ≈ 9.286.
+    eth_cw = (80 * 5 + 60 * 15) / 140
+    assert by_id["C"].intent.allocation_pct == pytest.approx(80 / 140 * eth_cw)
+    assert by_id["D"].intent.allocation_pct == pytest.approx(60 / 140 * eth_cw)
