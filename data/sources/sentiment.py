@@ -23,45 +23,147 @@ Empirical findings on F&G as a signal (2018-2026, 8y daily data):
 The FOMC sleeve uses F&G as one of its skip/trade gates. Other sleeves
 may consume it for sizing or veto.
 
+Storage (2026-05-16): the daily series lives in the ``fear_greed_index``
+table in ``prod.db``. Previously cached as ``data/fear_greed.json``;
+the migration backfills the table from the JSON on first
+:func:`refresh` if the table is empty.
+
 Refresh cadence: once per day is sufficient (index updates daily 00:00 UTC).
 """
 from __future__ import annotations
 
 import json
 import logging
+import sqlite3
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 REPO = Path(__file__).resolve().parents[2]
-JSON_PATH = REPO / "data" / "fear_greed.json"
+LEGACY_JSON_PATH = REPO / "data" / "fear_greed.json"
 API_URL = "https://api.alternative.me/fng/?limit=0&format=json"
 
 log = logging.getLogger("p300.sentiment")
 
 
+# ─── Storage backend (prod.db.fear_greed_index) ─────────────────────────────
+
+def _db_path() -> str:
+    """Lookup PROD_DB at call time so tests / sim can monkeypatch
+    ``strategies.support.db.PROD_DB`` and have us follow."""
+    from strategies.support import db
+    return str(db.PROD_DB)
+
+
+def _ensure_schema(con: sqlite3.Connection) -> None:
+    """Create the fear_greed_index table if it's missing. Cheap; we run
+    it on every read+write call so this module never asserts a separate
+    init_db() ran first (a few tests build minimal DBs without invoking
+    init_db, and we want them to keep working)."""
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS fear_greed_index (
+            date TEXT PRIMARY KEY,
+            value INTEGER NOT NULL,
+            classification TEXT
+        )
+    """)
+
+
+def _upsert_rows(rows: list[tuple[str, int, str | None]]) -> int:
+    """INSERT OR REPLACE per row. Returns count written."""
+    if not rows:
+        return 0
+    con = sqlite3.connect(_db_path())
+    try:
+        _ensure_schema(con)
+        con.executemany(
+            "INSERT OR REPLACE INTO fear_greed_index "
+            "(date, value, classification) VALUES (?, ?, ?)",
+            rows,
+        )
+        con.commit()
+    finally:
+        con.close()
+    return len(rows)
+
+
+def _rowcount() -> int:
+    con = sqlite3.connect(_db_path())
+    try:
+        _ensure_schema(con)
+        n = con.execute("SELECT COUNT(*) FROM fear_greed_index").fetchone()[0]
+    finally:
+        con.close()
+    return int(n)
+
+
+def _backfill_from_legacy_json() -> int:
+    """One-shot: if the DB table is empty and ``data/fear_greed.json``
+    exists, populate the table from it. Returns rows written. Called
+    from :func:`refresh` so a fresh install / restored DB / pre-migration
+    backup picks up history without an extra step."""
+    if not LEGACY_JSON_PATH.exists():
+        return 0
+    try:
+        payload = json.loads(LEGACY_JSON_PATH.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as e:
+        log.warning(f"legacy fear_greed.json unreadable, skipping backfill: {e}")
+        return 0
+    rows: list[tuple[str, int, str | None]] = []
+    for r in payload.get("data", []):
+        try:
+            ts = int(r["timestamp"])
+            value = int(r["value"])
+        except (KeyError, ValueError, TypeError):
+            continue
+        date_iso = datetime.fromtimestamp(ts, tz=timezone.utc).date().isoformat()
+        classification = r.get("value_classification")
+        rows.append((date_iso, value, classification))
+    return _upsert_rows(rows)
+
+
 # ─── Fetch + cache ───────────────────────────────────────────────────────────
 
 def refresh() -> bool:
-    """Download full F&G history (~3000 days) and write to JSON_PATH.
-    Cheap (<200KB). Idempotent. Returns True on success.
-    No-op (returns False) in sim mode — sim must not hit the network."""
+    """Download full F&G history (~3000 rows) and upsert into the
+    ``fear_greed_index`` table. Cheap (<200KB on the wire). Idempotent
+    via INSERT OR REPLACE. Returns True on success.
+
+    First call also backfills from the legacy ``data/fear_greed.json``
+    if the table is empty — covers the bootstrap case where someone
+    deletes prod.db and restarts.
+
+    No-op (returns False) in sim mode — sim must not hit the network.
+    """
     from strategies.support import clock
     if clock.is_simulated():
         return False
+    # One-shot legacy backfill if the table is empty.
+    if _rowcount() == 0:
+        n = _backfill_from_legacy_json()
+        if n:
+            log.info(f"backfilled {n} F&G rows from {LEGACY_JSON_PATH.name}")
     req = Request(API_URL, headers={"User-Agent": "p300/1.0"})
     try:
         with urlopen(req, timeout=30) as resp:
             data = resp.read()
-        # Validate parse before writing (avoids corrupted cache on bad responses)
         parsed = json.loads(data)
-        if not isinstance(parsed.get("data"), list):
+        rows_raw = parsed.get("data")
+        if not isinstance(rows_raw, list):
             log.warning("F&G response missing 'data' array")
             return False
-        JSON_PATH.parent.mkdir(parents=True, exist_ok=True)
-        JSON_PATH.write_bytes(data)
-        invalidate_cache()
+        rows: list[tuple[str, int, str | None]] = []
+        for r in rows_raw:
+            try:
+                ts = int(r["timestamp"])
+                value = int(r["value"])
+            except (KeyError, ValueError, TypeError):
+                continue
+            date_iso = datetime.fromtimestamp(ts, tz=timezone.utc).date().isoformat()
+            classification = r.get("value_classification")
+            rows.append((date_iso, value, classification))
+        _upsert_rows(rows)
         return True
     except (URLError, OSError, json.JSONDecodeError) as e:
         log.warning(f"F&G refresh failed: {e}")
@@ -70,44 +172,40 @@ def refresh() -> bool:
 
 # ─── Read ────────────────────────────────────────────────────────────────────
 
-_by_date_cache: dict[str, int] | None = None
-
-
-def _by_date() -> dict[str, int]:
-    """ISO date -> integer F&G value, 0-100. Loaded lazily, cached."""
-    global _by_date_cache
-    if _by_date_cache is None:
-        if not JSON_PATH.exists():
-            log.warning(f"{JSON_PATH} missing; call sentiment_index_service.refresh()")
-            _by_date_cache = {}
-        else:
-            payload = json.loads(JSON_PATH.read_text(encoding="utf-8"))
-            _by_date_cache = {
-                datetime.fromtimestamp(int(r["timestamp"]),
-                                        tz=timezone.utc).date().isoformat():
-                int(r["value"])
-                for r in payload.get("data", [])
-            }
-    return _by_date_cache
-
-
-def invalidate_cache() -> None:
-    global _by_date_cache
-    _by_date_cache = None
-
-
 def get_value(date_str: str) -> int | None:
-    """F&G on `date_str` (YYYY-MM-DD). Returns None if not in cache."""
-    return _by_date().get(date_str)
+    """F&G on `date_str` (YYYY-MM-DD). Returns None if not in storage."""
+    con = sqlite3.connect(_db_path())
+    try:
+        _ensure_schema(con)
+        row = con.execute(
+            "SELECT value FROM fear_greed_index WHERE date=?",
+            (date_str,),
+        ).fetchone()
+    finally:
+        con.close()
+    return int(row[0]) if row else None
 
 
 def get_latest() -> tuple[str, int] | None:
-    """Most recent (date, value) tuple, or None if cache empty."""
-    bd = _by_date()
-    if not bd:
+    """Most recent (date, value) tuple, or None if storage is empty."""
+    con = sqlite3.connect(_db_path())
+    try:
+        _ensure_schema(con)
+        row = con.execute(
+            "SELECT date, value FROM fear_greed_index "
+            "ORDER BY date DESC LIMIT 1"
+        ).fetchone()
+    finally:
+        con.close()
+    if row is None:
         return None
-    d = max(bd.keys())
-    return (d, bd[d])
+    return (row[0], int(row[1]))
+
+
+def invalidate_cache() -> None:
+    """Kept for backward-compatibility with the pre-DB caller surface;
+    the DB-backed reads have no in-process cache to invalidate."""
+    return None
 
 
 # ─── Bucketing ───────────────────────────────────────────────────────────────

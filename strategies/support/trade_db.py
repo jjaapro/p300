@@ -174,6 +174,18 @@ def init_db() -> None:
         con.execute(
             "ALTER TABLE ai_quant_decisions ADD COLUMN defer_until_utc INTEGER"
         )
+    # Crypto Fear & Greed index — daily time series from alternative.me.
+    # Migrated from data/fear_greed.json on 2026-05-16 so daily lookups
+    # join naturally with other date-keyed tables in prod.db (FOMC
+    # observer, sleeve PnL, regime classifications) and per-row upserts
+    # replace whole-file rewrites. See data.sources.sentiment.
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS fear_greed_index (
+            date TEXT PRIMARY KEY,
+            value INTEGER NOT NULL,
+            classification TEXT
+        )
+    """)
     con.execute("""
         CREATE TABLE IF NOT EXISTS config (
             key TEXT PRIMARY KEY,
