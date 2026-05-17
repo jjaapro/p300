@@ -26,7 +26,9 @@ import sqlite3
 from datetime import datetime, timedelta
 from pathlib import Path
 
-DB_PATH = Path(__file__).resolve().parent / "data" / "trader.db"
+from strategies.support import db as _db
+
+DB_PATH = _db.PROD_DB
 
 
 # ─── Hardcoded events ───────────────────────────────────────────────────────

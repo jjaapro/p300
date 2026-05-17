@@ -32,12 +32,18 @@ import argparse
 import json
 import logging
 import sqlite3
+import sys
 import time
+from pathlib import Path
 from typing import Any, Callable
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from strategies.support import db
+# Allow `python data/sources/coindesk.py --backfill` to import strategies.support.db
+# when launched directly (script-dir is on sys.path, not repo root).
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from strategies.support import db  # noqa: E402
 
 log = logging.getLogger("p300.coindesk_fetcher")
 
@@ -226,15 +232,23 @@ def fetch_oi(
     *,
     http_get: Callable[[str], dict] = _http_get,
     lookback_hours: int = DEFAULT_OI_LOOKBACK_HOURS,
+    extend_history: bool = False,
 ) -> int:
+    """Refresh / backfill OI. By default (refresh mode) only fills the gap
+    between latest-in-DB and now, capped at `lookback_hours` back. With
+    `extend_history=True` (backfill mode) walks back to `lookback_hours`
+    floor regardless of what's already in the DB — INSERT OR IGNORE handles
+    dedup, so the trailing window is harmless to re-fetch."""
     floor_ts = int(time.time()) - lookback_hours * 3600
-    start_after = max(_get_latest_ts(con, "cd_open_interest"), floor_ts - 1)
+    start_after = (floor_ts - 1 if extend_history
+                   else max(_get_latest_ts(con, "cd_open_interest"), floor_ts - 1))
     return _paginate_backward(
         http_get=http_get, con=con,
         endpoint="/futures/v1/historical/open-interest/hours",
         params={"market": FUTURES_MARKET, "instrument": FUTURES_INSTRUMENT},
         table="cd_open_interest", mapper=_map_oi_row,
         start_after_ts=start_after, bar_size_seconds=3600,
+        max_pages=60 if extend_history else 30,
     )
 
 
@@ -243,15 +257,18 @@ def fetch_liquidations(
     *,
     http_get: Callable[[str], dict] = _http_get,
     lookback_hours: int = DEFAULT_LIQ_LOOKBACK_HOURS,
+    extend_history: bool = False,
 ) -> int:
     floor_ts = int(time.time()) - lookback_hours * 3600
-    start_after = max(_get_latest_ts(con, "cd_liquidations"), floor_ts - 1)
+    start_after = (floor_ts - 1 if extend_history
+                   else max(_get_latest_ts(con, "cd_liquidations"), floor_ts - 1))
     return _paginate_backward(
         http_get=http_get, con=con,
         endpoint="/futures/v1/historical/liquidation/hours",
         params={"market": FUTURES_MARKET, "instrument": FUTURES_INSTRUMENT},
         table="cd_liquidations", mapper=_map_liq_row,
         start_after_ts=start_after, bar_size_seconds=3600,
+        max_pages=60 if extend_history else 30,
     )
 
 
@@ -261,20 +278,21 @@ def fetch_dvol(
     *,
     http_get: Callable[[str], dict] = _http_get,
     lookback_days: int = DEFAULT_DVOL_LOOKBACK_DAYS,
+    extend_history: bool = False,
 ) -> int:
     if asset not in DVOL_INSTRUMENTS:
         raise ValueError(f"DVOL: unsupported asset {asset!r}")
     instrument = DVOL_INSTRUMENTS[asset]
     floor_ts = int(time.time()) - lookback_days * 86400
-    latest = _get_latest_ts(con, "cd_dvol",
-                              "asset = ?", (asset,))
-    start_after = max(latest, floor_ts - 1)
+    latest = _get_latest_ts(con, "cd_dvol", "asset = ?", (asset,))
+    start_after = floor_ts - 1 if extend_history else max(latest, floor_ts - 1)
     return _paginate_backward(
         http_get=http_get, con=con,
         endpoint="/index/v1/historical/days",
         params={"market": "deribit", "instrument": instrument},
         table="cd_dvol", mapper=_map_dvol_row_factory(asset),
         start_after_ts=start_after, bar_size_seconds=86400,
+        max_pages=60 if extend_history else 30,
     )
 
 
@@ -337,13 +355,17 @@ def backfill(
         _ensure_schema(con)
         return {
             "open_interest": fetch_oi(con, http_get=http_get,
-                                        lookback_hours=oi_days * 24),
+                                        lookback_hours=oi_days * 24,
+                                        extend_history=True),
             "liquidations": fetch_liquidations(con, http_get=http_get,
-                                                  lookback_hours=liq_days * 24),
+                                                  lookback_hours=liq_days * 24,
+                                                  extend_history=True),
             "dvol_btc": fetch_dvol(con, "BTC", http_get=http_get,
-                                     lookback_days=dvol_days),
+                                     lookback_days=dvol_days,
+                                     extend_history=True),
             "dvol_eth": fetch_dvol(con, "ETH", http_get=http_get,
-                                     lookback_days=dvol_days),
+                                     lookback_days=dvol_days,
+                                     extend_history=True),
         }
     finally:
         con.close()

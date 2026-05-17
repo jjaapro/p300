@@ -34,9 +34,12 @@ from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
 REPO = Path(__file__).resolve().parent
-DB_PATH = REPO / "data" / "trader.db"
 ENV_PATH = REPO / ".env"
 UNFILLABLE_PATH = REPO / "data" / "known_unfillable.json"
+
+from strategies.support import db as _db  # noqa: E402
+
+DB_PATH = _db.PROD_DB
 
 API_BASE = "https://api.coinalyze.net/v1"
 RATE_LIMIT_S = 1.6  # 40/min = 1.5s between calls; 1.6 leaves margin

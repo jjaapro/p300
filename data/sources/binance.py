@@ -36,7 +36,13 @@ from typing import Any
 from urllib.parse import urlencode
 from urllib.request import Request, urlopen
 
-DB_PATH = Path(__file__).resolve().parents[2] / "data" / "trader.db"
+# Allow `python data/sources/binance.py` to import strategies.support.db when
+# launched directly (script-dir is on sys.path, not repo root).
+sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from strategies.support import db as _db  # noqa: E402
+
+DB_PATH = _db.PROD_DB
 SPOT_API = "https://api.binance.com/api/v3"
 FAPI = "https://fapi.binance.com/fapi/v1"
 # /futures/data/* endpoints are NOT under /fapi/v1/ — they live at the base.
