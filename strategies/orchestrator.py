@@ -322,6 +322,7 @@ def _load_dispatch():
     from strategies.sleeves.r4 import signal as r4_sleeve
     from strategies.sleeves.ema import signal as ema_sleeve
     from strategies.sleeves.eth_daily import signal as eth_daily_sleeve
+    from strategies.sleeves.short_squeeze import signal as short_squeeze_sleeve
     STRATEGY_DISPATCH = {
         "S-003":           adx_sleeve.try_fire_for_variant,
         "S-096":           thu_bear_sleeve.try_fire_for_variant,
@@ -342,6 +343,10 @@ def _load_dispatch():
         # AI_QUANT_ENABLED env so the dispatch is wired but no API
         # cost is incurred until the user explicitly opts in.
         "AI_QUANT":        ai_quant_sleeve.try_fire_for_variant,
+        # S-105 SHORT_SQUEEZE — bar-level scalp. Long BTC at a swept low
+        # with perp/spot CVD divergence + asia-grind macro. 15m signal,
+        # fixed stop/target/time-stop. See strategies/sleeves/short_squeeze/.
+        "SHORT_SQUEEZE":   short_squeeze_sleeve.try_fire_for_variant,
     }
     # Two-phase migrations (P2.4e/f Stage 2). Other sleeves follow as
     # they're refactored; until then they stay on the legacy
@@ -409,6 +414,12 @@ def _load_dispatch():
     ):
         if decide_fn is not None and hasattr(r4_sleeve, "_r4_execute"):
             STRATEGY_TWO_PHASE_DISPATCH[sid] = (decide_fn, r4_sleeve._r4_execute)
+    if (hasattr(short_squeeze_sleeve, "try_decide_for_variant")
+            and hasattr(short_squeeze_sleeve, "execute_for_variant")):
+        STRATEGY_TWO_PHASE_DISPATCH["SHORT_SQUEEZE"] = (
+            short_squeeze_sleeve.try_decide_for_variant,
+            short_squeeze_sleeve.execute_for_variant,
+        )
 
 
 _warned_missing: set[tuple[str, str]] = set()
@@ -419,7 +430,8 @@ _SLEEVE_KEY_FOR_STRATEGY = {"S-003": "s003", "S-096": "s096", "S-078": "s078",
                              "JPLUS_R4_BTC": "r4_btc",
                              "JPLUS_R4_ETH": "r4_eth",
                              "JPLUS_EMA_BTC": "ema_btc",
-                             "JPLUS_ETH_DAILY": "eth_daily"}
+                             "JPLUS_ETH_DAILY": "eth_daily",
+                             "SHORT_SQUEEZE": "short_squeeze"}
 
 
 def _resolve_sleeve_leverage(spec: dict, sleeve: dict) -> float:
