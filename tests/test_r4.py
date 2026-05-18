@@ -1,4 +1,4 @@
-"""strategies.sleeves.r4.math — R4 BTC (Mon 06→18), R4 ETH (Tue20→Wed20),
+"""strategies.sleeves.timing_anomalies.internal.r4.math — R4 BTC (Mon 06→18), R4 ETH (Tue20→Wed20),
 R4 V2 (Wed+Fri 04→14, both BTC and ETH) returns.
 
 Fixtures are hand-built (date, hour) → (open, close) dicts covering
@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import pytest
 
-from strategies.sleeves.r4 import math as r4
+from strategies.sleeves.timing_anomalies.internal.r4 import math as r4
 
 
 # ─── R4 BTC ─────────────────────────────────────────────────────────────────

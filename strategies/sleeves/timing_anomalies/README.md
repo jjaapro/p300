@@ -32,34 +32,33 @@ checklist.
 
 | Name | Origin sleeve | Trigger |
 |---|---|---|
-| `FOMC` | strategies/sleeves/fomc | T-10h before FOMC announcement; phase + F&G filtered |
-| `THU_BEAR` | strategies/sleeves/thu_bear | Thursday 00:00 UTC short, Friday 01:00 UTC close; regime-gated |
-| `PDO_L_RF` | strategies/sleeves/pdo | Daily PDO retouch (long); BTC + ETH |
-| `CPR` | strategies/sleeves/cpr | Contrarian positioning reversal; BTC + ETH |
-| `R4_BTC` | strategies/sleeves/r4 | Mon/Wed wk1-2 06:00→18:00 UTC |
-| `R4_ETH` | strategies/sleeves/r4 | Tue 20:00 → Wed 20:00 UTC (Wed day≤14) |
-| `R4_BTC_V2` | strategies/sleeves/r4 | Wed/Fri wk1-2 04:00→14:00 UTC |
-| `R4_ETH_V2` | strategies/sleeves/r4 | Wed/Fri wk1-2 04:00→14:00 UTC (cross-asset application) |
+| `FOMC` | internal/fomc/ | T-10h before FOMC announcement; phase + F&G filtered |
+| `THU_BEAR` | internal/thu_bear/ | Thursday 00:00 UTC short, Friday 01:00 UTC close; regime-gated |
+| `PDO_L_RF` | internal/pdo/ | Daily PDO retouch (long); BTC + ETH |
+| `CPR` | internal/cpr/ | Contrarian positioning reversal; BTC + ETH |
+| `R4_BTC` | internal/r4/ | Mon/Wed wk1-2 06:00→18:00 UTC |
+| `R4_ETH` | internal/r4/ | Tue 20:00 → Wed 20:00 UTC (Wed day≤14) |
+| `R4_BTC_V2` | internal/r4/ | Wed/Fri wk1-2 04:00→14:00 UTC |
+| `R4_ETH_V2` | internal/r4/ | Wed/Fri wk1-2 04:00→14:00 UTC (cross-asset application) |
 
 **Not in this bucket** (explicitly): AI_QUANT (news-reactive), S-003 ADX
 (price-action), S-078 CARRY (funding state), JPLUS_EMA_BTC (trend regime
 — kept as a separate gate variable), JPLUS_ETH_DAILY (continuous, not
 date-driven), SHORT_SQUEEZE (microstructure).
 
-## Architecture: delegation, not code movement (this commit)
+## Architecture
 
-This first commit takes a **delegation** approach: each substrategy's
-logic stays in its original location (`strategies/sleeves/fomc/`,
-`strategies/sleeves/thu_bear/`, etc.). The meta-sleeve calls into them
-via the registry in `internal/__init__.py`.
+Substrategy code lives in `internal/{fomc,thu_bear,pdo,cpr,r4}/`. The
+meta-sleeve is the **sole** entry point — there's no longer a
+per-substrategy dispatcher at the orchestrator level. Flat-composition
+variants (one top-level entry per timing sub-sleeve) were migrated to
+the meta-sleeve composition on 2026-05-18 (see
+`p300_spec.consolidate_timing_substrategies` / `migrate_all_variants_to_meta_sleeve`).
 
-Why: zero refactor risk to working sleeve code, no test breakage, no
-variant-spec migration required to get the new dispatch path running.
-
-A follow-up commit can physically move each substrategy's code into
-`internal/{fomc,thu_bear,pdo,cpr,r4}/` with the original sleeve dirs
-becoming thin re-export shims, if desired. The dispatch contract here
-won't change.
+The registry in `internal/__init__.py` is a name → (decide_fn, execute_fn)
+lookup; substrategies are added there + in `ALLOCATOR_KEY` for regime-
+adaptive sizing. Two-phase dispatch and multi-intent emission both
+flow through unchanged from the meta-sleeve's `signal.py`.
 
 ## Composition contract
 

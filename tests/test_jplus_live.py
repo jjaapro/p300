@@ -7,10 +7,10 @@ handlers (EMA_BTC, ETH_DAILY).
 Each test sets a synthetic clock, monkey-patches price_feed and
 today_inputs, and asserts the resulting trades-table state.
 
-The handlers live in three sleeve folders since restructure step 5:
-  strategies/sleeves/r4/        — 4 R4 variants
-  strategies/sleeves/ema/       — EMA_BTC
-  strategies/sleeves/eth_daily/ — ETH_DAILY
+The handlers live across the sleeves dir:
+  strategies/sleeves/timing_anomalies/internal/r4/  — 4 R4 variants
+  strategies/sleeves/ema/                           — EMA_BTC
+  strategies/sleeves/eth_daily/                     — ETH_DAILY
 The ``jplus_live`` namespace below collects them under one accessor so
 the existing per-test calls (``jplus_live.r4_btc_try_fire(...)`` etc.)
 don't have to fan out across N imports.
@@ -24,7 +24,7 @@ import pytest
 
 from strategies.support import clock
 
-from strategies.sleeves.r4 import signal as _r4_signal
+from strategies.sleeves.timing_anomalies.internal.r4 import signal as _r4_signal
 from strategies.sleeves.ema import signal as _ema_signal
 from strategies.sleeves.eth_daily import signal as _eth_daily_signal
 

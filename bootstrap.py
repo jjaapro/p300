@@ -179,7 +179,7 @@ def fetch_fomc_sleeve_inputs() -> None:
     self-heals on the next live tick."""
     print("\n=== Fetching FOMC sleeve inputs ===")
     from data.sources import sentiment as sentiment_index_service, fed_funds as fed_funds_service, polymarket as polymarket_service
-    from strategies.sleeves.fomc import signal as fomc_sleeve
+    from strategies.sleeves.timing_anomalies.internal.fomc import signal as fomc_sleeve
     fomc_sleeve.init_schema()
     print("  fomc_observer table ensured")
     print(f"  fear_greed:    {'ok' if sentiment_index_service.refresh() else 'FAILED'}")

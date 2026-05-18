@@ -4,24 +4,15 @@ Each substrategy is identified by an uppercase name and provides two
 callables: a decide function returning ``(list[Intent], dict)`` and an
 execute function that opens the trade described by a single Intent.
 
-This file deliberately *delegates* to the existing sleeve modules
-(strategies.sleeves.{fomc,thu_bear,pdo,cpr,r4}.signal) rather than moving
-their logic here. The delegation approach has several benefits:
+Substrategy code lives in sibling packages under this ``internal/`` dir
+(``./{fomc,thu_bear,pdo,cpr,r4}/``). The meta-sleeve is the sole entry
+point — there's no legacy orchestrator-level dispatcher for the
+individual substrategies.
 
-  1. **Zero refactor risk** — existing sleeve tests keep passing, existing
-     code paths (orchestrator legacy dispatch, direct-import callers) keep
-     working.
-  2. **Single source of truth for signal logic** — the actual
-     decision/execute code lives where it always has; this registry is
-     pure plumbing.
-  3. **Incremental migration path** — a follow-up commit can physically
-     move each sub-strategy's code into this directory if desired, with
-     the existing sleeve dirs becoming thin re-export shims. The
-     contract here doesn't change.
-
-Adding a new substrategy: add an entry to ``_RESOLVERS`` returning the
-(decide_fn, execute_fn) tuple. Lazy-loaded so a broken sub-module doesn't
-prevent the meta-sleeve from importing.
+Adding a new substrategy: drop its code under ``internal/<name>/`` and
+add an entry to ``_RESOLVERS`` returning the ``(decide_fn, execute_fn)``
+tuple. Lazy-loaded so a broken sub-module doesn't prevent the
+meta-sleeve from importing.
 """
 from __future__ import annotations
 
@@ -31,42 +22,42 @@ from typing import Callable
 # Lazy-imported so circular-import edge cases don't break module load.
 
 def _resolve_fomc() -> tuple[Callable, Callable]:
-    from strategies.sleeves.fomc import signal as fomc
+    from .fomc import signal as fomc
     return fomc.try_decide_for_variant, fomc.execute_for_variant
 
 
 def _resolve_thu_bear() -> tuple[Callable, Callable]:
-    from strategies.sleeves.thu_bear import signal as thu_bear
+    from .thu_bear import signal as thu_bear
     return thu_bear.try_decide_for_variant, thu_bear.execute_for_variant
 
 
 def _resolve_pdo() -> tuple[Callable, Callable]:
-    from strategies.sleeves.pdo import signal as pdo
+    from .pdo import signal as pdo
     return pdo.try_decide_for_variant, pdo.execute_for_variant
 
 
 def _resolve_cpr() -> tuple[Callable, Callable]:
-    from strategies.sleeves.cpr import signal as cpr
+    from .cpr import signal as cpr
     return cpr.try_decide_for_variant, cpr.execute_for_variant
 
 
 def _resolve_r4_btc() -> tuple[Callable, Callable]:
-    from strategies.sleeves.r4 import signal as r4
+    from .r4 import signal as r4
     return r4.r4_btc_decide, r4._r4_execute
 
 
 def _resolve_r4_eth() -> tuple[Callable, Callable]:
-    from strategies.sleeves.r4 import signal as r4
+    from .r4 import signal as r4
     return r4.r4_eth_decide, r4._r4_execute
 
 
 def _resolve_r4_btc_v2() -> tuple[Callable, Callable]:
-    from strategies.sleeves.r4 import signal as r4
+    from .r4 import signal as r4
     return r4.r4_btc_v2_decide, r4._r4_execute
 
 
 def _resolve_r4_eth_v2() -> tuple[Callable, Callable]:
-    from strategies.sleeves.r4 import signal as r4
+    from .r4 import signal as r4
     return r4.r4_eth_v2_decide, r4._r4_execute
 
 

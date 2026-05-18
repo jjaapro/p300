@@ -92,7 +92,7 @@ def test_r4_inner_lev_equivalence(monkeypatch):
       R4_INNER_LEV_GATED        == R4_INNER_LEV_UNGATED * 0.4
       R4_INNER_LEV_UNGATED      == R4_INNER_LEV_UNGATED * 1.0
     """
-    from strategies.sleeves.r4.signal import R4_INNER_LEV_GATED, R4_INNER_LEV_UNGATED
+    from strategies.sleeves.timing_anomalies.internal.r4.signal import R4_INNER_LEV_GATED, R4_INNER_LEV_UNGATED
     assert R4_INNER_LEV_UNGATED * 0.4 == pytest.approx(R4_INNER_LEV_GATED)
     assert R4_INNER_LEV_UNGATED * 1.0 == pytest.approx(R4_INNER_LEV_UNGATED)
 
@@ -121,7 +121,7 @@ def test_v4_gate_returns_default_when_now_utc_missing():
 def test_v4_gate_passes_when_event_window_includes_today(monkeypatch):
     """Thursday + today in include set + not in exclude set -> fire=True."""
     from datetime import datetime, timezone
-    from strategies.sleeves.thu_bear import signal as thu_bear
+    from strategies.sleeves.timing_anomalies.internal.thu_bear import signal as thu_bear
     monkeypatch.setattr(thu_bear, "_event_cache", {
         "include": {"2026-05-14"},
         "exclude": set(),
@@ -137,7 +137,7 @@ def test_v4_gate_passes_when_event_window_includes_today(monkeypatch):
 def test_v4_gate_blocks_when_opex_adjacent(monkeypatch):
     """Thursday + today in exclude (OPEX-adjacent) -> fire=False."""
     from datetime import datetime, timezone
-    from strategies.sleeves.thu_bear import signal as thu_bear
+    from strategies.sleeves.timing_anomalies.internal.thu_bear import signal as thu_bear
     monkeypatch.setattr(thu_bear, "_event_cache", {
         "include": {"2026-05-14"},
         "exclude": {"2026-05-14"},
@@ -151,7 +151,7 @@ def test_v4_gate_blocks_when_opex_adjacent(monkeypatch):
 def test_v4_gate_blocks_when_not_event_adjacent(monkeypatch):
     """Thursday + today not in include -> fire=False (no_cpi_nfp)."""
     from datetime import datetime, timezone
-    from strategies.sleeves.thu_bear import signal as thu_bear
+    from strategies.sleeves.timing_anomalies.internal.thu_bear import signal as thu_bear
     monkeypatch.setattr(thu_bear, "_event_cache", {
         "include": {"2026-05-21"},  # next Thursday, not this one
         "exclude": set(),
@@ -166,7 +166,7 @@ def test_v4_gate_fails_closed_when_calendar_missing(monkeypatch):
     """Empty include set (calendar unavailable) -> fire=False, never silently
     degrades to V3 unconditional shorts."""
     from datetime import datetime, timezone
-    from strategies.sleeves.thu_bear import signal as thu_bear
+    from strategies.sleeves.timing_anomalies.internal.thu_bear import signal as thu_bear
     monkeypatch.setattr(thu_bear, "_event_cache", {
         "include": set(),
         "exclude": set(),
@@ -187,7 +187,7 @@ def test_fomc_gate_returns_default_when_no_fomc_due(monkeypatch):
     """If next_fomc_date returns None (no FOMC within 2 days), gate is a
     no-op. Most ticks take this path."""
     from datetime import datetime, timezone
-    import strategies.sleeves.fomc.signal as fomc_signal
+    import strategies.sleeves.timing_anomalies.internal.fomc.signal as fomc_signal
     monkeypatch.setattr(fomc_signal, "next_fomc_date", lambda now, lookahead_days=2: None)
     now = datetime(2026, 5, 15, 12, 0, tzinfo=timezone.utc)
     assert gating.get_decision("FOMC", "uncertain", now) is gating.DEFAULT_DECISION
@@ -204,7 +204,7 @@ def test_fomc_gate_returns_default_when_no_cached_eval(monkeypatch, tmp_path):
     decision."""
     from datetime import datetime, timezone
     import sqlite3
-    import strategies.sleeves.fomc.signal as fomc_signal
+    import strategies.sleeves.timing_anomalies.internal.fomc.signal as fomc_signal
     monkeypatch.setattr(fomc_signal, "next_fomc_date", lambda now, lookahead_days=2: "2026-06-18")
     db_path = tmp_path / "prod.db"
     con = sqlite3.connect(str(db_path))
@@ -221,7 +221,7 @@ def test_fomc_gate_returns_default_when_no_cached_eval(monkeypatch, tmp_path):
 def test_fomc_gate_fires_when_cached_decision_is_trade(monkeypatch, tmp_path):
     from datetime import datetime, timezone
     import sqlite3
-    import strategies.sleeves.fomc.signal as fomc_signal
+    import strategies.sleeves.timing_anomalies.internal.fomc.signal as fomc_signal
     monkeypatch.setattr(fomc_signal, "next_fomc_date", lambda now, lookahead_days=2: "2026-06-18")
     db_path = tmp_path / "prod.db"
     con = sqlite3.connect(str(db_path))
@@ -247,7 +247,7 @@ def test_fomc_gate_fires_when_cached_decision_is_trade(monkeypatch, tmp_path):
 def test_fomc_gate_blocks_when_cached_decision_is_skip(monkeypatch, tmp_path):
     from datetime import datetime, timezone
     import sqlite3
-    import strategies.sleeves.fomc.signal as fomc_signal
+    import strategies.sleeves.timing_anomalies.internal.fomc.signal as fomc_signal
     monkeypatch.setattr(fomc_signal, "next_fomc_date", lambda now, lookahead_days=2: "2026-06-18")
     db_path = tmp_path / "prod.db"
     con = sqlite3.connect(str(db_path))
@@ -272,7 +272,7 @@ def test_fomc_gate_handles_missing_table(monkeypatch, tmp_path):
     """A bot booting on a fresh DB before fomc_observer is created sees
     sqlite3.OperationalError. Gate must swallow it and return DEFAULT."""
     from datetime import datetime, timezone
-    import strategies.sleeves.fomc.signal as fomc_signal
+    import strategies.sleeves.timing_anomalies.internal.fomc.signal as fomc_signal
     monkeypatch.setattr(fomc_signal, "next_fomc_date", lambda now, lookahead_days=2: "2026-06-18")
     db_path = tmp_path / "prod.db"
     # Empty DB — no fomc_observer table.

@@ -318,16 +318,16 @@ def _load_close_fn(strategy: str):
         from strategies.sleeves.carry.signal import _close_carry_paper
         return _close_carry_paper
     if strategy == "THU_BEAR":
-        from strategies.sleeves.thu_bear.signal import _close_thu_bear_paper
+        from strategies.sleeves.timing_anomalies.internal.thu_bear.signal import _close_thu_bear_paper
         return _close_thu_bear_paper
     if strategy == "PDO_RETOUCH":
-        from strategies.sleeves.pdo.signal import _close_pdo_paper
+        from strategies.sleeves.timing_anomalies.internal.pdo.signal import _close_pdo_paper
         return _close_pdo_paper
     if strategy == "CPR":
-        from strategies.sleeves.cpr.signal import _close_cpr_paper
+        from strategies.sleeves.timing_anomalies.internal.cpr.signal import _close_cpr_paper
         return _close_cpr_paper
     if strategy == "FOMC":
-        from strategies.sleeves.fomc.signal import _close_fomc_paper
+        from strategies.sleeves.timing_anomalies.internal.fomc.signal import _close_fomc_paper
         return _close_fomc_paper
     return None
 

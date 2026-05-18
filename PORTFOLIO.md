@@ -20,14 +20,14 @@ the 2026-05-10 live/sim refactor).
 |---|---|---|---|---|---|
 | [S-003 ADX](strategies/sleeves/adx/signal.py) | 15% | 5× | BTC | LONG/SHORT | days–weeks |
 | [S-078 Carry](strategies/sleeves/carry/signal.py) | 8% | 5× | BTC (delta-neutral) | n/a | days |
-| [S-096 V4 Thu Bear](strategies/sleeves/thu_bear/signal.py) | 6% (3% BTC + 3% ETH) | 5× | BTC + ETH | SHORT | 24h (Thu) |
-| [S-102 PDO-L-RF](strategies/sleeves/pdo/signal.py) | 9% (4.5/asset) | 1× | BTC + ETH | LONG | 24h |
-| [S-101 CPR](strategies/sleeves/cpr/signal.py) | 5% (2.5/asset) | 1× | BTC + ETH | LONG | ≤15 days |
-| [S-103 FOMC](strategies/sleeves/fomc/signal.py) | 5% | 10× | BTC | LONG | ~10.5h (FOMC days) |
-| [JPLUS_R4_BTC](strategies/sleeves/r4/signal.py) | regime-keyed | regime × vol-lev | BTC | LONG | 12h |
-| [JPLUS_R4_ETH](strategies/sleeves/r4/signal.py) | regime-keyed | regime × vol-lev | ETH | LONG | 24h |
-| [JPLUS_R4_BTC_V2](strategies/sleeves/r4/signal.py) | regime-keyed | regime × vol-lev | BTC | LONG | 10h |
-| [JPLUS_R4_ETH_V2](strategies/sleeves/r4/signal.py) | regime-keyed | regime × vol-lev | ETH | LONG | 10h |
+| [S-096 V4 Thu Bear](strategies/sleeves/timing_anomalies/internal/thu_bear/signal.py) | 6% (3% BTC + 3% ETH) | 5× | BTC + ETH | SHORT | 24h (Thu) |
+| [S-102 PDO-L-RF](strategies/sleeves/timing_anomalies/internal/pdo/signal.py) | 9% (4.5/asset) | 1× | BTC + ETH | LONG | 24h |
+| [S-101 CPR](strategies/sleeves/timing_anomalies/internal/cpr/signal.py) | 5% (2.5/asset) | 1× | BTC + ETH | LONG | ≤15 days |
+| [S-103 FOMC](strategies/sleeves/timing_anomalies/internal/fomc/signal.py) | 5% | 10× | BTC | LONG | ~10.5h (FOMC days) |
+| [JPLUS_R4_BTC](strategies/sleeves/timing_anomalies/internal/r4/signal.py) | regime-keyed | regime × vol-lev | BTC | LONG | 12h |
+| [JPLUS_R4_ETH](strategies/sleeves/timing_anomalies/internal/r4/signal.py) | regime-keyed | regime × vol-lev | ETH | LONG | 24h |
+| [JPLUS_R4_BTC_V2](strategies/sleeves/timing_anomalies/internal/r4/signal.py) | regime-keyed | regime × vol-lev | BTC | LONG | 10h |
+| [JPLUS_R4_ETH_V2](strategies/sleeves/timing_anomalies/internal/r4/signal.py) | regime-keyed | regime × vol-lev | ETH | LONG | 10h |
 | [JPLUS_EMA_BTC](strategies/sleeves/ema/signal.py) | regime-keyed | vol-lev | BTC | LONG/SHORT | continuous |
 | [JPLUS_ETH_DAILY](strategies/sleeves/eth_daily/signal.py) | regime-keyed | vol-lev | ETH | LONG | continuous in bull |
 | [AI_QUANT](strategies/sleeves/ai_quant/signal.py) *(experimental)* | 2% × conviction | 3× | BTC | LONG/SHORT/FLAT | LLM-discretionary |
@@ -201,10 +201,10 @@ handler:
 
 | Sleeve | Allocation | Leverage | Asset | Direction | Holding period |
 |---|---|---|---|---|---|
-| [JPLUS_R4_BTC](strategies/sleeves/r4/signal.py) | **0–11.1%** (regime-varying, capped) | 2.5× inner × vol_lev → ~5× typ / 7.5× max | BTC | LONG | 12h (Mon 06→18 UTC, weeks 1-2) |
-| [JPLUS_R4_ETH](strategies/sleeves/r4/signal.py) | **0–14.8%** (regime-varying, capped) | 2.5× inner × vol_lev → ~5× typ / 7.5× max | ETH | LONG | 24h (Tue 20→Wed 20 UTC, weeks 1-2) |
-| [JPLUS_R4_BTC_V2](strategies/sleeves/r4/signal.py) | **0–5.6%** (regime-varying, capped) | 2.5× inner × vol_lev → ~5× typ / 7.5× max | BTC | LONG | 10h (Wed/Fri 04→14 UTC, weeks 1-2) |
-| [JPLUS_R4_ETH_V2](strategies/sleeves/r4/signal.py) | **0–7.4%** (regime-varying, capped) | 2.5× inner × vol_lev → ~5× typ / 7.5× max | ETH | LONG | 10h (Wed/Fri 04→14 UTC, weeks 1-2) |
+| [JPLUS_R4_BTC](strategies/sleeves/timing_anomalies/internal/r4/signal.py) | **0–11.1%** (regime-varying, capped) | 2.5× inner × vol_lev → ~5× typ / 7.5× max | BTC | LONG | 12h (Mon 06→18 UTC, weeks 1-2) |
+| [JPLUS_R4_ETH](strategies/sleeves/timing_anomalies/internal/r4/signal.py) | **0–14.8%** (regime-varying, capped) | 2.5× inner × vol_lev → ~5× typ / 7.5× max | ETH | LONG | 24h (Tue 20→Wed 20 UTC, weeks 1-2) |
+| [JPLUS_R4_BTC_V2](strategies/sleeves/timing_anomalies/internal/r4/signal.py) | **0–5.6%** (regime-varying, capped) | 2.5× inner × vol_lev → ~5× typ / 7.5× max | BTC | LONG | 10h (Wed/Fri 04→14 UTC, weeks 1-2) |
+| [JPLUS_R4_ETH_V2](strategies/sleeves/timing_anomalies/internal/r4/signal.py) | **0–7.4%** (regime-varying, capped) | 2.5× inner × vol_lev → ~5× typ / 7.5× max | ETH | LONG | 10h (Wed/Fri 04→14 UTC, weeks 1-2) |
 | [JPLUS_EMA_BTC](strategies/sleeves/ema/signal.py) | **11.1–30%** (regime-varying, capped) | vol_lev only: 0.5×–3× (regime-capped) | BTC | LONG / SHORT (weekly EMA flip) | continuous (open-ended; FLIP on weekly cross) |
 | [JPLUS_ETH_DAILY](strategies/sleeves/eth_daily/signal.py) | **0–8.7%** (bull regimes only) | vol_lev only: 0.5×–3× (regime-capped) | ETH | LONG | continuous (opens on regime enter bull; closes on regime exit) |
 
@@ -277,7 +277,7 @@ available as a **research-only** tool for offline analysis (regenerating
 §6 numbers, parameter sweeps, walk-forward studies); no runtime path
 calls it.
 
-Cost migration: [strategies/sleeves/r4/  (sleeve folder)](strategies/sleeves/r4/  (sleeve folder)) emits gross window returns
+Cost migration: [strategies/sleeves/timing_anomalies/internal/r4/  (sleeve folder)](strategies/sleeves/timing_anomalies/internal/r4/  (sleeve folder)) emits gross window returns
 (`COST_BP_RT = 0.0`); the 10bp R4 round-trip is charged at trade close.
 [strategies/sleeves/ema/  (sleeve folder)](strategies/sleeves/ema/  (sleeve folder))'s `_COMMISSION` is `0.0`
 explicitly (was a phantom constant pre-migration). Since 2026-05-13
@@ -332,10 +332,10 @@ Four signal sources contribute to the daily 1× return. Each sub-sleeve's
 |---|---|---|---|
 | EMA(BTC) | [strategies/sleeves/ema/  (sleeve folder)](strategies/sleeves/ema/  (sleeve folder)) | position direction × BTC daily return | 1× |
 | ETH daily | [data/loaders.py](data/loaders.py) | ETH's daily return | 1× |
-| R4 BTC | [strategies/sleeves/r4/  (sleeve folder)](strategies/sleeves/r4/  (sleeve folder)) | Mon 06→18 UTC window return | **2.5× / 1×** (gated) |
-| R4 ETH | [strategies/sleeves/r4/  (sleeve folder)](strategies/sleeves/r4/  (sleeve folder)) | 24h Tue 20→Wed 20 UTC window return | **2.5× / 1×** (gated) |
-| R4 BTC V2 | [strategies/sleeves/r4/  (sleeve folder)](strategies/sleeves/r4/  (sleeve folder)) | Wed/Fri 04→14 UTC window return | **2.5× / 1×** (gated) |
-| R4 ETH V2 | [strategies/sleeves/r4/  (sleeve folder)](strategies/sleeves/r4/  (sleeve folder)) | Wed/Fri 04→14 UTC window return | **2.5× / 1×** (gated) |
+| R4 BTC | [strategies/sleeves/timing_anomalies/internal/r4/  (sleeve folder)](strategies/sleeves/timing_anomalies/internal/r4/  (sleeve folder)) | Mon 06→18 UTC window return | **2.5× / 1×** (gated) |
+| R4 ETH | [strategies/sleeves/timing_anomalies/internal/r4/  (sleeve folder)](strategies/sleeves/timing_anomalies/internal/r4/  (sleeve folder)) | 24h Tue 20→Wed 20 UTC window return | **2.5× / 1×** (gated) |
+| R4 BTC V2 | [strategies/sleeves/timing_anomalies/internal/r4/  (sleeve folder)](strategies/sleeves/timing_anomalies/internal/r4/  (sleeve folder)) | Wed/Fri 04→14 UTC window return | **2.5× / 1×** (gated) |
+| R4 ETH V2 | [strategies/sleeves/timing_anomalies/internal/r4/  (sleeve folder)](strategies/sleeves/timing_anomalies/internal/r4/  (sleeve folder)) | Wed/Fri 04→14 UTC window return | **2.5× / 1×** (gated) |
 
 #### 3.1.1 EMA(BTC) — Weekly crossover position-flip
 
@@ -570,7 +570,7 @@ injects the result as `_effective_gate`. Three gates registered:
 |---|---|---|
 | R4 vol-gate | modulator | BTC 30d realized-vol > 75th-percentile (365d window) → R4 inner leverage 1.0× instead of 2.5× |
 | THU_BEAR V4 | binary | CPI/NFP-adjacent Thursday + ex-OPEX → fire; otherwise block |
-| FOMC composite | binary | Phase × F&G × Polymarket-cut-prob filter via [`fomc_observer`](strategies/sleeves/fomc/signal.py) table |
+| FOMC composite | binary | Phase × F&G × Polymarket-cut-prob filter via [`fomc_observer`](strategies/sleeves/timing_anomalies/internal/fomc/signal.py) table |
 
 Walk-forward CV protocol for adding/rebuilding a gate:
 [GATE_VALIDATION.md](GATE_VALIDATION.md). The R4 vol-gate is
@@ -975,10 +975,10 @@ were affected by the data-source switch.
 
 | Concern | File |
 |---|---|
-| Tactical sleeves | [strategies/sleeves/](strategies/sleeves/) — adx, carry, thu_bear, pdo, cpr, fomc |
-| Core J+ live handlers | [strategies/sleeves/r4/signal.py](strategies/sleeves/r4/signal.py) (R4 family), [strategies/sleeves/ema/signal.py](strategies/sleeves/ema/signal.py) (EMA_BTC), [strategies/sleeves/eth_daily/signal.py](strategies/sleeves/eth_daily/signal.py) |
+| Tactical sleeves | [strategies/sleeves/](strategies/sleeves/) — adx, carry, ai_quant, ema, eth_daily, short_squeeze, timing_anomalies (FOMC/THU_BEAR/PDO/CPR/R4 substrategies live under timing_anomalies/internal/) |
+| Core J+ live handlers | [strategies/sleeves/timing_anomalies/internal/r4/signal.py](strategies/sleeves/timing_anomalies/internal/r4/signal.py) (R4 family), [strategies/sleeves/ema/signal.py](strategies/sleeves/ema/signal.py) (EMA_BTC), [strategies/sleeves/eth_daily/signal.py](strategies/sleeves/eth_daily/signal.py) |
 | AI_QUANT discretionary trader | [strategies/sleeves/ai_quant/](strategies/sleeves/ai_quant/) — signal, decision, context, prompt, chart, journal, archive |
-| Decision rule for FOMC | [strategies/sleeves/fomc/signal.py:evaluate()](strategies/sleeves/fomc/signal.py) |
+| Decision rule for FOMC | [strategies/sleeves/timing_anomalies/internal/fomc/signal.py:evaluate()](strategies/sleeves/timing_anomalies/internal/fomc/signal.py) |
 | Two-phase dispatch contract (Intent + reconcile) | [strategies/support/dispatch.py](strategies/support/dispatch.py) |
 
 **Cross-sleeve coordinators (§4)**

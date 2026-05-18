@@ -142,7 +142,7 @@ def _v4_gate(strategy_id: str,
         return DEFAULT_DECISION
     if now_utc.weekday() != 3:  # 3 = Thursday
         return DEFAULT_DECISION
-    from strategies.sleeves.thu_bear.signal import _v4_passes
+    from strategies.sleeves.timing_anomalies.internal.thu_bear.signal import _v4_passes
     today_iso = now_utc.date().isoformat()
     ok, reason = _v4_passes(today_iso)
     return GateDecision(
@@ -176,7 +176,7 @@ def _fomc_gate(strategy_id: str,
         return DEFAULT_DECISION
     # Calendar lookup (~ms). Returns None when no FOMC is within window.
     try:
-        from strategies.sleeves.fomc.signal import next_fomc_date
+        from strategies.sleeves.timing_anomalies.internal.fomc.signal import next_fomc_date
     except ImportError:
         return DEFAULT_DECISION
     fomc_date = next_fomc_date(now_utc, lookahead_days=2)

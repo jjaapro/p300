@@ -264,17 +264,16 @@ p300/
 │   ├── orchestrator.py            # per-tick scheduler; injects _effective_*
 │   │                              #   (P2.4 — weight / leverage / gate / vol scalar)
 │   ├── trades.py                  # paper-trade open/close persistence
-│   ├── sleeves/                   # one folder per sleeve
+│   ├── sleeves/                   # one folder per top-level sleeve
 │   │   ├── adx/                   # S-003 ADX
 │   │   ├── carry/                 # S-078 delta-neutral carry
-│   │   ├── thu_bear/              # S-096 V4 Thursday-bear
-│   │   ├── pdo/                   # PDO-L-RF
-│   │   ├── cpr/                   # CPR
-│   │   ├── fomc/                  # FOMC long T-10h → T+0.5h
 │   │   ├── ai_quant/              # discretionary LLM trader (default-off)
-│   │   ├── r4/                    # JPLUS_R4_BTC / _ETH / _BTC_V2 / _ETH_V2
 │   │   ├── ema/                   # JPLUS_EMA_BTC
-│   │   └── eth_daily/             # JPLUS_ETH_DAILY
+│   │   ├── eth_daily/             # JPLUS_ETH_DAILY
+│   │   ├── short_squeeze/         # S-105 SHORT_SQUEEZE
+│   │   └── timing_anomalies/      # TIMING_ANOMALIES meta-sleeve
+│   │       └── internal/          # 5 substrategies (fomc, thu_bear, pdo, cpr, r4 →
+│   │                              #   FOMC, THU_BEAR, PDO_L_RF, CPR, R4_BTC/ETH/V2)
 │   └── support/                   # shared math + state services
 │       ├── db.py                  # path constant (PROD_DB; TRADER_DB/DASH_DB alias it)
 │       ├── allocation.py          # per-(sleeve, regime) WEIGHT_TABLE (P2.4a)

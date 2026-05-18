@@ -3,7 +3,7 @@
 Replaces three separate per-caller implementations that previously lived in:
   services/funding_util.py:accrued_funding_pct           (point lookup over a window)
   strategies/sleeves/carry/signal.py:_load_recent_daily_funding   (daily sum)
-  strategies/sleeves/cpr/signal.py:_load_funding_daily   (daily mean)
+  strategies/sleeves/timing_anomalies/internal/cpr/signal.py:_load_funding_daily   (daily mean)
 
 All three had their own SQL against cd_funding_rate / cd_funding_rate_eth.
 Two of the three had the 8x-inflation bug found 2026-05-04 (fixed in commit

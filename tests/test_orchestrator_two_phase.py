@@ -20,22 +20,35 @@ from strategies.support.dispatch import Intent
 
 
 def test_load_dispatch_registers_two_phase_sleeves(monkeypatch):
-    """After _load_dispatch, the migrated sleeves (AI_QUANT, S-003 ADX,
-    S-096 THU_BEAR as of 2026-05-16) must appear in
-    STRATEGY_TWO_PHASE_DISPATCH with both decide and execute callables."""
+    """After _load_dispatch, every top-level sleeve must appear in
+    STRATEGY_TWO_PHASE_DISPATCH with both decide and execute callables.
+
+    Timing sub-sleeves (FOMC, THU_BEAR, PDO, CPR, R4_*) are NOT registered
+    individually — they dispatch via TIMING_ANOMALIES (see 2026-05-18
+    physical relocation under timing_anomalies/internal/).
+    """
     # Reset state so _load_dispatch repopulates.
     monkeypatch.setattr(orchestrator, "STRATEGY_DISPATCH", {})
     monkeypatch.setattr(orchestrator, "STRATEGY_TWO_PHASE_DISPATCH", {})
     orchestrator._load_dispatch()
-    for sid in ("AI_QUANT", "S-003", "S-096", "PDO-L-RF", "CPR", "FOMC",
-                  "S-078", "JPLUS_ETH_DAILY", "JPLUS_EMA_BTC",
-                  "JPLUS_R4_BTC", "JPLUS_R4_ETH",
-                  "JPLUS_R4_BTC_V2", "JPLUS_R4_ETH_V2"):
+    for sid in ("AI_QUANT", "S-003", "S-078",
+                  "JPLUS_ETH_DAILY", "JPLUS_EMA_BTC",
+                  "SHORT_SQUEEZE", "TIMING_ANOMALIES"):
         assert sid in orchestrator.STRATEGY_TWO_PHASE_DISPATCH, (
             f"{sid} not registered as two-phase")
         decide_fn, execute_fn = orchestrator.STRATEGY_TWO_PHASE_DISPATCH[sid]
         assert callable(decide_fn)
         assert callable(execute_fn)
+
+    # Legacy timing strategy_ids must NOT appear at the orchestrator level —
+    # they're dispatched only via TIMING_ANOMALIES.internal.
+    for legacy_sid in ("S-096", "PDO-L-RF", "CPR", "FOMC",
+                         "JPLUS_R4_BTC", "JPLUS_R4_ETH",
+                         "JPLUS_R4_BTC_V2", "JPLUS_R4_ETH_V2"):
+        assert legacy_sid not in orchestrator.STRATEGY_TWO_PHASE_DISPATCH, (
+            f"{legacy_sid} unexpectedly still wired at orchestrator level")
+        assert legacy_sid not in orchestrator.STRATEGY_DISPATCH, (
+            f"{legacy_sid} unexpectedly still wired at orchestrator level")
 
 
 def test_two_phase_skips_execute_when_decide_returns_none(monkeypatch):

@@ -313,47 +313,25 @@ def _load_dispatch():
     if STRATEGY_DISPATCH:
         return
     from strategies.sleeves.adx import signal as adx_sleeve
-    from strategies.sleeves.thu_bear import signal as thu_bear_sleeve
-    from strategies.sleeves.cpr import signal as cpr_sleeve
-    from strategies.sleeves.pdo import signal as pdo_sleeve
     from strategies.sleeves.carry import signal as carry_sleeve
-    from strategies.sleeves.fomc import signal as fomc_sleeve
     from strategies.sleeves.ai_quant import signal as ai_quant_sleeve
-    from strategies.sleeves.r4 import signal as r4_sleeve
     from strategies.sleeves.ema import signal as ema_sleeve
     from strategies.sleeves.eth_daily import signal as eth_daily_sleeve
     from strategies.sleeves.short_squeeze import signal as short_squeeze_sleeve
     from strategies.sleeves.timing_anomalies import signal as timing_anomalies_sleeve
     STRATEGY_DISPATCH = {
         "S-003":           adx_sleeve.try_fire_for_variant,
-        "S-096":           thu_bear_sleeve.try_fire_for_variant,
         "S-078":           carry_sleeve.try_fire_for_variant,
-        "PDO-L-RF":        pdo_sleeve.try_fire_for_variant,
-        "CPR":             cpr_sleeve.try_fire_for_variant,
-        "FOMC":            fomc_sleeve.try_fire_for_variant,
-        # Core J+ sub-sleeves — live entry handlers (Phases 1-3 of the
-        # live-execution refactor). Each opens its own discrete trades
-        # at the calendar/signal moment with the live price.
-        "JPLUS_R4_BTC":    r4_sleeve.r4_btc_try_fire,
-        "JPLUS_R4_ETH":    r4_sleeve.r4_eth_try_fire,
-        "JPLUS_R4_BTC_V2": r4_sleeve.r4_btc_v2_try_fire,
-        "JPLUS_R4_ETH_V2": r4_sleeve.r4_eth_v2_try_fire,
         "JPLUS_EMA_BTC":   ema_sleeve.ema_btc_try_fire,
         "JPLUS_ETH_DAILY": eth_daily_sleeve.eth_daily_try_fire,
-        # AI_QUANT — discretionary LLM trader. Default-off via
-        # AI_QUANT_ENABLED env so the dispatch is wired but no API
-        # cost is incurred until the user explicitly opts in.
         "AI_QUANT":        ai_quant_sleeve.try_fire_for_variant,
-        # S-105 SHORT_SQUEEZE — bar-level scalp. Long BTC at a swept low
-        # with perp/spot CVD divergence + asia-grind macro. 15m signal,
-        # fixed stop/target/time-stop. See strategies/sleeves/short_squeeze/.
         "SHORT_SQUEEZE":   short_squeeze_sleeve.try_fire_for_variant,
         # TIMING_ANOMALIES — meta-sleeve consolidating calendar/clock
-        # edges. Internally dispatches to FOMC, R4 family, THU_BEAR, PDO,
-        # CPR substrategies; per-substrategy params + weight live in
-        # sleeve_cfg.params.substrategies. The individual sleeve entries
-        # above remain registered for backward-compat with existing
-        # variants until they migrate.
+        # edges (FOMC, R4 family, THU_BEAR, PDO, CPR). Per-substrategy
+        # params + weight live in sleeve_cfg.params.substrategies; the
+        # meta-sleeve fans dispatch out to internal/ modules. Sole entry
+        # point for these substrategies — flat-composition variants
+        # were migrated 2026-05-18 (see project_timing_anomalies_sleeve.md).
         "TIMING_ANOMALIES": timing_anomalies_sleeve.try_fire_for_variant,
     }
     # Two-phase migrations (P2.4e/f Stage 2). Other sleeves follow as
@@ -370,30 +348,6 @@ def _load_dispatch():
         STRATEGY_TWO_PHASE_DISPATCH["S-003"] = (
             adx_sleeve.try_decide_for_variant,
             adx_sleeve.execute_for_variant,
-        )
-    if (hasattr(thu_bear_sleeve, "try_decide_for_variant")
-            and hasattr(thu_bear_sleeve, "execute_for_variant")):
-        STRATEGY_TWO_PHASE_DISPATCH["S-096"] = (
-            thu_bear_sleeve.try_decide_for_variant,
-            thu_bear_sleeve.execute_for_variant,
-        )
-    if (hasattr(pdo_sleeve, "try_decide_for_variant")
-            and hasattr(pdo_sleeve, "execute_for_variant")):
-        STRATEGY_TWO_PHASE_DISPATCH["PDO-L-RF"] = (
-            pdo_sleeve.try_decide_for_variant,
-            pdo_sleeve.execute_for_variant,
-        )
-    if (hasattr(cpr_sleeve, "try_decide_for_variant")
-            and hasattr(cpr_sleeve, "execute_for_variant")):
-        STRATEGY_TWO_PHASE_DISPATCH["CPR"] = (
-            cpr_sleeve.try_decide_for_variant,
-            cpr_sleeve.execute_for_variant,
-        )
-    if (hasattr(fomc_sleeve, "try_decide_for_variant")
-            and hasattr(fomc_sleeve, "execute_for_variant")):
-        STRATEGY_TWO_PHASE_DISPATCH["FOMC"] = (
-            fomc_sleeve.try_decide_for_variant,
-            fomc_sleeve.execute_for_variant,
         )
     if (hasattr(carry_sleeve, "try_decide_for_variant")
             and hasattr(carry_sleeve, "execute_for_variant")):
@@ -413,15 +367,6 @@ def _load_dispatch():
             ema_sleeve.try_decide_for_variant,
             ema_sleeve.execute_for_variant,
         )
-    # R4 family: per-variant decide functions share `_r4_execute`.
-    for sid, decide_fn in (
-        ("JPLUS_R4_BTC",    getattr(r4_sleeve, "r4_btc_decide", None)),
-        ("JPLUS_R4_ETH",    getattr(r4_sleeve, "r4_eth_decide", None)),
-        ("JPLUS_R4_BTC_V2", getattr(r4_sleeve, "r4_btc_v2_decide", None)),
-        ("JPLUS_R4_ETH_V2", getattr(r4_sleeve, "r4_eth_v2_decide", None)),
-    ):
-        if decide_fn is not None and hasattr(r4_sleeve, "_r4_execute"):
-            STRATEGY_TWO_PHASE_DISPATCH[sid] = (decide_fn, r4_sleeve._r4_execute)
     if (hasattr(short_squeeze_sleeve, "try_decide_for_variant")
             and hasattr(short_squeeze_sleeve, "execute_for_variant")):
         STRATEGY_TWO_PHASE_DISPATCH["SHORT_SQUEEZE"] = (
@@ -439,10 +384,7 @@ def _load_dispatch():
 _warned_missing: set[tuple[str, str]] = set()
 
 
-_SLEEVE_KEY_FOR_STRATEGY = {"S-003": "s003", "S-096": "s096", "S-078": "s078",
-                             "PDO-L-RF": "pdo", "CPR": "cpr", "FOMC": "fomc",
-                             "JPLUS_R4_BTC": "r4_btc",
-                             "JPLUS_R4_ETH": "r4_eth",
+_SLEEVE_KEY_FOR_STRATEGY = {"S-003": "s003", "S-078": "s078",
                              "JPLUS_EMA_BTC": "ema_btc",
                              "JPLUS_ETH_DAILY": "eth_daily",
                              "SHORT_SQUEEZE": "short_squeeze",
@@ -700,7 +642,7 @@ def tick() -> None:
 
     # FOMC observer — runs unconditionally each tick, regardless of variants.
     try:
-        from strategies.sleeves.fomc import signal as fomc_sleeve
+        from strategies.sleeves.timing_anomalies.internal.fomc import signal as fomc_sleeve
         fomc_sleeve.tick_observer()
     except Exception as e:
         log.exception(f"[fomc-observer] tick error: {e}")

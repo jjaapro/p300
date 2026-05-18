@@ -18,7 +18,7 @@ A single in-sample backtest answers "did this filter help on the data
 I built it from?" — almost always yes, often spuriously. Two failure
 modes the codebase has documented evidence of:
 
-- **THU_BEAR V4 event filter** ([strategies/sleeves/thu_bear/signal.py:20-25](strategies/sleeves/thu_bear/signal.py#L20-L25)):
+- **THU_BEAR V4 event filter** ([strategies/sleeves/timing_anomalies/internal/thu_bear/signal.py:20-25](strategies/sleeves/timing_anomalies/internal/thu_bear/signal.py#L20-L25)):
   derived post-hoc from E4 event-purged CPCV attribution of V3's
   Thursdays. Any backtest that reuses the same CPI/NFP/OPEX series the
   filter was *picked from* outperforms V3 by construction. Until live
@@ -26,7 +26,7 @@ modes the codebase has documented evidence of:
   in the in-sample replay is informative about curve-fit risk, not
   expected live performance.
 
-- **FOMC composite** ([strategies/sleeves/fomc/signal.py](strategies/sleeves/fomc/signal.py),
+- **FOMC composite** ([strategies/sleeves/timing_anomalies/internal/fomc/signal.py](strategies/sleeves/timing_anomalies/internal/fomc/signal.py),
   see [BACKLOG.md](BACKLOG.md) P-300 caveats): "tuned on the same
   52-event historical cohort that informs the live decision rule —
   in-sample selection bias applies."

@@ -16,10 +16,10 @@ Coverage:
   - strategies.sleeves.adx.signal._current_signal (S-003 ADX, 15%)
   - regime_classifier.classify_regime (gates S-096 Thu Bear, 6%)
   - strategies.sleeves.carry.signal._load_recent_daily_funding (S-078 Carry, 12%)
-  - strategies.sleeves.cpr.signal._load_daily_closes (CPR, 8%)
-  - strategies.sleeves.pdo.signal._btc_30d_return_pct (PDO, 4%)
-  - strategies.sleeves.thu_bear.signal._get_regime_for_prev_day (Thu Bear, 6%)
-  - strategies.sleeves.fomc.signal.evaluate (FOMC, 5%)
+  - strategies.sleeves.timing_anomalies.internal.cpr.signal._load_daily_closes (CPR, 8%)
+  - strategies.sleeves.timing_anomalies.internal.pdo.signal._btc_30d_return_pct (PDO, 4%)
+  - strategies.sleeves.timing_anomalies.internal.thu_bear.signal._get_regime_for_prev_day (Thu Bear, 6%)
+  - strategies.sleeves.timing_anomalies.internal.fomc.signal.evaluate (FOMC, 5%)
 """
 from __future__ import annotations
 
@@ -202,7 +202,7 @@ def test_cpr_daily_closes_no_lookahead(early_clock, late_clock):
     are 4 months apart to guarantee meaningful overlap. CPR caches per
     (asset, UTC-day), so we clear the cache between clocks to actually
     exercise the loader path."""
-    from strategies.sleeves.cpr.signal import _daily_closes_cache, _load_daily_closes
+    from strategies.sleeves.timing_anomalies.internal.cpr.signal import _daily_closes_cache, _load_daily_closes
 
     _daily_closes_cache.clear()
     clock.set_simulated_now(early_clock)
@@ -236,7 +236,7 @@ def test_pdo_30d_return_clock_bounded():
     it at clock=T, then at T2 > T, then back at T must yield the same value
     for T both times. Catches accidental global mutation or peeking past the
     clock bound."""
-    from strategies.sleeves.pdo.signal import _btc_30d_return_pct
+    from strategies.sleeves.timing_anomalies.internal.pdo.signal import _btc_30d_return_pct
 
     t1 = datetime(2024, 6, 1, 12, tzinfo=timezone.utc)
     t2 = datetime(2025, 6, 1, 12, tzinfo=timezone.utc)
@@ -262,8 +262,8 @@ def test_thu_bear_regime_lookup_no_lookahead():
     regime label at two different clock positions, both well after the target
     Thursday. The cache is keyed per UTC day so we clear it between clocks to
     force a fresh regime_map load each time."""
-    from strategies.sleeves.thu_bear import signal as tb
-    from strategies.sleeves.thu_bear.signal import _get_regime_for_prev_day
+    from strategies.sleeves.timing_anomalies.internal.thu_bear import signal as tb
+    from strategies.sleeves.timing_anomalies.internal.thu_bear.signal import _get_regime_for_prev_day
 
     target_thursday = datetime(2024, 5, 9, 0, tzinfo=timezone.utc)
     t1 = datetime(2024, 6, 1, tzinfo=timezone.utc)
@@ -294,7 +294,7 @@ def test_fomc_evaluate_past_meeting_clock_stable():
     polymarket proxy for pre-2026). Re-evaluating at a later clock must
     yield the same decision and inputs — anything else means a service is
     leaking present-day state into a past-date lookup."""
-    from strategies.sleeves.fomc.signal import evaluate
+    from strategies.sleeves.timing_anomalies.internal.fomc.signal import evaluate
 
     fomc_date = "2024-12-18"  # past, pre-2026 -> ex-post polymarket proxy
 
