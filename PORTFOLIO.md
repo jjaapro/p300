@@ -69,9 +69,22 @@ conflict resolution. AI_QUANT is last (yields first).
 
 ## 2. Per-sleeve detail
 
-Tactical sleeves (regime-independent allocation today; §3 covers the
-J+ family). Section numbering preserved from the pre-restructure
-revision for backwards-compatible cross-references.
+Per-substrategy behavior — same edge thesis, same params, same trade
+emission. Section numbering preserved from the pre-restructure revision
+for backwards-compatible cross-references.
+
+> **Dispatch note (2026-05-18 reorg):** the 8 calendar/clock substrategies
+> below (S-096 THU_BEAR, S-102 PDO-L-RF, S-101 CPR, S-103 FOMC, the four
+> R4 variants — §3.3.1 etc.) are no longer dispatched individually by
+> the orchestrator. They live under
+> [`strategies/sleeves/timing_anomalies/internal/`](strategies/sleeves/timing_anomalies/internal/)
+> and fire through the single `TIMING_ANOMALIES` meta-sleeve, which
+> fans intents out per substrategy. Trades these emit still tag
+> `trades.strategy` with the substrategy's own name (e.g. `FOMC`,
+> `THU_BEAR`), so per-substrategy attribution is preserved end-to-end.
+> Top-level sleeves dispatched directly are: S-003 ADX, S-078 Carry,
+> JPLUS_EMA_BTC, JPLUS_ETH_DAILY, SHORT_SQUEEZE, AI_QUANT,
+> TIMING_ANOMALIES.
 
 ### 2.1 S-003 ADX — Trend-flip on BTC
 

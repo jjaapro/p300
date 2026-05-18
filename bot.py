@@ -1,20 +1,23 @@
 """P-300 Aggressive 2.0 — standalone paper-trading bot.
 
-Runs the orchestrator on a 60-second loop. Each tick dispatches all
-sleeves of the paper variant; sleeves emit phantom trades into the
+Runs the orchestrator on a 60-second loop. Each tick dispatches the
+variant's top-level sleeves; sleeves emit phantom trades into the
 ``trades`` table tagged ``execution_mode='paper'`` and
 ``strategy_variant='p300_aggressive_v2_v1_0'``. Realized PnL is the
 sum of the trade ledger; there is no parallel theoretical-PnL track.
 
-Tactical sleeves (50%):
-  S-003 ADX, S-078 Carry, S-096 V4 Thu Bear, PDO-L-RF, CPR, FOMC.
+Top-level sleeves dispatched on each tick (orchestrator.STRATEGY_DISPATCH):
+  S-003 ADX, S-078 Carry, JPLUS_EMA_BTC, JPLUS_ETH_DAILY,
+  SHORT_SQUEEZE, AI_QUANT, TIMING_ANOMALIES.
 
-Core J+ sub-sleeves (50%, sized per-tick from
-``strategies.support.jplus_inputs.today_inputs()``):
-  JPLUS_R4_BTC, JPLUS_R4_ETH, JPLUS_R4_BTC_V2, JPLUS_R4_ETH_V2,
-  JPLUS_EMA_BTC, JPLUS_ETH_DAILY.
+TIMING_ANOMALIES is a meta-sleeve that fans out to 8 calendar/clock
+substrategies (FOMC, THU_BEAR, PDO_L_RF, CPR, R4_BTC, R4_ETH,
+R4_BTC_V2, R4_ETH_V2) whose code lives under
+``strategies/sleeves/timing_anomalies/internal/``. Trades these
+emit carry their substrategy's own ``strategy`` tag (e.g. ``FOMC``,
+``THU_BEAR``) so attribution stays at the substrategy level.
 
-AI_QUANT (additive 2%, default-OFF via ``AI_QUANT_ENABLED`` env var).
+AI_QUANT is default-OFF via the ``AI_QUANT_ENABLED`` env var.
 
 No real orders are placed on any exchange.
 
@@ -99,6 +102,8 @@ _NOISE_PATTERNS: tuple[str, ...] = (
     r"before_open_window",
     r"already_open",
     r"after_close_window",
+    r"no_action",
+    r"not_wk_1_2",
 )
 
 
@@ -216,12 +221,17 @@ def _print_health_report() -> None:
 
 
 def _print_today_inputs_snapshot() -> None:
-    """One-shot Core J+ today_inputs() snapshot — regime, vol-target
-    leverage, R4 gate state, EMA-position, and the six sub-sleeve
-    weights. Replaces the per-day attribution log line that the
-    deleted jplus_service used to emit; gives the operator the same
-    sanity check on startup ("what regime are we in, are R4 sleeves
-    going to fire today, what's the vol-target leverage")."""
+    """One-shot today_inputs() snapshot — regime, vol-target leverage,
+    R4 gate state, EMA-position, and the per-cell weights computed for
+    today. Gives the operator a sanity check on startup ("what regime
+    are we in, are R4 substrategies going to fire today, what's the
+    vol-target leverage").
+
+    Cell weights are split across two emission paths:
+      - r4_btc / r4_eth / r4_btc_v2 / r4_eth_v2 are TIMING_ANOMALIES
+        substrategies, fired through the meta-sleeve dispatcher.
+      - ema_btc and eth_daily are top-level continuous sleeves.
+    """
     try:
         from strategies.support import jplus_inputs as core_sim
         ti = core_sim.today_inputs()
@@ -237,11 +247,14 @@ def _print_today_inputs_snapshot() -> None:
             f"ema_p={int(ti.get('ema_p', 0)):+d}"
         )
         log.info(
-            "  sub-sleeve weights: "
+            "  TIMING_ANOMALIES R4 weights: "
             f"r4_btc={weights.get('r4_btc', 0):.3f}  "
             f"r4_eth={weights.get('r4_eth', 0):.3f}  "
             f"r4_btc_v2={weights.get('r4_btc_v2', 0):.3f}  "
-            f"r4_eth_v2={weights.get('r4_eth_v2', 0):.3f}  "
+            f"r4_eth_v2={weights.get('r4_eth_v2', 0):.3f}"
+        )
+        log.info(
+            "  continuous sleeve weights: "
             f"ema_btc={weights.get('ema_btc', 0):.3f}  "
             f"eth_daily={weights.get('eth_daily', 0):.3f}"
         )

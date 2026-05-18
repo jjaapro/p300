@@ -7,63 +7,30 @@ discussion) can pick it up.
 
 ---
 
-## Consolidate timing-anomaly sleeves under a single bucket
+## Consolidate timing-anomaly sleeves under a single bucket ✅
 
 **Captured:** 2026-05-18.
-**Status:** deferred — strategic intent recorded; implementation later.
+**Status:** ✅ shipped 2026-05-18 (three commits: meta-sleeve scaffolding,
+p300_spec cutover, physical relocation under
+[strategies/sleeves/timing_anomalies/internal/](strategies/sleeves/timing_anomalies/internal/)).
 
-### Motivation
+The 8 calendar/clock substrategies (FOMC, THU_BEAR, PDO_L_RF, CPR,
+R4_BTC, R4_ETH, R4_BTC_V2, R4_ETH_V2) now dispatch only via
+`TIMING_ANOMALIES` — no orchestrator-level shim. EMA_BTC and ETH_DAILY
+stayed at the top level (EMA explicitly so it can serve as a regime
+gate; ETH_DAILY because it's continuous, not date-driven). See
+`project_timing_anomalies_sleeve` in Claude Code's auto-memory for the
+operating contract.
 
+Original motivation (kept for context):
 The existing sleeves (FOMC, R4, EMA crossover, PDO, CPR, day-of-week
 windows) are all *statistical timing edges* — positive expectancy in
-specific calendar/clock windows with no microstructure mechanism. They
-are different in kind from a "real trader setup" like the short-squeeze
-sweep + CVD divergence study at
-[studies/notebooks/short_squeeze_sessions/](studies/notebooks/short_squeeze_sessions/),
-which has a causal story (forced short covers + perp/spot CVD
-asymmetry) that real traders use.
-
-User framing 2026-05-18: a portfolio of statistical timing edges is
-fragile to regime change; a portfolio of mechanistically-grounded setups
-is more defensible. Future research effort should bias toward the
-latter; the timing-anomaly sleeves should be consolidated under one
-bucket so they share a single allocation budget instead of competing
-with each other for capital and config attention.
-
-See `project_portfolio_direction_2026Q2` in Claude Code's auto-memory for
-the full framing.
-
-### Concrete scope when picked up
-
-1. **Decide the bucket name.** Candidates: `timing_anomalies`,
-   `statistical`, `calendar_edges`. Avoid "key date and time" — too
-   euphemistic. Pick a label that flags these as a category distinct
-   from microstructure setups.
-2. **Identify which existing sleeves go into the bucket.** First pass:
-   FOMC, R4_BTC, R4_ETH, EMA crossover, PDO, CPR. AI_QUANT is news-
-   reactive and probably stays separate. S-003 ADX is price-action,
-   probably stays separate.
-3. **Refactor `strategies/` directory** to reflect the bucket — either
-   a `strategies/timing_anomalies/` subdirectory containing the sub-
-   sleeves, or a tag/category field on each variant.
-4. **Allocator-level change**: orchestrator allocates one budget to the
-   bucket; the bucket internally divides between sub-sleeves (probably
-   equal-weighted or risk-parity at first).
-5. **EMA 1W special case**: keep as a gate variable (filter for the
-   microstructure sleeves) even after rest of timing-anomaly sleeves
-   are bucketed. Weekly trend regime is a real input — worth retaining
-   as a regime gate, not as a standalone sleeve.
-
-### Why deferred
-
-- The microstructure-sleeve research effort (short-squeeze + future
-  funding/CVD/liquidation setups) is the higher-leverage use of time
-  right now.
-- The orchestrator itself isn't real yet (see [P2.4 — Real orchestrator
-  architecture](#p24--real-orchestrator-architecture)) — consolidating
-  buckets before the orchestrator exists is premature.
-- The bucket rename is mechanical work that's easy to schedule once we
-  know the eventual portfolio shape.
+specific calendar/clock windows with no microstructure mechanism. A
+portfolio of statistical timing edges is fragile to regime change; a
+portfolio of mechanistically-grounded setups is more defensible. Future
+research effort biases toward microstructure (short-squeeze etc.). The
+single timing bucket shares one allocation budget instead of competing
+for capital and config attention.
 
 ---
 
