@@ -11,6 +11,7 @@ data/*.db.bak_*
 data/databases/*.db
 data/databases/*.db-wal
 data/databases/*.db-shm
+data/databases/*.db.bak*
 *.log
 .idea/
 .vscode/
