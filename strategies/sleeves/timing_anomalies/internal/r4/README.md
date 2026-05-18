@@ -21,7 +21,7 @@ them as separate entries in the strategy registry.
 `notional = capital × regime_weight[variant] × inner_lev × vol_target_lev`
 
 - **regime_weight**: from `strategies.support.jplus_inputs.today_inputs()` per regime — see
-  PORTFOLIO.md §3.2 for the capped weight matrix.
+  [PORTFOLIO.md §4.2](../../../../../PORTFOLIO.md) for the capped weight matrix.
 - **inner_lev**: `R4_INNER_LEV_UNGATED` (2.5×) when the vol-percentile gate
   has NOT fired, `R4_INNER_LEV_GATED` (1.0×) when it has. The gate fires
   on ~30% of days (top 25% of 365d realized vol); see `jplus/gate.py`.
