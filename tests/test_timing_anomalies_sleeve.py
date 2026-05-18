@@ -177,8 +177,11 @@ def test_decide_passes_through_substrategy_weight_and_leverage():
         captured.update(cfg)
         return [], {"status": "captured"}
 
+    # Pin allocator lookup off so the test exercises the static-fallback path.
     with patch.object(ta_signal, "_get_dispatch",
-                       return_value=(fake_decide, lambda *a, **kw: {})):
+                       return_value=(fake_decide, lambda *a, **kw: {})), \
+         patch.object(ta_signal, "_resolve_substrategy_weight",
+                       side_effect=lambda name, fallback: fallback):
         ta_signal.try_decide_for_variant(
             {"id": "v1"},
             {"params": {"substrategies": {
@@ -191,6 +194,32 @@ def test_decide_passes_through_substrategy_weight_and_leverage():
     assert captured["leverage"] == 10.0
     assert captured["params"]["stop_loss_pct"] == 5.0
     assert captured["_substrategy_name"] == "FOMC"
+
+
+def test_resolve_substrategy_weight_uses_allocator_when_regime_known():
+    """The meta-sleeve translates substrategy_name -> allocator strategy_id
+    and queries allocation.get_weight_pct. Verifies the translation hop
+    and that the returned value flows through."""
+    import strategies.support.allocation as allocation
+    with patch.object(allocation, "current_regime", return_value="mild_bull"), \
+         patch.object(allocation, "get_weight_pct",
+                       return_value=20.0) as get_w:
+        w = ta_signal._resolve_substrategy_weight("R4_BTC", fallback=0.0)
+    # Allocator was called with the LEGACY strategy_id, not the substrategy name
+    get_w.assert_called_once_with("JPLUS_R4_BTC", "mild_bull")
+    assert w == 20.0
+
+
+def test_resolve_substrategy_weight_falls_back_when_regime_unknown():
+    import strategies.support.allocation as allocation
+    with patch.object(allocation, "current_regime", return_value=None):
+        w = ta_signal._resolve_substrategy_weight("R4_BTC", fallback=15.0)
+    assert w == 15.0
+
+
+def test_resolve_substrategy_weight_falls_back_when_unknown_substrategy():
+    w = ta_signal._resolve_substrategy_weight("NOT_A_SUBSTRATEGY", fallback=7.5)
+    assert w == 7.5
 
 
 # ─── Execute routing ─────────────────────────────────────────────────────────

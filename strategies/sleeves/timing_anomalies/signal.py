@@ -52,27 +52,63 @@ def _get_dispatch(name: str):
     return _internal.get_dispatch(name)
 
 
+def _resolve_substrategy_weight(sub_name: str, fallback: float) -> float:
+    """Per-substrategy regime-adaptive weight lookup.
+
+    Translates substrategy_name to the allocator's strategy_id via
+    internal.ALLOCATOR_KEY, then calls allocation.get_weight_pct for the
+    current regime. Falls back to `fallback` if either the lookup misses
+    (warmup, unknown key) or the allocator returns None.
+
+    The translation step is needed because the meta-sleeve uses clean
+    short names ("THU_BEAR") while the allocator was wired up against
+    legacy strategy_ids ("S-096"). Without this hop, every substrategy
+    would silently fall back to its static composition weight, defeating
+    the per-regime sizing.
+    """
+    from strategies.support import allocation
+    legacy_id = _internal.allocator_key_for(sub_name)
+    if legacy_id is None:
+        return fallback
+    try:
+        regime = allocation.current_regime()
+        if regime is None:
+            return fallback
+        w = allocation.get_weight_pct(legacy_id, regime)
+        if w is None:
+            return fallback
+        return float(w)
+    except Exception:
+        log.exception(f"[timing_anomalies] allocator lookup failed for {sub_name}")
+        return fallback
+
+
 def _substrategy_sleeve_cfg(parent_cfg: dict, sub_name: str, sub_cfg: dict) -> dict:
     """Build the per-substrategy `sleeve_cfg` to pass to the underlying
     sleeve's decide/execute functions.
 
-    Carries through the substrategy's own `weight_pct`, `leverage`,
-    `params`, plus the standard allocator-injected `_effective_*` keys.
-    Falls back to the substrategy's static values when the allocator
-    hasn't pre-populated them (which is the typical case until
-    `strategies.support.allocation` learns about the meta-sleeve).
+    Per-substrategy `_effective_weight_pct` is resolved via the allocator
+    using a name-translation hop (see _resolve_substrategy_weight). This
+    preserves the regime-adaptive sizing that flat-composition variants
+    got from the orchestrator's _resolve_sleeve_weight pass.
+
+    Leverage falls back to the substrategy's static value because the
+    orchestrator's per-tick leverage resolver doesn't recurse into the
+    meta-sleeve's params.
     """
-    weight = sub_cfg.get("weight_pct", 0.0)
+    static_weight = sub_cfg.get("weight_pct", 0.0)
     leverage = sub_cfg.get("leverage", 1.0)
+    eff_weight = sub_cfg.get(
+        "_effective_weight_pct",
+        _resolve_substrategy_weight(sub_name, static_weight),
+    )
     return {
-        "weight_pct": weight,
+        "weight_pct": static_weight,
         "leverage": leverage,
         "priority": parent_cfg.get("priority", sub_cfg.get("priority", 100)),
         "params": sub_cfg.get("params", {}) or {},
-        "_effective_weight_pct": sub_cfg.get(
-            "_effective_weight_pct", parent_cfg.get("_effective_weight_pct_per_sub", weight)),
-        "_effective_leverage": sub_cfg.get(
-            "_effective_leverage", leverage),
+        "_effective_weight_pct": eff_weight,
+        "_effective_leverage": sub_cfg.get("_effective_leverage", leverage),
         # Substrategy ID for trace logs / origin tagging
         "_substrategy_name": sub_name,
     }

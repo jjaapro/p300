@@ -106,3 +106,29 @@ def known_substrategies() -> list[str]:
     """Return the canonical list of substrategy names this registry knows
     about (regardless of whether they're loaded yet)."""
     return sorted(_RESOLVERS.keys())
+
+
+# ─── Allocator key mapping ───────────────────────────────────────────────────
+
+# Map substrategy_name (used inside TIMING_ANOMALIES) to the strategy_id
+# the allocator's WEIGHT_TABLE knows about. Required because the meta-sleeve
+# uses shorter / cleaner names (e.g. "THU_BEAR") while the allocator was
+# wired up against the legacy strategy_ids (e.g. "S-096"). Substrategies
+# missing from this map fall back to the meta-sleeve's per-substrategy
+# static weight_pct.
+ALLOCATOR_KEY: dict[str, str] = {
+    "FOMC":      "FOMC",
+    "THU_BEAR":  "S-096",
+    "PDO_L_RF":  "PDO-L-RF",
+    "CPR":       "CPR",
+    "R4_BTC":    "JPLUS_R4_BTC",
+    "R4_ETH":    "JPLUS_R4_ETH",
+    "R4_BTC_V2": "JPLUS_R4_BTC_V2",
+    "R4_ETH_V2": "JPLUS_R4_ETH_V2",
+}
+
+
+def allocator_key_for(substrategy_name: str) -> str | None:
+    """Return the allocator's strategy_id for a substrategy, or None if
+    the substrategy isn't in the allocator's WEIGHT_TABLE."""
+    return ALLOCATOR_KEY.get(substrategy_name.upper())
