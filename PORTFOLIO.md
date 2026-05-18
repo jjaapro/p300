@@ -10,11 +10,14 @@ of total capital** unless stated otherwise.
 
 ## 1. Sleeve roster
 
-The bot dispatches 13 sleeves per minute through
-[strategies/orchestrator.py](strategies/orchestrator.py). All sleeves
-write to the same `trades` table (`execution_mode='paper'`); realized
-PnL is the trade-ledger sum (no parallel theoretical-PnL track since
-the 2026-05-10 live/sim refactor).
+The bot dispatches **7 top-level sleeves** per minute through
+[strategies/orchestrator.py](strategies/orchestrator.py); the
+`TIMING_ANOMALIES` meta-sleeve fans out internally to 8 calendar/clock
+substrategies, for **14 distinct signal paths** total. All sleeves
+write to the same `trades` table (`execution_mode='paper'`) tagged by
+substrategy name where applicable; realized PnL is the trade-ledger sum
+(no parallel theoretical-PnL track since the 2026-05-10 live/sim
+refactor).
 
 | Sleeve | Pre-lev alloc | Leverage | Asset | Direction | Hold |
 |---|---|---|---|---|---|
@@ -694,7 +697,9 @@ Each migrated sleeve exposes two callables:
 - `execute_for_variant(variant, sleeve_cfg, intent) → status_dict`
   opens the trade described by an `Intent` returned from reconcile.
 
-All 13 dispatched sleeves are migrated as of 2026-05-16. The
+All 7 top-level sleeves (plus the 8 substrategies under TIMING_ANOMALIES,
+which flow through the meta-sleeve's two-phase contract) are on the
+two-phase decide/execute path as of 2026-05-18. The
 `Intent` dataclass is frozen — `asset`, `direction`, `allocation_pct`,
 `leverage`, `conviction (0-100)`, `priority`, `reason` (free-form
 dict persisted to `trades.notes`), `scheduled_exit_dt`. The
@@ -1058,8 +1063,8 @@ python studies/simulation/sim.py \
     --sim-tick-seconds 60
 ```
 
-The same `STRATEGY_DISPATCH` runs in both modes; the same six J+ live
-handlers and six tactical handlers open trades to whichever
-`--dash-db` path the orchestrator is pointed at. Sim mode produces a complete
+The same `STRATEGY_DISPATCH` runs in both modes; the same 7 top-level
+sleeves (one of which, TIMING_ANOMALIES, fans out to 8 substrategies)
+open trades to whichever `--dash-db` path the orchestrator is pointed at. Sim mode produces a complete
 trade ledger that reporting tools (`studies/notebooks/full_portfolio_report.ipynb`,
 `studies/notebooks/backtest_report.ipynb`) can summarize identically to a live run.

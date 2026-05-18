@@ -29,11 +29,13 @@ DEFAULT_CAPITAL_USDT = 10_000.0
 def build_spec() -> dict:
     """Composition spec consumed by :mod:`strategies.orchestrator`.
 
-    Every sleeve in the composition has a live dispatch entry registered
-    via ``orchestrator._load_dispatch``. All 13 sleeves are migrated to
-    two-phase dispatch as of 2026-05-16; the reconcile pipeline owns
-    cross-sleeve coordination (priority / conviction / signal pooling /
-    margin headroom).
+    Every top-level sleeve in the composition has a live dispatch entry
+    registered via ``orchestrator._load_dispatch`` and is on the two-phase
+    decide/execute path. The 8 calendar/clock substrategies under
+    ``TIMING_ANOMALIES`` (FOMC, THU_BEAR, PDO_L_RF, CPR, R4_BTC/ETH/V2)
+    flow through the meta-sleeve's two-phase contract. The reconcile
+    pipeline owns cross-sleeve coordination (priority / conviction /
+    signal pooling / margin headroom).
     """
     return {
         "equity_source": "trades",  # realized PnL from the trade ledger
@@ -177,8 +179,10 @@ def register(dash_db: Optional[str] = None,
         """, (
             VARIANT_ID,
             "P-300 Aggressive 2.0 1.0",
-            ("P-300 full port: Core J+ regime-gated (50%) + 6 tactical sleeves "
-             "(S-003/S-078/S-096 V4/PDO-L-RF/CPR/FOMC, 50%)"),
+            ("P-300 full port: 7 top-level sleeves "
+             "(S-003, S-078, JPLUS_EMA_BTC, JPLUS_ETH_DAILY, AI_QUANT, "
+             "SHORT_SQUEEZE, TIMING_ANOMALIES); TIMING_ANOMALIES dispatches "
+             "8 calendar/clock substrategies internally"),
             "full_portfolio",
             None, "1.0", "paper", 0,
             capital_usdt,

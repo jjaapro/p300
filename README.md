@@ -16,9 +16,12 @@ history comes from Coinalyze (free tier).
 
 ## What runs live here
 
-13 sleeves, dispatched per-minute by
-[`strategies/orchestrator.py`](strategies/orchestrator.py). All sleeves
-write to the same `trades` table; realized PnL is the trade-ledger sum.
+7 top-level sleeves dispatched per-minute by
+[`strategies/orchestrator.py`](strategies/orchestrator.py); one of them
+(`TIMING_ANOMALIES`) is a meta-sleeve that fans out internally to 8
+calendar/clock substrategies, for **14 distinct signal paths** total.
+All sleeves write to the same `trades` table; realized PnL is the
+trade-ledger sum.
 
 | Sleeve | Asset | Schedule | Direction |
 |---|---|---|---|
@@ -35,6 +38,15 @@ write to the same `trades` table; realized PnL is the trade-ledger sum.
 | **JPLUS_EMA_BTC** | BTC | continuous; weekly EMA(5)/EMA(21) crossover | LONG / SHORT |
 | **JPLUS_ETH_DAILY** | ETH | continuous in bull regimes only | LONG |
 | **AI_QUANT** | BTC | 1 LLM decision per UTC day (default-OFF) | LONG / SHORT / FLAT |
+| **SHORT_SQUEEZE** | BTC | 15m signal — sweep + perp/spot CVD divergence in London/NY session | LONG |
+
+The 8 substrategies S-096 V4 Thu Bear, S-102 PDO-L-RF, S-101 CPR,
+S-103 FOMC, and the four JPLUS_R4_* variants dispatch through the
+single `TIMING_ANOMALIES` meta-sleeve at the orchestrator level (their
+code lives under
+[`strategies/sleeves/timing_anomalies/internal/`](strategies/sleeves/timing_anomalies/internal/)).
+The other 6 (S-003, S-078, JPLUS_EMA_BTC, JPLUS_ETH_DAILY, AI_QUANT,
+SHORT_SQUEEZE) are top-level dispatchers.
 
 The orchestrator owns cross-sleeve coordination — see
 [`strategies/support/`](strategies/support/): `allocation.py` (regime →

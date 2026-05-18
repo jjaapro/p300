@@ -85,9 +85,12 @@ The bot ticks every 60s. On each tick:
 - All sleeves open / close paper trades in the `trades` table, tagged
   `strategy_variant='p300_aggressive_v2_v1_0'`, `execution_mode='paper'`.
   Realized PnL is the trade-ledger sum; no parallel theoretical track.
-- 13 sleeves dispatch every tick (see [README.md](README.md) for the
-  full table). FOMC writes a decision-row audit trail to
-  `fomc_observer` every FOMC day regardless of whether it trades.
+- 7 top-level sleeves dispatch every tick; one of them (TIMING_ANOMALIES)
+  fans out to 8 calendar/clock substrategies internally (FOMC, THU_BEAR,
+  PDO_L_RF, CPR, R4_BTC/ETH/V2). 14 distinct signal paths total — see
+  [README.md](README.md) for the full table. FOMC writes a decision-row
+  audit trail to `fomc_observer` every FOMC day regardless of whether
+  it trades.
 - AI_QUANT (default-OFF via `AI_QUANT_ENABLED` env) — at most one
   Anthropic decision per UTC day, 00:05–00:15 UTC window.
 - A broken sleeve logs the exception but does **not** kill the loop

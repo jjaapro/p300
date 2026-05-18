@@ -18,9 +18,11 @@ Three invariants:
    produces over the same window (after un-percentifying via capital).
    If either path drifts, the equality breaks.
 
-3. **`today_inputs()` smoke.** Returns a dict with all six sub-sleeve
-   weight keys. Catches simulator import / warmup regressions that
-   would silently make the J+ live handlers fail with `no_inputs`.
+3. **`today_inputs()` smoke.** Returns a dict with all six per-cell
+   weight keys (r4_btc, r4_eth, r4_btc_v2, r4_eth_v2 — TIMING_ANOMALIES
+   substrategies — plus ema_btc and eth_daily — top-level continuous
+   sleeves). Catches simulator import / warmup regressions that would
+   silently make the live handlers fail with `no_inputs`.
 
 If a later phase intentionally changes one of these, update the
 baseline in the same commit so the change is visible in review.
