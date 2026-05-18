@@ -199,7 +199,11 @@ def _load_funding(lookback_seconds: int) -> pd.DataFrame:
                             index=pd.DatetimeIndex([], tz="UTC"))
     df = pd.DataFrame(rows, columns=["ts", "funding"])
     df["dt"] = pd.to_datetime(df["ts"], unit="s", utc=True)
-    return df.set_index("dt")[["funding"]]
+    out = df.set_index("dt")[["funding"]]
+    # cd_funding_rate has no PRIMARY KEY, so repeated backfills can leave
+    # duplicate timestamps. reindex() on a duplicated source raises, so
+    # collapse to one row per timestamp here.
+    return out[~out.index.duplicated(keep="last")]
 
 
 def _load_lsr(asset: str, lookback_seconds: int) -> pd.DataFrame:
@@ -223,7 +227,8 @@ def _load_lsr(asset: str, lookback_seconds: int) -> pd.DataFrame:
                             index=pd.DatetimeIndex([], tz="UTC"))
     df = pd.DataFrame(rows, columns=["ts", "lsr"])
     df["dt"] = pd.to_datetime(df["ts"], unit="s", utc=True)
-    return df.set_index("dt")[["lsr"]]
+    out = df.set_index("dt")[["lsr"]]
+    return out[~out.index.duplicated(keep="last")]
 
 
 def render_chart(
