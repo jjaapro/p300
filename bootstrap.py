@@ -65,6 +65,24 @@ SCHEMAS: dict[str, str] = {
             total_trades INTEGER, trades_buy INTEGER, trades_sell INTEGER
         )
     """,
+    "cd_futures_15m": """
+        CREATE TABLE IF NOT EXISTS cd_futures_15m (
+            timestamp INTEGER PRIMARY KEY, open REAL, high REAL, low REAL, close REAL,
+            volume REAL, quote_volume REAL,
+            volume_buy REAL, quote_volume_buy REAL,
+            volume_sell REAL, quote_volume_sell REAL,
+            total_trades INTEGER, trades_buy INTEGER, trades_sell INTEGER
+        )
+    """,
+    "cd_spot_15m": """
+        CREATE TABLE IF NOT EXISTS cd_spot_15m (
+            timestamp INTEGER PRIMARY KEY, open REAL, high REAL, low REAL, close REAL,
+            volume REAL, quote_volume REAL,
+            volume_buy REAL, quote_volume_buy REAL,
+            volume_sell REAL, quote_volume_sell REAL,
+            total_trades INTEGER, trades_buy INTEGER, trades_sell INTEGER
+        )
+    """,
     "btc_1m": """
         CREATE TABLE IF NOT EXISTS btc_1m (
             open_time INTEGER PRIMARY KEY,

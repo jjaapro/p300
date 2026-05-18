@@ -157,6 +157,57 @@ def fetch_spot_klines_1h() -> int:
     return fetch_klines_1h(SPOT_API, "BTCUSDT", "cd_spot_binance")
 
 
+def fetch_klines_interval(api_base: str, symbol: str, table: str,
+                          interval: str) -> int:
+    """Generic version of fetch_klines_1h — fetch latest klines at the given
+    Binance `interval` ("15m", "5m", "30m", "1h", "4h", "1d", ...) for
+    `symbol` from `api_base` and upsert into `table`.
+
+    Table must have the same schema as cd_futures_ohlcv / cd_spot_binance.
+    timestamp is stored in seconds. Used for cd_futures_15m / cd_spot_15m.
+
+    Re-fetches the latest stored bar so a partial bar that locked in mid-bar
+    gets overwritten with the completed bar on the next refresh."""
+    con = sqlite3.connect(str(DB_PATH))
+    try:
+        last_s = _latest_open_time(con, table, "timestamp")
+        start_ms = last_s * 1000 if last_s else None
+        params: dict = {"symbol": symbol, "interval": interval, "limit": 1000}
+        if start_ms:
+            params["startTime"] = start_ms
+        rows = _get(f"{api_base}/klines", params)
+        inserted = 0
+        for r in rows:
+            ts_s = int(r[0]) // 1000
+            vol, qvol = float(r[5]), float(r[7])
+            buy_base, buy_quote = float(r[9]), float(r[10])
+            con.execute(
+                f"INSERT OR REPLACE INTO {table} "
+                "(timestamp, open, high, low, close, volume, quote_volume, "
+                " volume_buy, quote_volume_buy, volume_sell, quote_volume_sell, "
+                " total_trades, trades_buy, trades_sell) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)",
+                (ts_s, float(r[1]), float(r[2]), float(r[3]), float(r[4]),
+                 vol, qvol, buy_base, buy_quote,
+                 vol - buy_base, qvol - buy_quote, int(r[8])),
+            )
+            inserted += 1
+        con.commit()
+    finally:
+        con.close()
+    return inserted
+
+
+def fetch_futures_klines_15m() -> int:
+    """Convenience wrapper: BTCUSDT perp 15m → cd_futures_15m."""
+    return fetch_klines_interval(FAPI, "BTCUSDT", "cd_futures_15m", "15m")
+
+
+def fetch_spot_klines_15m() -> int:
+    """Convenience wrapper: BTCUSDT spot 15m → cd_spot_15m."""
+    return fetch_klines_interval(SPOT_API, "BTCUSDT", "cd_spot_15m", "15m")
+
+
 def _ensure_funding_table(con: sqlite3.Connection, table: str) -> None:
     """Create a funding table with the cd_funding_rate schema if missing."""
     con.execute(
@@ -569,6 +620,85 @@ def repair_null_taker_volumes(api_base: str, symbol: str, table: str) -> int:
         con.close()
 
 
+def backfill_klines_interval(api_base: str, symbol: str, table: str,
+                             interval: str, cadence_s: int,
+                             since: str | None = "2020-01-01") -> int:
+    """Detect + fill all gaps in `table` for klines at `interval` cadence.
+    Generic version of backfill_klines_1h.
+
+    `cadence_s` is the bar length in seconds (900 = 15m, 300 = 5m,
+    1800 = 30m, 3600 = 1h, ...). `interval` is the Binance interval
+    string passed to the klines endpoint.
+
+    Used for cd_futures_15m / cd_spot_15m. Idempotent via INSERT OR REPLACE
+    on timestamp."""
+    import time as _time
+    now_s = int(datetime.now(timezone.utc).timestamp())
+    floor_s = (int(datetime.fromisoformat(f"{since}T00:00:00+00:00").timestamp())
+               if since else None)
+    con = sqlite3.connect(str(DB_PATH))
+    try:
+        gaps = _find_gaps(con, table, "timestamp", cadence_s, now_s, floor_s)
+        if not gaps:
+            return 0
+        log.info(f"[backfill {table}] {len(gaps)} gap(s), "
+                 f"~{_missing_count(gaps, cadence_s):,} rows to fill")
+        total = 0
+        for i, (gap_start, gap_end) in enumerate(gaps, start=1):
+            cursor = gap_start
+            while cursor <= gap_end:
+                params = {"symbol": symbol, "interval": interval,
+                          "startTime": cursor * 1000,
+                          "endTime": gap_end * 1000,
+                          "limit": 1000}
+                try:
+                    rows = _get(f"{api_base}/klines", params)
+                except Exception as e:
+                    log.warning(f"[backfill {table}] gap {i} fetch failed: {e}")
+                    break
+                if not rows:
+                    break
+                con.executemany(
+                    f"INSERT OR REPLACE INTO {table} "
+                    "(timestamp, open, high, low, close, volume, quote_volume, "
+                    " volume_buy, quote_volume_buy, volume_sell, quote_volume_sell, "
+                    " total_trades, trades_buy, trades_sell) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL)",
+                    [(int(r[0]) // 1000, float(r[1]), float(r[2]), float(r[3]),
+                      float(r[4]), float(r[5]), float(r[7]),
+                      float(r[9]), float(r[10]),
+                      float(r[5]) - float(r[9]), float(r[7]) - float(r[10]),
+                      int(r[8]))
+                     for r in rows],
+                )
+                con.commit()
+                total += len(rows)
+                next_cursor = (int(rows[-1][0]) // 1000) + cadence_s
+                if next_cursor <= cursor:
+                    break
+                cursor = next_cursor
+                if len(rows) < 1000:
+                    break
+                _time.sleep(0.2)
+            if i % 50 == 0 or i == len(gaps):
+                log.info(f"[backfill {table}] {i}/{len(gaps)} gaps done, "
+                         f"+{total:,} rows")
+    finally:
+        con.close()
+    return total
+
+
+def backfill_all_klines_15m(since: str | None = "2019-09-08") -> dict[str, int]:
+    """Backfill cd_futures_15m + cd_spot_15m from `since` to present.
+    Default floor is 2019-09-08, the launch of BTCUSDT perp on Binance."""
+    return {
+        "cd_futures_15m": backfill_klines_interval(
+            FAPI, "BTCUSDT", "cd_futures_15m", "15m", 900, since=since),
+        "cd_spot_15m": backfill_klines_interval(
+            SPOT_API, "BTCUSDT", "cd_spot_15m", "15m", 900, since=since),
+    }
+
+
 def backfill_all_klines(since: str | None = "2020-01-01") -> dict[str, int]:
     """Run gap-aware backfill for all four kline tables. With `since` set,
     extends history back to that floor; with `since=None`, only fills
@@ -597,6 +727,12 @@ def fix_all_gaps() -> dict[str, int]:
         FAPI, "BTCUSDT", "cd_futures_ohlcv")
     out["repair_cd_spot_binance"] = repair_null_taker_volumes(
         SPOT_API, "BTCUSDT", "cd_spot_binance")
+    # 15m tables — only heal existing gaps, no leading floor here. Initial
+    # history backfill is via --backfill-klines-15m.
+    out["cd_futures_15m"] = backfill_klines_interval(
+        FAPI, "BTCUSDT", "cd_futures_15m", "15m", 900, since=None)
+    out["cd_spot_15m"] = backfill_klines_interval(
+        SPOT_API, "BTCUSDT", "cd_spot_15m", "15m", 900, since=None)
     for sym, tbl in [("BTCUSDT", "cd_funding_rate"),
                      ("ETHUSDT", "cd_funding_rate_eth")]:
         out[tbl] = backfill_funding_rate(sym, tbl, since=None)
@@ -624,6 +760,16 @@ def refresh_all() -> dict[str, int]:
     except Exception as e:
         log.warning(f"cd_spot_binance fetch failed: {e}")
         results["cd_spot_binance"] = -1
+    try:
+        results["cd_futures_15m"] = fetch_futures_klines_15m()
+    except Exception as e:
+        log.warning(f"cd_futures_15m fetch failed: {e}")
+        results["cd_futures_15m"] = -1
+    try:
+        results["cd_spot_15m"] = fetch_spot_klines_15m()
+    except Exception as e:
+        log.warning(f"cd_spot_15m fetch failed: {e}")
+        results["cd_spot_15m"] = -1
     for sym, table in [("BTCUSDT", "cd_funding_rate"),
                         ("ETHUSDT", "cd_funding_rate_eth")]:
         try:
@@ -724,6 +870,9 @@ def main(argv: list[str] | None = None) -> int:
                     help="One-shot: backfill btc_1m, eth_1m, cd_futures_ohlcv, "
                          "and cd_spot_binance from --since to present. Slow — "
                          "expect ~30-60 minutes for 5 years.")
+    ap.add_argument("--backfill-klines-15m", action="store_true",
+                    help="One-shot: backfill cd_futures_15m + cd_spot_15m from "
+                         "--since to present. ~3-5 min for full 2019-09-08 → now.")
     ap.add_argument("--since", default="2020-01-01",
                     help="Backfill start date (UTC, YYYY-MM-DD). Default 2020-01-01.")
     ap.add_argument("--skip-gap-fix", action="store_true",
@@ -751,6 +900,15 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.backfill_klines:
         backfill_all_klines(since=args.since)
+        return 0
+
+    if args.backfill_klines_15m:
+        # 15m perp launched 2019-09-08; if user keeps the default --since
+        # (2020-01-01), nudge it back to the perp launch instead since the
+        # earlier history is freely available.
+        since = args.since if args.since != "2020-01-01" else "2019-09-08"
+        res = backfill_all_klines_15m(since=since)
+        log.info(f"backfilled 15m: {res}")
         return 0
 
     # Auto gap-fix at startup. First run on a sparse DB can take ~20 min;
