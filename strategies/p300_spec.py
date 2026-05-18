@@ -286,3 +286,139 @@ def migrate_to_meta_sleeve_composition(
                  "old_ids": old_ids, "new_ids": new_ids}
     finally:
         con.close()
+
+
+_LEGACY_TO_SUBSTRATEGY = {
+    "S-096":           "THU_BEAR",
+    "PDO-L-RF":        "PDO_L_RF",
+    "CPR":             "CPR",
+    "FOMC":            "FOMC",
+    "JPLUS_R4_BTC":    "R4_BTC",
+    "JPLUS_R4_ETH":    "R4_ETH",
+    "JPLUS_R4_BTC_V2": "R4_BTC_V2",
+    "JPLUS_R4_ETH_V2": "R4_ETH_V2",
+}
+
+
+def consolidate_timing_substrategies(spec: dict) -> dict:
+    """Rewrite a flat composition to use the TIMING_ANOMALIES meta-sleeve.
+
+    Preserves per-substrategy ``weight_pct``, ``leverage``, ``params``, and
+    ``enabled`` from the original flat entries. Non-timing entries (S-003,
+    S-078, JPLUS_EMA_BTC, JPLUS_ETH_DAILY, AI_QUANT, JPLUS-CORE,
+    SHORT_SQUEEZE, etc.) are left untouched.
+
+    Idempotent: returns the spec unchanged if any composition entry already
+    has ``strategy_id == "TIMING_ANOMALIES"`` or if the composition has no
+    timing sub-sleeves to consolidate.
+    """
+    composition = spec.get("composition") or []
+    if not composition:
+        return spec
+    if any(e.get("strategy_id") == "TIMING_ANOMALIES" for e in composition):
+        return spec
+
+    substrategies: dict[str, dict] = {}
+    new_composition: list[dict] = []
+    sum_weight = 0.0
+    for entry in composition:
+        sid = entry.get("strategy_id")
+        sub_name = _LEGACY_TO_SUBSTRATEGY.get(sid)
+        if sub_name is None:
+            new_composition.append(entry)
+            continue
+        substrategies[sub_name] = {
+            "enabled":    entry.get("enabled", True),
+            "weight_pct": entry.get("weight_pct", 0.0),
+            "leverage":   (entry.get("params") or {}).get("leverage",
+                            entry.get("leverage", 1.0)),
+            "params":     {k: v for k, v in (entry.get("params") or {}).items()
+                            if k != "leverage"},
+        }
+        sum_weight += float(entry.get("weight_pct", 0.0) or 0.0)
+
+    if not substrategies:
+        return spec
+
+    new_composition.append({
+        "strategy_id": "TIMING_ANOMALIES",
+        "weight_pct":  sum_weight,
+        "params":      {"substrategies": substrategies},
+        "note":        "Auto-consolidated from flat composition.",
+    })
+
+    new_spec = dict(spec)
+    new_spec["composition"] = new_composition
+    return new_spec
+
+
+def migrate_all_variants_to_meta_sleeve(
+    dash_db: Optional[str] = None, dry_run: bool = True
+) -> list[dict]:
+    """Walk every row in ``variants`` and consolidate any flat-composition
+    timing sub-sleeves into TIMING_ANOMALIES via
+    :func:`consolidate_timing_substrategies`.
+
+    Skips rows whose ``spec_json`` has no ``composition`` field (aggregate
+    rollups created by ``combine_replay.py``). Idempotent at the per-row
+    level — variants already on the meta-sleeve are reported as unchanged.
+
+    When ``dry_run=False``, writes the new ``spec_json`` and records a
+    ``spec_migrated`` event in ``variant_events``.
+
+    Returns a list of per-variant result dicts:
+      ``{"variant_id", "status", "old_ids", "new_ids"}``
+    where ``status`` is one of ``"updated"``, ``"would_update"``,
+    ``"unchanged"``, ``"skipped_no_composition"``.
+    """
+    if dash_db is None:
+        dash_db = os.environ.get("P300_DASHBOARD_DB")
+    if dash_db is None:
+        from strategies.support import db as _db
+        dash_db = str(_db.DASH_DB)
+
+    con = sqlite3.connect(dash_db)
+    cur = con.cursor()
+    results: list[dict] = []
+    try:
+        rows = cur.execute("SELECT id, spec_json FROM variants").fetchall()
+        for vid, spec_json in rows:
+            spec = json.loads(spec_json)
+            composition = spec.get("composition")
+            if composition is None:
+                results.append({"variant_id": vid,
+                                 "status": "skipped_no_composition"})
+                continue
+            new_spec = consolidate_timing_substrategies(spec)
+            old_ids = [e.get("strategy_id") for e in composition]
+            new_ids = [e.get("strategy_id")
+                        for e in new_spec.get("composition", [])]
+            if new_ids == old_ids:
+                results.append({"variant_id": vid, "status": "unchanged",
+                                 "old_ids": old_ids, "new_ids": new_ids})
+                continue
+            if dry_run:
+                results.append({"variant_id": vid, "status": "would_update",
+                                 "old_ids": old_ids, "new_ids": new_ids})
+                continue
+            cur.execute("UPDATE variants SET spec_json = ? WHERE id = ?",
+                        (json.dumps(new_spec, indent=2), vid))
+            cur.execute("""
+                INSERT INTO variant_events
+                  (timestamp, variant_id, event_type, actor, details_json, summary)
+                VALUES (?, ?, ?, ?, ?, ?)
+            """, (
+                datetime.now(timezone.utc).isoformat(),
+                vid,
+                "spec_migrated",
+                "p300_spec.migrate_all_variants_to_meta_sleeve",
+                json.dumps({"old_ids": old_ids, "new_ids": new_ids}),
+                "Migrated to TIMING_ANOMALIES meta-sleeve composition.",
+            ))
+            results.append({"variant_id": vid, "status": "updated",
+                             "old_ids": old_ids, "new_ids": new_ids})
+        if not dry_run:
+            con.commit()
+        return results
+    finally:
+        con.close()
