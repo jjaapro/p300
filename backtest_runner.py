@@ -10,6 +10,7 @@ studies/simulation/sim.py via strategies.support.sim_loop.
 Usage:
   python backtest_runner.py --start 2023-01-01 --end 2026-04-15
   python backtest_runner.py --start 2021-07-01 --end 2026-04-15 --interval-hours 1
+  python backtest_runner.py --start 2026-01-01 --end 2026-05-01 --interval-minutes 15
   python backtest_runner.py --reset       # purge prior replay data first
 
 Output:
@@ -355,7 +356,16 @@ def per_sleeve_pnl(variant_id: str) -> dict[str, dict]:
 
 # ─── Main loop ────────────────────────────────────────────────────────────────
 
-def run(start: datetime, end: datetime, interval_hours: int,
+def _format_interval(seconds: int) -> str:
+    """Human-friendly tick interval label: '15m', '1h', '90m', '24h'."""
+    if seconds % 3600 == 0:
+        return f"{seconds // 3600}h"
+    if seconds % 60 == 0:
+        return f"{seconds // 60}m"
+    return f"{seconds}s"
+
+
+def run(start: datetime, end: datetime, interval_seconds: int,
         reset: bool, tag: str | None = None,
         progress_every_days: int = 30) -> None:
     variant_id = replay_variant_id(tag)
@@ -363,9 +373,9 @@ def run(start: datetime, end: datetime, interval_hours: int,
     capital = float(variant.get("capital_usdt") or 10000)
     log.info(f"Replay variant: {variant['id']} | capital: ${capital:,.0f}")
     log.info(f"Window: {start.isoformat()} → {end.isoformat()} "
-             f"| tick interval: {interval_hours}h")
+             f"| tick interval: {_format_interval(interval_seconds)}")
 
-    total_ticks = int(((end - start).total_seconds() // 3600) // interval_hours) + 1
+    total_ticks = int((end - start).total_seconds() // interval_seconds) + 1
     log.info(f"Total ticks: {total_ticks:,}")
 
     # Counters are mutable so the per-tick closure can update them in place
@@ -388,7 +398,7 @@ def run(start: datetime, end: datetime, interval_hours: int,
         # Rough tick count from elapsed sim-time (avoids needing to thread
         # tick_count through the closure).
         sim_secs = (cur - start).total_seconds()
-        approx_ticks = int(sim_secs // (interval_hours * 3600)) + 1
+        approx_ticks = int(sim_secs // interval_seconds) + 1
         if approx_ticks % 120 == 0 or (_time.time() - last_progress[0]) > 10:
             pct = approx_ticks / total_ticks
             eta = elapsed_now * (1 - pct) / pct if pct > 0 else 0
@@ -398,7 +408,7 @@ def run(start: datetime, end: datetime, interval_hours: int,
                      f"({pct*100:.1f}%) {rate:.0f} t/s eta={eta:.0f}s")
             last_progress[0] = _time.time()
 
-    tick_count = sim_loop.run_sim(start, end, interval_hours * 3600, _tick)
+    tick_count = sim_loop.run_sim(start, end, interval_seconds, _tick)
 
     # Mark any trades still open at end-of-window at end-of-window PRICES,
     # via each sleeve's own close (so fees + funding are applied). We do NOT
@@ -449,8 +459,15 @@ def main(argv: list[str] | None = None) -> int:
                     help="ISO date or datetime (UTC), e.g. 2023-01-01")
     ap.add_argument("--end", required=True, type=_parse_ts,
                     help="ISO date or datetime (UTC)")
-    ap.add_argument("--interval-hours", type=int, default=1,
-                    help="Tick interval in hours (default 1)")
+    # --interval-hours and --interval-minutes are mutually exclusive. When
+    # neither is given we default to 1h to preserve historical behavior.
+    interval_grp = ap.add_mutually_exclusive_group()
+    interval_grp.add_argument("--interval-hours", type=int, default=None,
+                              help="Tick interval in hours (default 1 when "
+                                   "--interval-minutes is also unset)")
+    interval_grp.add_argument("--interval-minutes", type=int, default=None,
+                              help="Tick interval in minutes (use 15 for 15m "
+                                   "sleeves such as CHENTO_TRIPLE_V3)")
     ap.add_argument("--reset", action="store_true",
                     help="Purge prior replay trades + daily returns + variant row (for this tag)")
     ap.add_argument("--tag", type=str, default=None,
@@ -476,7 +493,17 @@ def main(argv: list[str] | None = None) -> int:
     trade_db.init_db()
     variant_registry.init_schema()
 
-    run(args.start, args.end, args.interval_hours, args.reset, tag=args.tag)
+    if args.interval_minutes is not None:
+        if args.interval_minutes <= 0:
+            ap.error("--interval-minutes must be positive")
+        interval_seconds = args.interval_minutes * 60
+    else:
+        hours = args.interval_hours if args.interval_hours is not None else 1
+        if hours <= 0:
+            ap.error("--interval-hours must be positive")
+        interval_seconds = hours * 3600
+
+    run(args.start, args.end, interval_seconds, args.reset, tag=args.tag)
     return 0
 
 
