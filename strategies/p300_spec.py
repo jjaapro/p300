@@ -103,6 +103,22 @@ def build_spec() -> dict:
              "note": "AI quant trader (Anthropic Opus 4.7) — daily LLM "
                      "decision at 00:05–00:15 UTC. Default-disabled via "
                      "AI_QUANT_ENABLED env. Phase-1 experiment weight 2%."},
+            # CHENTO_TRIPLE_V3 — mean-reversion-into-extreme swing sleeve on
+            # BTC perp 15m. Triple composite (B1 money-flow ∩ B5 LSR
+            # extremes ∩ B7 multi-TF CVD alignment) + 4 filter gates
+            # (no_tilt, no_resist_OB, okx_aligned, skip_up_30d_shorts) + A4
+            # ladder with adaptive H_B sizing. 5.4y backtest: 20 trades/yr,
+            # mean R +4.13, WR 82%, max-DD −4.52R, MAR 18.4 — see
+            # strategies/sleeves/chento_triple_v3/README.md for full
+            # provenance and `studies/material/chento/validation/
+            # findings_decisions.md` for the per-rule audit.
+            {"strategy_id": "CHENTO_TRIPLE_V3", "weight_pct": 10.0,
+             "params": {"asset": "BTC", "leverage": 5.0},
+             "note": "Triple composite swing on BTC perp 15m. At weight_pct=10 "
+                     "× leverage=5, each trade risks ~1.25% NAV worst-case "
+                     "(pre-ladder). Ladder T1 (50% add) doubles to ~2.5% NAV "
+                     "max loss; T3 (150% add, inside-VA) hits ~4.4% NAV max "
+                     "loss. Combined stop −1.5R from original entry caps blast."},
         ],
         "sleeve_leverages": {
             "core": 2.5,
@@ -113,10 +129,11 @@ def build_spec() -> dict:
             "r4_btc_v2": 1.0, "r4_eth_v2": 1.0,
             "ema_btc": 1.0, "eth_daily": 1.0,
             "ai_quant": 3.0,
+            "chento_triple_v3": 5.0,
         },
         "sleeves_live": ["S-003", "S-078", "TIMING_ANOMALIES",
                           "JPLUS_EMA_BTC", "JPLUS_ETH_DAILY",
-                          "AI_QUANT"],
+                          "AI_QUANT", "CHENTO_TRIPLE_V3"],
         "architecture": "tactical_stack_plus_core_jplus_regimegate",
         "allocator_notes": {
             "core_pct": 50.0,

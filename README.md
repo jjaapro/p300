@@ -16,10 +16,10 @@ history comes from Coinalyze (free tier).
 
 ## What runs live here
 
-7 top-level sleeves dispatched per-minute by
+8 top-level sleeves dispatched per-minute by
 [`strategies/orchestrator.py`](strategies/orchestrator.py); one of them
 (`TIMING_ANOMALIES`) is a meta-sleeve that fans out internally to 8
-calendar/clock substrategies, for **14 distinct signal paths** total.
+calendar/clock substrategies, for **15 distinct signal paths** total.
 All sleeves write to the same `trades` table; realized PnL is the
 trade-ledger sum.
 
@@ -39,14 +39,15 @@ trade-ledger sum.
 | **JPLUS_ETH_DAILY** | ETH | continuous in bull regimes only | LONG |
 | **AI_QUANT** | BTC | 1 LLM decision per UTC day (default-OFF) | LONG / SHORT / FLAT |
 | **SHORT_SQUEEZE** | BTC | 15m signal — sweep + perp/spot CVD divergence in London/NY session | LONG |
+| **CHENTO_TRIPLE_V3** | BTC | 15m signal — Triple composite (B1∩B5∩B7) + 4 filter gates + A4 ladder | LONG / SHORT |
 
 The 8 substrategies S-096 V4 Thu Bear, S-102 PDO-L-RF, S-101 CPR,
 S-103 FOMC, and the four JPLUS_R4_* variants dispatch through the
 single `TIMING_ANOMALIES` meta-sleeve at the orchestrator level (their
 code lives under
 [`strategies/sleeves/timing_anomalies/internal/`](strategies/sleeves/timing_anomalies/internal/)).
-The other 6 (S-003, S-078, JPLUS_EMA_BTC, JPLUS_ETH_DAILY, AI_QUANT,
-SHORT_SQUEEZE) are top-level dispatchers.
+The other 7 (S-003, S-078, JPLUS_EMA_BTC, JPLUS_ETH_DAILY, AI_QUANT,
+SHORT_SQUEEZE, CHENTO_TRIPLE_V3) are top-level dispatchers.
 
 The orchestrator owns cross-sleeve coordination — see
 [`strategies/support/`](strategies/support/): `allocation.py` (regime →
@@ -283,6 +284,7 @@ p300/
 │   │   ├── ema/                   # JPLUS_EMA_BTC
 │   │   ├── eth_daily/             # JPLUS_ETH_DAILY
 │   │   ├── short_squeeze/         # S-105 SHORT_SQUEEZE
+│   │   ├── chento_triple_v3/      # CHENTO_TRIPLE_V3 swing on BTC perp 15m
 │   │   └── timing_anomalies/      # TIMING_ANOMALIES meta-sleeve
 │   │       └── internal/          # 5 substrategies (fomc, thu_bear, pdo, cpr, r4 →
 │   │                              #   FOMC, THU_BEAR, PDO_L_RF, CPR, R4_BTC/ETH/V2)

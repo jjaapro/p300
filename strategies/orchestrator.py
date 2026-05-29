@@ -319,6 +319,7 @@ def _load_dispatch():
     from strategies.sleeves.eth_daily import signal as eth_daily_sleeve
     from strategies.sleeves.short_squeeze import signal as short_squeeze_sleeve
     from strategies.sleeves.timing_anomalies import signal as timing_anomalies_sleeve
+    from strategies.sleeves.chento_triple_v3 import signal as chento_triple_v3_sleeve
     STRATEGY_DISPATCH = {
         "S-003":           adx_sleeve.try_fire_for_variant,
         "S-078":           carry_sleeve.try_fire_for_variant,
@@ -333,6 +334,10 @@ def _load_dispatch():
         # point for these substrategies — flat-composition variants
         # were migrated 2026-05-18 (see project_timing_anomalies_sleeve.md).
         "TIMING_ANOMALIES": timing_anomalies_sleeve.try_fire_for_variant,
+        # CHENTO_TRIPLE_V3 — mean-reversion-into-extreme on BTC perp 15m
+        # with Triple composite (B1∩B5∩B7) + 4 filter gates + A4 ladder.
+        # See strategies/sleeves/chento_triple_v3/README.md.
+        "CHENTO_TRIPLE_V3": chento_triple_v3_sleeve.try_fire_for_variant,
     }
     # Two-phase migrations (P2.4e/f Stage 2). Other sleeves follow as
     # they're refactored; until then they stay on the legacy
@@ -379,6 +384,12 @@ def _load_dispatch():
             timing_anomalies_sleeve.try_decide_for_variant,
             timing_anomalies_sleeve.execute_for_variant,
         )
+    if (hasattr(chento_triple_v3_sleeve, "try_decide_for_variant")
+            and hasattr(chento_triple_v3_sleeve, "execute_for_variant")):
+        STRATEGY_TWO_PHASE_DISPATCH["CHENTO_TRIPLE_V3"] = (
+            chento_triple_v3_sleeve.try_decide_for_variant,
+            chento_triple_v3_sleeve.execute_for_variant,
+        )
 
 
 _warned_missing: set[tuple[str, str]] = set()
@@ -388,7 +399,8 @@ _SLEEVE_KEY_FOR_STRATEGY = {"S-003": "s003", "S-078": "s078",
                              "JPLUS_EMA_BTC": "ema_btc",
                              "JPLUS_ETH_DAILY": "eth_daily",
                              "SHORT_SQUEEZE": "short_squeeze",
-                             "TIMING_ANOMALIES": "timing_anomalies"}
+                             "TIMING_ANOMALIES": "timing_anomalies",
+                             "CHENTO_TRIPLE_V3": "chento_triple_v3"}
 
 
 def _resolve_sleeve_leverage(spec: dict, sleeve: dict) -> float:

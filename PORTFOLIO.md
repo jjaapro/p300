@@ -43,6 +43,7 @@ first-come-first-served on the margin pool and conflict resolution.
 | [JPLUS_ETH_DAILY](strategies/sleeves/eth_daily/signal.py) | regime-keyed | vol-lev | ETH | LONG | continuous in bull |
 | [SHORT_SQUEEZE](strategies/sleeves/short_squeeze/signal.py) | regime-keyed | regime-keyed | BTC | LONG | scalp (15m signal, fixed R) |
 | [AI_QUANT](strategies/sleeves/ai_quant/signal.py) *(experimental, default-OFF)* | 2% × conviction | 3× | BTC | LONG / SHORT / FLAT | LLM-discretionary |
+| [**CHENTO_TRIPLE_V3**](strategies/sleeves/chento_triple_v3/signal.py) | 10% | 5× | BTC | LONG / SHORT | ~3 days (TIF=72h) |
 | [**TIMING_ANOMALIES**](strategies/sleeves/timing_anomalies/) (meta) | sum-of-substrategies | per-sub | BTC + ETH | mixed | per-sub |
 | &nbsp;&nbsp;&nbsp;↳ [FOMC](strategies/sleeves/timing_anomalies/internal/fomc/signal.py) | 5% | 10× | BTC | LONG | ~10.5h (FOMC days) |
 | &nbsp;&nbsp;&nbsp;↳ [THU_BEAR](strategies/sleeves/timing_anomalies/internal/thu_bear/signal.py) (S-096 V4) | 6% (3% BTC + 3% ETH) | 5× | BTC + ETH | SHORT | 24h (Thu) |
@@ -64,7 +65,7 @@ per-regime values rescaled at lookup time by `CORE_ALLOC_CAP = 0.50` — see §4
 ## 3. Per-sleeve detail
 
 Signal / Entry / Exit / Edge thesis / Caveat for each top-level sleeve.
-TIMING_ANOMALIES's 8 substrategies live in §3.7.
+TIMING_ANOMALIES's 8 substrategies live in §3.8.
 
 ### 3.1 S-003 ADX — Trend-flip on BTC
 
@@ -125,7 +126,33 @@ TIMING_ANOMALIES's 8 substrategies live in §3.7.
 - **Backtest behavior**: `params.deterministic=False` is consumed by [backtest_runner.py](backtest_runner.py) to **skip** AI_QUANT on historical replay — the LLM is non-deterministic. AI_QUANT contributes nothing to backtest figures.
 - **Edge thesis**: a discretionary trader with broad context (macro, sentiment, microstructure, chart) may catch regime shifts that the rule-based sleeves are structurally blind to. Whether the model can beat its own API cost net of slippage is the open question.
 
-### 3.7 TIMING_ANOMALIES — Meta-sleeve over 8 calendar/clock substrategies
+### 3.7 CHENTO_TRIPLE_V3 — Mean-reversion-into-extreme swing on BTC perp 15m
+
+- **Signal**: Triple composite at the 15m bar — **all three** must agree on direction:
+  1. **B1 money-flow divergence** — taker-CVD z-score (rolling 30d) crosses ±0.5 while price-velocity z-score stays within ±1.0 (volume builds without price following).
+  2. **B5 LSR extremes** — Binance global long-account percentage hits p10 (oversold longs → LONG) or p90 (euphoric longs → SHORT) of the trailing 30 days.
+  3. **B7 multi-TF CVD alignment** — CVD z-scores on 1h / 4h / 1d / 3d resamples all have the same sign with |z| ≥ 2.0.
+- **Filter gates** (all must pass):
+  1. `no_tilt` — skip if a recent CHENTO_TRIPLE_V3 trade closed in loss (48h window).
+  2. `no_resist_OB_within_2R` — skip if a fresh unfilled opposite-direction Order Block sits within 2R of entry (causally-detected 5-bar pivot OB).
+  3. `okx_aligned` — OKX-Binance perp price log-delta z-score (rolling 7d) must sign-match the trade direction.
+  4. `skip_up_30d_shorts` (asymmetric) — skip ONLY shorts when BTC 30d return > +10%. Longs still take.
+- **Entry**: at the 15m bar close. Size split with the H_B adaptive-sizing rule (see Execution).
+- **Math layer**: stop = entry ± 5×ATR(14, 15m), target = entry ± 6R fixed, TIF = 72 hours, 18bp RT cost scaled by stop distance.
+- **Execution — A4 ladder add**: on the bar where adverse excursion reaches −0.3R, the sleeve adds a second order at that price. Add size depends on 7-day Volume-Profile classification of the original entry price:
+  - **Inside Value Area** (~34% of triggers): T3 sizing → 150% add. Worst-case combined loss ~3.3R (~4.4% NAV at 4% risk).
+  - **Outside Value Area** (~66% of triggers): T1 sizing → 50% add. Worst-case combined loss ~2.0R (~2.5% NAV at 4% risk).
+- **After ladder fires**: combined stop widens to −1.5R from original entry. **Strictly no further compounding** — the ladder is a single-shot risk increase, not a martingale.
+- **Cooldown**: 4 hours between triggers. Triple fires sparsely (~20/yr) so the cooldown rarely binds.
+- **Backtest performance** (5.4y BTC, R-tracking framework, funding cost included): 106 trades / 20.2 per yr / mean R +4.13 / WR 82% / max DD −4.52R / MAR 18.4 / IS-OOS gap 0.05R. ETH-cross-validated at +2.9R mean / 78% WR.
+- **Caveats**:
+  - Live execution must reliably place a 2nd market order at price = entry − 0.3 × risk; on gaps, accept worse fill.
+  - The 30d-return threshold (+10%) is calibrated on BTC volatility; for ETH or alts this needs re-tuning.
+  - Backtest replay at 1h ticks misses 75% of 15m signals (same limitation as v2 / SHORT_SQUEEZE). For full backtest parity, run with `--interval-minutes 15` once that flag is added.
+- **Edge thesis**: at confluence-of-three-extremes points, BTC mean-reverts toward equilibrium with high probability. The asymmetric regime filter avoids the one regime (bull rally + short trigger) where the strategy structurally fails. The A4 ladder converts the inevitable adverse wicks into a sizing advantage rather than a cost. Validated against 5+ years of cleanly-separated IS/OOS data with extraordinary stability (OOS = IS within 5% on every key metric).
+- **Provenance**: Triple composite emerged from validating 39 chento-stated rules and 5 dxFeed-trader hypotheses — see [studies/material/chento/validation/findings_decisions.md](studies/material/chento/validation/findings_decisions.md) for the per-rule audit and [strategies/sleeves/chento_triple_v3/README.md](strategies/sleeves/chento_triple_v3/README.md) for the consolidated finding-to-parameter trace.
+
+### 3.8 TIMING_ANOMALIES — Meta-sleeve over 8 calendar/clock substrategies
 
 A single orchestrator-level dispatcher that fans out per-tick to 8 substrategies
 sharing one allocation budget. Substrategy code lives under
@@ -142,7 +169,7 @@ and calls `allocation.get_weight_pct(legacy_id, regime)`. Without this hop,
 every substrategy would silently fall back to its static composition weight,
 defeating regime-adaptive sizing.
 
-#### 3.7.1 FOMC — Long into Fed announcement, regime-filtered
+#### 3.8.1 FOMC — Long into Fed announcement, regime-filtered
 
 - **Signal**: only fires on FOMC dates (8/year, from `scheduled_events`).
 - **Entry**: T−10h before announcement (08:00 UTC, or 09:00 UTC for EST meetings).
@@ -161,7 +188,7 @@ defeating regime-adaptive sizing.
 - **Edge thesis**: short-window event trade. Drift up into the announcement, partial fade after. Filter weeds out the regimes where this fails.
 - **Caveat**: filter was tuned on the same 52-event historical cohort the in-sample backtest is drawn from. Going-forward edge unproven.
 
-#### 3.7.2 THU_BEAR (S-096 V4) — Calendar-driven Thursday short
+#### 3.8.2 THU_BEAR (S-096 V4) — Calendar-driven Thursday short
 
 - **Signal**: Thursdays only. V4 event filter — trade only if Thursday is within ±1 day of CPI or NFP, AND not within ±1 day of OPEX. Prior-day regime (from [regime_tactical.py](strategies/support/regime_tactical.py)) must be `bear_trend / sell_off / chop` (not `bull_trend`).
 - **Entry**: Thursday 00:00 UTC. SHORT BTC + ETH equally.
@@ -169,7 +196,7 @@ defeating regime-adaptive sizing.
 - **Edge thesis**: weekly Thursday selling pressure during macro-event-adjacent periods, conditioned on being already in a non-bull regime.
 - **Caveat**: V4 event filter was derived post-hoc from V3's Thursday attribution — in-sample selection bias applies.
 
-#### 3.7.3 PDO_L_RF (S-102) — Pullback Daily Open Retouch Long
+#### 3.8.3 PDO_L_RF (S-102) — Pullback Daily Open Retouch Long
 
 - **Signal**: after a daily gap-down ≥ 2%, wait for the price to retouch the prior daily open (PDO). Regime must not be deeply bearish (`regime_threshold_pct: −10%` recent peak DD).
 - **Entry**: at the PDO retouch.
@@ -178,7 +205,7 @@ defeating regime-adaptive sizing.
 - **Edge thesis**: gap-fills are a known intraday phenomenon in crypto. Mean-reversion long after a down-gap.
 - **Caveat**: parameters (gap %, regime threshold) were swept in upstream research without visible walk-forward CV — data-snooping exposure.
 
-#### 3.7.4 CPR (S-101) — Contrarian Positioning Reversal
+#### 3.8.4 CPR (S-101) — Contrarian Positioning Reversal
 
 - **Signal**: all four conditions must agree:
   1. 3-day mean funding rate < 20-percentile of trailing window.
@@ -188,10 +215,10 @@ defeating regime-adaptive sizing.
 - **Setup logic**: persistent negative funding + crowd is short + price still in uptrend → expected short squeeze.
 - **Entry**: at the next 1m bar after signal trigger.
 - **Exits**: target at +2.93% (BB upper band), stop at −5%, or 15-day time-stop.
-- **BTC-LONG cross-sleeve cap**: shared with PDO — see §3.7.3.
+- **BTC-LONG cross-sleeve cap**: shared with PDO — see §3.8.3.
 - **Edge thesis**: contrarian-position-with-trend setup. Theoretically high-quality but historically thin sample (12 BTC + 9 ETH events from upstream).
 
-#### 3.7.5 R4 family — Calendar-window intraday longs
+#### 3.8.5 R4 family — Calendar-window intraday longs
 
 Four substrategies sharing the same machinery (fixed-window long, inner-leverage
 2.5×, vol-percentile gate from [strategies/support/gate.py](strategies/support/gate.py)).
