@@ -39,7 +39,7 @@ B5_HI_PCTILE = 90                   # top 10% = euphoric longs → no trigger
 
 # ─── B7 multi-TF CVD alignment ─────────────────────────────────────────────
 B7_TIMEFRAMES = ("1h", "4h", "1d", "3d")
-B7_Z_THRESHOLD = 2.0                # all TFs aligned with |z| ≥ 2.0
+B7_Z_THRESHOLD = 2.0                # median |z| > threshold w/ all 4 TFs same sign
 
 # ─── Filter gates ──────────────────────────────────────────────────────────
 # Filter 1: no-tilt (consec_losses_before == 0)

@@ -18,8 +18,10 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import sqlite3
 from datetime import datetime, timedelta, timezone
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -56,6 +58,59 @@ _cached_obs: list[dict] = []     # SMC OBs computed once per day
 _cached_df_15m_idx: pd.DatetimeIndex | None = None
 _last_trigger_ts: dict[str, datetime] = {}    # per-variant cooldown
 _last_loss_ts: dict[str, datetime] = {}       # per-variant last loss timestamp (for no_tilt)
+
+
+# ─── Diagnostics (opt-in via env CHENTO_V3_DIAG=1) ──────────────────────────
+# Per-day counters tracking which gate killed each candidate. Flushed to a
+# JSONL one line per UTC day on cache rebuild. Use to root-cause sparse
+# trade output by quantifying where the signal pipeline truncates.
+_DIAG_ENABLED: bool = os.environ.get("CHENTO_V3_DIAG") == "1"
+_DIAG_PATH: Path = Path(os.environ.get(
+    "CHENTO_V3_DIAG_PATH",
+    str(Path(__file__).resolve().parents[3] / "data" / "diagnostics"
+        / "chento_v3_diag.jsonl"),
+))
+_diag_current_day: str | None = None
+_diag_counters: dict[str, int] = {}
+_diag_near_misses: list[dict] = []
+
+
+def _diag_inc(key: str, n: int = 1) -> None:
+    if not _DIAG_ENABLED:
+        return
+    _diag_counters[key] = _diag_counters.get(key, 0) + n
+
+
+def _diag_near_miss(ts: datetime, **kwargs) -> None:
+    """Record a bar where Triple fired but a downstream gate killed it.
+    Caller decides what context to record."""
+    if not _DIAG_ENABLED:
+        return
+    _diag_near_misses.append({"ts": ts.isoformat() if hasattr(ts, "isoformat") else str(ts),
+                              **kwargs})
+
+
+def _diag_flush(new_day_iso: str) -> None:
+    """Append previous day's counters to the JSONL and reset for the new day.
+    No-op if DIAG is off."""
+    global _diag_current_day, _diag_counters, _diag_near_misses
+    if not _DIAG_ENABLED:
+        _diag_current_day = new_day_iso
+        return
+    if _diag_current_day is not None and (_diag_counters or _diag_near_misses):
+        try:
+            _DIAG_PATH.parent.mkdir(parents=True, exist_ok=True)
+            with _DIAG_PATH.open("a", encoding="utf-8") as fh:
+                fh.write(json.dumps({
+                    "utc_date": _diag_current_day,
+                    "counters": dict(_diag_counters),
+                    "near_misses": list(_diag_near_misses),
+                }) + "\n")
+        except Exception:
+            log.exception(f"[{SLEEVE_NAME}] diag flush failed (path={_DIAG_PATH})")
+    _diag_counters = {}
+    _diag_near_misses = []
+    _diag_current_day = new_day_iso
 
 
 # ─── Data loaders ──────────────────────────────────────────────────────────
@@ -130,6 +185,9 @@ def _rebuild_daily_cache(now: datetime) -> None:
     today_iso = now.astimezone(timezone.utc).date().isoformat()
     if _cache_date == today_iso:
         return
+
+    # Flush prior-day diag counters before mutating cache state.
+    _diag_flush(today_iso)
 
     log.info(f"[{SLEEVE_NAME}] rebuilding daily feature cache for {today_iso}")
 
@@ -415,54 +473,91 @@ def _evaluate_trigger(now: datetime, variant: dict,
                        sleeve_cfg: dict) -> tuple[list[Intent], dict]:
     """Phase 1: check Triple + filters at the current 15m bar."""
     variant_id = variant["id"]
+    _diag_inc("eval_calls")
 
     # Cooldown
     last_trigger = _last_trigger_ts.get(variant_id)
     if last_trigger is not None:
         if (now - last_trigger).total_seconds() < COOLDOWN_HOURS * 3600:
+            _diag_inc("cooldown_blocked")
             return [], {"status": "cooldown"}
 
     # Trigger-window gate (default all-open)
     h = now.hour
     if not (TRIGGER_HOUR_MIN <= h <= TRIGGER_HOUR_MAX):
+        _diag_inc("off_hour")
         return [], {"status": "off_hour", "hour": h}
     if now.weekday() not in TRIGGER_WEEKDAYS:
+        _diag_inc("off_day")
         return [], {"status": "off_day"}
 
     # Rebuild daily cache if needed
     _rebuild_daily_cache(now)
     df = _cached_features.get("df")
     if df is None or df.empty:
+        _diag_inc("no_data")
         return [], {"status": "no_data"}
 
     # Find the most recent 15m bar index
     idx = df.index.searchsorted(now, side="right") - 1
     if idx < 0:
+        _diag_inc("no_bar")
         return [], {"status": "no_bar"}
     bar_ts = df.index[idx]
     # Only fire on actual 15m boundaries (within 1 minute tolerance)
     if abs((now - bar_ts).total_seconds()) > 60:
+        _diag_inc("boundary_skipped")
         # Triple should only be evaluated AT the bar close, not mid-bar
         return [], {"status": "not_at_15m_boundary",
                     "bar_ts": bar_ts.isoformat(),
                     "minutes_into_bar": (now - bar_ts).total_seconds() / 60}
 
-    # Triple check
+    _diag_inc("bars_at_boundary")
+
+    # Triple check — split into B1/B5/B7 components when DIAG is on so we can
+    # tell which leg is dropping the signal. Production path uses the optimized
+    # single-call below; the per-leg recompute is only paid when DIAG=1.
     direction = _check_triple_at_idx(idx)
+    if _DIAG_ENABLED:
+        row = df.iloc[idx]
+        b1_dir = ctm.b1_fires(row["cvd_z"], row["vel_z"],
+                               cvd_threshold=B1_CVD_Z_THRESHOLD,
+                               vel_max=B1_VEL_Z_MAX)
+        b5_dir = ctm.b5_fires(row["long_pct"], row["lp_p10"], row["lp_p90"])
+        cvd_z_values = {tf: row[f"cvd_z_{tf}"] for tf in B7_TIMEFRAMES
+                         if f"cvd_z_{tf}" in df.columns}
+        b7_dir = ctm.b7_alignment_fires(cvd_z_values, z_threshold=B7_Z_THRESHOLD)
+        _diag_inc(f"b1_{b1_dir or 'none'}")
+        _diag_inc(f"b5_{b5_dir or 'none'}")
+        _diag_inc(f"b7_{b7_dir or 'none'}")
+
     if direction is None:
+        _diag_inc("no_triple")
         return [], {"status": "no_triple"}
+
+    _diag_inc(f"triple_{direction}_fires")
 
     # Sizing inputs
     entry_price = float(df.iloc[idx]["close"])
     atr_now = float(df.iloc[idx]["atr"])
     if pd.isna(atr_now) or atr_now <= 0:
+        _diag_inc("invalid_atr")
         return [], {"status": "invalid_atr"}
     risk = atr_now * ATR_STOP_MULT
 
     # Filters
     passes, filter_diag = _filter_passes(direction, idx, entry_price, risk, variant_id)
     if not passes:
+        reason = filter_diag.get("reason", "unknown")
+        _diag_inc(f"filter_{reason}")
+        _diag_near_miss(bar_ts, direction=direction, reason=reason,
+                         entry=float(entry_price), **{
+                             k: float(v) if isinstance(v, (int, float, np.floating)) else v
+                             for k, v in filter_diag.items() if k != "reason"
+                         })
         return [], {"status": "filter_blocked", **filter_diag}
+
+    _diag_inc(f"decided_{direction}")
 
     # Adaptive ladder sizing via inside-VA classification
     ladder_size, inside_va = _ladder_size_for_now(entry_price, idx)

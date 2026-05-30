@@ -93,37 +93,48 @@ def b5_fires(long_pct: float, lp_p10: float, lp_p90: float) -> str | None:
 
 def compute_multitf_cvd_z(df_15m: pd.DataFrame,
                             timeframes: tuple[str, ...]) -> pd.DataFrame:
-    """Compute CVD z-scores for each TF, ffilled onto 15m index.
-    `timeframes` are pandas-resample-compatible strings: ('1h', '4h', '1D', '3D')."""
+    """Compute CVD z-scores per TF using rolling-sum (not resample-bucket).
+
+    Mirrors research's validation_B7_multitf_cvd.compute_multitf_cvd exactly:
+    CVD at TF=N is a rolling N-bar sum of 15m money-flow updated every bar,
+    z-normalized over a 30d (2880-bar) trailing window. Output columns are
+    named cvd_z_{tf} for backward compatibility with the signal layer.
+    """
     out = df_15m.copy()
-    # Compute per-bar CVD on 15m (delta), then resample sum to each TF
-    cvd_15m = out["quote_volume_buy"] - out["quote_volume_sell"]
-    out["cvd_15m"] = cvd_15m
+    bar_mf = out["quote_volume_buy"] - out["quote_volume_sell"]
+    # Horizon bars (15m basis): 1h=4, 4h=16, 1d=96, 3d=288.
+    horizon_bars = {"1h": 4, "4h": 16, "1d": 96, "1D": 96, "3d": 288, "3D": 288}
+    zscore_window_bars = 4 * 24 * 30   # 30d in 15m bars
     for tf in timeframes:
-        # Resample to TF, sum, compute rolling z-score over 30d worth of TF bars
-        tf_lower = tf.lower().replace("d", "D")    # pandas wants 'D' uppercase
-        cvd_tf = cvd_15m.resample(tf_lower).sum()
-        # Pick window length: 30d worth of bars at this TF
-        bars_per_day_tf = {"1h": 24, "4h": 6, "1D": 1, "3D": 1 / 3}.get(tf_lower, 1)
-        win = max(30, int(30 * bars_per_day_tf))
-        mu = cvd_tf.rolling(win, min_periods=win // 4).mean()
-        sd = cvd_tf.rolling(win, min_periods=win // 4).std()
-        z = (cvd_tf - mu) / sd
-        # ffill onto 15m index
-        out[f"cvd_z_{tf}"] = z.reindex(out.index, method="ffill")
+        bars = horizon_bars.get(tf)
+        if bars is None:
+            raise ValueError(f"compute_multitf_cvd_z: unsupported timeframe {tf!r}")
+        cvd = bar_mf.rolling(bars, min_periods=bars // 2).sum()
+        mu = cvd.rolling(zscore_window_bars,
+                         min_periods=zscore_window_bars // 4).mean()
+        sd = cvd.rolling(zscore_window_bars,
+                         min_periods=zscore_window_bars // 4).std()
+        out[f"cvd_z_{tf}"] = (cvd - mu) / sd
     return out
 
 
 def b7_alignment_fires(cvd_z_values: dict[str, float],
                         *, z_threshold: float) -> str | None:
-    """All TFs aligned with |z| ≥ threshold → directional signal."""
-    if any(pd.isna(v) for v in cvd_z_values.values()):
+    """ALIGNMENT trigger matching research's validation_B7_multitf_cvd:
+    all 4 TF z-scores share sign AND the MEDIAN |z| crosses the threshold.
+
+    `z_threshold` is the median-z threshold (1.0 in research's calibrated
+    Triple stack; production config carries 2.0 historically but the
+    threshold semantics are now median-z, not per-leg)."""
+    vals = list(cvd_z_values.values())
+    if not vals or any(pd.isna(v) for v in vals):
         return None
-    signs = [np.sign(v) if abs(v) >= z_threshold else 0
-             for v in cvd_z_values.values()]
-    if all(s > 0 for s in signs):
+    pos_count = sum(1 for v in vals if v > 0)
+    neg_count = sum(1 for v in vals if v < 0)
+    med_z = float(np.median(vals))
+    if pos_count == len(vals) and med_z > z_threshold:
         return "long"
-    if all(s < 0 for s in signs):
+    if neg_count == len(vals) and med_z < -z_threshold:
         return "short"
     return None
 
