@@ -41,6 +41,14 @@ B5_HI_PCTILE = 90                   # top 10% = euphoric longs → no trigger
 B7_TIMEFRAMES = ("1h", "4h", "1d", "3d")
 B7_Z_THRESHOLD = 2.0                # median |z| > threshold w/ all 4 TFs same sign
 
+# ─── Triple intersection window ────────────────────────────────────────────
+# Research's validation_B_composite.intersect_triggers uses WINDOW_HOURS=24
+# (bidirectional ±24h). Production replays the same idea backward-only:
+# at each bar, the triple is "complete" if B1, B5, AND B7 all fired
+# same-direction within the trailing TRIPLE_WINDOW_HOURS. Fixed 2026-05-31
+# after diag revealed 0h tolerance was the dominant trigger-divergence bug.
+TRIPLE_WINDOW_HOURS = 24
+
 # ─── Filter gates ──────────────────────────────────────────────────────────
 # Filter 1: no-tilt (consec_losses_before == 0)
 FILTER_NO_TILT = True

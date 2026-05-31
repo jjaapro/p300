@@ -36,6 +36,7 @@ from .config import (
     B1_CVD_WINDOW_BARS, B1_VEL_WINDOW_BARS, B1_CVD_Z_THRESHOLD, B1_VEL_Z_MAX,
     B5_ROLLING_DAYS,
     B7_TIMEFRAMES, B7_Z_THRESHOLD,
+    TRIPLE_WINDOW_HOURS,
     FILTER_NO_TILT, FILTER_NO_RESIST_OB, FILTER_OKX_ALIGNED,
     FILTER_SKIP_UP_30D_SHORTS,
     SMC_PIVOT_N, SMC_OB_WITHIN_R,
@@ -215,10 +216,13 @@ def _rebuild_daily_cache(now: datetime) -> None:
     lsr_df = _load_lsr_btc(now, days_back=90)
     if not lsr_df.empty:
         lsr_z = ctm.compute_lsr_extremes(lsr_df, rolling_days=B5_ROLLING_DAYS)
-        # Align onto 15m index by ffill
-        df_15m["long_pct"] = lsr_z["long_pct"].reindex(df_15m.index, method="ffill")
-        df_15m["lp_p10"] = lsr_z["lp_p10"].reindex(df_15m.index, method="ffill")
-        df_15m["lp_p90"] = lsr_z["lp_p90"].reindex(df_15m.index, method="ffill")
+        # Align onto 15m index by ffill with limit=4 bars (1h freshness) to
+        # match research's validation_B5_lsr_extremes.b5_triggers. Earlier
+        # version had no limit, which let stale LSR values keep firing B5 for
+        # the full day after each daily update — a port bug fixed 2026-05-31.
+        df_15m["long_pct"] = lsr_z["long_pct"].reindex(df_15m.index, method="ffill", limit=4)
+        df_15m["lp_p10"] = lsr_z["lp_p10"].reindex(df_15m.index, method="ffill", limit=4)
+        df_15m["lp_p90"] = lsr_z["lp_p90"].reindex(df_15m.index, method="ffill", limit=4)
     else:
         df_15m["long_pct"] = np.nan
         df_15m["lp_p10"] = np.nan
@@ -239,6 +243,18 @@ def _rebuild_daily_cache(now: datetime) -> None:
     df_smc = ctm.detect_pivots(df_15m, n=SMC_PIVOT_N)
     _cached_obs = ctm.detect_order_blocks(df_smc, n=SMC_PIVOT_N)
 
+    # Windowed triple-intersection columns (replaces same-bar triple_fires).
+    # Mirrors research's validation_B_composite.intersect_triggers with a
+    # backward-only TRIPLE_WINDOW_HOURS window. Adds columns:
+    # triple_long_w / triple_short_w (used at trigger time) and
+    # triple_long_same / triple_short_same (kept for diag comparisons).
+    triple_window_bars = TRIPLE_WINDOW_HOURS * 4   # 4 bars per hour
+    df_15m = ctm.compute_triple_windowed(
+        df_15m, window_bars=triple_window_bars,
+        b1_cvd_threshold=B1_CVD_Z_THRESHOLD, b1_vel_max=B1_VEL_Z_MAX,
+        b7_timeframes=B7_TIMEFRAMES, b7_z_threshold=B7_Z_THRESHOLD,
+    )
+
     # Store the full feature dataframe for tick lookup
     _cached_features = {
         "df": df_15m,
@@ -253,20 +269,24 @@ def _rebuild_daily_cache(now: datetime) -> None:
 # ─── Triple trigger evaluation ─────────────────────────────────────────────
 
 def _check_triple_at_idx(idx: int) -> str | None:
-    """Return 'long', 'short', or None. Uses cached features at the given
-    15m bar index."""
+    """Return 'long', 'short', or None using the windowed triple columns
+    pre-computed by compute_triple_windowed (TRIPLE_WINDOW_HOURS backward
+    window). Mirrors research's intersect_triggers semantics."""
     df = _cached_features.get("df")
     if df is None or idx < 0 or idx >= len(df):
         return None
     row = df.iloc[idx]
-    b1_dir = ctm.b1_fires(row["cvd_z"], row["vel_z"],
-                           cvd_threshold=B1_CVD_Z_THRESHOLD,
-                           vel_max=B1_VEL_Z_MAX)
-    b5_dir = ctm.b5_fires(row["long_pct"], row["lp_p10"], row["lp_p90"])
-    cvd_z_values = {tf: row[f"cvd_z_{tf}"] for tf in B7_TIMEFRAMES
-                     if f"cvd_z_{tf}" in df.columns}
-    b7_dir = ctm.b7_alignment_fires(cvd_z_values, z_threshold=B7_Z_THRESHOLD)
-    return ctm.triple_fires(b1_dir, b5_dir, b7_dir)
+    long_w = bool(row.get("triple_long_w", False))
+    short_w = bool(row.get("triple_short_w", False))
+    # If both fire, this is a contested signal — skip (rare). Cooldown
+    # handles the steady-state of "stay-fired" cases by preventing re-entries.
+    if long_w and short_w:
+        return None
+    if long_w:
+        return "long"
+    if short_w:
+        return "short"
+    return None
 
 
 # ─── Filter gates ──────────────────────────────────────────────────────────
@@ -514,12 +534,12 @@ def _evaluate_trigger(now: datetime, variant: dict,
 
     _diag_inc("bars_at_boundary")
 
-    # Triple check — split into B1/B5/B7 components when DIAG is on so we can
-    # tell which leg is dropping the signal. Production path uses the optimized
-    # single-call below; the per-leg recompute is only paid when DIAG=1.
+    # Triple check via windowed columns (TRIPLE_WINDOW_HOURS backward).
     direction = _check_triple_at_idx(idx)
     if _DIAG_ENABLED:
         row = df.iloc[idx]
+        # Per-leg fires AT this bar (same-bar) — kept for backward comparison
+        # with the pre-windowed diag output.
         b1_dir = ctm.b1_fires(row["cvd_z"], row["vel_z"],
                                cvd_threshold=B1_CVD_Z_THRESHOLD,
                                vel_max=B1_VEL_Z_MAX)
@@ -530,6 +550,20 @@ def _evaluate_trigger(now: datetime, variant: dict,
         _diag_inc(f"b1_{b1_dir or 'none'}")
         _diag_inc(f"b5_{b5_dir or 'none'}")
         _diag_inc(f"b7_{b7_dir or 'none'}")
+        # Windowed B1/B5/B7 — whether each gate had a same-direction fire in
+        # the trailing TRIPLE_WINDOW_HOURS. These drive the triple decision.
+        for gate, col_l, col_s in (("b1", "b1_long_w", "b1_short_w"),
+                                     ("b5", "b5_long_w", "b5_short_w"),
+                                     ("b7", "b7_long_w", "b7_short_w")):
+            if bool(row.get(col_l, False)):
+                _diag_inc(f"{gate}_window_long")
+            if bool(row.get(col_s, False)):
+                _diag_inc(f"{gate}_window_short")
+        # Also track same-bar triple (would've been the old logic) for compare.
+        if bool(row.get("triple_long_same", False)):
+            _diag_inc("triple_long_same_bar")
+        if bool(row.get("triple_short_same", False)):
+            _diag_inc("triple_short_same_bar")
 
     if direction is None:
         _diag_inc("no_triple")

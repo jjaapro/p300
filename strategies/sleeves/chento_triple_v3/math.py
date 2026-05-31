@@ -44,12 +44,19 @@ def compute_moneyflow_signal(df: pd.DataFrame, *,
 
 def b1_fires(cvd_z: float, vel_z: float, *,
               cvd_threshold: float, vel_max: float) -> str | None:
-    """Return 'long' / 'short' / None depending on B1 fire."""
+    """Return 'long' / 'short' / None depending on B1 fire.
+
+    Matches research's validation_B1_moneyflow_divergence.b1_triggers:
+    requires |vel_z| < vel_max (two-sided), NOT one-sided. Earlier version
+    allowed strong-opposite vel_z which was a port bug — fixed 2026-05-31.
+    """
     if pd.isna(cvd_z) or pd.isna(vel_z):
         return None
-    if cvd_z > cvd_threshold and vel_z < vel_max:
+    if abs(vel_z) >= vel_max:
+        return None
+    if cvd_z > cvd_threshold:
         return "short"     # whales buying but price not reacting → fade
-    if cvd_z < -cvd_threshold and vel_z > -vel_max:
+    if cvd_z < -cvd_threshold:
         return "long"      # whales selling but price not reacting → fade
     return None
 
@@ -79,12 +86,17 @@ def compute_lsr_extremes(lsr: pd.DataFrame, *, rolling_days: int) -> pd.DataFram
 
 
 def b5_fires(long_pct: float, lp_p10: float, lp_p90: float) -> str | None:
-    """Return 'long' / 'short' / None depending on LSR extreme."""
+    """Return 'long' / 'short' / None depending on LSR extreme.
+
+    Matches research's validation_B5_lsr_extremes.b5_triggers boundary
+    semantics: strict < / > (not <= / >=). Boundary cases only — minor
+    difference but kept for byte-equivalence.
+    """
     if pd.isna(long_pct) or pd.isna(lp_p10) or pd.isna(lp_p90):
         return None
-    if long_pct <= lp_p10:
+    if long_pct < lp_p10:
         return "long"      # longs flushed → contrarian long
-    if long_pct >= lp_p90:
+    if long_pct > lp_p90:
         return "short"     # longs euphoric → contrarian short
     return None
 
@@ -143,12 +155,98 @@ def b7_alignment_fires(cvd_z_values: dict[str, float],
 
 def triple_fires(b1_dir: str | None, b5_dir: str | None,
                   b7_dir: str | None) -> str | None:
-    """All three must agree on direction."""
+    """SAME-BAR triple intersection. Kept for back-compat + diag use.
+
+    NOTE: production trigger uses the WINDOWED variant
+    (compute_triple_windowed) which mirrors research's intersect_triggers
+    with a ±24h tolerance. Same-bar is too strict — research empirically
+    fires on the LAST of three same-direction signals to align within a
+    24h window, not on a single bar where all three are simultaneously
+    true. See diag results 2026-05-31."""
     if b1_dir is None or b5_dir is None or b7_dir is None:
         return None
     if b1_dir == b5_dir == b7_dir:
         return b1_dir
     return None
+
+
+# ─── Vectorized direction fires (for windowed triple) ──────────────────────
+
+def b1_dirs_vec(df: pd.DataFrame, *, cvd_threshold: float, vel_max: float
+                ) -> tuple[pd.Series, pd.Series]:
+    """Vectorized b1_fires: returns (long_mask, short_mask) over the df."""
+    cz, vz = df["cvd_z"], df["vel_z"]
+    weak_vel = vz.abs() < vel_max
+    long_mask = (cz < -cvd_threshold) & weak_vel
+    short_mask = (cz > cvd_threshold) & weak_vel
+    return long_mask.fillna(False), short_mask.fillna(False)
+
+
+def b5_dirs_vec(df: pd.DataFrame) -> tuple[pd.Series, pd.Series]:
+    """Vectorized b5_fires."""
+    lp = df["long_pct"]
+    p10 = df["lp_p10"]
+    p90 = df["lp_p90"]
+    long_mask = (lp < p10) & lp.notna() & p10.notna()
+    short_mask = (lp > p90) & lp.notna() & p90.notna()
+    return long_mask.fillna(False), short_mask.fillna(False)
+
+
+def b7_dirs_vec(df: pd.DataFrame, timeframes: tuple[str, ...], *,
+                 z_threshold: float) -> tuple[pd.Series, pd.Series]:
+    """Vectorized b7_alignment_fires (median |z| > threshold & all same sign)."""
+    cols = [f"cvd_z_{tf}" for tf in timeframes if f"cvd_z_{tf}" in df.columns]
+    if not cols:
+        zeros = pd.Series(False, index=df.index)
+        return zeros, zeros
+    z = df[cols]
+    valid = z.notna().all(axis=1)
+    all_pos = (z > 0).sum(axis=1) == len(cols)
+    all_neg = (z < 0).sum(axis=1) == len(cols)
+    med = z.median(axis=1)
+    long_mask = valid & all_pos & (med > z_threshold)
+    short_mask = valid & all_neg & (med < -z_threshold)
+    return long_mask.fillna(False), short_mask.fillna(False)
+
+
+def compute_triple_windowed(df: pd.DataFrame, *,
+                              window_bars: int,
+                              b1_cvd_threshold: float, b1_vel_max: float,
+                              b7_timeframes: tuple[str, ...],
+                              b7_z_threshold: float,
+                              ) -> pd.DataFrame:
+    """Add `triple_long` / `triple_short` boolean columns to df, based on
+    the trailing `window_bars` window: at each bar, true if B1, B5, AND B7
+    all fired same-direction within the trailing window.
+
+    Mirrors research's validation_B_composite.intersect_triggers
+    (WINDOW_HOURS=24) but BACKWARD-ONLY (real-time semantics — we can't see
+    future bars). Research's bidirectional ±24h tolerance becomes a [-24h, 0]
+    backward window here. The trade fires at the bar where the LAST of the
+    three signals aligns, which is the moment the triple completes — also
+    where research would have placed the trade if it had been real-time.
+    """
+    b1_l, b1_s = b1_dirs_vec(df, cvd_threshold=b1_cvd_threshold, vel_max=b1_vel_max)
+    b5_l, b5_s = b5_dirs_vec(df)
+    b7_l, b7_s = b7_dirs_vec(df, b7_timeframes, z_threshold=b7_z_threshold)
+
+    # "Any True in trailing window_bars (inclusive of current bar)."
+    # rolling.max() on bool Series returns float 0/1 then we cast back.
+    def _rolling_any(s: pd.Series) -> pd.Series:
+        return s.rolling(window_bars, min_periods=1).max().fillna(0).astype(bool)
+
+    df["b1_long_w"] = _rolling_any(b1_l)
+    df["b1_short_w"] = _rolling_any(b1_s)
+    df["b5_long_w"] = _rolling_any(b5_l)
+    df["b5_short_w"] = _rolling_any(b5_s)
+    df["b7_long_w"] = _rolling_any(b7_l)
+    df["b7_short_w"] = _rolling_any(b7_s)
+    df["triple_long_w"] = df["b1_long_w"] & df["b5_long_w"] & df["b7_long_w"]
+    df["triple_short_w"] = df["b1_short_w"] & df["b5_short_w"] & df["b7_short_w"]
+    # Also persist same-bar version for diagnostics
+    df["triple_long_same"] = b1_l & b5_l & b7_l
+    df["triple_short_same"] = b1_s & b5_s & b7_s
+    return df
 
 
 # ─── SMC pivots + Order Blocks ─────────────────────────────────────────────

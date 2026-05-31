@@ -65,6 +65,9 @@ def btc_hourly_by_bucket() -> dict[tuple[str, int], tuple[float, float]]:
 
 # ─── ETH hourly (aggregated from eth_1m on the fly) ─────────────────────────
 
+_ETH_1M_LOOKBACK_MS = 3 * 365 * 86_400 * 1000   # 3y: J+ regime uses ~2y of daily returns
+
+
 def load_eth_hourly() -> dict[tuple[str, int], tuple[float, float]]:
     """Aggregate eth_1m into hourly buckets. Returns {(date_iso, hour_int):
     (open, close)}. The first 1m bar's open is the hour's open; the last
@@ -72,13 +75,18 @@ def load_eth_hourly() -> dict[tuple[str, int], tuple[float, float]]:
 
     eth_1m.open_time is in ms, so we convert to seconds via // 1000 at the
     aggregation step.
+
+    Bounded BELOW by 3 years before sim_now to keep the .fetchall() bounded
+    (eth_1m has 3.37M+ rows since 2020, which OOMs Python in long replay
+    runs). Downstream J+ regime/vol-target only walks ~2y of daily returns.
     """
     upper_ms = clock.now_ts_ms()
+    lower_ms = max(0, upper_ms - _ETH_1M_LOOKBACK_MS)
     con = sqlite3.connect(str(db.TRADER_DB))
     rows = con.execute(
         "SELECT open_time, open, close FROM eth_1m "
-        "WHERE open_time <= ? ORDER BY open_time",
-        (upper_ms,),
+        "WHERE open_time >= ? AND open_time <= ? ORDER BY open_time",
+        (lower_ms, upper_ms),
     ).fetchall()
     con.close()
     # Group by (date, hour), preserving order so first/last 1m bar is correct.
@@ -121,13 +129,17 @@ def load_btc_daily() -> dict[str, dict]:
 
 
 def load_eth_daily() -> dict[str, dict]:
-    """ETH daily {date: {o, c}} aggregated from eth_1m."""
+    """ETH daily {date: {o, c}} aggregated from eth_1m.
+
+    Same 3y lower bound as load_eth_hourly — see comment there.
+    """
     upper_ms = clock.now_ts_ms()
+    lower_ms = max(0, upper_ms - _ETH_1M_LOOKBACK_MS)
     con = sqlite3.connect(str(db.TRADER_DB))
     rows = con.execute(
         "SELECT open_time, open, close FROM eth_1m "
-        "WHERE open_time <= ? ORDER BY open_time",
-        (upper_ms,),
+        "WHERE open_time >= ? AND open_time <= ? ORDER BY open_time",
+        (lower_ms, upper_ms),
     ).fetchall()
     con.close()
     out: dict[str, dict] = {}
