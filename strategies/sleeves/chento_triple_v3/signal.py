@@ -269,22 +269,24 @@ def _rebuild_daily_cache(now: datetime) -> None:
 # ─── Triple trigger evaluation ─────────────────────────────────────────────
 
 def _check_triple_at_idx(idx: int) -> str | None:
-    """Return 'long', 'short', or None using the windowed triple columns
-    pre-computed by compute_triple_windowed (TRIPLE_WINDOW_HOURS backward
-    window). Mirrors research's intersect_triggers semantics."""
+    """Return 'long', 'short', or None using the RISING-EDGE columns
+    pre-computed by compute_triple_windowed. Fires exactly once per fresh
+    triple-confluence (when the windowed-true signal transitions
+    False→True), mirroring research's intersect_triggers semantics
+    anchored to the freshest-firing gate. Avoids cluster-firing the same
+    confluence every cooldown cycle while it stays windowed-true."""
     df = _cached_features.get("df")
     if df is None or idx < 0 or idx >= len(df):
         return None
     row = df.iloc[idx]
-    long_w = bool(row.get("triple_long_w", False))
-    short_w = bool(row.get("triple_short_w", False))
-    # If both fire, this is a contested signal — skip (rare). Cooldown
-    # handles the steady-state of "stay-fired" cases by preventing re-entries.
-    if long_w and short_w:
+    long_edge = bool(row.get("triple_long_edge", False))
+    short_edge = bool(row.get("triple_short_edge", False))
+    # Contested edge (rare) → skip.
+    if long_edge and short_edge:
         return None
-    if long_w:
+    if long_edge:
         return "long"
-    if short_w:
+    if short_edge:
         return "short"
     return None
 
@@ -564,6 +566,11 @@ def _evaluate_trigger(now: datetime, variant: dict,
             _diag_inc("triple_long_same_bar")
         if bool(row.get("triple_short_same", False)):
             _diag_inc("triple_short_same_bar")
+        # Windowed-true (would-fire-every-bar) for cluster diagnosis.
+        if bool(row.get("triple_long_w", False)):
+            _diag_inc("triple_long_windowed_true")
+        if bool(row.get("triple_short_w", False)):
+            _diag_inc("triple_short_windowed_true")
 
     if direction is None:
         _diag_inc("no_triple")

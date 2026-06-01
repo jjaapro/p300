@@ -243,6 +243,21 @@ def compute_triple_windowed(df: pd.DataFrame, *,
     df["b7_short_w"] = _rolling_any(b7_s)
     df["triple_long_w"] = df["b1_long_w"] & df["b5_long_w"] & df["b7_long_w"]
     df["triple_short_w"] = df["b1_short_w"] & df["b5_short_w"] & df["b7_short_w"]
+    # Rising-edge: ONLY the bar where the windowed-true transitions
+    # False → True fires. This makes each fresh confluence emit exactly
+    # one trigger (anchored to the bar where the last-of-three gates
+    # fired), mirroring research's intersect_triggers semantics — without
+    # cluster-firing every cooldown cycle while a triple stays alive.
+    #
+    # NOTE: pandas shift() on bool casts to object dtype. `~obj_series`
+    # then runs bitwise integer NOT (True→-2, False→-1), both of which
+    # are truthy when ANDed — producing a permanently-True column. The
+    # explicit `.astype(bool)` after shift fixes this. Discovered after
+    # 4 cluster-fires per day persisted through the initial edge attempt.
+    prev_long = df["triple_long_w"].shift(1).fillna(False).astype(bool)
+    prev_short = df["triple_short_w"].shift(1).fillna(False).astype(bool)
+    df["triple_long_edge"] = df["triple_long_w"] & ~prev_long
+    df["triple_short_edge"] = df["triple_short_w"] & ~prev_short
     # Also persist same-bar version for diagnostics
     df["triple_long_same"] = b1_l & b5_l & b7_l
     df["triple_short_same"] = b1_s & b5_s & b7_s
