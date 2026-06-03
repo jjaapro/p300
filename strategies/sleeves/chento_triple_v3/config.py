@@ -64,7 +64,11 @@ OKX_DELTA_WINDOW_HOURS = 24 * 7     # rolling 7d window for z-score
 OKX_ALIGN_Z_MIN = 0.0               # require z ≥ 0 (or ≤ 0 for shorts)
 
 # Filter 4: asymmetric regime filter — skip ONLY shorts in up_30d
-FILTER_SKIP_UP_30D_SHORTS = True
+# DISABLED 2026-06-03 after empirical re-eval on the H_B-comparable 2025-05-30 → 2025-12-06
+# window: filter blocked Jul 23 04:15 SHORT (+2.59R) when BTC ret_30d = +12.75%. Single
+# missed trade exceeds the entire claimed −6R/yr cost from the 2026-05-29 analysis. See
+# memory/project_chento_regime_filter.md for the amendment block.
+FILTER_SKIP_UP_30D_SHORTS = False
 UP_30D_THRESHOLD = 0.10             # BTC 30d return > +10% = "up_30d" regime
 
 # ─── A4 ladder (adaptive sizing via H_B) ───────────────────────────────────
