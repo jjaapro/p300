@@ -182,6 +182,43 @@ def b1_dirs_vec(df: pd.DataFrame, *, cvd_threshold: float, vel_max: float
     return long_mask.fillna(False), short_mask.fillna(False)
 
 
+def _apply_combined_cooldown(long_mask: pd.Series, short_mask: pd.Series,
+                              cooldown_bars: int) -> tuple[pd.Series, pd.Series]:
+    """Apply a single cooldown across BOTH long and short fires (matches
+    research's b1_triggers / b5_triggers / b7_alignment_triggers where the
+    cooldown pool is shared between directions). Returns thinned masks
+    where only the first fire in each cooldown window survives.
+
+    Implementation: collect indices of any True in long|short, walk
+    sequentially keeping only those spaced ≥ cooldown_bars apart, then
+    rebuild the masks. The loop is over True indices only (sparse, ~5%
+    of bars for B1) so the cost is ~hundreds of iterations on a 8000-bar
+    cache — trivial."""
+    any_fire = (long_mask | short_mask).values
+    long_arr = long_mask.values
+    short_arr = short_mask.values
+    fire_idx = any_fire.nonzero()[0]
+    if len(fire_idx) == 0:
+        return long_mask, short_mask
+    kept_l = []
+    kept_s = []
+    last = -10**9
+    for i in fire_idx:
+        if i - last < cooldown_bars:
+            continue
+        if long_arr[i]:
+            kept_l.append(i)
+        elif short_arr[i]:
+            kept_s.append(i)
+        last = i
+    import numpy as np
+    new_l = np.zeros(len(long_mask), dtype=bool)
+    new_s = np.zeros(len(short_mask), dtype=bool)
+    new_l[kept_l] = True
+    new_s[kept_s] = True
+    return pd.Series(new_l, index=long_mask.index), pd.Series(new_s, index=short_mask.index)
+
+
 def b5_dirs_vec(df: pd.DataFrame) -> tuple[pd.Series, pd.Series]:
     """Vectorized b5_fires."""
     lp = df["long_pct"]
@@ -229,6 +266,13 @@ def compute_triple_windowed(df: pd.DataFrame, *,
     b1_l, b1_s = b1_dirs_vec(df, cvd_threshold=b1_cvd_threshold, vel_max=b1_vel_max)
     b5_l, b5_s = b5_dirs_vec(df)
     b7_l, b7_s = b7_dirs_vec(df, b7_timeframes, z_threshold=b7_z_threshold)
+    # Apply research's per-gate cooldowns BEFORE intersection — mirrors
+    # validation_B1/B5/B7's `cooldown_bars` loops. Without this each gate's
+    # raw per-bar fire rate (B1 ~22%, B5 ~35%, B7 ~2.5%) makes the
+    # B1-anchored intersection fire many duplicate times per confluence.
+    b1_l, b1_s = _apply_combined_cooldown(b1_l, b1_s, cooldown_bars=4 * 6)   # B1 6h
+    b5_l, b5_s = _apply_combined_cooldown(b5_l, b5_s, cooldown_bars=4 * 24)  # B5 24h
+    b7_l, b7_s = _apply_combined_cooldown(b7_l, b7_s, cooldown_bars=4 * 6)   # B7 6h
 
     # "Any True in trailing window_bars (inclusive of current bar)."
     # rolling.max() on bool Series returns float 0/1 then we cast back.
@@ -241,19 +285,29 @@ def compute_triple_windowed(df: pd.DataFrame, *,
     df["b5_short_w"] = _rolling_any(b5_s)
     df["b7_long_w"] = _rolling_any(b7_l)
     df["b7_short_w"] = _rolling_any(b7_s)
+    # B1-anchored triple — mirrors research's intersect_triggers more
+    # faithfully: research anchors at B1 trigger bars (b1_triggers) and
+    # then keeps the trigger only if B5/B7 fire within ±24h. The
+    # backward-only analog is "B1 fires AT this bar AND B5/B7 have at
+    # least one same-direction fire in the trailing window."
+    #
+    # Why this beats the "first-of-three windowed-AND" anchor: the
+    # latter fires at the moment the third gate aligns, which is often
+    # EARLY in the confluence (when the move is still developing). The
+    # B1-anchor fires only on B1's fresh divergence signals, which tend
+    # to land near the climax of the move (the exhaustion bar) — much
+    # closer to research's typical entry point. Empirically the
+    # rising-edge variant fired Oct 2 at 00:00 capturing +2.57R; the
+    # research entry at 05:45 captured +4.90R on the SAME setup.
+    df["triple_long_anchor"] = b1_l & df["b5_long_w"] & df["b7_long_w"]
+    df["triple_short_anchor"] = b1_s & df["b5_short_w"] & df["b7_short_w"]
+    # Kept for diagnostics: windowed-AND + rising-edge (the older anchor).
     df["triple_long_w"] = df["b1_long_w"] & df["b5_long_w"] & df["b7_long_w"]
     df["triple_short_w"] = df["b1_short_w"] & df["b5_short_w"] & df["b7_short_w"]
-    # Rising-edge: ONLY the bar where the windowed-true transitions
-    # False → True fires. This makes each fresh confluence emit exactly
-    # one trigger (anchored to the bar where the last-of-three gates
-    # fired), mirroring research's intersect_triggers semantics — without
-    # cluster-firing every cooldown cycle while a triple stays alive.
-    #
-    # NOTE: pandas shift() on bool casts to object dtype. `~obj_series`
-    # then runs bitwise integer NOT (True→-2, False→-1), both of which
-    # are truthy when ANDed — producing a permanently-True column. The
-    # explicit `.astype(bool)` after shift fixes this. Discovered after
-    # 4 cluster-fires per day persisted through the initial edge attempt.
+    # NOTE on dtype trap: pandas shift() on bool casts to object dtype.
+    # `~obj_series` then runs bitwise integer NOT (True→-2, False→-1),
+    # both truthy when ANDed — producing a permanently-True column. The
+    # explicit `.astype(bool)` after shift fixes this.
     prev_long = df["triple_long_w"].shift(1).fillna(False).astype(bool)
     prev_short = df["triple_short_w"].shift(1).fillna(False).astype(bool)
     df["triple_long_edge"] = df["triple_long_w"] & ~prev_long

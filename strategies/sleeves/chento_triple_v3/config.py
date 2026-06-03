@@ -80,7 +80,11 @@ VP_N_BINS = 50
 VP_VALUE_AREA_PCT = 0.70            # contiguous bins covering 70% of volume
 
 # ─── Cooldown ──────────────────────────────────────────────────────────────
-COOLDOWN_HOURS = 4                  # minimum gap between triggers
+# Research's validation_B1_moneyflow_divergence.b1_triggers applies
+# cooldown_bars=4*6=24 (6h) at the B1 level. With B1-anchored triple,
+# matching this cooldown at the sleeve level prevents B1 re-fires within
+# the same confluence from emitting duplicate trades.
+COOLDOWN_HOURS = 6                  # minimum gap between triggers (was 4 pre-B1-anchor)
 
 # ─── Diagnostic flags ──────────────────────────────────────────────────────
 # Trigger-window gate (UTC). Optional restriction; mean-reversion isn't strongly

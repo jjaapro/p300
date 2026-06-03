@@ -269,24 +269,27 @@ def _rebuild_daily_cache(now: datetime) -> None:
 # ─── Triple trigger evaluation ─────────────────────────────────────────────
 
 def _check_triple_at_idx(idx: int) -> str | None:
-    """Return 'long', 'short', or None using the RISING-EDGE columns
-    pre-computed by compute_triple_windowed. Fires exactly once per fresh
-    triple-confluence (when the windowed-true signal transitions
-    False→True), mirroring research's intersect_triggers semantics
-    anchored to the freshest-firing gate. Avoids cluster-firing the same
-    confluence every cooldown cycle while it stays windowed-true."""
+    """Return 'long', 'short', or None using the B1-ANCHORED triple columns
+    pre-computed by compute_triple_windowed. Fires when B1 (money-flow
+    divergence) fires fresh AT this bar AND B5+B7 have same-direction
+    fires in the trailing window. Mirrors research's intersect_triggers
+    semantics — research anchors on B1's b1_triggers list and keeps
+    only those with B5/B7 within ±24h. Empirically picks LATER bars
+    within a confluence than the rising-edge anchor (closer to the
+    exhaustion / reversal point, capturing more R per trade)."""
     df = _cached_features.get("df")
     if df is None or idx < 0 or idx >= len(df):
         return None
     row = df.iloc[idx]
-    long_edge = bool(row.get("triple_long_edge", False))
-    short_edge = bool(row.get("triple_short_edge", False))
-    # Contested edge (rare) → skip.
-    if long_edge and short_edge:
+    long_a = bool(row.get("triple_long_anchor", False))
+    short_a = bool(row.get("triple_short_anchor", False))
+    # Contested (B1 fires both directions at this bar — impossible by
+    # construction of b1_fires, but defensive).
+    if long_a and short_a:
         return None
-    if long_edge:
+    if long_a:
         return "long"
-    if short_edge:
+    if short_a:
         return "short"
     return None
 
@@ -571,6 +574,16 @@ def _evaluate_trigger(now: datetime, variant: dict,
             _diag_inc("triple_long_windowed_true")
         if bool(row.get("triple_short_w", False)):
             _diag_inc("triple_short_windowed_true")
+        # Rising-edge of windowed-AND (the prior anchor) — kept for compare.
+        if bool(row.get("triple_long_edge", False)):
+            _diag_inc("triple_long_edge_fires")
+        if bool(row.get("triple_short_edge", False)):
+            _diag_inc("triple_short_edge_fires")
+        # B1-anchored fires (the current production anchor).
+        if bool(row.get("triple_long_anchor", False)):
+            _diag_inc("triple_long_anchor_fires")
+        if bool(row.get("triple_short_anchor", False)):
+            _diag_inc("triple_short_anchor_fires")
 
     if direction is None:
         _diag_inc("no_triple")
