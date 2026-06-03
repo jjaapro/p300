@@ -409,6 +409,55 @@ def _write_trade_state(trade_id: str, state: dict, extra: dict | None = None) ->
         con.close()
 
 
+# ─── Bar-walking helpers (Fix A: intra-bar resolution) ─────────────────────
+# Production previously called evaluate_position_step with current_price as
+# bar_high / bar_low / bar_close — a point sample that systematically
+# misses intra-bar target/stop/ladder fills. These helpers let the sweep
+# walk each just-closed 15m bar with its actual high/low/close, matching
+# research's validation_liquidation_and_C6.replay_with_mae semantics.
+
+def _just_closed_15m_ts(now: datetime) -> pd.Timestamp:
+    """Largest 15m boundary STRICTLY less than `now`. Used to cap the
+    walking range so we never read a bar whose open-time >= now."""
+    floor = now.replace(second=0, microsecond=0)
+    floor -= timedelta(minutes=floor.minute % 15)
+    if floor == now:
+        floor -= timedelta(minutes=15)
+    return pd.Timestamp(floor)
+
+
+def _bar_ohlc_for(ts: pd.Timestamp) -> tuple[float, float, float] | None:
+    """Return (high, low, close) for the 15m bar with open_time `ts`.
+    Try the cached features first (cheap dict-hash lookup); fall back to a
+    single-row indexed SQLite read; return None on genuine data gap so the
+    caller can degrade to point-sample with a WARN log."""
+    df = _cached_features.get("df")
+    if df is not None and ts in df.index:
+        row = df.loc[ts]
+        h, l, c = float(row["high"]), float(row["low"]), float(row["close"])
+        if not (pd.isna(h) or pd.isna(l) or pd.isna(c)):
+            return h, l, c
+    con = sqlite3.connect(str(db.PROD_DB))
+    try:
+        row = con.execute(
+            "SELECT high, low, close FROM cd_futures_15m WHERE timestamp = ?",
+            (int(ts.timestamp()),),
+        ).fetchone()
+    finally:
+        con.close()
+    if row is None or row[0] is None:
+        return None
+    return float(row[0]), float(row[1]), float(row[2])
+
+
+def _iter_closed_bars(after_ts: pd.Timestamp, through_ts: pd.Timestamp):
+    """Yield each 15m bar open-time in (after_ts, through_ts] in order."""
+    cur = after_ts + pd.Timedelta(minutes=15)
+    while cur <= through_ts:
+        yield cur
+        cur += pd.Timedelta(minutes=15)
+
+
 # ─── Open-position sweep (every-tick) ──────────────────────────────────────
 
 def _sweep_open_positions(variant: dict, sleeve_cfg: dict) -> int:
@@ -441,54 +490,106 @@ def _sweep_open_positions(variant: dict, sleeve_cfg: dict) -> int:
             log.warning(f"[{SLEEVE_NAME}] {trade_id} has no state in notes; skipping")
             continue
 
-        # TIF expiry — exit_time column carries the scheduled exit
+        # Parse TIF schedule (used both for the zero-walk fallback and
+        # the in-walker TIF check). exit_time column carries the schedule.
+        sched_dt = None
         sched_exit = tr.get("exit_time")
         if sched_exit:
             try:
                 sched_dt = datetime.fromisoformat(sched_exit)
                 if sched_dt.tzinfo is None:
                     sched_dt = sched_dt.replace(tzinfo=timezone.utc)
-                if now >= sched_dt:
-                    _close_paper(trade_id, current_price, "tif_expiry")
-                    n_actions += 1
-                    continue
             except Exception:
-                pass
+                sched_dt = None
 
-        # Sweep step using current price as bar high/low (point sample).
-        # In live every-minute tick context, intra-bar moves are walked one
-        # price per tick; the 15m-boundary trigger tick re-evaluates at the
-        # actual bar close.
+        # Walk bars from (last_walked_ts, just_closed_ts] in chronological
+        # order. Each bar's actual high/low feeds evaluate_position_step,
+        # matching research's replay_with_mae bar-by-bar walking.
+        just_closed = _just_closed_15m_ts(now)
+        last_walked_iso = state.get("last_walked_ts")
+        if last_walked_iso:
+            walk_from = pd.Timestamp(last_walked_iso)
+        else:
+            # First sweep after entry: anchor at the trigger bar so the iter
+            # yields entry_bar_ts + 15m as the first walked bar (matches
+            # research's `start = idx + 1` convention).
+            entry_bar_iso = state.get("entry_bar_ts")
+            walk_from = (pd.Timestamp(entry_bar_iso) if entry_bar_iso
+                          else just_closed - pd.Timedelta(minutes=15))
+
         entry_price = float(state["entry_price"])
         cost_R = (COST_BP_RT / 10000.0) * (entry_price / float(state["risk"]))
-        result = ctm.evaluate_position_step(
-            state,
-            bar_high=current_price, bar_low=current_price,
-            bar_close=current_price,
-            atr_now=state.get("atr_at_entry", 0.0),
-            direction=direction_l,
-            ladder_enabled=LADDER_ENABLED,
-            ladder_adv_trigger_R=LADDER_ADV_TRIGGER_R,
-            ladder_size_frac=state.get("ladder_size_frac", LADDER_T1_SIZE_FRAC),
-            ladder_post_stop_R=LADDER_POST_STOP_R,
-            cost_R=cost_R,
-        )
-        action = result.get("action")
-        if action == "stop_hit":
-            _close_paper(trade_id, result["exit_price"], "stop_hit")
+        closed = False
+        walked_any = False
+        for bar_ts in _iter_closed_bars(walk_from, just_closed):
+            walked_any = True
+
+            # In-walker TIF check: exit at THIS bar's close if TIF falls
+            # at or before the bar. Matches research's bar-count TIF cap.
+            if sched_dt is not None and bar_ts >= sched_dt:
+                ohlc = _bar_ohlc_for(bar_ts)
+                tif_close = ohlc[2] if ohlc is not None else current_price
+                _close_paper(trade_id, tif_close, "tif_expiry")
+                n_actions += 1
+                closed = True
+                break
+
+            ohlc = _bar_ohlc_for(bar_ts)
+            if ohlc is None:
+                log.warning(f"[{SLEEVE_NAME}] {trade_id} no OHLC for {bar_ts}; "
+                             f"fallback point-sample at {current_price:.2f}")
+                bh = bl = bc = current_price
+            else:
+                bh, bl, bc = ohlc
+
+            result = ctm.evaluate_position_step(
+                state,
+                bar_high=bh, bar_low=bl, bar_close=bc,
+                atr_now=state.get("atr_at_entry", 0.0),
+                direction=direction_l,
+                ladder_enabled=LADDER_ENABLED,
+                ladder_adv_trigger_R=LADDER_ADV_TRIGGER_R,
+                ladder_size_frac=state.get("ladder_size_frac", LADDER_T1_SIZE_FRAC),
+                ladder_post_stop_R=LADDER_POST_STOP_R,
+                cost_R=cost_R,
+            )
+            action = result.get("action")
+            if action == "stop_hit":
+                _close_paper(trade_id, result["exit_price"], "stop_hit")
+                n_actions += 1
+                if result["r_outcome"] < 0:
+                    _last_loss_ts[variant_id] = now
+                closed = True
+                break
+            elif action == "target_hit":
+                _close_paper(trade_id, result["exit_price"], "target_hit")
+                n_actions += 1
+                closed = True
+                break
+            elif action == "ladder_fired":
+                # Persist mid-walk so subsequent bars in THIS loop see the
+                # mutated state (wider stop, ladder_added=True).
+                state["last_walked_ts"] = bar_ts.isoformat()
+                _write_trade_state(trade_id, state,
+                                    extra={"_ladder_fired_at": bar_ts.isoformat()})
+                log.info(f"[{SLEEVE_NAME}] {trade_id} ladder fired @ "
+                          f"{result['ladder_entry']:.2f}; new combined stop "
+                          f"{result['new_stop']:.2f}")
+                n_actions += 1
+            # action is None: no event this bar; continue walking.
+
+        # Fallback TIF check for the zero-bar-walk case (live mode between
+        # 15m boundaries when last_walked_ts already == just_closed).
+        if not closed and not walked_any and sched_dt is not None and now >= sched_dt:
+            _close_paper(trade_id, current_price, "tif_expiry")
             n_actions += 1
-            if result["r_outcome"] < 0:
-                _last_loss_ts[variant_id] = now
-        elif action == "target_hit":
-            _close_paper(trade_id, result["exit_price"], "target_hit")
-            n_actions += 1
-        elif action == "ladder_fired":
-            _write_trade_state(trade_id, state,
-                                extra={"_ladder_fired_at": now.isoformat()})
-            log.info(f"[{SLEEVE_NAME}] {trade_id} ladder fired @ "
-                      f"{result['ladder_entry']:.2f}; new combined stop "
-                      f"{result['new_stop']:.2f}")
-            n_actions += 1
+            closed = True
+
+        # Persist walking progress so the next sweep doesn't re-walk these
+        # bars. Only update if we actually advanced.
+        if not closed and walked_any:
+            state["last_walked_ts"] = just_closed.isoformat()
+            _write_trade_state(trade_id, state)
     return n_actions
 
 
@@ -653,6 +754,12 @@ def _evaluate_trigger(now: datetime, variant: dict,
             "ladder_entry": None,
             "ladder_size_frac": ladder_size,
             "atr_at_entry": atr_now,
+            # Fix A: bar-walker anchor. entry_bar_ts is the open-time of the
+            # trigger bar; the sweep walker iterates bars (entry_bar_ts,
+            # just_closed_ts] so the first walked bar is entry_bar+15m,
+            # matching research's `start = idx + 1` convention.
+            "entry_bar_ts": bar_ts.isoformat(),
+            "last_walked_ts": bar_ts.isoformat(),
         },
     }
     intent = Intent(
