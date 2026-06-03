@@ -64,11 +64,17 @@ OKX_DELTA_WINDOW_HOURS = 24 * 7     # rolling 7d window for z-score
 OKX_ALIGN_Z_MIN = 0.0               # require z ≥ 0 (or ≤ 0 for shorts)
 
 # Filter 4: asymmetric regime filter — skip ONLY shorts in up_30d
-# DISABLED 2026-06-03 after empirical re-eval on the H_B-comparable 2025-05-30 → 2025-12-06
-# window: filter blocked Jul 23 04:15 SHORT (+2.59R) when BTC ret_30d = +12.75%. Single
-# missed trade exceeds the entire claimed −6R/yr cost from the 2026-05-29 analysis. See
-# memory/project_chento_regime_filter.md for the amendment block.
-FILTER_SKIP_UP_30D_SHORTS = False
+# 2026-06-03 RE-ENABLED after Stage 1 verification of the disable attempt:
+# the disable hypothesis (from a faulty audit) was that the filter blocked
+# research's Jul 23 04:15 SHORT (+2.59R). Direct cache inspection showed
+# B5's backward-window short was False at Jul 23 04:15 — production's
+# B1-anchored triple never fires there REGARDLESS of the filter. Disabling
+# the filter only unblocked Jul 26 SHORT losers (−1.57% / −0.85%) that
+# fire when B1+B7 align in up_30d regimes. Stage 1 6mo backtest: cum
+# +$783 (post-disable) vs +$904 (pre-disable) → net −$121, WR 50% vs
+# 62.5%. The filter is empirically net-POSITIVE in current regime; keep
+# it ON. See memory/project_chento_regime_filter.md for full re-eval.
+FILTER_SKIP_UP_30D_SHORTS = True
 UP_30D_THRESHOLD = 0.10             # BTC 30d return > +10% = "up_30d" regime
 
 # ─── A4 ladder (adaptive sizing via H_B) ───────────────────────────────────
