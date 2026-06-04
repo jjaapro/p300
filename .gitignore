@@ -12,6 +12,19 @@ data/databases/*.db
 data/databases/*.db-wal
 data/databases/*.db-shm
 data/databases/*.db.bak*
+data/databases/*.bak*
 *.log
 .idea/
 .vscode/
+
+# Runtime artifacts (regenerated each run; not source-of-truth)
+data/diagnostics/
+data/ai_quant_archive/
+data/ai_quant_preview/
+data/catalogs/
+
+# Large research data (kept locally; not committed for repo-size reasons)
+data/archive/tradingview/
+studies/material/chento/
+studies/material/ScalpX*.html
+de421.bsp
