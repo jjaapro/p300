@@ -1,0 +1,139 @@
+{
+  "generated_at_utc": "2026-05-23T18:46:26.252623+00:00",
+  "top_n_universe": null,
+  "setups": {
+    "S1_oversold_bounce": {
+      "setup_id": "S1_oversold_bounce",
+      "n_triggers": 111,
+      "years": 2.8939082819986313,
+      "triggers_per_year": 38.35643330179754,
+      "asset_concentration_top1_pct": 0.04504504504504504,
+      "n_assets": 67,
+      "fwd_ret_means": {
+        "1": 0.017611695160044377,
+        "3": 0.00934903630548539,
+        "7": -0.0071264778921955405,
+        "14": 0.019625665441578895
+      },
+      "fwd_ret_sharpes": {
+        "1": 0.21952527113424355,
+        "3": 0.06146895821898619,
+        "7": -0.03937375606210951,
+        "14": 0.057303767897385983
+      },
+      "r_mean": 0.004278951374836805,
+      "r_sharpe": 0.007581230132097875,
+      "r_win_rate": 0.2972972972972973,
+      "stability": {
+        "first_half_r_mean": 0.03480773823659583,
+        "second_half_r_mean": -0.025704678578676494,
+        "both_positive": false
+      },
+      "verdict": "FAIL",
+      "reasons": [
+        "frequency 38.4/yr < 50",
+        "best Sharpe 0.22 < 0.3",
+        "not stable: one half is negative"
+      ]
+    },
+    "S2_bull_flag_breakout": {
+      "setup_id": "S2_bull_flag_breakout",
+      "n_triggers": 4,
+      "years": 2.198494182067077,
+      "triggers_per_year": 1.8194271481942716,
+      "asset_concentration_top1_pct": 0.25,
+      "n_assets": 4,
+      "fwd_ret_means": {
+        "1": 0.000585126248547594,
+        "3": -0.025085255864579124,
+        "7": -0.06094133073470393,
+        "14": -0.010181196053152847
+      },
+      "fwd_ret_sharpes": {
+        "1": 0.02887776865550255,
+        "3": -0.43191382408474993,
+        "7": -0.47442112317419216,
+        "14": -0.05054123697589326
+      },
+      "r_mean": 0.25,
+      "r_sharpe": 0.1986798535597566,
+      "r_win_rate": 0.25,
+      "stability": {
+        "first_half_r_mean": 0.0,
+        "second_half_r_mean": 0.5,
+        "both_positive": false
+      },
+      "verdict": "FAIL",
+      "reasons": [
+        "frequency 1.8/yr < 50",
+        "best Sharpe 0.20 < 0.3",
+        "not stable: one half is negative"
+      ]
+    },
+    "S4_funding_flush_long_proxy": {
+      "setup_id": "S4_funding_flush_long_proxy",
+      "n_triggers": 149,
+      "years": 2.861054072553046,
+      "triggers_per_year": 52.07870813397129,
+      "asset_concentration_top1_pct": 0.026845637583892617,
+      "n_assets": 79,
+      "fwd_ret_means": {
+        "1": 0.02299654102680628,
+        "3": 0.12496370881810323,
+        "7": 0.046764919957665504,
+        "14": 0.11907852043045658
+      },
+      "fwd_ret_sharpes": {
+        "1": 0.34692171394552346,
+        "3": 1.0152676549415676,
+        "7": 0.40516108156491526,
+        "14": 0.2998896334369215
+      },
+      "r_mean": -0.5637583892617449,
+      "r_sharpe": -1.1329759425155723,
+      "r_win_rate": 0.0,
+      "stability": {
+        "first_half_r_mean": -0.12162162162162163,
+        "second_half_r_mean": -1.0,
+        "both_positive": false
+      },
+      "verdict": "FAIL",
+      "reasons": [
+        "not stable: one half is negative"
+      ]
+    },
+    "S10_trend_aligned_pullback": {
+      "setup_id": "S10_trend_aligned_pullback",
+      "n_triggers": 1726,
+      "years": 2.9815195071868583,
+      "triggers_per_year": 578.8994490358127,
+      "asset_concentration_top1_pct": 0.05040556199304751,
+      "n_assets": 126,
+      "fwd_ret_means": {
+        "1": 0.0033404659486903363,
+        "3": 0.0017212503101011508,
+        "7": 0.02034880901753866,
+        "14": 0.04578787367568423
+      },
+      "fwd_ret_sharpes": {
+        "1": 0.05629667075434627,
+        "3": 0.014954920921469862,
+        "7": 0.05952482924091676,
+        "14": 0.09320026121615335
+      },
+      "r_mean": -0.41367323290845887,
+      "r_sharpe": -0.7093607084508562,
+      "r_win_rate": 0.016222479721900347,
+      "stability": {
+        "first_half_r_mean": 0.0,
+        "second_half_r_mean": -0.8273464658169177,
+        "both_positive": false
+      },
+      "verdict": "FAIL",
+      "reasons": [
+        "best Sharpe 0.09 < 0.3",
+        "not stable: one half is negative"
+      ]
+    }
+  }
+}
