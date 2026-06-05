@@ -54,8 +54,11 @@ def _create_dash_db(p: Path) -> None:
                 created_at TEXT DEFAULT (datetime('now')),
                 parent_position_id TEXT, current_qty REAL, current_leverage REAL,
                 current_size_usdt REAL, realized_pnl_usdt REAL DEFAULT 0,
-                avg_entry_price REAL
+                avg_entry_price REAL,
+                unique_key TEXT
             );
+            CREATE UNIQUE INDEX IF NOT EXISTS uix_trades_unique_key
+                ON trades(unique_key) WHERE unique_key IS NOT NULL;
             CREATE TABLE trade_adjustments (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 trade_id TEXT NOT NULL, seq INTEGER NOT NULL,
