@@ -132,7 +132,7 @@ def _load_15m_btc(now: datetime, days_back: int) -> pd.DataFrame:
         con.close()
     if df.empty:
         return df
-    df["ts"] = pd.to_datetime(df["timestamp"], unit="s", utc=True)
+    df["ts"] = pd.to_datetime(df["timestamp"], unit="s", utc=True).dt.as_unit("ns")
     return df.set_index("ts").drop(columns="timestamp")
 
 
@@ -151,7 +151,7 @@ def _load_lsr_btc(now: datetime, days_back: int) -> pd.DataFrame:
         con.close()
     if df.empty:
         return df
-    df["ts"] = pd.to_datetime(df["timestamp"], unit="s", utc=True)
+    df["ts"] = pd.to_datetime(df["timestamp"], unit="s", utc=True).dt.as_unit("ns")
     return df.set_index("ts").drop(columns="timestamp")
 
 
@@ -169,7 +169,7 @@ def _load_okx_1h(now: datetime, days_back: int) -> pd.Series:
         con.close()
     if df.empty:
         return pd.Series(dtype=float)
-    df["ts"] = pd.to_datetime(df["timestamp"], unit="s", utc=True)
+    df["ts"] = pd.to_datetime(df["timestamp"], unit="s", utc=True).dt.as_unit("ns")
     return df.set_index("ts")["close"]
 
 
