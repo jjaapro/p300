@@ -491,6 +491,9 @@ class HealthReport:
                                                     # when the sleeve hasn't fired
     cross_sleeve: CrossSleeveState | None = None   # P2.4d/e/f state; None if
                                                     # variant lookup failed
+    ledger_coherence: "LedgerCoherence | None" = None  # 2026-06-05: state-
+                                                    # corruption audit; None if
+                                                    # the module is unavailable
 
 
 def build_report(variant_id: str, capital_usdt: float | None = None,
@@ -515,12 +518,24 @@ def build_report(variant_id: str, capital_usdt: float | None = None,
                        for w in windows]
     ai_quant = [ai_quant_window_stats(variant_id, w) for w in windows]
     cross = _build_cross_sleeve_state(variant_id)
+    coherence = _build_ledger_coherence(variant_id)
     return HealthReport(
         variant_id=variant_id, capital_usdt=capital_usdt,
         as_of=clock.now_iso(), windows=windows,
         portfolio=portfolio, sleeves=sleeves, ai_quant=ai_quant,
-        cross_sleeve=cross,
+        cross_sleeve=cross, ledger_coherence=coherence,
     )
+
+
+def _build_ledger_coherence(variant_id: str):
+    """Run the ledger-coherence audit scoped to this variant. Returns None
+    on any failure (module missing, DB error) — must never raise back to
+    the bot's startup banner."""
+    try:
+        from strategies.support import ledger_coherence
+        return ledger_coherence.audit_ledger(variant_id_filter=variant_id)
+    except Exception:
+        return None
 
 
 def _build_cross_sleeve_state(variant_id: str) -> CrossSleeveState | None:
@@ -709,6 +724,22 @@ def format_report(report: HealthReport) -> str:
                 )
         else:
             lines.append("  no concordant stacks")
+
+    # Ledger coherence block — state-corruption audit (2026-06-05). Always
+    # rendered when available; lists FAIL/WARN/OK per detector. Operators
+    # should treat any FAIL count > 0 as a flag to investigate.
+    lc = report.ledger_coherence
+    if lc is not None:
+        from strategies.support.ledger_coherence import (
+            format_ledger_coherence as _fmt_lc,
+        )
+        lines.append("")
+        # Strip the duplicate banner from the helper since we already have
+        # one above. Render only the body.
+        body = _fmt_lc(lc).split("\n")
+        # Drop the helper's own header (3 lines: ===, title, as_of, ===)
+        body = body[4:] if len(body) > 4 else body
+        lines.extend(body)
 
     lines.append("")
     lines.append("=" * 78)
