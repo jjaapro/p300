@@ -40,7 +40,10 @@ OUT_DIR = ROOT / 'studies' / 'material' / 'chento' / 'validation'
 if sys.platform == 'win32':
     sys.stdout.reconfigure(encoding='utf-8', line_buffering=True)
 
-FLUSH_THRESHOLD = -0.03           # -3% OI drop in 4h (Phase 1 sweet spot)
+FLUSH_THRESHOLD = -0.02           # -2% OI drop in 4h. Updated 2026-06-05
+                                  # per threshold_ablation.py: -2% bull-gated
+                                  # MAR 2.05 > -3% MAR 1.51 + 2× OOS samples.
+                                  # See memory/feedback_normalize_vs_absolute_thresholds.md
 PRICE_DIR_THRESHOLD = -0.005      # -0.5% price drop to qualify as long-flush
 COOLDOWN_HOURS = 24
 COST_BP = 18.0
