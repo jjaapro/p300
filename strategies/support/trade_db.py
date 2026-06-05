@@ -99,9 +99,27 @@ def init_db() -> None:
         # (the backfill tool in studies/tools/backfill_ai_quant_decision_id.py
         # fuzzy-matches those).
         ("ai_quant_decision_id", "INTEGER"),
+        # 2026-06-05 (Fix #1 of joyful-singing-leaf.md architecture pass):
+        # Idempotency key — a string formed from
+        # f"{variant_id}|{strategy_upper}|{asset}|{entry_time_iso}" —
+        # protects against duplicate emission of the same logical trade
+        # (same variant + sleeve + asset + entry bar) on crash-retry or
+        # cross-process race. NULL on legacy rows (pre-migration); new
+        # opens via open_paper_trade() always populate it. The partial
+        # UNIQUE INDEX below enforces uniqueness only for non-NULL keys,
+        # so legacy NULLs don't collide.
+        ("unique_key",          "TEXT"),
     ]:
         if not _column_exists(con, "trades", col):
             con.execute(f"ALTER TABLE trades ADD COLUMN {col} {ddl}")
+    # Partial UNIQUE index — applies only to rows with non-NULL unique_key
+    # (i.e. trades opened via the post-2026-06-05 idempotent path). Legacy
+    # rows with NULL pass through. Same idiom as PostgreSQL's "WHERE col IS
+    # NOT NULL" partial unique index; SQLite supports this since 3.8.
+    con.execute(
+        "CREATE UNIQUE INDEX IF NOT EXISTS uix_trades_unique_key "
+        "ON trades(unique_key) WHERE unique_key IS NOT NULL"
+    )
 
     # Adjustment-event ledger: one row per OPEN / SCALE_UP / SCALE_DOWN /
     # LEVERAGE_ADJUST / FLIP / CLOSE event on a position. Idempotency via the

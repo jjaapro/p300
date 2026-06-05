@@ -404,22 +404,143 @@ def test_open_paper_trade_with_scheduled_exit(empty_trades_db, monkeypatch):
 
 
 def test_open_paper_trade_id_increments(empty_trades_db, monkeypatch):
-    """Two opens get sequential SJ ids; third skips to SJ-0003."""
+    """Three opens with DIFFERENT entry_dt get sequential SJ ids.
+
+    Same-entry-dt repeats are intentionally NOT tested here — that's the
+    idempotency contract from Fix #1 (2026-06-05), covered in
+    test_open_paper_trade_idempotent_returns_existing_sj below.
+    """
     _stub_paper_account_default(monkeypatch)
-    clock.set_simulated_now(datetime(2024, 6, 15, 12, 0, tzinfo=timezone.utc))
-    try:
-        ids = [
-            trades.open_paper_trade(
-                variant={"id": "v", "capital_usdt": 10000.0},
-                sleeve_name="ADX", asset="BTC", direction="LONG",
-                entry_price=70000.0, allocation_pct=10.0, leverage=1.0,
-                reason={},
-            )
-            for _ in range(3)
-        ]
-    finally:
-        clock.set_simulated_now(None)
+    ids = [
+        trades.open_paper_trade(
+            variant={"id": "v", "capital_usdt": 10000.0},
+            sleeve_name="ADX", asset="BTC", direction="LONG",
+            entry_price=70000.0, allocation_pct=10.0, leverage=1.0,
+            reason={},
+            entry_dt=datetime(2024, 6, 15, 12 + i, 0, tzinfo=timezone.utc),
+        )
+        for i in range(3)
+    ]
     assert ids == ["SJ-0001", "SJ-0002", "SJ-0003"]
+
+
+# ─── Fix #1 (2026-06-05): idempotency contract ─────────────────────────────
+
+
+def test_open_paper_trade_idempotent_returns_existing_sj(empty_trades_db, monkeypatch):
+    """Calling open_paper_trade twice with IDENTICAL logical-trade params
+    (same variant + sleeve + asset + entry_dt) returns the SAME SJ-ID
+    on the second call without creating a duplicate row."""
+    _stub_paper_account_default(monkeypatch)
+    entry_dt = datetime(2024, 6, 15, 12, 0, tzinfo=timezone.utc)
+    kwargs = dict(
+        variant={"id": "test_variant", "capital_usdt": 10000.0},
+        sleeve_name="ADX", asset="BTC", direction="LONG",
+        entry_price=70000.0, allocation_pct=10.0, leverage=1.0,
+        reason={}, entry_dt=entry_dt,
+    )
+    tid_first = trades.open_paper_trade(**kwargs)
+    tid_second = trades.open_paper_trade(**kwargs)
+    assert tid_first == tid_second == "SJ-0001"
+    # Single row in DB, not two
+    con = sqlite3.connect(str(empty_trades_db))
+    n = con.execute("SELECT COUNT(*) FROM trades").fetchone()[0]
+    con.close()
+    assert n == 1
+
+
+def test_open_paper_trade_different_entry_dt_creates_distinct_trades(
+        empty_trades_db, monkeypatch):
+    """Different entry_dt -> different unique_key -> different SJ-ID."""
+    _stub_paper_account_default(monkeypatch)
+    common = dict(
+        variant={"id": "v", "capital_usdt": 10000.0},
+        sleeve_name="ADX", asset="BTC", direction="LONG",
+        entry_price=70000.0, allocation_pct=10.0, leverage=1.0, reason={},
+    )
+    a = trades.open_paper_trade(
+        entry_dt=datetime(2024, 6, 15, 12, 0, tzinfo=timezone.utc), **common)
+    b = trades.open_paper_trade(
+        entry_dt=datetime(2024, 6, 15, 13, 0, tzinfo=timezone.utc), **common)
+    assert a == "SJ-0001"
+    assert b == "SJ-0002"
+
+
+def test_open_paper_trade_different_asset_creates_distinct_trades(
+        empty_trades_db, monkeypatch):
+    """Different asset -> different unique_key even if every other input matches."""
+    _stub_paper_account_default(monkeypatch)
+    entry_dt = datetime(2024, 6, 15, 12, 0, tzinfo=timezone.utc)
+    common = dict(
+        variant={"id": "v", "capital_usdt": 10000.0},
+        sleeve_name="ADX", direction="LONG",
+        entry_price=70000.0, allocation_pct=10.0, leverage=1.0,
+        reason={}, entry_dt=entry_dt,
+    )
+    a = trades.open_paper_trade(asset="BTC", **common)
+    b = trades.open_paper_trade(asset="ETH", **common)
+    assert a == "SJ-0001"
+    assert b == "SJ-0002"
+
+
+def test_open_paper_trade_unique_key_persisted_to_row(
+        empty_trades_db, monkeypatch):
+    """The deterministic unique_key string is stored on the row for
+    DB-inspection debugging."""
+    _stub_paper_account_default(monkeypatch)
+    entry_dt = datetime(2024, 6, 15, 12, 0, tzinfo=timezone.utc)
+    tid = trades.open_paper_trade(
+        variant={"id": "v_alpha", "capital_usdt": 10000.0},
+        sleeve_name="adx", asset="BTC", direction="LONG",
+        entry_price=70000.0, allocation_pct=10.0, leverage=1.0, reason={},
+        entry_dt=entry_dt,
+    )
+    con = sqlite3.connect(str(empty_trades_db))
+    uk = con.execute(
+        "SELECT unique_key FROM trades WHERE id=?", (tid,)).fetchone()[0]
+    con.close()
+    assert uk == "v_alpha|ADX|BTC|2024-06-15T12:00:00+00:00"
+
+
+def test_unique_key_partial_index_exists(empty_trades_db):
+    """Schema must include the partial UNIQUE INDEX on (unique_key)
+    WHERE unique_key IS NOT NULL."""
+    con = sqlite3.connect(str(empty_trades_db))
+    rows = con.execute(
+        "SELECT sql FROM sqlite_master WHERE type='index' "
+        "AND name='uix_trades_unique_key'"
+    ).fetchall()
+    con.close()
+    assert len(rows) == 1
+    sql = rows[0][0].upper()
+    assert "UNIQUE" in sql
+    assert "UNIQUE_KEY" in sql
+    assert "WHERE" in sql  # partial index
+
+
+def test_unique_key_does_not_block_legacy_null_rows(
+        empty_trades_db, monkeypatch):
+    """Partial UNIQUE index uses WHERE unique_key IS NOT NULL, so legacy
+    rows with NULL unique_key can coexist freely."""
+    # Insert two legacy-style rows (NULL unique_key) directly via SQL
+    con = sqlite3.connect(str(empty_trades_db))
+    for i in (1, 2):
+        con.execute("""
+            INSERT INTO trades
+            (id, series, asset, direction, strategy, allocation_pct, leverage,
+             entry_time, exit_time, status, execution_mode, strategy_variant,
+             actual_entry_time, entry_price, size_usdt, qty)
+            VALUES (?, 'SJ', 'BTC', 'LONG', 'OLD', 10.0, 1.0,
+                    '2024-06-15T12:00:00+00:00',
+                    '2099-12-31T00:00:00+00:00',
+                    'closed', 'paper', 'v',
+                    '2024-06-15T12:00:00+00:00', 70000.0, 1000.0, 0.014)
+        """, (f"SJ-99{i:02d}",))
+    con.commit()
+    n = con.execute("SELECT COUNT(*) FROM trades WHERE unique_key IS NULL"
+                     ).fetchone()[0]
+    con.close()
+    assert n == 2  # both legacy rows persisted, no UNIQUE constraint violation
 
 
 def test_open_paper_trade_zero_entry_price_yields_zero_qty(empty_trades_db, monkeypatch):

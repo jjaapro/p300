@@ -112,6 +112,19 @@ def get_open_trades(variant_id: str, strategy: str,
     return [dict(r) for r in rows]
 
 
+def _build_unique_key(variant_id: str, sleeve_name: str,
+                       asset: str, entry_time_iso: str) -> str:
+    """Idempotency key — a deterministic string that identifies the LOGICAL
+    trade (variant × sleeve × asset × entry bar). Same inputs always yield
+    the same key; the UNIQUE index on trades.unique_key prevents the SAME
+    logical trade from being persisted twice across crash-retry or
+    cross-process race scenarios.
+
+    Format kept human-readable (not hashed) so DB inspection shows the
+    semantic key. Fix #1 of joyful-singing-leaf.md (2026-06-05)."""
+    return f"{variant_id}|{sleeve_name.upper()}|{asset}|{entry_time_iso}"
+
+
 def open_paper_trade(*, variant: dict, sleeve_name: str,
                       asset: str, direction: str,
                       entry_price: float, allocation_pct: float,
@@ -124,6 +137,16 @@ def open_paper_trade(*, variant: dict, sleeve_name: str,
 
     Centralizes the per-sleeve open path: capital lookup, size_usdt math,
     qty math, ID mint, INSERT — previously duplicated 6× across services.
+
+    Idempotent (Fix #1, 2026-06-05): If a trade with the same logical key
+    (variant + sleeve + asset + entry_time) already exists, this returns
+    the existing SJ-ID without inserting a duplicate. Two failure modes
+    are handled:
+      1. Single-process retry after partial commit: the initial SELECT on
+         unique_key catches the existing row.
+      2. Cross-process race: the partial UNIQUE INDEX surfaces an
+         IntegrityError which is caught and resolved by querying for the
+         winning row's SJ-ID.
 
     Parameters that vary per sleeve:
       sleeve_name        goes into the trades.strategy column (uppercased)
@@ -159,25 +182,57 @@ def open_paper_trade(*, variant: dict, sleeve_name: str,
     if regime_value is None:
         regime_value = reason.get("regime", "unknown")
 
+    unique_key = _build_unique_key(variant["id"], sleeve_name, asset, now_iso)
+
     con = sqlite3.connect(str(db.DASH_DB))
     try:
+        # Pre-check: if this logical trade already exists, return its SJ-ID
+        # without re-inserting. Handles single-process retry idempotency.
+        existing = con.execute(
+            "SELECT id FROM trades WHERE unique_key = ?", (unique_key,)
+        ).fetchone()
+        if existing is not None:
+            log.info(
+                "idempotent skip: trade for %s already exists as %s",
+                unique_key, existing[0],
+            )
+            return existing[0]
+
         tid = _next_sj_id(con)
-        con.execute("""
-            INSERT INTO trades (id, series, asset, direction, strategy, regime,
-                allocation_pct, leverage, entry_time, exit_time, status,
-                execution_mode, strategy_variant, actual_entry_time,
-                entry_price, size_usdt, qty, order_ids, notes,
-                current_qty, current_leverage, current_size_usdt,
-                realized_pnl_usdt, avg_entry_price)
-            VALUES (?, 'SJ', ?, ?, ?, ?, ?, ?, ?, ?, 'open',
-                    'paper', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)
-        """, (tid, asset, direction.upper(), sleeve_name.upper(),
-              regime_value, allocation_pct, leverage,
-              now_iso, exit_iso, variant["id"], now_iso,
-              entry_price, size_usdt, qty,
-              json.dumps([f"paper-{tid}"]),
-              json.dumps(reason, default=str),
-              qty, leverage, size_usdt, entry_price))
+        try:
+            con.execute("""
+                INSERT INTO trades (id, series, asset, direction, strategy, regime,
+                    allocation_pct, leverage, entry_time, exit_time, status,
+                    execution_mode, strategy_variant, actual_entry_time,
+                    entry_price, size_usdt, qty, order_ids, notes,
+                    current_qty, current_leverage, current_size_usdt,
+                    realized_pnl_usdt, avg_entry_price, unique_key)
+                VALUES (?, 'SJ', ?, ?, ?, ?, ?, ?, ?, ?, 'open',
+                        'paper', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+            """, (tid, asset, direction.upper(), sleeve_name.upper(),
+                  regime_value, allocation_pct, leverage,
+                  now_iso, exit_iso, variant["id"], now_iso,
+                  entry_price, size_usdt, qty,
+                  json.dumps([f"paper-{tid}"]),
+                  json.dumps(reason, default=str),
+                  qty, leverage, size_usdt, entry_price, unique_key))
+        except sqlite3.IntegrityError as e:
+            # Race-condition fallback: another writer beat us to the UNIQUE
+            # index. Look up THEIR SJ-ID and return it. This is rare under
+            # SQLite's single-writer WAL but possible on bot restart
+            # immediately after a previous open whose row landed before the
+            # crash but whose response was never returned to the caller.
+            if "unique_key" in str(e).lower():
+                row = con.execute(
+                    "SELECT id FROM trades WHERE unique_key = ?", (unique_key,)
+                ).fetchone()
+                if row is not None:
+                    log.warning(
+                        "race detected on %s; returning winner %s",
+                        unique_key, row[0],
+                    )
+                    return row[0]
+            raise
         # Implicit OPEN event in the adjustment ledger. Idempotency-safe:
         # a duplicate INSERT (e.g. retry after partial commit) becomes a no-op.
         from strategies.support.trade_adjustments import record_adjustment, EV_OPEN
