@@ -91,10 +91,41 @@ CREATE TABLE IF NOT EXISTS screener_klines_1h (
     PRIMARY KEY (asset, ts)
 );
 CREATE INDEX IF NOT EXISTS ix_sk1h_ts ON screener_klines_1h(ts);
+
+CREATE TABLE IF NOT EXISTS screener_klines_5m (
+    asset        TEXT,
+    ts           INTEGER,
+    open         REAL,
+    high         REAL,
+    low          REAL,
+    close        REAL,
+    volume       REAL,
+    quote_volume REAL,
+    PRIMARY KEY (asset, ts)
+);
+CREATE INDEX IF NOT EXISTS ix_sk5m_ts ON screener_klines_5m(ts);
+
+CREATE TABLE IF NOT EXISTS screener_klines_1m (
+    asset        TEXT,
+    ts           INTEGER,
+    open         REAL,
+    high         REAL,
+    low          REAL,
+    close        REAL,
+    volume       REAL,
+    quote_volume REAL,
+    PRIMARY KEY (asset, ts)
+);
+CREATE INDEX IF NOT EXISTS ix_sk1m_ts ON screener_klines_1m(ts);
 """
 
-INTERVAL_TABLE = {"1d": "screener_klines_daily", "1h": "screener_klines_1h"}
-INTERVAL_SEC = {"1d": 86_400, "1h": 3_600}
+INTERVAL_TABLE = {
+    "1d": "screener_klines_daily",
+    "1h": "screener_klines_1h",
+    "5m": "screener_klines_5m",
+    "1m": "screener_klines_1m",
+}
+INTERVAL_SEC = {"1d": 86_400, "1h": 3_600, "5m": 300, "1m": 60}
 
 
 def ensure_schema(con: sqlite3.Connection) -> None:
@@ -222,10 +253,10 @@ def run_backfill(interval: str, days_back: int, top_n: int | None = None,
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--interval", choices=["1d", "1h"],
+    p.add_argument("--interval", choices=["1d", "1h", "5m", "1m"],
                    help="Single interval to backfill")
     p.add_argument("--days", type=int, default=None,
-                   help="Days of history (default: 1100 for 1d, 365 for 1h)")
+                   help="Days of history (default: 1100 for 1d, 365 for 1h, 100 for 5m/1m)")
     p.add_argument("--top-n", type=int, default=None,
                    help="Limit to top-N coins by 24h quote volume")
     p.add_argument("--asset", action="append", default=None,
@@ -244,7 +275,8 @@ def main():
     if args.all:
         intervals = [("1d", args.days or 1100), ("1h", args.days or 365)]
     else:
-        default_days = 1100 if args.interval == "1d" else 365
+        default_days = {"1d": 1100, "1h": 365, "5m": 100, "1m": 100}.get(
+            args.interval, 365)
         intervals = [(args.interval, args.days or default_days)]
 
     for interval, days in intervals:
