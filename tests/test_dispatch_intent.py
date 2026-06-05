@@ -416,3 +416,140 @@ def test_reconcile_concordant_three_assets_independent_pools():
     eth_cw = (80 * 5 + 60 * 15) / 140
     assert by_id["C"].intent.allocation_pct == pytest.approx(80 / 140 * eth_cw)
     assert by_id["D"].intent.allocation_pct == pytest.approx(60 / 140 * eth_cw)
+
+
+# ─── Same-direction concentration cap ───────────────────────────────────────
+
+
+def test_same_direction_cap_disabled_by_default():
+    """No cap param → legacy behavior preserved."""
+    intents = [
+        ("TRIPLE_V3", _intent(direction="LONG", alloc=15.0, lev=5.0,
+                                priority=10)),
+        ("SQUEEZE", _intent(direction="LONG", asset="ETH",
+                              alloc=15.0, lev=5.0, priority=50)),
+    ]
+    # Both 7500 LONG. No cap → both approved (within gross cap of 25k).
+    results = reconcile_intents(intents, 0.0, 25_000.0, 10_000.0)
+    assert [r.status for r in results] == ["approved", "approved"]
+
+
+def test_same_direction_cap_blocks_second_long():
+    """Two same-direction LONG intents — first fits, second blocked
+    by same-direction cap (BLOCK policy, no reduce)."""
+    intents = [
+        ("TRIPLE_V3", _intent(asset="BTC", direction="LONG",
+                                alloc=15.0, lev=5.0, priority=10)),    # 7500
+        ("SQUEEZE", _intent(asset="ETH", direction="LONG",
+                              alloc=15.0, lev=5.0, priority=50)),       # 7500
+    ]
+    # Same-dir cap 10k: first approved (used 7500), second would push to
+    # 15k > 10k cap → rejected_same_direction_cap (no reduce).
+    results = reconcile_intents(
+        intents, current_gross_used_usdt=0.0,
+        gross_cap_usdt=25_000.0, capital_usdt=10_000.0,
+        current_gross_by_direction_usdt={"LONG": 0.0, "SHORT": 0.0},
+        same_direction_cap_usdt=10_000.0,
+    )
+    by_id = {r.sleeve_id: r for r in results}
+    assert by_id["TRIPLE_V3"].status == "approved"
+    assert by_id["SQUEEZE"].status == "rejected_same_direction_cap"
+    assert "LONG cap" in by_id["SQUEEZE"].reason
+
+
+def test_same_direction_cap_does_not_block_opposite_direction():
+    """LONG and SHORT each have their own bucket — a LONG opening should
+    not consume SHORT cap and vice versa."""
+    intents = [
+        ("S-003", _intent(asset="BTC", direction="LONG",
+                            alloc=15.0, lev=5.0, priority=10)),     # 7500 LONG
+        ("S-096", _intent(asset="ETH", direction="SHORT",
+                            alloc=15.0, lev=5.0, priority=50)),     # 7500 SHORT
+    ]
+    results = reconcile_intents(
+        intents, 0.0, 25_000.0, 10_000.0,
+        current_gross_by_direction_usdt={"LONG": 0.0, "SHORT": 0.0},
+        same_direction_cap_usdt=10_000.0,
+    )
+    assert [r.status for r in results] == ["approved", "approved"]
+
+
+def test_same_direction_cap_seeded_with_existing_open():
+    """Pre-existing LONG position fills the cap → new LONG intent
+    blocked even though no other intent this tick."""
+    intents = [
+        ("SQUEEZE", _intent(asset="ETH", direction="LONG",
+                              alloc=15.0, lev=5.0, priority=50)),
+    ]
+    # 8000 LONG already open, cap 10k. Candidate 7500 → 8000+7500=15500 > 10k.
+    results = reconcile_intents(
+        intents, current_gross_used_usdt=8_000.0,
+        gross_cap_usdt=25_000.0, capital_usdt=10_000.0,
+        current_gross_by_direction_usdt={"LONG": 8_000.0, "SHORT": 0.0},
+        same_direction_cap_usdt=10_000.0,
+    )
+    assert results[0].status == "rejected_same_direction_cap"
+
+
+def test_same_direction_cap_excludes_carry():
+    """CARRY's perp SHORT is delta-neutral collateral, not a directional
+    bet — it doesn't count toward SHORT cap consumption AND its own
+    SHORT intents aren't blocked by the cap."""
+    intents = [
+        # CARRY's 8000 SHORT already in current_gross but NOT in
+        # current_gross_by_direction_usdt (caller excludes it).
+        ("S-003", _intent(asset="BTC", direction="SHORT",
+                            alloc=15.0, lev=5.0, priority=50)),     # 7500
+    ]
+    # SHORT bucket 0 (CARRY excluded), cap 10k. Candidate 7500 fits.
+    results = reconcile_intents(
+        intents, current_gross_used_usdt=8_000.0,
+        gross_cap_usdt=25_000.0, capital_usdt=10_000.0,
+        current_gross_by_direction_usdt={"LONG": 0.0, "SHORT": 0.0},
+        same_direction_cap_usdt=10_000.0,
+    )
+    assert results[0].status == "approved"
+
+
+def test_same_direction_cap_carry_intent_not_blocked():
+    """A CARRY-originated SHORT intent isn't blocked by the cap (its
+    leg is structural infrastructure, not concentration risk)."""
+    intents = [
+        # Bucket has 9k SHORT already from another sleeve.
+        ("CARRY", _intent(asset="BTC", direction="SHORT",
+                            alloc=8.0, lev=5.0, priority=10)),      # 4000
+    ]
+    # Without CARRY exclusion the candidate would push 9k -> 13k > 10k.
+    # With exclusion, CARRY proceeds.
+    results = reconcile_intents(
+        intents, current_gross_used_usdt=9_000.0,
+        gross_cap_usdt=25_000.0, capital_usdt=10_000.0,
+        current_gross_by_direction_usdt={"LONG": 0.0, "SHORT": 9_000.0},
+        same_direction_cap_usdt=10_000.0,
+    )
+    assert results[0].status == "approved"
+
+
+def test_same_direction_cap_priority_winner_takes_full_size():
+    """Priority order is preserved under the cap — higher priority
+    (lower number) wins the slot; lower priority gets BLOCKED, not
+    reduced."""
+    intents = [
+        # SQUEEZE has lower priority (50) than TRIPLE_V3 (10), so
+        # TRIPLE_V3 fires first.
+        ("SQUEEZE", _intent(asset="ETH", direction="LONG",
+                              alloc=15.0, lev=5.0, priority=50)),
+        ("TRIPLE_V3", _intent(asset="BTC", direction="LONG",
+                                alloc=15.0, lev=5.0, priority=10)),
+    ]
+    results = reconcile_intents(
+        intents, 0.0, 25_000.0, 10_000.0,
+        current_gross_by_direction_usdt={"LONG": 0.0, "SHORT": 0.0},
+        same_direction_cap_usdt=10_000.0,
+    )
+    # Results ordered by priority — TRIPLE_V3 first, full size; SQUEEZE blocked.
+    assert results[0].sleeve_id == "TRIPLE_V3"
+    assert results[0].status == "approved"
+    assert results[0].intent.allocation_pct == 15.0   # untouched, full size
+    assert results[1].sleeve_id == "SQUEEZE"
+    assert results[1].status == "rejected_same_direction_cap"

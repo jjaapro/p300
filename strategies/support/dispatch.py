@@ -137,11 +137,14 @@ class ReconcileResult:
             when the intent was rejected entirely.
         status: One of ``approved``, ``approved_pooled``,
             ``approved_reduced``, ``rejected_directional_conflict``,
-            ``rejected_margin``. ``approved_pooled`` means the
-            allocation was reduced by the P2.4f Stage 2 conviction-
-            weighted pooling pass; ``approved_reduced`` means the
-            margin-headroom clamp shrunk it. The latter wins the label
-            when both fire (the post-pool alloc still didn't fit margin).
+            ``rejected_margin``, ``rejected_same_direction_cap``.
+            ``approved_pooled`` means the allocation was reduced by the
+            P2.4f Stage 2 conviction-weighted pooling pass;
+            ``approved_reduced`` means the margin-headroom clamp shrunk
+            it. The latter wins the label when both fire.
+            ``rejected_same_direction_cap`` means the intent would push
+            same-direction concurrent notional above its cap (BLOCK
+            policy per memory/feedback_orchestrator_allocation_policy.md).
         reason: Human-readable reason string (for logs / status dicts).
         sleeve_id: Strategy ID of the originator (helps the orchestrator
             map back to its dispatch entry).
@@ -239,6 +242,8 @@ def reconcile_intents(
     capital_usdt: float,
     min_reduce_fraction: float = 0.50,
     existing_directional_opens: Optional[dict[str, str]] = None,
+    current_gross_by_direction_usdt: Optional[dict[str, float]] = None,
+    same_direction_cap_usdt: Optional[float] = None,
 ) -> list[ReconcileResult]:
     """Run the cross-sleeve reconciliation pass over a tick's intents.
 
@@ -259,6 +264,24 @@ def reconcile_intents(
             in-reconcile intents. Pass ``None`` (default) for tests /
             standalone callers; the orchestrator builds it via
             :func:`strategies.support.conflict_resolver.current_directional_opens`.
+        current_gross_by_direction_usdt: ``{"LONG": X, "SHORT": Y}``
+            mapping currently-open notional per direction across all
+            sleeves in this variant. Required when ``same_direction_cap_usdt``
+            is set; ignored otherwise. CARRY's delta-neutral SHORT is
+            excluded from the LONG/SHORT buckets at the caller level
+            (orchestrator builds this via current_gross_by_direction_usdt
+            helper).
+        same_direction_cap_usdt: Per-direction notional cap. When set,
+            intents whose direction's pre-existing + approved-this-tick
+            notional would exceed this cap are REJECTED (BLOCK policy —
+            never reduce, never preempt). When ``None`` (default), no
+            per-direction cap is enforced — legacy behavior preserved.
+            Specifies the architectural concentration cap from
+            :doc:`memory/feedback_orchestrator_allocation_policy.md`:
+            shipped sleeves agreeing on direction (e.g. TRIPLE_V3 +
+            future SQUEEZE_BULL both LONG BTC in bull regime) should be
+            blocked from compounding past a single sleeve's worth of
+            concurrent exposure.
 
     Returns:
         A list of :class:`ReconcileResult`, ordered by priority (winner
@@ -275,7 +298,10 @@ def reconcile_intents(
          b. Reject if an earlier-approved intent on the same asset
             has the opposite direction (directional conflict).
          c. Compute candidate_notional = capital × alloc_pct/100 × leverage.
-         d. Check headroom = cap - (current_used + approved_notional_so_far).
+         d. If same_direction_cap_usdt set: reject if cap exceeded
+            (BLOCK — no reduce). CARRY excluded from same-direction
+            accounting (delta-neutral leg, not a directional bet).
+         e. Check headroom = cap - (current_used + approved_notional_so_far).
             - If candidate fits, approve full size.
             - If headroom ≥ min_reduce_fraction × candidate, approve reduced
               to ``headroom``.
@@ -298,6 +324,13 @@ def reconcile_intents(
                 # Notional 0 — it's already counted in current_gross_used_usdt.
                 approved_by_asset[asset] = (direction, 0.0)
     approved_notional = 0.0
+    # Per-direction approved notional this tick. Seeded from already-open
+    # positions (passed in) when the same-direction cap is active.
+    approved_by_direction: dict[str, float] = {"LONG": 0.0, "SHORT": 0.0}
+    if same_direction_cap_usdt is not None and current_gross_by_direction_usdt:
+        for d, n in current_gross_by_direction_usdt.items():
+            if d in approved_by_direction:
+                approved_by_direction[d] = float(n)
     results: list[ReconcileResult] = []
 
     # Pool concordant signals first (alloc redistribution), then sort.
@@ -347,6 +380,24 @@ def reconcile_intents(
                 intent=intent, status="approved", sleeve_id=sleeve_id,
             ))
             continue
+
+        # Same-direction concentration cap (BLOCK policy). CARRY excluded:
+        # its perp SHORT is delta-neutral collateral, not a directional bet,
+        # so it doesn't count toward SHORT concentration risk.
+        if (same_direction_cap_usdt is not None
+                and sleeve_id not in _NEUTRAL_STRATEGIES
+                and intent.direction in ("LONG", "SHORT")):
+            dir_used = approved_by_direction[intent.direction]
+            if dir_used + candidate_notional > same_direction_cap_usdt + 1e-9:
+                results.append(ReconcileResult(
+                    intent=None, status="rejected_same_direction_cap",
+                    reason=(f"{intent.direction} cap: "
+                            f"used={dir_used:,.0f} + "
+                            f"cand={candidate_notional:,.0f} > "
+                            f"cap={same_direction_cap_usdt:,.0f}"),
+                    sleeve_id=sleeve_id,
+                ))
+                continue
         if used + candidate_notional <= gross_cap_usdt + 1e-9:
             # Full size fits.
             results.append(ReconcileResult(
@@ -357,6 +408,8 @@ def reconcile_intents(
             ))
             if sleeve_id not in _NEUTRAL_STRATEGIES:
                 approved_by_asset[intent.asset] = (intent.direction, candidate_notional)
+                if intent.direction in approved_by_direction:
+                    approved_by_direction[intent.direction] += candidate_notional
             approved_notional += candidate_notional
             continue
         if headroom <= 0:
@@ -392,6 +445,8 @@ def reconcile_intents(
         ))
         if sleeve_id not in _NEUTRAL_STRATEGIES:
             approved_by_asset[intent.asset] = (intent.direction, clamped_notional)
+            if intent.direction in approved_by_direction:
+                approved_by_direction[intent.direction] += clamped_notional
         approved_notional += clamped_notional
 
     return results
