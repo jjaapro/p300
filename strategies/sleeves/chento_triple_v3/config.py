@@ -78,7 +78,16 @@ FILTER_SKIP_UP_30D_SHORTS = True
 UP_30D_THRESHOLD = 0.10             # BTC 30d return > +10% = "up_30d" regime
 
 # ─── A4 ladder (adaptive sizing via H_B) ───────────────────────────────────
-LADDER_ENABLED = True
+# 2026-06-05 DISABLED per P1 of the lookahead audit
+# (memory/project_chento_v3_p1_ladder_verdict.md). Under backward-only
+# triggers, H_B (T3 inside-VA + T1 outside-VA) FAILS to Pareto-dominate
+# T1 alone (MAR 2.32 < 2.73) and T0 (no-ladder) beats T1 (MAR 2.99 vs
+# 2.73, maxDD −3.47R vs −5.07R). The 90% inside-VA WR that justified
+# the H_B Pareto edge was a bidirectional-anchor artifact — backward-only
+# inside-VA is 7 trades / 71% WR with OOS −0.10R. Disabling reduces
+# annual R 15.0→10.4 but cuts maxDD 6.46→3.47 (−46%) and lifts MAR
+# 2.32→2.99 (+29%). Keep tier-frac/post-stop params in file for forensics.
+LADDER_ENABLED = False
 LADDER_ADV_TRIGGER_R = 0.3          # ladder fires at -0.3R adverse excursion
 LADDER_T1_SIZE_FRAC = 0.5           # 50% add for outside-VA (T1)
 LADDER_T3_SIZE_FRAC = 1.5           # 150% add for inside-VA (T3)
