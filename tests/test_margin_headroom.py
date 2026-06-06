@@ -260,3 +260,79 @@ def test_orchestrator_injects_effective_margin_headroom(temp_db):
     sleeve_cfg = {"strategy_id": "S-003"}
     sleeve_cfg["_effective_margin_headroom_usdt"] = h
     assert sleeve_cfg["_effective_margin_headroom_usdt"] == pytest.approx(20_000)
+
+
+# ─── Same-direction concentration cap ───────────────────────────────────────
+
+
+def test_same_direction_cap_returns_none_when_spec_absent():
+    """Backward compat: variant without spec opt-in returns None →
+    reconcile then skips per-direction enforcement entirely."""
+    v = _variant(capital=10000)
+    assert margin_headroom.same_direction_cap_usdt(v) is None
+
+
+def test_same_direction_cap_uses_spec_override():
+    v = {"id": "V", "capital_usdt": 10000,
+         "spec": {"allocator_notes": {"same_direction_target_x": 1.0}}}
+    assert margin_headroom.same_direction_cap_usdt(v) == pytest.approx(10_000)
+
+
+def test_same_direction_cap_scales_with_capital():
+    v = {"id": "V", "capital_usdt": 50_000,
+         "spec": {"allocator_notes": {"same_direction_target_x": 1.5}}}
+    assert margin_headroom.same_direction_cap_usdt(v) == pytest.approx(75_000)
+
+
+def test_current_gross_by_direction_empty(temp_db):
+    """No trades open → both directions return 0."""
+    out = margin_headroom.current_gross_by_direction_usdt("V")
+    assert out == {"LONG": 0.0, "SHORT": 0.0}
+
+
+def test_current_gross_by_direction_sums_per_direction(temp_db):
+    """Two LONG + one SHORT trade for a variant → bucketed sums."""
+    _insert(temp_db, id="T1", direction="LONG", size_usdt=5000)
+    _insert(temp_db, id="T2", direction="LONG", size_usdt=3000)
+    _insert(temp_db, id="T3", direction="SHORT", size_usdt=2000)
+    out = margin_headroom.current_gross_by_direction_usdt("V")
+    assert out["LONG"] == pytest.approx(8000)
+    assert out["SHORT"] == pytest.approx(2000)
+
+
+def test_current_gross_by_direction_excludes_carry(temp_db):
+    """CARRY's SHORT leg is delta-neutral and must NOT count toward the
+    SHORT concentration bucket. Mirrors conflict_resolver and dispatch
+    exclusion."""
+    _insert(temp_db, id="T1", direction="LONG", strategy="CHENTO_TRIPLE_V3",
+            size_usdt=5000)
+    _insert(temp_db, id="T2", direction="SHORT", strategy="CARRY",
+            size_usdt=8000)
+    _insert(temp_db, id="T3", direction="SHORT", strategy="S-078",
+            size_usdt=4000)
+    _insert(temp_db, id="T4", direction="SHORT", strategy="S-096",
+            size_usdt=2000)
+    out = margin_headroom.current_gross_by_direction_usdt("V")
+    assert out["LONG"] == pytest.approx(5000)
+    # SHORT excludes CARRY (8k) and S-078 (4k); only S-096's 2k counts.
+    assert out["SHORT"] == pytest.approx(2000)
+
+
+def test_current_gross_by_direction_excludes_closed_trades(temp_db):
+    """Only status='open' rows count."""
+    _insert(temp_db, id="T1", direction="LONG", size_usdt=5000, status="closed")
+    _insert(temp_db, id="T2", direction="LONG", size_usdt=3000)
+    out = margin_headroom.current_gross_by_direction_usdt("V")
+    assert out["LONG"] == pytest.approx(3000)
+
+
+def test_current_gross_by_direction_excludes_other_variants(temp_db):
+    """Cross-variant isolation — V1's positions don't leak to V2's bucket."""
+    _insert(temp_db, id="T1", strategy_variant="V1",
+            direction="LONG", size_usdt=5000)
+    _insert(temp_db, id="T2", strategy_variant="V2",
+            direction="LONG", size_usdt=2000)
+    out = margin_headroom.current_gross_by_direction_usdt("V1")
+    assert out["LONG"] == pytest.approx(5000)
+    out2 = margin_headroom.current_gross_by_direction_usdt("V2")
+    assert out2["LONG"] == pytest.approx(2000)

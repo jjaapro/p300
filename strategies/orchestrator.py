@@ -573,10 +573,19 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
         # legacy (non-two-phase) sleeves, so migrated sleeves' intents
         # are rejected against them too.
         existing = conflict_resolver.current_directional_opens(variant["id"])
+        # Per-direction concentration cap (orchestrator-allocation policy).
+        # Returns None when the variant spec hasn't opted in — reconcile
+        # then skips the per-direction check (legacy behavior). When set,
+        # the per-direction bucket state must be seeded with current opens.
+        same_dir_cap = margin_headroom.same_direction_cap_usdt(variant)
+        by_direction = (margin_headroom.current_gross_by_direction_usdt(variant["id"])
+                          if same_dir_cap is not None else None)
         intents_only = [(sid, intent) for sid, intent, _, _ in _pending_intents]
         results = dispatch_mod.reconcile_intents(
             intents_only, post_used, cap, capital,
             existing_directional_opens=existing,
+            current_gross_by_direction_usdt=by_direction,
+            same_direction_cap_usdt=same_dir_cap,
         )
         # Pair each result with its pending entry. Multi-asset sleeves
         # (e.g. THU_BEAR) emit multiple intents under the same sleeve_id,
@@ -591,7 +600,8 @@ def _tick_composition(variant: dict, now_utc: datetime) -> None:
             if not queue:
                 continue
             strategy_id, intent, sleeve, execute_fn = queue.pop(0)
-            if r.status in ("rejected_directional_conflict", "rejected_margin"):
+            if r.status in ("rejected_directional_conflict", "rejected_margin",
+                            "rejected_same_direction_cap"):
                 log.info(f"[{variant['id']}] {strategy_id} reconcile -> "
                          f"{r.status}: {r.reason}")
                 continue

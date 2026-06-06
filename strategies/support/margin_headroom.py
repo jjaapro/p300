@@ -94,6 +94,67 @@ def gross_cap_usdt(variant: dict) -> float:
     return capital * target_x
 
 
+# CARRY's perp SHORT is delta-neutral collateral; excluded from
+# concentration-risk accounting (matches conflict_resolver and dispatch).
+_NEUTRAL_STRATEGIES = frozenset({"CARRY", "S-078"})
+
+
+def current_gross_by_direction_usdt(variant_id: str) -> dict[str, float]:
+    """Sum of ``size_usdt`` per direction across this variant's open
+    paper trades. CARRY's delta-neutral SHORT excluded.
+
+    Returns ``{"LONG": X, "SHORT": Y}`` — both keys always present
+    (zero if no positions in that direction). Used by the orchestrator
+    to seed :func:`strategies.support.dispatch.reconcile_intents`'s
+    per-direction bucket state when ``same_direction_cap_usdt`` is
+    active.
+    """
+    placeholders = ",".join("?" * len(_NEUTRAL_STRATEGIES))
+    con = sqlite3.connect(str(db.DASH_DB))
+    try:
+        rows = con.execute(
+            f"SELECT direction, COALESCE(SUM(size_usdt), 0) "
+            f"FROM trades "
+            f"WHERE strategy_variant = ? AND status = 'open' "
+            f"  AND execution_mode = 'paper' "
+            f"  AND direction IN ('LONG', 'SHORT') "
+            f"  AND strategy NOT IN ({placeholders}) "
+            f"GROUP BY direction",
+            (variant_id, *_NEUTRAL_STRATEGIES),
+        ).fetchall()
+    finally:
+        con.close()
+    out = {"LONG": 0.0, "SHORT": 0.0}
+    for direction, total in rows:
+        if direction in out:
+            out[direction] = float(total or 0.0)
+    return out
+
+
+DEFAULT_SAME_DIRECTION_TARGET_X: Optional[float] = None
+"""Default per-direction cap multiplier. ``None`` = no cap enforced
+(legacy behavior preserved for any variant whose spec hasn't opted
+into the policy yet)."""
+
+
+def same_direction_cap_usdt(variant: dict) -> Optional[float]:
+    """Return the variant's per-direction notional cap in USDT, or
+    ``None`` if the spec hasn't opted into the policy.
+
+    Pulled from ``variant.spec.allocator_notes.same_direction_target_x``;
+    multiplied by ``variant.capital_usdt``. Returning ``None`` causes
+    :func:`reconcile_intents` to skip the per-direction check
+    entirely (its existing behavior pre-cap).
+    """
+    spec = variant.get("spec") or {}
+    notes = spec.get("allocator_notes") or {}
+    target_x = notes.get("same_direction_target_x", DEFAULT_SAME_DIRECTION_TARGET_X)
+    if target_x is None:
+        return None
+    capital = float(variant.get("capital_usdt") or 10000)
+    return capital * float(target_x)
+
+
 def headroom_usdt(variant: dict) -> float:
     """Remaining notional capacity in USDT. Negative when the variant
     is already over its cap (today's reality on some ticks per the
