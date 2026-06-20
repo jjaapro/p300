@@ -1,0 +1,3 @@
+range-formation hedge (standalone)
+  n_events=380  meanR=-1.342  WR=9%  cumR=-510.0  maxDD=-508.6R  MAR=-1.0
+  outcome mix: {'L-S-': 135, 'L0S-': 113, 'L-S0': 92, 'L-S+': 18, 'L+S-': 12, 'L0S0': 4, 'L+S0': 3, 'L0S+': 2, 'L+S+': 1}

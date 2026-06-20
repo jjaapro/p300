@@ -1,0 +1,37 @@
+{
+  "params": {
+    "atr_mult": 5.0,
+    "target_r": 6.0,
+    "depth": 0.2,
+    "fill_tif_h": 24.0
+  },
+  "arms": [
+    {
+      "label": "prod_market",
+      "n": 103,
+      "meanR": 2.16,
+      "WR": 0.718,
+      "cumR": 222.5,
+      "maxDD_R": -2.4,
+      "MAR": 92.63
+    },
+    {
+      "label": "shallow_fallback",
+      "n": 105,
+      "meanR": 2.202,
+      "WR": 0.733,
+      "cumR": 231.3,
+      "maxDD_R": -3.3,
+      "MAR": 70.99
+    },
+    {
+      "label": "shallow_skip",
+      "n": 91,
+      "meanR": 1.949,
+      "WR": 0.681,
+      "cumR": 177.4,
+      "maxDD_R": -3.3,
+      "MAR": 52.99
+    }
+  ]
+}

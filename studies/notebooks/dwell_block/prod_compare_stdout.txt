@@ -1,0 +1,6 @@
+Building prod triggers + data (heavy)...
+  686 triple triggers
+arm                   n   meanR    WR     cumR  maxDD_R    MAR
+prod_market         103  +2.160   72%   +222.5     -2.4  92.63
+shallow_fallback    105  +2.202   73%   +231.3     -3.3  70.99
+shallow_skip         91  +1.949   68%   +177.4     -3.3  52.99
