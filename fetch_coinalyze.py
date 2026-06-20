@@ -253,15 +253,131 @@ def fetch_lsr(assets: tuple[str, ...] = ("BTC", "ETH")) -> dict[str, int]:
         con.close()
 
 
+def _ensure_liq_table(con: sqlite3.Connection) -> None:
+    """Coinalyze liquidations — separate table from cd_liquidations because
+    Coinalyze and CoinDesk report on different aggregation methodologies and
+    their absolute values are NOT comparable. ca_liquidations spans 2021+
+    for multi-year B4 validation; cd_liquidations is the higher-fidelity
+    87-day window we already have."""
+    con.execute("""
+        CREATE TABLE IF NOT EXISTS ca_liquidations (
+            asset      TEXT NOT NULL,
+            timestamp  INTEGER NOT NULL,
+            long_qty   REAL,
+            short_qty  REAL,
+            PRIMARY KEY (asset, timestamp)
+        )
+    """)
+    con.execute("""
+        CREATE INDEX IF NOT EXISTS ix_caliq_ts ON ca_liquidations(timestamp)
+    """)
+    con.commit()
+
+
+def fetch_liquidations(assets: tuple[str, ...] = ("BTC",),
+                        interval: str = "1hour") -> dict[str, int]:
+    """Backfill ca_liquidations from Coinalyze. Hourly granularity by default.
+    Idempotent via INSERT OR REPLACE on (asset, timestamp).
+
+    Coinalyze returns:
+      t = timestamp (seconds)
+      l = long-side liquidations (base asset units, e.g. BTC)
+      s = short-side liquidations (base asset units)
+
+    Symbol `BTCUSDT_PERP.A` is Coinalyze's Binance USDT-M perp feed.
+    """
+    cadence_s = {'1min': 60, '5min': 300, '15min': 900, '30min': 1800,
+                 '1hour': 3600, '4hour': 14400, 'daily': 86400}[interval]
+    now_s = int(datetime.now(timezone.utc).timestamp())
+    con = sqlite3.connect(str(DB_PATH))
+    try:
+        _ensure_liq_table(con)
+        out: dict[str, int] = {}
+        for asset in assets:
+            symbol = SYMBOLS.get(asset)
+            if not symbol:
+                print(f"  unknown asset: {asset}", file=sys.stderr)
+                out[asset] = 0
+                continue
+            # Coverage gap detection
+            rows = con.execute(
+                "SELECT MIN(timestamp), MAX(timestamp) FROM ca_liquidations "
+                "WHERE asset=?", (asset,)).fetchone()
+            min_ts, max_ts = rows
+            earliest = EARLIEST_LSR_TS  # 2021-01-01
+            gaps = []
+            if max_ts is None:
+                gaps.append((earliest, now_s))
+            else:
+                if int(min_ts) - earliest > cadence_s:
+                    gaps.append((earliest, int(min_ts) - cadence_s))
+                if now_s - int(max_ts) > cadence_s:
+                    gaps.append((int(max_ts) + cadence_s, now_s))
+            if not gaps:
+                print(f"  {asset}: up to date")
+                out[asset] = 0
+                continue
+            est_bars = sum((e - s) // cadence_s for s, e in gaps)
+            print(f"  {asset}: {len(gaps)} gap(s), ~{est_bars:,} {interval} bars")
+            total = 0
+            for gap_start, gap_end in gaps:
+                rows_for_gap = 0
+                cursor = gap_start
+                # Coinalyze caps history queries; use 90-day chunks for hourly
+                chunk_days = 90 if interval in ('1hour', '4hour') else 30
+                while cursor <= gap_end:
+                    chunk_end = min(cursor + chunk_days * 86400, gap_end)
+                    data = _api_get("liquidation-history", {
+                        "symbols": symbol, "interval": interval,
+                        "from": cursor, "to": chunk_end,
+                    })
+                    if data and isinstance(data, list) and data[0].get("history"):
+                        hist = data[0]["history"]
+                        ins = [(asset, int(r["t"]),
+                                 float(r.get("l") or 0),
+                                 float(r.get("s") or 0))
+                                for r in hist]
+                        con.executemany(
+                            "INSERT OR REPLACE INTO ca_liquidations "
+                            "(asset, timestamp, long_qty, short_qty) "
+                            "VALUES (?, ?, ?, ?)", ins)
+                        con.commit()
+                        rows_for_gap += len(ins)
+                        total += len(ins)
+                    cursor = chunk_end + cadence_s
+                if rows_for_gap == 0:
+                    _record_unfillable(
+                        "ca_liquidations", asset, gap_start, gap_end,
+                        "Coinalyze returned empty response for liquidation gap",
+                    )
+            print(f"    -> {total:,} rows inserted")
+            out[asset] = total
+        return out
+    finally:
+        con.close()
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                   formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--symbols", default="BTC,ETH",
                     help="Comma-separated assets (default: BTC,ETH)")
+    ap.add_argument("--liquidations", action="store_true",
+                    help="Also backfill ca_liquidations from Coinalyze "
+                         "(2021+ hourly).")
+    ap.add_argument("--liquidations-only", action="store_true",
+                    help="ONLY backfill liquidations, skip LSR.")
+    ap.add_argument("--liq-interval", default="1hour",
+                    help="Liquidation interval: 1hour | 4hour | daily")
     args = ap.parse_args(argv)
     assets = tuple(s.strip().upper() for s in args.symbols.split(","))
     try:
-        fetch_lsr(assets)
+        if not args.liquidations_only:
+            print("Fetching LSR...")
+            fetch_lsr(assets)
+        if args.liquidations or args.liquidations_only:
+            print(f"Fetching liquidations ({args.liq_interval})...")
+            fetch_liquidations(assets, interval=args.liq_interval)
     except MissingApiKey as e:
         print(f"ERROR: {e}", file=sys.stderr)
         return 2
