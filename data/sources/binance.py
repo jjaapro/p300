@@ -27,6 +27,7 @@ from __future__ import annotations
 import argparse
 import json
 import logging
+import os
 import sqlite3
 import sys
 import time
@@ -283,6 +284,64 @@ def fetch_long_short_ratio(symbol: str = "BTCUSDT", asset: str = "BTC",
                 (asset, ts_s, ratio, long_pct, short_pct),
             )
             inserted += 1
+        con.commit()
+    finally:
+        con.close()
+    return inserted
+
+
+def fetch_open_interest(symbol: str = "BTCUSDT",
+                        table: str = "cd_open_interest",
+                        period: str = "1h") -> int:
+    """Fetch hourly open interest for `symbol`, upsert into `table`.
+
+    Native Binance replacement for the CoinDesk OI feed (data-api.coindesk.com
+    now requires a paid key and returns 401). CoinDesk was reselling Binance's
+    own OI: empirically the values are identical in units (sumOpenInterest is
+    base-BTC, sumOpenInterestValue is USDT) and agree to <0.1% at matching
+    timestamps. The two live consumers — short_squeeze and chento_limit_bid —
+    use OI only as an intra-window percentage change, so they are agnostic to
+    the source swap; the AI_QUANT sleeve reads absolute OI but is disabled.
+
+    Binance's /futures/data/openInterestHist gives a point snapshot per period
+    boundary (not OHLC), so all four oi_* settlement columns get the same
+    snapshot value, likewise the oi_value_* columns. Timestamps land exactly
+    on the hour (seconds), matching the cd_futures_ohlcv join key short_squeeze
+    relies on.
+
+    NOTE: like the other /futures/data endpoints, this only serves the last
+    ~30 days regardless of startTime. limit=500 hourly ≈ 20 days, which more
+    than covers a freshly-stale table for live use. Historical CoinDesk rows
+    (pre-2026-06-10) are preserved via INSERT OR IGNORE.
+    """
+    con = sqlite3.connect(str(DB_PATH))
+    try:
+        # Canonical schema lives in data/sources/coindesk.py::_ensure_schema;
+        # mirrored here so OI flows even when the CoinDesk fetcher never runs.
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS cd_open_interest (
+                timestamp INTEGER PRIMARY KEY,
+                oi_open REAL, oi_high REAL, oi_low REAL, oi_close REAL,
+                oi_value_open REAL, oi_value_high REAL, oi_value_low REAL,
+                oi_value_close REAL
+            )
+        """)
+        params = {"symbol": symbol, "period": period, "limit": 500}
+        rows = _get(f"{FAPI_DATA}/openInterestHist", params)
+        cur = con.cursor()
+        inserted = 0
+        for r in rows:
+            ts_s = int(r["timestamp"]) // 1000
+            oi = float(r["sumOpenInterest"])
+            oiv = float(r["sumOpenInterestValue"])
+            cur.execute(
+                f"INSERT OR IGNORE INTO {table} "
+                f"(timestamp, oi_open, oi_high, oi_low, oi_close, "
+                f"oi_value_open, oi_value_high, oi_value_low, oi_value_close) "
+                f"VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (ts_s, oi, oi, oi, oi, oiv, oiv, oiv, oiv),
+            )
+            inserted += cur.rowcount
         con.commit()
     finally:
         con.close()
@@ -785,6 +844,14 @@ def refresh_all() -> dict[str, int]:
         except Exception as e:
             log.warning(f"long-short ratio {asset} fetch failed: {e}")
             results[f"ls_{asset}"] = -1
+    # cd_open_interest — native Binance OI (replaces the dead CoinDesk feed).
+    # Always-on: short_squeeze + chento_limit_bid hard-depend on fresh OI, so
+    # this must NOT be gated behind AI_QUANT. Same ~30d retention as LSR.
+    try:
+        results["cd_open_interest"] = fetch_open_interest()
+    except Exception as e:
+        log.warning(f"open-interest fetch failed: {e}")
+        results["cd_open_interest"] = -1
 
     # Daily-cadence external feeds (FOMC sleeve inputs). These rate-limit
     # themselves to once per UTC day so the per-minute refresh_all() doesn't
@@ -813,27 +880,34 @@ def refresh_all() -> dict[str, int]:
     except Exception as e:
         log.warning(f"polymarket_fed refresh failed: {e}")
         results["polymarket_fed"] = -1
-    # AI_QUANT news headlines — hourly cadence, throttled inside the fetcher
-    # itself (not the daily-external helper). Silent no-op if CRYPTOPANIC_TOKEN
-    # is unset, so this is safe to leave wired even on installs that don't use
-    # the AI_QUANT sleeve.
-    try:
-        results["news_headlines"] = __import__(
-            "data.sources.news", fromlist=["refresh"]).refresh()
-    except Exception as e:
-        log.warning(f"news_fetcher refresh failed: {e}")
-        results["news_headlines"] = -1
-    # AI_QUANT derivatives data — CoinDesk Data API: OI, liquidations, DVOL.
-    # Throttled to once per hour inside the fetcher. Free public endpoints,
-    # no auth, so safe to leave wired even on installs that don't use AI_QUANT.
-    try:
-        cd = __import__("data.sources.coindesk",
-                          fromlist=["refresh"]).refresh()
-        for k, v in cd.items():
-            results[f"cd_{k}"] = v
-    except Exception as e:
-        log.warning(f"coindesk_fetcher refresh failed: {e}")
-        results["cd_open_interest"] = -1
+    # AI_QUANT-only feeds (news headlines + CoinDesk liquidations/DVOL). These
+    # exclusively feed strategies.sleeves.ai_quant.context, so we skip them
+    # entirely when the sleeve is disabled — no point spending CryptoPanic /
+    # CoinDesk API quota on data nobody reads. CoinDesk's data-api now requires
+    # a paid key (free tier ~100 calls/month vs our cadence), so leaving it
+    # wired while AI_QUANT is off just spams 401 warnings. Gate mirrors
+    # strategies.sleeves.ai_quant.signal._kill_switch_on(). Manual CLI backfill
+    # (`python data/sources/coindesk.py --backfill`) is unaffected.
+    # NOTE: cd_open_interest is NOT here — it moved to fetch_open_interest()
+    # above (always-on, native Binance) because two non-AI_QUANT sleeves need
+    # it. coindesk.refresh() now only does liquidations + DVOL.
+    if os.environ.get("AI_QUANT_ENABLED", "").strip().lower() == "true":
+        # news headlines — hourly cadence, throttled inside the fetcher itself.
+        try:
+            results["news_headlines"] = __import__(
+                "data.sources.news", fromlist=["refresh"]).refresh()
+        except Exception as e:
+            log.warning(f"news_fetcher refresh failed: {e}")
+            results["news_headlines"] = -1
+        # CoinDesk Data API: liquidations + DVOL. Throttled once/hour inside.
+        try:
+            cd = __import__("data.sources.coindesk",
+                              fromlist=["refresh"]).refresh()
+            for k, v in cd.items():
+                results[f"cd_{k}"] = v
+        except Exception as e:
+            log.warning(f"coindesk_fetcher refresh failed: {e}")
+            results["cd_liquidations"] = -1
     return results
 
 

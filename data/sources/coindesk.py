@@ -1,8 +1,23 @@
 """Derivatives data ingest from CoinDesk Data API.
 
-Three endpoints, all free and public (no auth required):
+NOTE (2026-06-19): CoinDesk's data-api.coindesk.com now requires an API
+key — bare requests return HTTP 401. The free tier (~100 calls/month) is
+far below our steady-state load, so this fetcher is only worth running on
+a paid key.
 
-  • Hourly Open Interest (Binance BTC-USDT perpetual)
+  • Open Interest MOVED OFF this module — cd_open_interest is now fed by
+    data/sources/binance.py::fetch_open_interest() (native Binance, free,
+    always-on) because the short_squeeze and chento_limit_bid sleeves
+    hard-depend on fresh OI. CoinDesk was just reselling Binance OI anyway
+    (identical units, <0.1% value match). fetch_oi() below is kept only for
+    the manual --backfill CLI path on a paid key.
+  • The remaining live refresh() covers liquidations + DVOL only, gated off
+    unless AI_QUANT_ENABLED=true (see data/sources/binance.py); both feeds
+    exclusively serve the (currently disabled) AI_QUANT sleeve.
+
+Endpoints:
+
+  • Hourly Open Interest (Binance BTC-USDT perpetual) — backfill CLI only
   • Hourly Liquidations (Binance BTC-USDT perpetual)
   • Daily DVOL — Deribit implied-volatility index for BTC and ETH
 
@@ -22,9 +37,9 @@ Reader functions (`latest_oi`, `latest_liquidations`, `latest_dvol`)
 are exposed so strategies.sleeves.ai_quant.context can read recent rows without
 re-implementing SQL.
 
-CoinDesk Data API has a generous free quota that resets daily; at our
-hourly cadence with three endpoints we use ~72 requests/day, leaving
-plenty of headroom. No auth header required.
+At our hourly cadence with four requests per refresh we use ~96
+requests/day. CoinDesk's free tier is only ~100 calls/month, so a paid
+key is required for live use; set it up before re-enabling AI_QUANT.
 """
 from __future__ import annotations
 
@@ -320,8 +335,13 @@ def refresh(
     con = sqlite3.connect(str(db.TRADER_DB))
     try:
         _ensure_schema(con)
+        # NOTE: open_interest is no longer fetched here — cd_open_interest is
+        # now fed by data/sources/binance.py::fetch_open_interest() (native
+        # Binance, always-on) because non-AI_QUANT sleeves depend on it. This
+        # refresh only covers the AI_QUANT-only liquidations + DVOL feeds, both
+        # still CoinDesk-sourced and behind the AI_QUANT gate. fetch_oi() is
+        # retained for the manual --backfill CLI path on a paid key.
         for name, fn in (
-            ("open_interest", lambda: fetch_oi(con, http_get=http_get)),
             ("liquidations", lambda: fetch_liquidations(con, http_get=http_get)),
             ("dvol_btc", lambda: fetch_dvol(con, "BTC", http_get=http_get)),
             ("dvol_eth", lambda: fetch_dvol(con, "ETH", http_get=http_get)),

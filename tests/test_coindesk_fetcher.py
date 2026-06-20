@@ -343,7 +343,9 @@ def test_fetch_dvol_separate_assets_isolated_by_composite_key(fixture_db, monkey
 
 # ─── refresh() ──────────────────────────────────────────────────────────────
 
-def test_refresh_invokes_all_four_feeds(fixture_db, monkeypatch):
+def test_refresh_invokes_liq_and_dvol_feeds(fixture_db, monkeypatch):
+    # OI moved to data/sources/binance.py::fetch_open_interest(); refresh()
+    # now covers only the AI_QUANT-gated liquidations + DVOL feeds.
     monkeypatch.setattr(cd, "PER_REQUEST_DELAY", 0)
     captured = []
 
@@ -352,9 +354,9 @@ def test_refresh_invokes_all_four_feeds(fixture_db, monkeypatch):
         return {"Data": []}
 
     out = cd.refresh(force=True, http_get=http_get)
-    assert set(out.keys()) == {"open_interest", "liquidations", "dvol_btc", "dvol_eth"}
-    # All four endpoints hit at least once
-    assert any("open-interest/hours" in u for u in captured)
+    assert set(out.keys()) == {"liquidations", "dvol_btc", "dvol_eth"}
+    # OI is no longer fetched by this module
+    assert not any("open-interest/hours" in u for u in captured)
     assert any("liquidation/hours" in u for u in captured)
     assert sum(1 for u in captured if "BTCDVOL_USDC" in u) >= 1
     assert sum(1 for u in captured if "ETHDVOL_USDC" in u) >= 1
@@ -376,18 +378,18 @@ def test_refresh_throttle_blocks_within_hour(fixture_db, monkeypatch):
 
 
 def test_refresh_isolates_per_feed_failures(fixture_db, monkeypatch):
-    """If OI raises a transport-level error mid-stream, the others still run."""
+    """If liquidations raises a transport-level error mid-stream, the others
+    still run (per-feed failure isolation)."""
     monkeypatch.setattr(cd, "PER_REQUEST_DELAY", 0)
 
     def http_get(url):
-        if "open-interest" in url:
-            raise RuntimeError("OI endpoint down")
+        if "liquidation" in url:
+            raise RuntimeError("liquidation endpoint down")
         return {"Data": []}
 
     out = cd.refresh(force=True, http_get=http_get)
-    assert out["open_interest"] == -1   # marked as error
-    assert out["liquidations"] == 0
-    assert out["dvol_btc"] == 0
+    assert out["liquidations"] == -1   # marked as error
+    assert out["dvol_btc"] == 0        # other feeds still ran
     assert out["dvol_eth"] == 0
 
 
