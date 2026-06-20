@@ -104,6 +104,7 @@ _NOISE_PATTERNS: tuple[str, ...] = (
     r"after_close_window",
     r"no_action",
     r"not_wk_1_2",
+    r"'status': 'not_at_15m_boundary'",
 )
 
 
