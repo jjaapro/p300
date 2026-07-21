@@ -28,3 +28,8 @@ data/archive/tradingview/
 studies/material/chento/
 studies/material/ScalpX*.html
 de421.bsp
+
+# Single-strategy bot runtime artifacts (heartbeats live in prod.db; diag
+# JSONL is per-day gate counters, regenerated continuously)
+bots/*/logs/
+data/diagnostics/
