@@ -76,8 +76,10 @@ mechanistic setups, not stand alone.
 
 ## Data dependencies
 
-- `cd_futures_15m` and `cd_spot_15m` in prod.db (buy/sell volume split,
-  added 2026-05-18 — maintained by `data/sources/binance.py`)
+- `cd_futures_15m` and `cd_spot_15m` in prod.db (real taker buy/sell volume
+  split, populated back to 2019-09 — the "added 2026-05-18" previously
+  claimed here was the sleeve/schema add date, not a data floor; corrected
+  2026-07-21. Maintained by `data/sources/binance.py`)
 - `cd_open_interest` (hourly)
 - `cd_funding_rate` (hourly)
 - `btc_1m` (for the sweep loop's current-price lookup; via the standard

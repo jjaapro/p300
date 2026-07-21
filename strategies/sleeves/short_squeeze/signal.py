@@ -54,6 +54,47 @@ _macro_cache: dict[str, dict] = {}
 _last_trigger_ts: dict[str, datetime] = {}
 
 
+# ─── Per-day gate diagnostics (SSQ_DIAG=1) ───────────────────────────────────
+# Mirrors chento_triple_v3's diag pattern: count each boundary-eval's terminal
+# status per UTC day; flush the previous day's counters as one JSONL line on
+# rollover. Off by default; the standalone bot runs with it permanently on —
+# a gate that blocks 100% of candidates must be visible, not silent
+# (2026-07-21 lesson from the Chento okx lockout).
+import os as _os  # noqa: E402
+
+_DIAG_ENABLED = _os.environ.get("SSQ_DIAG", "").strip() == "1"
+_DIAG_PATH = _os.environ.get(
+    "SSQ_DIAG_PATH", "data/diagnostics/short_squeeze_diag.jsonl")
+_diag_state: dict = {"date": None, "counters": {}}
+
+
+def _diag_count(status: str, now: datetime) -> None:
+    if not _DIAG_ENABLED:
+        return
+    day = ssq_math.utc_date_of(now)
+    if _diag_state["date"] not in (None, day):
+        _diag_flush()
+    _diag_state["date"] = day
+    c = _diag_state["counters"]
+    c[status] = c.get(status, 0) + 1
+
+
+def _diag_flush() -> None:
+    if not _diag_state["counters"]:
+        _diag_state["date"] = None
+        return
+    try:
+        from pathlib import Path
+        p = Path(_DIAG_PATH)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        with open(p, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"utc_date": _diag_state["date"],
+                                 "counters": _diag_state["counters"]}) + "\n")
+    except Exception as e:  # diagnostics must never break the sleeve
+        log.warning(f"[short_squeeze] diag flush failed: {e!r}")
+    _diag_state.update(date=None, counters={})
+
+
 # ─── Data loaders ────────────────────────────────────────────────────────────
 
 def _load_recent_15m_bars(now: datetime, window_days: int) -> list[dict]:
@@ -405,9 +446,11 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
 
     # Already-open guard: don't stack triggers on the same variant.
     if _get_open_short_squeeze_trades(variant_id):
+        _diag_count("position_open", now)
         return [], {"status": "position_open", "swept": swept}
 
     fires, diag = _evaluate_trigger(variant_id, now)
+    _diag_count(diag.get("status", "?"), now)
     if not fires:
         return [], {**diag, "swept": swept}
 
