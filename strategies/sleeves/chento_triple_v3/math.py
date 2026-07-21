@@ -78,7 +78,10 @@ def compute_lsr_extremes(lsr: pd.DataFrame, *, rolling_days: int) -> pd.DataFram
     span_days = max((out.index.max() - out.index.min()).days, 1)
     samples_per_day = max(1, int(round(len(out) / span_days)))
     window = rolling_days * samples_per_day
-    min_p = max(8, window // 4)
+    # min_periods must be exactly window//4 — byte-equivalence with
+    # validation_B5_lsr_extremes.compute_lsr_extremes (was max(8, ...),
+    # which NaN'd rows 7..8 of warmup; caught by test_chento_parity 2026-07-21)
+    min_p = window // 4
     out["lp_p10"] = out["long_pct"].rolling(window, min_periods=min_p).quantile(0.10)
     out["lp_p50"] = out["long_pct"].rolling(window, min_periods=min_p).quantile(0.50)
     out["lp_p90"] = out["long_pct"].rolling(window, min_periods=min_p).quantile(0.90)
