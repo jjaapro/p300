@@ -11,6 +11,10 @@ Handles 7 feeds via Binance public REST (no API key needed):
                          Binance serves only ~30d of history per call; rolling refresh keeps the table
                          current as long as binance_feed runs at least monthly. Older history is
                          backfilled by fetch_coinalyze.py during bootstrap.
+  okx_perp_1h          — OKX BTC-USDT-SWAP 1h klines (CHENTO_TRIPLE_V3 cross-exchange
+                         gate), via data.sources.okx_perp.refresh_latest() on an
+                         hourly throttle. Not a Binance feed, but it lives in this
+                         cycle so every live-read table has a live writer.
 
 Does NOT maintain:
   scheduled_events     — static calendar (CPI/NFP/OPEX), built by fetch_events.py
@@ -852,6 +856,16 @@ def refresh_all() -> dict[str, int]:
     except Exception as e:
         log.warning(f"open-interest fetch failed: {e}")
         results["cd_open_interest"] = -1
+    # okx_perp_1h — CHENTO_TRIPLE_V3's cross-exchange gate input. Hourly
+    # cadence, throttled below. Must have a live writer: manual-backfill-only
+    # left it stale (last row 2026-05-26) and the NaN delta-z silently
+    # gate-locked every Chento candidate for its entire paper deployment
+    # (found 2026-07-21).
+    try:
+        results["okx_perp_1h"] = _refresh_hourly_okx()
+    except Exception as e:
+        log.warning(f"okx_perp_1h refresh failed: {e}")
+        results["okx_perp_1h"] = -1
 
     # Daily-cadence external feeds (FOMC sleeve inputs). These rate-limit
     # themselves to once per UTC day so the per-minute refresh_all() doesn't
@@ -914,6 +928,24 @@ def refresh_all() -> dict[str, int]:
 # Tracks the last UTC date on which each daily-cadence external feed
 # successfully refreshed. Keys are the feed names used in refresh_all().
 _last_external_refresh_day: dict[str, str] = {}
+
+# Monotonic-ish timestamp of the last successful OKX refresh (module state,
+# same pattern as _last_external_refresh_day but at hourly cadence).
+_last_okx_refresh_ts: float = 0.0
+
+
+def _refresh_hourly_okx(min_interval_s: int = 3300) -> int:
+    """Throttled okx_perp_1h refresh — runs at most every ~55 min so the
+    per-minute refresh_all() doesn't hammer OKX for hourly bars. Returns 0
+    on throttled ticks, row count on refresh ticks."""
+    global _last_okx_refresh_ts
+    now = time.time()
+    if now - _last_okx_refresh_ts < min_interval_s:
+        return 0
+    from data.sources import okx_perp
+    n = okx_perp.refresh_latest()
+    _last_okx_refresh_ts = now
+    return n
 
 
 def _refresh_daily_external(name: str, fn) -> bool:

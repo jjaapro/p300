@@ -34,6 +34,7 @@ from strategies.support import db as _db  # noqa: E402
 
 DB_PATH = _db.PROD_DB
 BASE_URL = "https://www.okx.com/api/v5/market/history-candles"
+CANDLES_URL = "https://www.okx.com/api/v5/market/candles"
 DEFAULT_INSTRUMENT = "BTC-USDT-SWAP"
 
 log = logging.getLogger("p300.okx_perp")
@@ -143,6 +144,64 @@ def backfill(inst: str, start: date, end: date, *,
                       f"({datetime.fromtimestamp(row[1], UTC).isoformat()[:16]} -> "
                       f"{datetime.fromtimestamp(row[2], UTC).isoformat()[:16]})")
         return total_written
+    finally:
+        con.close()
+
+
+def refresh_latest(inst: str = DEFAULT_INSTRUMENT, *,
+                    table: str = "okx_perp_1h",
+                    timeout: float = 30.0) -> int:
+    """Incremental live refresh: pull the most recent 1H bars from the
+    regular `/market/candles` endpoint (serves the live edge that
+    `history-candles` lags behind) and upsert everything at or after the
+    local MAX(timestamp).
+
+    Covers outages up to ~300 hours (~12.5 days, the endpoint's page
+    depth). Longer holes need :func:`backfill`; the freshness monitor is
+    what surfaces those. Called from ``binance.refresh_all()`` on an
+    hourly throttle so the table always has a live writer (2026-07-21
+    lesson: manual-backfill-only left it stale and silently gate-locked
+    CHENTO_TRIPLE_V3's OKX filter).
+    """
+    con = sqlite3.connect(str(DB_PATH))
+    try:
+        ensure_schema(con, table)
+        row = con.execute(f"SELECT MAX(timestamp) FROM {table}").fetchone()
+        local_max_s = int(row[0]) if row and row[0] is not None else 0
+
+        params = {"instId": inst, "bar": "1H", "limit": "300"}
+        r = requests.get(CANDLES_URL, params=params, timeout=timeout)
+        r.raise_for_status()
+        body = r.json()
+        if body.get("code") != "0":
+            raise RuntimeError(
+                f"OKX error: {body.get('msg')} (code {body.get('code')})")
+        chunk = body.get("data", [])
+        rows = []
+        for c in chunk:  # newest-first; confirmed bars only (c[8] == "1")
+            if len(c) > 8 and c[8] != "1":
+                continue
+            ts_sec = int(c[0]) // 1000
+            if ts_sec < local_max_s:
+                continue
+            rows.append((ts_sec, float(c[1]), float(c[2]), float(c[3]),
+                         float(c[4]), float(c[5]), float(c[6]), float(c[7])))
+        if rows:
+            con.executemany(
+                f"INSERT OR REPLACE INTO {table} "
+                f"(timestamp, open, high, low, close, volume_contracts, "
+                f"volume_base, volume_usd) VALUES (?,?,?,?,?,?,?,?)", rows)
+            con.commit()
+        if chunk and local_max_s:
+            oldest_fetched_s = int(chunk[-1][0]) // 1000
+            if oldest_fetched_s - local_max_s > 3600:
+                log.warning(
+                    f"[{table}] hole beyond refresh window: local max "
+                    f"{datetime.fromtimestamp(local_max_s, UTC).isoformat()[:16]} "
+                    f"< oldest fetched "
+                    f"{datetime.fromtimestamp(oldest_fetched_s, UTC).isoformat()[:16]}"
+                    f" — run the backfill CLI to heal")
+        return len(rows)
     finally:
         con.close()
 

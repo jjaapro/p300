@@ -42,6 +42,7 @@ SPECS: tuple[Spec, ...] = (
     Spec("cd_futures_ohlcv",    "timestamp",  None,    3600),
     Spec("cd_spot_binance",     "timestamp",  None,    3600),
     Spec("cd_open_interest",    "timestamp",  None,    3600),
+    Spec("okx_perp_1h",         "timestamp",  None,    3600),
     Spec("cd_liquidations",     "timestamp",  None,    3600),
     # Funding has a 2026-04-13 source cutover (1h CoinDesk-predicted -> 8h
     # Binance settlement). Leaving cadence=None tells the script to infer,
