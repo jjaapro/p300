@@ -36,3 +36,4 @@ data/diagnostics/
 
 # Daily DB backups (backup.py) — local retention only, never committed
 data/backups/
+data/archive/*.db
