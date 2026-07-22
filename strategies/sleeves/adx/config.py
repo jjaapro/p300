@@ -30,3 +30,28 @@ WARMUP_BARS = max(ADX_PERIOD * 3, EMA_LEN + 1, TREND_EMA_LEN + 1)
 
 # Round-trip transaction cost (5bp each leg on BTC perps — taker estimate).
 COST_BP_RT = 10.0
+
+# ─── Tier-2 calibration (2026-07-22, from the 2026-06-26 adx_study) ─────────
+# Combined effect on the 2018→2026-06 backtest: maxDD −27.3% → −15.1%,
+# MAR 1.78 → 3.09 (OOS MAR 3.16). Cost: forfeits the counter-trend-short
+# funding carry (~net-flat; S-078 CARRY harvests funding delta-neutrally).
+# Each lever is independently disableable; provenance in
+# docs/calibration/adx.md and studies/notebooks/adx_study/findings.md.
+
+# T2a — symmetric trend filter: SHORT entries require close < EMA(TREND_EMA_LEN)
+# (mirror of the LONG rule; replaces the 2026-05-04 asymmetric design).
+SYMMETRIC_TREND_FILTER = True
+
+# T2b — ATR trailing exit alongside the ADX<20 exit and the 10% SL
+# (research: harness.run(exit_mode="adx_or_atr", atr_mult=4.0)).
+# 0 disables.
+ATR_TRAIL_MULT = 4.0
+ATR_TRAIL_PERIOD = 14
+
+# Funding-crowding LONG veto: skip LONG entries when the 30d funding
+# z-score exceeds this ("don't long over-crowded leverage" — avoids the
+# 2025-10-05 ATH long). z = (today − mean_30d) / pstdev_30d over daily-mean
+# cd_funding_rate, current day included, ≥10 samples required (fail-open).
+# None disables.
+FUNDING_VETO_Z = 1.5
+FUNDING_VETO_DAYS = 30

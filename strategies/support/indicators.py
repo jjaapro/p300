@@ -46,6 +46,29 @@ def ema(values: list[float], period: int) -> list[float]:
     return out
 
 
+def atr(candles: list[dict], period: int = 14) -> list[float]:
+    """Wilder ATR aligned to candles (NaN until warmup).
+
+    Byte-identical to studies/notebooks/adx_study/harness.py:atr_series —
+    the research source of the S-003 Tier-2 ATR-trail exit. Seed at index
+    ``period`` is the simple mean of TR[1..period]; thereafter
+    ``out[i] = (out[i-1]*(period-1) + tr[i]) / period``.
+    """
+    n = len(candles)
+    out: list[float] = [float("nan")] * n
+    if n < period + 1:
+        return out
+    tr = [0.0] * n
+    for i in range(1, n):
+        h, l = candles[i]["high"], candles[i]["low"]
+        pc = candles[i - 1]["close"]
+        tr[i] = max(h - l, abs(h - pc), abs(l - pc))
+    out[period] = sum(tr[1: period + 1]) / period
+    for i in range(period + 1, n):
+        out[i] = (out[i - 1] * (period - 1) + tr[i]) / period
+    return out
+
+
 def adx(candles: list[dict], period: int) -> list[float]:
     """ADX via Wilder smoothing.
 

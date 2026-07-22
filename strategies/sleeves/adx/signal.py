@@ -32,6 +32,8 @@ log = logging.getLogger("dashboard.adx_service")
 from .config import (
     ADX_PERIOD, ADX_LOW_THRESH, ADX_HIGH_THRESH,
     EMA_LEN, TREND_EMA_LEN, WARMUP_BARS, COST_BP_RT,
+    SYMMETRIC_TREND_FILTER, ATR_TRAIL_MULT, ATR_TRAIL_PERIOD,
+    FUNDING_VETO_Z, FUNDING_VETO_DAYS,
 )
 
 # Dedup the trend-filter-block log message — the daily signal is stable for
@@ -178,6 +180,13 @@ def _current_signal(candles: list[dict]) -> dict | None:
             if trend_ema is not None and not math.isnan(trend_ema[j]):
                 if new_dir == "long" and closes[j] <= trend_ema[j]:
                     blocked = True
+                # T2a (2026-07-22): symmetric filter — SHORTs must also be
+                # on their side of the trend EMA. Mirrors research
+                # experiments.short_filter_e150; forfeits the counter-trend
+                # funding-carry shorts (S-078 CARRY owns that stream).
+                if SYMMETRIC_TREND_FILTER and new_dir == "short" \
+                        and closes[j] >= trend_ema[j]:
+                    blocked = True
             last_entry_idx = j
             last_entry_dir = None if blocked else new_dir
             last_entry_blocked = blocked
@@ -198,6 +207,84 @@ def _current_signal(candles: list[dict]) -> dict | None:
         "entry_blocked_by_trend": blocked_now,
         "exit_sig": exit_sig,
     }
+
+
+# ─── Tier-2 helpers (2026-07-22) ─────────────────────────────────────────────
+
+def _funding_z(candles: list[dict]) -> float | None:
+    """30d funding z-score at the latest closed candle, mirroring the
+    research implementation (adx_study/case_study.py:zscore) exactly:
+    daily MEAN of cd_funding_rate per UTC date; window = the candle dates
+    i-29..i (current day INCLUDED); z = (today - mean) / pstdev; None
+    (fail-open) when <10 samples or flat window."""
+    import statistics as st
+    if not candles or FUNDING_VETO_Z is None:
+        return None
+    window = candles[-FUNDING_VETO_DAYS:]
+    lo_ts = window[0]["ts"]
+    hi_ts = window[-1]["ts"] + 86400
+    con = sqlite3.connect(str(db.PROD_DB))
+    try:
+        rows = con.execute(
+            "SELECT timestamp, fr_close FROM cd_funding_rate "
+            "WHERE timestamp >= ? AND timestamp < ? ORDER BY timestamp",
+            (lo_ts, hi_ts)).fetchall()
+    finally:
+        con.close()
+    by_day: dict[str, list[float]] = {}
+    for ts, v in rows:
+        if v is None:
+            continue
+        d = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d")
+        by_day.setdefault(d, []).append(float(v))
+    daily = {d: sum(vs) / len(vs) for d, vs in by_day.items()}
+    h = [daily[c["dt"]] for c in window if c["dt"] in daily]
+    cur = daily.get(window[-1]["dt"])
+    if len(h) < 10 or cur is None:
+        return None
+    s = st.pstdev(h)
+    if s == 0:
+        return None
+    return (cur - st.mean(h)) / s
+
+
+def _atr_trail_level(candles: list[dict], entry_time_iso: str,
+                     direction: str) -> float | None:
+    """Deterministic ATR-trail level over the CLOSED daily bars since entry.
+
+    Research semantics (harness.run exit_mode="adx_or_atr", atr_mult=4):
+    trail seeds at the entry bar's ``close ∓ mult×ATR`` and ratchets with
+    each later bar's close. The entry (anchor) bar is the last closed
+    candle at entry time — candles exclude the forming day, so that is the
+    newest candle dated before the entry date. Recomputed statelessly each
+    sweep; today's still-forming bar never contributes (it only updates
+    the trail once closed — live detection then runs on minute prices,
+    which research approximated with the daily bar's low/high).
+    """
+    if ATR_TRAIL_MULT <= 0 or not candles:
+        return None
+    entry_date = entry_time_iso[:10]
+    anchor = None
+    for idx in range(len(candles) - 1, -1, -1):
+        if candles[idx]["dt"] < entry_date:
+            anchor = idx
+            break
+    if anchor is None:
+        return None
+    from strategies.support.indicators import atr as atr_fn
+    atr_series = atr_fn(candles, ATR_TRAIL_PERIOD)
+    level = None
+    for j in range(anchor, len(candles)):
+        aj = atr_series[j]
+        if math.isnan(aj):
+            continue
+        if direction == "LONG":
+            cand = candles[j]["close"] - ATR_TRAIL_MULT * aj
+            level = cand if level is None else max(level, cand)
+        else:
+            cand = candles[j]["close"] + ATR_TRAIL_MULT * aj
+            level = cand if level is None else min(level, cand)
+    return level
 
 
 # ─── DB helpers (variant-scoped) ─────────────────────────────────────────────
@@ -297,7 +384,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
     today = clock.now_utc().strftime("%Y-%m-%d")
     open_trades = _get_open_adx_trades(variant["id"])
 
-    # Step 1: stop-loss sweep.
+    # Step 1: stop-loss sweep (fixed SL, then T2b ATR trail).
     from strategies.support.sleeves import is_sl_hit
     current_price = _get_current_price("BTC") or sig["close"]
     still_open: list[dict] = []
@@ -310,8 +397,18 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
             log.info(f"[adx {variant['id']}] SL hit: closed {tr['id']} "
                      f"{tr['direction']} at {current_price:.2f} "
                      f"({pnl_pct:.2f}% px, threshold={sl_price_thresh:.2f}%)")
-        else:
-            still_open.append(tr)
+            continue
+        trail = _atr_trail_level(candles, tr.get("actual_entry_time") or "",
+                                 tr["direction"])
+        if trail is not None and (
+                (tr["direction"] == "LONG" and current_price <= trail)
+                or (tr["direction"] == "SHORT" and current_price >= trail)):
+            _close_adx_paper(tr["id"], current_price, "ATR_trail")
+            log.info(f"[adx {variant['id']}] ATR trail hit: closed {tr['id']} "
+                     f"{tr['direction']} at {current_price:.2f} "
+                     f"(trail={trail:.2f}, x{ATR_TRAIL_MULT})")
+            continue
+        still_open.append(tr)
     open_trades = still_open
 
     # Step 2: once-per-day idempotency.
@@ -343,6 +440,20 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
                        "open_count": len(open_trades)}
 
     new_dir = sig["entry_sig"].upper()
+
+    # Funding-crowding LONG veto ("don't long over-crowded leverage").
+    # Applied at the consumption bar like the trend filter — the was_low
+    # arm is already spent, matching research entry_gate semantics.
+    fz = _funding_z(candles) if new_dir == "LONG" else None
+    if fz is not None and FUNDING_VETO_Z is not None and fz > FUNDING_VETO_Z:
+        veto_key = (sig["date"], "funding_veto")
+        if _trend_block_logged.get(variant["id"]) != veto_key:
+            _trend_block_logged[variant["id"]] = veto_key
+            log.info(f"[adx {variant['id']}] funding veto BLOCKED LONG: "
+                     f"30d funding z={fz:.2f} > {FUNDING_VETO_Z} "
+                     f"(ADX={sig['adx']}, close={sig['close']:.2f})")
+        return [], {"status": "funding_veto_block", "date": today,
+                    "funding_z": round(fz, 3), "adx": sig["adx"]}
     # Step 4b: direction-flip close on still-open opposite-direction trades.
     for tr in list(open_trades):
         if tr["direction"] != new_dir:
@@ -356,6 +467,18 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
         return [], {"status": "no_action", "date": today, "adx": sig["adx"],
                        "open_count": len(open_trades)}
 
+    # Effective initial stop for risk sizing: the tighter of the fixed SL
+    # and the ATR-trail seed (close ∓ 4×ATR at the signal bar). Standalone
+    # bots consume _stop_price for fixed-R sizing (botlib.size_intent_fixed_r).
+    from strategies.support.indicators import atr as _atr_fn
+    atr_now = _atr_fn(candles, ATR_TRAIL_PERIOD)[-1]
+    stop_fracs = [stop_loss_pct / 100.0]
+    if ATR_TRAIL_MULT > 0 and not math.isnan(atr_now) and sig["close"] > 0:
+        stop_fracs.append(ATR_TRAIL_MULT * atr_now / sig["close"])
+    stop_frac = min(stop_fracs)
+    stop_price = (current_price * (1 - stop_frac) if new_dir == "LONG"
+                  else current_price * (1 + stop_frac))
+
     reason = {
         "trigger": "S-003_ADX_entry",
         "variant_id": variant["id"],
@@ -367,12 +490,18 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
         "close": sig["close"],
         "direction_rule": (
             f"close > EMA(50) AND close > EMA({TREND_EMA_LEN})"
-            if new_dir == "LONG"
-            else f"close < EMA(50)  [SHORT: trend filter not applied]"
+            if new_dir == "LONG" else (
+                f"close < EMA(50) AND close < EMA({TREND_EMA_LEN})"
+                if SYMMETRIC_TREND_FILTER
+                else "close < EMA(50)  [SHORT: trend filter not applied]"
+            )
         ),
         "regime": "unknown",
         "stop_loss_pct": stop_loss_pct,
         "sl_semantic_price_thresh_pct": sl_price_thresh,
+        "funding_z": (round(fz, 3) if fz is not None else None),
+        "_atr_at_entry": (None if math.isnan(atr_now) else atr_now),
+        "_stop_price": stop_price,
         # Private payload the execute phase consumes to write the trade
         # without redoing the candle/indicator work.
         "_entry_price": current_price,
