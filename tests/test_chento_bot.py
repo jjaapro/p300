@@ -182,6 +182,161 @@ def test_tick_stale_entry_drops_intent_keeps_sweep(tmp_db, monkeypatch):
     assert "opened" not in out
 
 
+# ─── P0 boundary fix (2026-07-22): live entry-eval path ──────────────────────
+# The live path anchors on wall-clock 15m boundaries and evaluates the
+# JUST-CLOSED bar with final values; replay keeps the old selection. These
+# tests drive the live branch by patching clock.is_simulated -> False while
+# the simulated clock still controls now_utc.
+
+def _seed_15m_range(db_path, start: datetime, n_bars: int, price=100_000.0):
+    con = sqlite3.connect(str(db_path))
+    con.execute("""CREATE TABLE IF NOT EXISTS cd_futures_15m (
+        timestamp INTEGER PRIMARY KEY, open REAL, high REAL, low REAL,
+        close REAL, volume REAL, quote_volume REAL,
+        volume_buy REAL, volume_sell REAL,
+        quote_volume_buy REAL, quote_volume_sell REAL)""")
+    for i in range(n_bars):
+        ts = int((start + timedelta(minutes=15 * i)).timestamp())
+        con.execute(
+            "INSERT OR REPLACE INTO cd_futures_15m VALUES "
+            "(?,?,?,?,?,?,?,?,?,?,?)",
+            (ts, price, price + 50, price - 50, price, 10, 10 * price,
+             5, 5, 5 * price, 5 * price))
+    con.execute("""CREATE TABLE IF NOT EXISTS ca_long_short_ratio (
+        timestamp INTEGER, asset TEXT, ratio REAL, long_pct REAL,
+        short_pct REAL)""")
+    con.execute("CREATE TABLE IF NOT EXISTS okx_perp_1h "
+                "(timestamp INTEGER PRIMARY KEY, close REAL)")
+    con.commit()
+    con.close()
+
+
+@pytest.fixture
+def live_clock(tmp_db, monkeypatch):
+    """Live-mode time control: now_utc follows the simulated value but
+    is_simulated() reports False, so the sleeve takes the LIVE branch."""
+    from strategies.sleeves.chento_triple_v3 import signal as ch_sig
+    monkeypatch.setattr(clock, "is_simulated", lambda: False)
+    monkeypatch.setattr(ch_sig, "_cache_date", None)
+    monkeypatch.setattr(ch_sig, "_cache_built_at", None)
+    monkeypatch.setattr(ch_sig, "_cached_features", {})
+    monkeypatch.setattr(ch_sig, "_last_eval_bar_ts", {})
+    monkeypatch.setattr(ch_sig, "_last_trigger_ts", {})
+    return ch_sig
+
+
+def test_live_boundary_evaluates_just_closed_bar(tmp_db, live_clock):
+    ch_sig = live_clock
+    variant = botlib.ensure_bot_variant(
+        botcfg.VARIANT_ID, short_name="t", capital_usdt=10_000.0,
+        bot_name=botcfg.BOT_NAME)
+    # 40 closed bars ending T0-15m, plus the forming bar at T0
+    _seed_15m_range(tmp_db, T0 - timedelta(minutes=15 * 40), 41)
+
+    clock.set_simulated_now(T0 + timedelta(seconds=33))
+    intents, status = ch_sig.try_decide_for_variant(variant, {})
+    target = ch_sig._last_eval_bar_ts.get(botcfg.VARIANT_ID)
+    assert status["status"] not in ("not_at_15m_boundary", "bar_not_ready"), status
+    assert target is not None and target.to_pydatetime() == T0 - timedelta(minutes=15)
+
+    # same boundary again -> deduped, no second evaluation
+    _, status2 = ch_sig.try_decide_for_variant(variant, {})
+    assert status2["status"] == "already_evaluated"
+
+
+def test_live_midbar_tick_skips(tmp_db, live_clock):
+    ch_sig = live_clock
+    variant = botlib.ensure_bot_variant(
+        botcfg.VARIANT_ID, short_name="t", capital_usdt=10_000.0,
+        bot_name=botcfg.BOT_NAME)
+    _seed_15m_range(tmp_db, T0 - timedelta(minutes=15 * 40), 41)
+
+    clock.set_simulated_now(T0 + timedelta(minutes=7, seconds=33))
+    _, status = ch_sig.try_decide_for_variant(variant, {})
+    assert status["status"] == "not_at_15m_boundary"
+    assert ch_sig._last_eval_bar_ts.get(botcfg.VARIANT_ID) is None
+
+
+def test_live_stale_cache_rebuilt_after_bar_close(tmp_db, live_clock):
+    """A frame built while a bar was forming must be rebuilt before that bar
+    is evaluated (partial-values protection)."""
+    ch_sig = live_clock
+    variant = botlib.ensure_bot_variant(
+        botcfg.VARIANT_ID, short_name="t", capital_usdt=10_000.0,
+        bot_name=botcfg.BOT_NAME)
+    _seed_15m_range(tmp_db, T0 - timedelta(minutes=15 * 40), 41)
+
+    clock.set_simulated_now(T0 + timedelta(seconds=33))
+    ch_sig.try_decide_for_variant(variant, {})       # builds cache at T0+33s
+    built_first = ch_sig._cache_built_at
+
+    # next boundary: target = T0 bar, which was FORMING at the first build
+    _seed_15m_range(tmp_db, T0, 1)                    # bar T0 now final
+    clock.set_simulated_now(T0 + timedelta(minutes=15, seconds=40))
+    _, status = ch_sig.try_decide_for_variant(variant, {})
+    assert status["status"] not in ("not_at_15m_boundary", "bar_not_ready")
+    assert ch_sig._cache_built_at > built_first       # rebuilt for final row
+    assert ch_sig._last_eval_bar_ts[botcfg.VARIANT_ID].to_pydatetime() == T0
+
+
+def test_live_bar_not_ready_then_recovers(tmp_db, live_clock):
+    """Feed lag: closed bar not written yet -> bar_not_ready; once the row
+    appears (still inside the grace window) the eval happens."""
+    ch_sig = live_clock
+    variant = botlib.ensure_bot_variant(
+        botcfg.VARIANT_ID, short_name="t", capital_usdt=10_000.0,
+        bot_name=botcfg.BOT_NAME)
+    # bars end 30 min before T0 -> the just-closed T0-15m bar is MISSING
+    _seed_15m_range(tmp_db, T0 - timedelta(minutes=15 * 40), 39)
+
+    clock.set_simulated_now(T0 + timedelta(seconds=33))
+    _, status = ch_sig.try_decide_for_variant(variant, {})
+    assert status["status"] == "bar_not_ready"
+
+    _seed_15m_range(tmp_db, T0 - timedelta(minutes=15), 1)   # feed catches up
+    clock.set_simulated_now(T0 + timedelta(minutes=1, seconds=33))
+    _, status = ch_sig.try_decide_for_variant(variant, {})
+    assert status["status"] not in ("not_at_15m_boundary", "bar_not_ready")
+    assert ch_sig._last_eval_bar_ts[botcfg.VARIANT_ID].to_pydatetime() \
+        == T0 - timedelta(minutes=15)
+
+
+def test_just_closed_15m_ts_never_returns_forming_bar():
+    from strategies.sleeves.chento_triple_v3 import signal as ch_sig
+    # live mid-bar: 10:08:33 -> last FULLY closed bar opened 09:45
+    assert ch_sig._just_closed_15m_ts(
+        T0 + timedelta(minutes=8, seconds=33)).to_pydatetime() \
+        == T0 - timedelta(minutes=15)
+    # boundary-exact (replay convention): 10:00:00 -> 09:45 (unchanged)
+    assert ch_sig._just_closed_15m_ts(T0).to_pydatetime() \
+        == T0 - timedelta(minutes=15)
+    # just after a boundary: 10:00:33 -> 09:45 (old code returned 10:00)
+    assert ch_sig._just_closed_15m_ts(
+        T0 + timedelta(seconds=33)).to_pydatetime() == T0 - timedelta(minutes=15)
+
+
+def test_replay_path_selection_unchanged(tmp_db, monkeypatch):
+    """Simulated clock keeps the historical semantics: bar open == now."""
+    from strategies.sleeves.chento_triple_v3 import signal as ch_sig
+    monkeypatch.setattr(ch_sig, "_cache_date", None)
+    monkeypatch.setattr(ch_sig, "_cache_built_at", None)
+    monkeypatch.setattr(ch_sig, "_cached_features", {})
+    monkeypatch.setattr(ch_sig, "_last_trigger_ts", {})
+    variant = botlib.ensure_bot_variant(
+        botcfg.VARIANT_ID, short_name="t", capital_usdt=10_000.0,
+        bot_name=botcfg.BOT_NAME)
+    _seed_15m_range(tmp_db, T0 - timedelta(minutes=15 * 40), 41)
+
+    clock.set_simulated_now(T0)                       # is_simulated() True
+    _, status = ch_sig.try_decide_for_variant(variant, {})
+    assert status["status"] not in ("not_at_15m_boundary", "bar_not_ready",
+                                     "already_evaluated")
+
+    clock.set_simulated_now(T0 + timedelta(minutes=5))
+    _, status = ch_sig.try_decide_for_variant(variant, {})
+    assert status["status"] == "not_at_15m_boundary"
+
+
 # ─── Forced-fire integration: execute → sleeve sweep closes on stop ──────────
 
 def test_execute_then_sweep_stop_hit(tmp_db):

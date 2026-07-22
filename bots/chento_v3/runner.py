@@ -48,8 +48,13 @@ log = logging.getLogger("bot.chento_v3")
 _stop = threading.Event()
 
 # Sleeve statuses that are steady-state noise at INFO level.
-_IDLE_STATUSES = {"not_at_15m_boundary", "no_triple", "cooldown",
-                  "insufficient_data", "open_position_wait"}
+_IDLE_STATUSES = {"not_at_15m_boundary", "already_evaluated", "bar_not_ready",
+                  "no_triple", "cooldown", "insufficient_data",
+                  "open_position_wait"}
+
+# Statuses that do NOT count as a completed boundary evaluation for the
+# heartbeat's last_eval_utc (the monitor's silent-bot check keys off it).
+_NOT_EVALUATED_STATUSES = {"not_at_15m_boundary", "bar_not_ready"}
 
 
 def _signal_handler(signum, frame):
@@ -80,7 +85,7 @@ def tick(variant: dict, sleeve_cfg: dict) -> dict:
     out = {"status": st, "detail": status, "hb_status": "ok", "hb_note": "",
            # "evaluated" = a real 15m-boundary evaluation happened, so the
            # monitor's silent-bot check measures signal evals, not loop life
-           "evaluated": st != "not_at_15m_boundary"}
+           "evaluated": st not in _NOT_EVALUATED_STATUSES}
 
     if intents:
         stale_entry = botlib.stale_tables(botcfg.ENTRY_TABLES)

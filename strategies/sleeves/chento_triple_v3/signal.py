@@ -52,13 +52,20 @@ from .config import (
 log = logging.getLogger("p300.chento_triple_v3")
 
 
-# ─── Module caches (rebuild once per UTC day) ───────────────────────────────
+# ─── Module caches (rebuild once per UTC day; live path may force) ──────────
 _cache_date: str | None = None
+_cache_built_at: datetime | None = None   # wall/sim time of the last rebuild
 _cached_features: dict = {}      # {ts -> {cvd_z, vel_z, mtf_z dict, lsr_extremes, okx_delta_z, ret_30d}}
 _cached_obs: list[dict] = []     # SMC OBs computed once per day
 _cached_df_15m_idx: pd.DatetimeIndex | None = None
 _last_trigger_ts: dict[str, datetime] = {}    # per-variant cooldown
 _last_loss_ts: dict[str, datetime] = {}       # per-variant last loss timestamp (for no_tilt)
+_last_eval_bar_ts: dict[str, pd.Timestamp] = {}  # per-variant last live-evaluated bar
+
+# Live entry evals run in the first LIVE_EVAL_GRACE_S seconds after each 15m
+# boundary (60s tick cadence -> up to 3 attempts, covering feed write lag).
+# Not a strategy tunable — purely an ops window.
+LIVE_EVAL_GRACE_S = 180
 
 
 # ─── Diagnostics (opt-in via env CHENTO_V3_DIAG=1) ──────────────────────────
@@ -117,7 +124,13 @@ def _diag_flush(new_day_iso: str) -> None:
 # ─── Data loaders ──────────────────────────────────────────────────────────
 
 def _load_15m_btc(now: datetime, days_back: int) -> pd.DataFrame:
-    """Load BTC perp 15m OHLCV with taker buy/sell split."""
+    """Load BTC perp 15m OHLCV with taker buy/sell split.
+
+    Deliberately NO upper timestamp clamp: in live the frame may therefore
+    include the still-forming bar (the feed upserts in-progress candles).
+    That is safe because every feature is a TRAILING computation — a later
+    row never changes an earlier row's values — and the live entry path
+    explicitly selects the just-closed bar, never the forming one."""
     con = sqlite3.connect(str(db.PROD_DB))
     try:
         cutoff = int((now - timedelta(days=days_back)).timestamp())
@@ -175,16 +188,22 @@ def _load_okx_1h(now: datetime, days_back: int) -> pd.Series:
 
 # ─── Daily feature cache rebuild ───────────────────────────────────────────
 
-def _rebuild_daily_cache(now: datetime) -> None:
+def _rebuild_daily_cache(now: datetime, force: bool = False) -> None:
     """Once per UTC day, recompute all rolling/expensive features and store
     on the latest 15m index. Subsequent ticks within the day just lookup.
 
     This is the same pattern as v2's MTF bias cache.
+
+    ``force=True`` bypasses the same-day guard — the LIVE entry path uses it
+    to refresh the frame after each 15m bar closes (~160ms), because a frame
+    built earlier holds a partial row for any bar that was still forming at
+    build time. Replay never forces (sim slices are final by construction).
     """
-    global _cache_date, _cached_features, _cached_obs, _cached_df_15m_idx
+    global _cache_date, _cache_built_at, _cached_features, _cached_obs, \
+        _cached_df_15m_idx
 
     today_iso = now.astimezone(timezone.utc).date().isoformat()
-    if _cache_date == today_iso:
+    if _cache_date == today_iso and not force:
         return
 
     # Flush prior-day diag counters before mutating cache state.
@@ -262,6 +281,7 @@ def _rebuild_daily_cache(now: datetime) -> None:
     }
     _cached_df_15m_idx = df_15m.index
     _cache_date = today_iso
+    _cache_built_at = now
     log.info(f"[{SLEEVE_NAME}] daily cache built: {len(df_15m)} 15m bars, "
               f"{len(_cached_obs)} OBs")
 
@@ -417,12 +437,16 @@ def _write_trade_state(trade_id: str, state: dict, extra: dict | None = None) ->
 # research's validation_liquidation_and_C6.replay_with_mae semantics.
 
 def _just_closed_15m_ts(now: datetime) -> pd.Timestamp:
-    """Largest 15m boundary STRICTLY less than `now`. Used to cap the
-    walking range so we never read a bar whose open-time >= now."""
-    floor = now.replace(second=0, microsecond=0)
+    """Open-time of the last FULLY CLOSED 15m bar at `now` — i.e. the
+    largest boundary B with B + 15m <= now. Caps the walking range so the
+    walker never reads a bar that is still forming (the live feed upserts
+    in-progress candles, so mid-bar rows exist with partial OHLC).
+
+    Replay-neutral: sim clocks land exactly on boundaries, where this
+    equals the old strictly-less-than-now formula. Live (now has seconds):
+    the old formula returned the FORMING bar's open — fixed 2026-07-22."""
+    floor = (now - timedelta(minutes=15)).replace(second=0, microsecond=0)
     floor -= timedelta(minutes=floor.minute % 15)
-    if floor == now:
-        floor -= timedelta(minutes=15)
     return pd.Timestamp(floor)
 
 
@@ -624,19 +648,61 @@ def _evaluate_trigger(now: datetime, variant: dict,
         _diag_inc("no_data")
         return [], {"status": "no_data"}
 
-    # Find the most recent 15m bar index
-    idx = df.index.searchsorted(now, side="right") - 1
-    if idx < 0:
-        _diag_inc("no_bar")
-        return [], {"status": "no_bar"}
-    bar_ts = df.index[idx]
-    # Only fire on actual 15m boundaries (within 1 minute tolerance)
-    if abs((now - bar_ts).total_seconds()) > 60:
-        _diag_inc("boundary_skipped")
-        # Triple should only be evaluated AT the bar close, not mid-bar
-        return [], {"status": "not_at_15m_boundary",
-                    "bar_ts": bar_ts.isoformat(),
-                    "minutes_into_bar": (now - bar_ts).total_seconds() / 60}
+    if clock.is_simulated():
+        # REPLAY: the sim clock lands exactly on 15m boundaries and the data
+        # slice is final by construction. Keep the historical selection
+        # semantics untouched (bar open == now, final values) — the recorded
+        # replay baselines are byte-anchored to this path.
+        idx = df.index.searchsorted(now, side="right") - 1
+        if idx < 0:
+            _diag_inc("no_bar")
+            return [], {"status": "no_bar"}
+        bar_ts = df.index[idx]
+        # Only fire on actual 15m boundaries (within 1 minute tolerance)
+        if abs((now - bar_ts).total_seconds()) > 60:
+            _diag_inc("boundary_skipped")
+            # Triple should only be evaluated AT the bar close, not mid-bar
+            return [], {"status": "not_at_15m_boundary",
+                        "bar_ts": bar_ts.isoformat(),
+                        "minutes_into_bar": (now - bar_ts).total_seconds() / 60}
+    else:
+        # LIVE: evaluate the JUST-CLOSED bar (open == boundary − 15m) with
+        # final values, matching research/replay information sets. The frame
+        # may contain the forming bar (the feed upserts in-progress candles)
+        # — never evaluate it: its values are partial.
+        #
+        # 2026-07-22 fix: the old shared path compared `now` against the
+        # cached frame's LAST bar, which froze at the once-per-day rebuild —
+        # every live tick skipped (850/850 on day one) and the entry path
+        # was dead. Live now anchors on wall-clock boundaries and refreshes
+        # the frame after each bar close.
+        boundary = now.replace(second=0, microsecond=0)
+        boundary -= timedelta(minutes=boundary.minute % 15)
+        if (now - boundary).total_seconds() > LIVE_EVAL_GRACE_S:
+            _diag_inc("boundary_skipped")
+            return [], {"status": "not_at_15m_boundary"}
+        target = pd.Timestamp(boundary - timedelta(minutes=15))
+        if _last_eval_bar_ts.get(variant_id) == target:
+            return [], {"status": "already_evaluated",
+                        "bar_ts": target.isoformat()}
+        target_close = boundary  # the target bar closed at the boundary
+        needs_rebuild = (
+            target not in df.index
+            or _cache_built_at is None
+            or _cache_built_at < target_close  # row was forming at build time
+        )
+        if needs_rebuild:
+            _rebuild_daily_cache(now, force=True)
+            df = _cached_features.get("df")
+            if df is None or df.empty or target not in df.index:
+                # Feed hasn't written the closed bar yet — retry on the next
+                # 60s tick inside the grace window.
+                _diag_inc("bar_not_ready")
+                return [], {"status": "bar_not_ready",
+                            "target": target.isoformat()}
+        idx = df.index.get_loc(target)
+        bar_ts = target
+        _last_eval_bar_ts[variant_id] = target
 
     _diag_inc("bars_at_boundary")
 
