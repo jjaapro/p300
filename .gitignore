@@ -33,3 +33,6 @@ de421.bsp
 # JSONL is per-day gate counters, regenerated continuously)
 bots/*/logs/
 data/diagnostics/
+
+# Daily DB backups (backup.py) — local retention only, never committed
+data/backups/

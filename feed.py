@@ -55,6 +55,9 @@ def main(argv: list[str] | None = None) -> int:
                     help="Skip the startup gap-heal pass.")
     ap.add_argument("--verbose", action="store_true",
                     help="Log per-table fetch counts every cycle.")
+    ap.add_argument("--force-start", action="store_true",
+                    help="Skip the single-instance guard (use after a crash "
+                         "if the stale heartbeat blocks a fast restart).")
     args = ap.parse_args(argv)
 
     logging.basicConfig(
@@ -66,6 +69,25 @@ def main(argv: list[str] | None = None) -> int:
 
     botlib.ensure_wal()
     botlib.init_heartbeat_schema()
+
+    # Single-instance guard: two feeds double-fetch (also triggers when the
+    # legacy bot.py runs, since it starts its own feed thread).
+    if not args.force_start and not args.once:
+        for b in botlib.get_heartbeats():
+            if b["name"] != "feed":
+                continue
+            from datetime import datetime, timezone
+            try:
+                last = datetime.fromisoformat(b["last_tick_utc"])
+                age = (datetime.now(timezone.utc) - last).total_seconds()
+            except (TypeError, ValueError):
+                break
+            interval = b.get("interval_s") or 60
+            if age < 2 * interval:
+                log.error(f"another feed appears alive (heartbeat {age:.0f}s "
+                          f"ago < {2 * interval}s) — refusing to start. "
+                          f"Pass --force-start to override.")
+                return 3
 
     from data.sources import binance
 

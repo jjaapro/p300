@@ -19,12 +19,22 @@ Checks, in order of the incidents that motivated them:
 
 Expected-cadence limits live in BOT_EXPECTATIONS below — extend when a new
 bot ships (part of its day-1 requirements).
+
+Telegram alerts (2026-07-22): set TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID in
+.env (create the bot via @BotFather; chat id via @userinfobot or the
+getUpdates API). Alerts are pushed on every non-green run; `--summary`
+additionally pushes an all-green daily status so silence itself signals
+breakage. `--test-alert` verifies the wiring. Send failures are logged,
+never fatal.
 """
 from __future__ import annotations
 
 import argparse
+import json
+import os
 import sqlite3
 import sys
+import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -58,6 +68,31 @@ def _age_s(iso: str | None, now: datetime) -> float | None:
         return None
 
 
+def _notify(text: str) -> bool:
+    """Push `text` to Telegram. Returns True on success; failures are
+    printed and swallowed — alerting must never break monitoring."""
+    token = os.environ.get("TELEGRAM_BOT_TOKEN", "").strip()
+    chat_id = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
+    if not token or not chat_id:
+        print("    (telegram not configured — set TELEGRAM_BOT_TOKEN + "
+              "TELEGRAM_CHAT_ID in .env)")
+        return False
+    body = json.dumps({"chat_id": chat_id,
+                       "text": text[:3900]}).encode("utf-8")
+    req = urllib.request.Request(
+        f"https://api.telegram.org/bot{token}/sendMessage",
+        data=body, headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            ok = json.loads(resp.read()).get("ok", False)
+        if not ok:
+            print("    telegram send rejected")
+        return bool(ok)
+    except Exception as e:
+        print(f"    telegram send failed: {e!r}")
+        return False
+
+
 def _fmt_age(seconds: float | None) -> str:
     if seconds is None:
         return "never/unreadable"
@@ -70,7 +105,7 @@ def _fmt_age(seconds: float | None) -> str:
     return f"{seconds / 86400:.1f}d"
 
 
-def run(quiet: bool = False) -> int:
+def run(quiet: bool = False, summary: bool = False) -> int:
     now = datetime.now(timezone.utc)
     alerts: list[str] = []
     info: list[str] = []
@@ -132,12 +167,18 @@ def run(quiet: bool = False) -> int:
             alerts.append(f"OVERDUE TRADE {tid} ({strat}/{variant}): "
                           f"exit_time passed {_fmt_age(age)} ago")
 
+    stamp = now.isoformat()[:16] + "Z"
     if alerts:
-        print(f"=== monitor {now.isoformat()[:16]}Z — {len(alerts)} ALERT(S) ===")
+        print(f"=== monitor {stamp} — {len(alerts)} ALERT(S) ===")
         for a in alerts:
             print("  !!", a)
+        _notify(f"p300 monitor — {len(alerts)} ALERT(S) @ {stamp}\n"
+                + "\n".join(f"!! {a}" for a in alerts))
     elif not quiet:
-        print(f"=== monitor {now.isoformat()[:16]}Z — all green ===")
+        print(f"=== monitor {stamp} — all green ===")
+    if not alerts and summary:
+        _notify(f"p300 monitor — all green @ {stamp}\n"
+                + "\n".join(info[:12]))
     if not quiet:
         for i in info:
             print("   ", i)
@@ -148,8 +189,21 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Read-only bot/feed monitor")
     ap.add_argument("--quiet", action="store_true",
                     help="Print only alerts (cron-friendly).")
+    ap.add_argument("--summary", action="store_true",
+                    help="Also push an all-green status to Telegram (use on "
+                         "a daily schedule so silence itself is a signal).")
+    ap.add_argument("--test-alert", action="store_true",
+                    help="Send a test Telegram message and exit.")
     args = ap.parse_args(argv)
-    return run(quiet=args.quiet)
+
+    from strategies.support.env import load_env_file
+    load_env_file()
+
+    if args.test_alert:
+        ok = _notify("p300 monitor — test alert: wiring works.")
+        print("test alert sent" if ok else "test alert FAILED")
+        return 0 if ok else 1
+    return run(quiet=args.quiet, summary=args.summary)
 
 
 if __name__ == "__main__":

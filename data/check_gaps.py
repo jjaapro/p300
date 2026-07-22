@@ -22,7 +22,13 @@ import sys
 from collections import Counter, defaultdict
 from dataclasses import dataclass
 
-from strategies.support import db
+from pathlib import Path
+
+# Allow `python data/check_gaps.py` without PYTHONPATH (same bootstrap as
+# data/sources/binance.py — script-dir is on sys.path, not repo root).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from strategies.support import db  # noqa: E402
 
 
 @dataclass(frozen=True)
