@@ -38,6 +38,16 @@ switched to WAL for multi-process safety.
 - **Operator to-do**: keep `python feed.py` + both runners as always-on
   processes (Task Scheduler), `python monitor.py` hourly.
 
+**2026-07-22 round two** (fleet-hardening plan, commits 2931557..eab273e):
+P0 chento live boundary-eval lockout fixed (replay-gate: entries 8/8
+byte-identical; `__replay_p0gate` = new shipped-config baseline) · P1
+backup.py + Telegram alerts + stranded legacy positions closed + feed
+guard · P2 replay archive (51 variants / 28,205 rows out of live) · P3
+ADX Tier-2+veto shipped + `bots/adx/` · P4 `bots/carry/` (first tick
+opened a delta-neutral position). Fleet = 4 bots. Operator: restart the
+chento runner (pre-fix code), start adx/carry runners, schedule
+backup.py daily + monitor.py hourly, Telegram tokens in .env.
+
 ## 0. Verified ground (2026-07-21) — why Phase 0 is urgent
 
 | # | Finding | Evidence |
