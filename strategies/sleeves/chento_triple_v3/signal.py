@@ -100,8 +100,13 @@ def _diag_near_miss(ts: datetime, **kwargs) -> None:
 
 def _diag_flush(new_day_iso: str) -> None:
     """Append previous day's counters to the JSONL and reset for the new day.
-    No-op if DIAG is off."""
+    No-op if DIAG is off — or if the day hasn't changed: the P0 live fix
+    (2026-07-22) rebuilds the cache every 15m, and before this guard each
+    rebuild flushed a fragment line (~96/day instead of 1, found 2026-07-30).
+    Same-day rebuilds must accumulate."""
     global _diag_current_day, _diag_counters, _diag_near_misses
+    if _diag_current_day == new_day_iso:
+        return
     if not _DIAG_ENABLED:
         _diag_current_day = new_day_iso
         return

@@ -337,6 +337,32 @@ def test_replay_path_selection_unchanged(tmp_db, monkeypatch):
     assert status["status"] == "not_at_15m_boundary"
 
 
+def test_diag_flush_accumulates_within_day(tmp_path, monkeypatch):
+    """Same-day cache rebuilds must NOT fragment the diag JSONL (regression:
+    the P0 15m rebuild flushed ~96 fragment lines/day until 2026-07-30)."""
+    from strategies.sleeves.chento_triple_v3 import signal as ch_sig
+    diag_path = tmp_path / "diag.jsonl"
+    monkeypatch.setattr(ch_sig, "_DIAG_ENABLED", True)
+    monkeypatch.setattr(ch_sig, "_DIAG_PATH", diag_path)
+    monkeypatch.setattr(ch_sig, "_diag_current_day", None)
+    monkeypatch.setattr(ch_sig, "_diag_counters", {})
+    monkeypatch.setattr(ch_sig, "_diag_near_misses", [])
+
+    ch_sig._diag_flush("2026-07-30")          # day starts
+    ch_sig._diag_inc("bars_at_boundary")
+    ch_sig._diag_flush("2026-07-30")          # same-day rebuild -> no write
+    ch_sig._diag_inc("bars_at_boundary")
+    assert not diag_path.exists()
+    assert ch_sig._diag_counters == {"bars_at_boundary": 2}   # accumulated
+
+    ch_sig._diag_flush("2026-07-31")          # rollover -> one line
+    lines = diag_path.read_text().strip().splitlines()
+    assert len(lines) == 1
+    rec = json.loads(lines[0])
+    assert rec["utc_date"] == "2026-07-30"
+    assert rec["counters"] == {"bars_at_boundary": 2}
+
+
 # ─── Forced-fire integration: execute → sleeve sweep closes on stop ──────────
 
 def test_execute_then_sweep_stop_hit(tmp_db):
