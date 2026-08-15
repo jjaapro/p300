@@ -117,26 +117,67 @@ def init_heartbeat_schema() -> None:
                 note            TEXT
             )
         """)
+        cols = {r[1] for r in con.execute(
+            "PRAGMA table_info(bot_heartbeats)").fetchall()}
+        if "pid" not in cols:
+            con.execute("ALTER TABLE bot_heartbeats ADD COLUMN pid INTEGER")
         con.commit()
     finally:
         con.close()
+
+
+def _pid() -> int:
+    import os
+    return os.getpid()
+
+
+# Per-process memory of our own last heartbeat write, keyed by name — the
+# basis of duplicate-instance detection in heartbeat().
+_last_hb_write: dict[str, str] = {}
 
 
 def heartbeat(name: str, *, status: str = "ok", note: str = "",
               interval_s: int | None = None,
               last_eval_utc: str | None = None,
               last_signal_utc: str | None = None,
-              open_trades: int | None = None) -> None:
+              open_trades: int | None = None) -> bool:
     """Upsert this process's heartbeat row. `last_tick_utc` is always set to
-    now; the optional fields keep their previous value when passed None."""
+    now; the optional fields keep their previous value when passed None.
+
+    Duplicate-instance detection (2026-08-15 incident: two copies of every
+    bot ran for 5 days, invisible because rows are name-keyed and the
+    monitor saw one fresh row): if a DIFFERENT pid wrote this row since our
+    own previous write, another live instance shares our name. We then
+    force status='error' with a loud note — the monitor's existing
+    status!=ok check surfaces it with no monitor changes — and return
+    False. First write after startup never triggers (taking over a stale
+    row is a normal restart).
+    """
     now_iso = clock.now_utc().isoformat()
+    my_pid = _pid()
+    duplicate = False
     con = sqlite3.connect(str(db.PROD_DB))
     try:
+        try:
+            row = con.execute(
+                "SELECT pid, last_tick_utc FROM bot_heartbeats WHERE name=?",
+                (name,)).fetchone()
+        except sqlite3.OperationalError:      # pre-migration schema
+            row = None
+        prev_own = _last_hb_write.get(name)
+        if (row is not None and prev_own is not None
+                and row[0] is not None and row[0] != my_pid
+                and (row[1] or "") > prev_own):
+            duplicate = True
+            status = "error"
+            note = (f"DUPLICATE INSTANCE: pid {row[0]} also writing "
+                    f"'{name}' (I am {my_pid}). Kill one. " + (note or ""))
+            log.error(note.strip())
         con.execute("""
             INSERT INTO bot_heartbeats
                 (name, last_tick_utc, last_eval_utc, last_signal_utc,
-                 open_trades, interval_s, status, note)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                 open_trades, interval_s, status, note, pid)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(name) DO UPDATE SET
                 last_tick_utc   = excluded.last_tick_utc,
                 last_eval_utc   = COALESCE(excluded.last_eval_utc,   bot_heartbeats.last_eval_utc),
@@ -144,12 +185,15 @@ def heartbeat(name: str, *, status: str = "ok", note: str = "",
                 open_trades     = COALESCE(excluded.open_trades,     bot_heartbeats.open_trades),
                 interval_s      = COALESCE(excluded.interval_s,      bot_heartbeats.interval_s),
                 status          = excluded.status,
-                note            = excluded.note
+                note            = excluded.note,
+                pid             = excluded.pid
         """, (name, now_iso, last_eval_utc, last_signal_utc,
-              open_trades, interval_s, status, note))
+              open_trades, interval_s, status, note, my_pid))
         con.commit()
+        _last_hb_write[name] = now_iso
     finally:
         con.close()
+    return not duplicate
 
 
 def get_heartbeats() -> list[dict]:

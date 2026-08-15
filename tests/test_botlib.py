@@ -90,6 +90,43 @@ def test_heartbeat_upsert_preserves_optional_fields(tmp_db):
     assert b["last_tick_utc"] == (NOW + timedelta(minutes=5)).isoformat()
 
 
+def test_heartbeat_detects_duplicate_instance(tmp_db, monkeypatch):
+    """A different pid writing the same name between our writes = duplicate
+    instance -> status forced to error (2026-08-15 incident regression)."""
+    monkeypatch.setattr(botlib, "_last_hb_write", {})
+
+    monkeypatch.setattr(botlib, "_pid", lambda: 111)
+    assert botlib.heartbeat("botA", interval_s=60) is True     # first write
+
+    clock.set_simulated_now(NOW + timedelta(seconds=60))
+    monkeypatch.setattr(botlib, "_pid", lambda: 222)           # intruder
+    botlib._last_hb_write.pop("botA", None)                    # its first write
+    assert botlib.heartbeat("botA", interval_s=60) is True
+
+    clock.set_simulated_now(NOW + timedelta(seconds=90))
+    monkeypatch.setattr(botlib, "_pid", lambda: 111)           # original again
+    botlib._last_hb_write["botA"] = NOW.isoformat()            # its own memory
+    assert botlib.heartbeat("botA", interval_s=60) is False    # detected
+    b = botlib.get_heartbeats()[0]
+    assert b["status"] == "error"
+    assert "DUPLICATE INSTANCE" in b["note"]
+
+
+def test_heartbeat_restart_takeover_is_not_duplicate(tmp_db, monkeypatch):
+    """A fresh process taking over a stale row (normal restart) must NOT
+    alarm — detection requires a foreign write since OUR OWN last write."""
+    monkeypatch.setattr(botlib, "_last_hb_write", {})
+    monkeypatch.setattr(botlib, "_pid", lambda: 111)
+    assert botlib.heartbeat("botA", interval_s=60) is True
+
+    # restart: new pid, empty per-process memory
+    monkeypatch.setattr(botlib, "_last_hb_write", {})
+    monkeypatch.setattr(botlib, "_pid", lambda: 333)
+    clock.set_simulated_now(NOW + timedelta(minutes=10))
+    assert botlib.heartbeat("botA", interval_s=60) is True
+    assert botlib.get_heartbeats()[0]["status"] == "ok"
+
+
 # ─── Bot variant registration ─────────────────────────────────────────────────
 
 def test_ensure_bot_variant_idempotent_and_enabled(tmp_db):
