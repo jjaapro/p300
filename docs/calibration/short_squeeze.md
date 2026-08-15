@@ -41,6 +41,27 @@ monitor.py already alerts if no *evaluation* for >14h.
   max 0.0030, **gate flip rate 0.000%** over 1,069 session bars — the
   approximation is empirically negligible.
 
+## Macro-gate base rates (computed 2026-08-15 via the sleeve's own functions)
+
+Short-macro days (all three Asia conditions aligned) are **3.7% of all days**
+(62 of 1,657 since 2022-02) and heavily clustered in risk-off periods: the
+longest historical drought is **186 days** (ending 2024-04-22, post-ETF
+bull). The 2026 drought reached 89 days by Aug 15 with funding the binding
+constraint (Asia funding positive every day since May). Historically the 62
+macro days produced ~70 triggers (~1.1/day) — when the regime flips, action
+follows quickly. Long silences in positive-funding regimes are the designed
+behavior (SS is the regime-complement to CARRY, which harvests exactly then).
+
+**Funding-cadence fidelity note**: since the 2026-04-13 cadence cutover
+(1h predicted → 8h settlement), the Asia funding join yields **1 row per
+session (the 00:00 UTC settlement) vs 7 hourly rows before** — `fund_mean`
+is now the sign of a single settlement, not a 7-hour mean. Same for any
+post-April backtest day, so live matches the backtest's post-cutover
+behavior; but the validated trigger history (2022→2026-04) used the 7-row
+mean. Slightly noisier gate timing; NOT recalibrated ad hoc — any change
+(e.g. averaging the prior 24h's three settlements) needs notebook
+validation first per the research-workflow rule.
+
 ## Change history
 
 | Date | Change | Why / provenance |
