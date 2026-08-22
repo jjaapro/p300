@@ -44,7 +44,58 @@ FRESHNESS_CONTRACTS: dict[str, tuple[str, float, int]] = {
     "cd_open_interest":    ("timestamp", 1.0,   3 * 3600),
     "ca_long_short_ratio": ("timestamp", 1.0,   26 * 3600),
     "cd_funding_rate":     ("timestamp", 1.0,   9 * 3600),
+    "cd_funding_rate_eth": ("timestamp", 1.0,   9 * 3600),
+    "fear_greed_index":    ("date",      1.0,   3 * 86400),
 }
+
+# ─── Table classification ─────────────────────────────────────────────────────
+# Every prod.db table is either contracted above or declared in exactly one of
+# these registries; monitor.py alerts on any table in neither (and on registry
+# entries whose table has vanished). Add new tables here in the same commit
+# that creates them.
+
+# Research snapshots with no live writer. Frozen deliberately — a stale age on
+# these is not a failure. Value = freeze date + why.
+FROZEN_TABLES: dict[str, str] = {
+    "binance_agg_trades_1m":  "2026-05-23 — aggTrades research (chento Rule 1, closed)",
+    "binance_agg_trades_5m":  "2026-05-23 — aggTrades research (chento Rule 1, closed)",
+    "binance_agg_trades_15m": "2026-05-23 — aggTrades research (chento Rule 1, closed)",
+    "bybit_perp_1h":          "2026-05-26 — cross-exchange study backfill",
+    "bybit_perp_eth_1h":      "2026-05-26 — cross-exchange study backfill",
+    "bybit_perp_op_1h":       "2026-05-26 — cross-exchange study backfill",
+    "ca_liquidations":        "2026-05-24 — Coinalyze one-shot (30d-retention source)",
+    "cd_futures_eth_15m":     "2026-05-26 — multi-asset validation backfill",
+    "cd_futures_op_15m":      "2026-05-26 — multi-asset validation backfill",
+    "cd_spot_5s":             "2026-06-07 — dwell-block study (Binance Vision bulk)",
+    "cm_daily_metrics":       "2026-05-24 — CoinMetrics community one-shot",
+    "cm_reference_rate_1h":   "2026-05-25 — CoinMetrics community one-shot",
+    "okx_perp_eth_1h":        "2026-05-26 — multi-asset validation backfill",
+    "okx_perp_op_1h":         "2026-05-26 — multi-asset validation backfill",
+    "op_perp_1m":             "2026-05-19 — chento journal research; writer never committed",
+    "screener_klines_daily":  "2026-05-23 — screener research one-shot, never a live feed",
+    "screener_klines_1h":     "2026-05-23 — screener research one-shot, never a live feed",
+    "screener_klines_5m":     "2026-06-05 — whale-absorption Phase 1 one-shot (1 asset)",
+    "screener_klines_1m":     "2026-06-05 — whale-absorption Phase 1 one-shot (1 asset)",
+    "screener_universe":      "2026-05-23 — screener research one-shot, never a live feed",
+    "tv_btc_perp_15m":        "2026-05-25 — manual TradingView CSV import",
+    "tv_btc_perp_1h":         "2026-05-25 — manual TradingView CSV import",
+}
+
+# Writers exist but are switched off (AI_QUANT_ENABLED=false since 2026-06).
+# Move back to FRESHNESS_CONTRACTS in the same commit that re-enables the gate.
+GATED_TABLES: set[str] = {"news_headlines", "cd_liquidations", "cd_dvol"}
+
+# Bot/ledger state — covered by heartbeat, ledger-coherence and trade checks,
+# not by row-age freshness.
+STATE_TABLES: set[str] = {
+    "ai_quant_decisions", "bot_heartbeats", "config", "fomc_observer",
+    "sqlite_sequence", "trade_adjustments", "trades",
+    "variant_daily_returns", "variant_events", "variants",
+}
+
+# Static reference data — has its own runway check in monitor.py instead of a
+# row-age contract (built manually by fetch_events.py, populated years ahead).
+STATIC_TABLES: set[str] = {"scheduled_events"}
 
 
 def latest_age_s(table: str, con: sqlite3.Connection | None = None) -> float | None:
@@ -61,7 +112,14 @@ def latest_age_s(table: str, con: sqlite3.Connection | None = None) -> float | N
             return None
         if row is None or row[0] is None:
             return None
-        latest_s = float(row[0]) * mult
+        if isinstance(row[0], str):
+            # TEXT ISO column (fear_greed_index.date). Naive = UTC midnight.
+            dt = datetime.fromisoformat(row[0])
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            latest_s = dt.timestamp()
+        else:
+            latest_s = float(row[0]) * mult
         return clock.now_utc().timestamp() - latest_s
     finally:
         if own:

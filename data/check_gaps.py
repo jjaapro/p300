@@ -64,6 +64,57 @@ def _fmt(ts_native: int, mult: float) -> str:
     return dt.datetime.fromtimestamp(ts_native * mult, dt.UTC).strftime("%Y-%m-%d %H:%M")
 
 
+def collect_gaps(con: sqlite3.Connection, spec: Spec,
+                 skip_unfillable: bool = True,
+                 ) -> list[tuple[str, int, int, int]]:
+    """Interior gaps for `spec` as (asset_label, gap_start_s, gap_end_s,
+    missing_rows), timestamps in epoch seconds. Gaps fully covered by a
+    data/known_unfillable.json window are dropped when skip_unfillable.
+    Used by monitor.py --deep; _check_one keeps the CLI report on top."""
+    import health  # repo root, on sys.path via the bootstrap above
+
+    unfillable = health._load_unfillable() if skip_unfillable else {}
+    if spec.asset_col:
+        assets = [r[0] for r in con.execute(
+            f'SELECT DISTINCT "{spec.asset_col}" FROM "{spec.table}" '
+            f'ORDER BY "{spec.asset_col}"'
+        ).fetchall()]
+    else:
+        assets = [None]
+
+    out: list[tuple[str, int, int, int]] = []
+    for asset in assets:
+        where = f'WHERE "{spec.asset_col}"=?' if asset else ""
+        params = (asset,) if asset else ()
+        ts = [r[0] for r in con.execute(
+            f'SELECT "{spec.time_col}" FROM "{spec.table}" {where} '
+            f'ORDER BY "{spec.time_col}"', params
+        ).fetchall()]
+        if len(ts) < 2:
+            continue
+        diffs = [ts[i+1] - ts[i] for i in range(len(ts) - 1)]
+        modal_native = Counter(diffs).most_common(1)[0][0]
+        cad_native = (spec.cadence_seconds / spec.time_unit_to_seconds
+                      if spec.cadence_seconds else modal_native)
+        windows = unfillable.get((spec.table, asset or ""), [])
+        for i in range(len(ts) - 1):
+            if (ts[i+1] - ts[i]) <= cad_native:
+                continue
+            # known_unfillable windows describe the MISSING span (first to
+            # last absent bucket) in epoch SECONDS regardless of the table's
+            # native unit (health.py scales them per table; we compare in s).
+            miss_start_s = int((ts[i] + cad_native) * spec.time_unit_to_seconds)
+            miss_end_s = int((ts[i+1] - cad_native) * spec.time_unit_to_seconds)
+            if windows and health._gap_is_unfillable(miss_start_s, miss_end_s,
+                                                     windows):
+                continue
+            out.append((asset or "",
+                        int(ts[i] * spec.time_unit_to_seconds),
+                        int(ts[i+1] * spec.time_unit_to_seconds),
+                        int((ts[i+1] - ts[i]) / cad_native) - 1))
+    return out
+
+
 def _check_one(con: sqlite3.Connection, spec: Spec, verbose: bool) -> None:
     if spec.asset_col:
         assets = [r[0] for r in con.execute(

@@ -777,10 +777,12 @@ def backfill_all_klines(since: str | None = "2020-01-01") -> dict[str, int]:
 
 
 def fix_all_gaps() -> dict[str, int]:
-    """Detect + fill gaps in all kline + funding tables. Same machinery as
-    backfill but with no leading floor — only heals existing data, doesn't
-    extend history. Wired into binance_feed.py startup so the DB self-heals
-    every time the bot is restarted.
+    """Detect + fill gaps in all kline + funding tables, plus a
+    best-within-retention heal of cd_open_interest / ca_long_short_ratio
+    (upstream serves ~30d only) and okx_perp_1h. Same machinery as backfill
+    but with no leading floor — only heals existing data, doesn't extend
+    history. Wired into binance_feed.py startup so the DB self-heals every
+    time the bot is restarted.
 
     Also repairs rows where the taker-buy/sell columns are NULL (legacy data
     from before the kline fetcher learned to populate those fields). The
@@ -799,6 +801,43 @@ def fix_all_gaps() -> dict[str, int]:
     for sym, tbl in [("BTCUSDT", "cd_funding_rate"),
                      ("ETHUSDT", "cd_funding_rate_eth")]:
         out[tbl] = backfill_funding_rate(sym, tbl, since=None)
+
+    # 30d-retention tables (upstream serves only a trailing window — every
+    # startup heals the maximum recoverable). Each isolated: one dead
+    # upstream must never block feed startup.
+    try:
+        out["cd_open_interest"] = fetch_open_interest()
+    except Exception as e:  # noqa: BLE001
+        log.warning(f"fix_all_gaps: open-interest heal failed: {e}")
+        out["cd_open_interest"] = -1
+    for sym, asset in [("BTCUSDT", "BTC"), ("ETHUSDT", "ETH")]:
+        try:
+            out[f"ca_long_short_ratio_{asset}"] = fetch_long_short_ratio(sym, asset)
+        except Exception as e:  # noqa: BLE001
+            log.warning(f"fix_all_gaps: LSR heal failed for {asset}: {e}")
+            out[f"ca_long_short_ratio_{asset}"] = -1
+
+    # okx_perp_1h — refresh_latest() pages ~300h deep; a longer outage needs
+    # an explicit backfill from the last row first (250h threshold leaves
+    # margin under that page depth).
+    try:
+        from datetime import date, timedelta
+
+        from data.sources import okx_perp
+        con = sqlite3.connect(str(DB_PATH))
+        try:
+            row = con.execute("SELECT MAX(timestamp) FROM okx_perp_1h").fetchone()
+        finally:
+            con.close()
+        if row and row[0] is not None:
+            age_h = (time.time() - float(row[0])) / 3600
+            if age_h > 250:
+                start = date.fromtimestamp(float(row[0])) - timedelta(days=1)
+                okx_perp.backfill("BTC-USDT-SWAP", start=start, end=date.today())
+        out["okx_perp_1h"] = okx_perp.refresh_latest()
+    except Exception as e:  # noqa: BLE001
+        log.warning(f"fix_all_gaps: okx heal failed: {e}")
+        out["okx_perp_1h"] = -1
     return out
 
 
