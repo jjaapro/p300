@@ -49,6 +49,8 @@ def universe() -> list[str]:
 
 
 def main() -> int:
+    # Windows console defaults to cp1252; some tickers carry unicode.
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
     con = sqlite3.connect(DB)
     con.execute("""CREATE TABLE IF NOT EXISTS klines_15m (
         symbol TEXT NOT NULL, open_time_ms INTEGER NOT NULL,

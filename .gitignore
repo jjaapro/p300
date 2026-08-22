@@ -41,3 +41,4 @@ data/archive/*.db
 # Study-local OHLCV mirrors (regenerate with the study's fetch script)
 studies/notebooks/paladin_study/paladin_ohlcv.db
 studies/notebooks/scanner_study/scanner_ohlcv.db
+studies/notebooks/scanner_study/results/trades_*.csv

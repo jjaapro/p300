@@ -1,0 +1,9 @@
+{
+ "missing_from_binance_futures": [
+  "BONKUSDT",
+  "COSUSDT",
+  "IPUSDT",
+  "RAYUSDT",
+  "TONUSDT"
+ ]
+}
