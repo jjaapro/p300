@@ -41,3 +41,35 @@ control template). KILL at uplift < 1.1× control.
 Binance Vision daily aggTrades zips (tick-level price/qty/side), downloaded per
 event day, parsed to per-event footprints, raw zips deleted — nothing heavy is kept
 or committed. Study-local only; prod untouched.
+
+---
+
+# RESULTS (2026-08-24) — CONCLUDED NEGATIVE per pre-registration
+
+All 1,357 events got footprints (100% coverage). Verdict table: `results/test_a_results.csv`.
+
+- **All 6 flag × target combos: KILL.** No confirmed subset achieved net > 0; the
+  +0.05R edge floor held in both halves for zero flags.
+- **C2 (top-zone sell share) is actively harmful** — confirmed subsets underperform
+  everywhere (−0.04 to −0.05R edge). High sell share at the highs marks continuation,
+  not absorption.
+- **C1 (one-bar top-zone delta): noise** — edge flips sign between halves.
+- **C3 (two-bar sustained top-zone selling) is a real but insufficient signal**: the
+  only flag with positive confirmed GROSS in both halves (+0.10/+0.05 at 1R,
+  +0.09/+0.07 at 1.5R) and a consistent gross separation vs unconfirmed (~+0.08–0.13R).
+  It is directionally exactly the absorption story — and it still cannot pay 18bp
+  costs on BTC/ETH's zero-gross event pool (confirmed net −0.02 to −0.08R), and its
+  H2 edge missed the floor. Killed per pre-registration; no parameter changes.
+
+## Delta-family scoreboard after this study
+
+Bar-level CVD: 3-for-3 (chento B1/B7, short_squeeze). aggTrades-derived: **0-for-3**
+(whale-absorption, chento Rule 1, footprint confirmation).
+
+## The one justified continuation (not run, needs its own pre-registration)
+
+C3 on the **alt universe**, where the sweep-fade gross edge actually lived
+(+0.03–0.06R): if sustained top-zone selling adds the same ~+0.1R gross separation
+there, confirmed alts could clear the cost floor. That is a materially bigger data
+job (~10× the Vision files across ~50 alt symbols) with a genuinely uncertain payoff —
+run only with explicit appetite for it.
