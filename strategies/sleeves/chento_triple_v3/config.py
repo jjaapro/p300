@@ -13,10 +13,24 @@ Do NOT tune these without re-running validation. Per [[wider-tp-same-stop-is-bet
 and [[tif-72h-optimal]], several were counter-intuitive.
 """
 
+import os
+
 SLEEVE_NAME = "CHENTO_TRIPLE_V3"
 
 # ─── Asset ─────────────────────────────────────────────────────────────────
-ASSET = "BTC"
+# One sleeve process = one asset, selected by env BEFORE first import
+# (bots/chento_v3 leaves the default; bots/chento_v3_eth sets ETH). The
+# multi-asset validation lives in studies/notebooks/overlay_study/ —
+# backward-only ETH pool: +0.70R mean, timing-alpha-driven (2026-08-23).
+ASSET = os.environ.get("CHENTO_V3_ASSET", "BTC").upper()
+
+_ASSET_TABLES = {
+    "BTC": {"perp_15m": "cd_futures_15m", "okx_1h": "okx_perp_1h"},
+    "ETH": {"perp_15m": "cd_futures_eth_15m", "okx_1h": "okx_perp_eth_1h"},
+}
+PERP_15M_TABLE = _ASSET_TABLES[ASSET]["perp_15m"]
+OKX_1H_TABLE = _ASSET_TABLES[ASSET]["okx_1h"]
+LSR_ASSET = ASSET               # ca_long_short_ratio has BTC + ETH rows
 
 # ─── Math layer ────────────────────────────────────────────────────────────
 ATR_PERIOD = 14                  # 14-bar ATR on 15m
@@ -50,8 +64,11 @@ B7_Z_THRESHOLD = 2.0                # median |z| > threshold w/ all 4 TFs same s
 TRIPLE_WINDOW_HOURS = 24
 
 # ─── Filter gates ──────────────────────────────────────────────────────────
-# Filter 1: no-tilt (consec_losses_before == 0)
-FILTER_NO_TILT = True
+# Filter 1: no-tilt (consec_losses_before == 0). Per-asset per the overlay
+# study's backward-only confirmation (2026-08-23): BTC keeps skip-after-loss
+# (MAR champion); ETH disables the skip and instead HALVES risk after a loss
+# at the bot layer (skip≈half on ETH MAR but half keeps ~64% more income).
+FILTER_NO_TILT = ASSET == "BTC"
 
 # Filter 2: no_resist_OB_within_2R
 FILTER_NO_RESIST_OB = True

@@ -44,3 +44,19 @@ future replay-equivalence gate.
 | 2026-06-05 | atr5_t6R + no_tilt + no_resist_OB_2R confirmed; ladder disabled | Triple composite optimization + P1 backward-only Pareto test (memories: chento-triple-optimized-config, chento-v3-p1-ladder-verdict) |
 | 2026-06-04 | Fix A intra-bar walking; B1-anchored trigger | chento-v3-b1-anchored memory |
 | 2026-05-30 | B7 resample-bucket → rolling-sum + median-z (byte-equivalence fix) | chento-v3-b7-bug memory |
+
+## 2026-08-23 — ETH leg (multi-asset plan Phase B)
+
+- Sleeve asset-parameterized via `CHENTO_V3_ASSET` env (config resolves
+  `cd_futures_eth_15m` / `okx_perp_eth_1h` / LSR asset='ETH'); BTC leg
+  byte-identical (test_chento_parity.py green through the refactor).
+- New bot `bots/chento_v3_eth` (variant `bot_chento_v3_eth`, $10k paper,
+  2%/trade, 3x cap) — thin wrapper over the shared runner.
+- Per-asset tilt policy per the overlay study + backward-only confirmation:
+  BTC keeps FILTER_NO_TILT (skip-after-loss); ETH disables the skip and
+  halves risk after a loss at the bot layer (TILT_HALF_AFTER_LOSS).
+- Go/no-go basis: backward-only research pool ETH +0.70R mean / 44% WR /
+  n=73 (2021→2026-05), attribution timing +0.70R vs regime −0.10R.
+  Underwrite expectancy: ~+0.7R region, NOT the +1.28R research figure.
+- Paper gate: ≥2 months or ≥10 trades; kill at < +0.3R/trade after 15
+  trades (plan doc: studies/material/plans/multi_asset_chento_plan.md).

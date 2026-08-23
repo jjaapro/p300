@@ -58,6 +58,7 @@ from strategies.support import db  # noqa: E402
 # ~10h overnight window; both get slack on top.
 BOT_EXPECTATIONS: dict[str, int] = {
     "chento_v3": 2 * 3600,
+    "chento_v3_eth": 2 * 3600,
     "short_squeeze": 14 * 3600,
     "adx": 26 * 3600,          # daily entry decision + continuous sweep
     "carry": 26 * 3600,        # daily funding decision

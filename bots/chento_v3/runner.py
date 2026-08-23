@@ -62,11 +62,33 @@ def _signal_handler(signum, frame):
     _stop.set()
 
 
-def size_intent(intent, capital: float):
+def _last_closed_was_loss(variant_id: str) -> bool:
+    """True if this variant's most recently closed paper trade lost. Basis of
+    the ETH leg's half-after-loss tilt policy (overlay study 2026-08-23) —
+    the sleeve's FILTER_NO_TILT skip is disabled there in favour of this."""
+    import sqlite3
+
+    from strategies.support import db
+    con = sqlite3.connect(f"file:{db.PROD_DB}?mode=ro", uri=True)
+    try:
+        row = con.execute(
+            "SELECT entry_price, exit_price, direction FROM trades "
+            "WHERE strategy_variant=? AND status='closed' "
+            "ORDER BY exit_time DESC LIMIT 1", (variant_id,)).fetchone()
+    finally:
+        con.close()
+    if not row or row[0] is None or row[1] is None:
+        return False
+    sign = 1 if str(row[2]).upper() == "LONG" else -1
+    return (row[1] - row[0]) * sign < 0
+
+
+def size_intent(intent, capital: float, risk_scale: float = 1.0):
     """Fixed-R sizing (botlib.size_intent_fixed_r) with this bot's params:
-    2% risk over the sleeve's own 5×ATR stop, notional ≤ 3× capital."""
+    RISK_PCT% (optionally tilt-scaled) over the sleeve's own 5×ATR stop,
+    notional ≤ NOTIONAL_MAX_X × capital."""
     return botlib.size_intent_fixed_r(
-        intent, capital, risk_pct=botcfg.RISK_PCT,
+        intent, capital, risk_pct=botcfg.RISK_PCT * risk_scale,
         notional_max_x=botcfg.NOTIONAL_MAX_X)
 
 
@@ -98,8 +120,14 @@ def tick(variant: dict, sleeve_cfg: dict) -> dict:
                        hb_status="degraded",
                        hb_note=f"entry tables stale: {sorted(stale_entry)}")
         else:
+            risk_scale = 1.0
+            if getattr(botcfg, "TILT_HALF_AFTER_LOSS", False) \
+                    and _last_closed_was_loss(variant["id"]):
+                risk_scale = 0.5
+                log.info("tilt policy: half risk (last closed trade lost)")
             for intent in intents:
-                resized, info = size_intent(intent, float(variant["capital_usdt"]))
+                resized, info = size_intent(intent, float(variant["capital_usdt"]),
+                                            risk_scale)
                 res = sleeve.execute_for_variant(variant, sleeve_cfg, resized)
                 log.info(f"OPENED {res.get('trade_id')} {resized.direction} "
                          f"notional=${info['notional']:,.0f} "
@@ -187,6 +215,15 @@ def main(argv: list[str] | None = None) -> int:
             time.sleep(1)
     log.info("shutdown complete")
     return 0
+
+
+def run(cfg, argv: list[str] | None = None) -> int:
+    """Entry point for per-asset wrapper bots (bots/chento_v3_eth): swap in
+    their config module, then run the shared loop. The wrapper must set
+    CHENTO_V3_ASSET (and diag env) BEFORE importing this module."""
+    global botcfg
+    botcfg = cfg
+    return main(argv)
 
 
 if __name__ == "__main__":

@@ -31,7 +31,7 @@ from strategies.support.dispatch import Intent
 
 from . import math as ctm
 from .config import (
-    SLEEVE_NAME, ASSET,
+    SLEEVE_NAME, ASSET, PERP_15M_TABLE, OKX_1H_TABLE, LSR_ASSET,
     ATR_PERIOD, ATR_STOP_MULT, TARGET_R, TIF_HOURS, COST_BP_RT,
     B1_CVD_WINDOW_BARS, B1_VEL_WINDOW_BARS, B1_CVD_Z_THRESHOLD, B1_VEL_Z_MAX,
     B5_ROLLING_DAYS,
@@ -139,10 +139,10 @@ def _load_15m_btc(now: datetime, days_back: int) -> pd.DataFrame:
     con = sqlite3.connect(str(db.PROD_DB))
     try:
         cutoff = int((now - timedelta(days=days_back)).timestamp())
-        df = pd.read_sql("""
+        df = pd.read_sql(f"""
             SELECT timestamp, open, high, low, close, volume, quote_volume,
                    volume_buy, quote_volume_buy, volume_sell, quote_volume_sell
-            FROM cd_futures_15m
+            FROM {PERP_15M_TABLE}
             WHERE timestamp >= ?
             ORDER BY timestamp
         """, con, params=(cutoff,))
@@ -162,9 +162,9 @@ def _load_lsr_btc(now: datetime, days_back: int) -> pd.DataFrame:
         df = pd.read_sql("""
             SELECT timestamp, ratio, long_pct, short_pct
             FROM ca_long_short_ratio
-            WHERE asset='BTC' AND timestamp >= ?
+            WHERE asset=? AND timestamp >= ?
             ORDER BY timestamp
-        """, con, params=(cutoff,))
+        """, con, params=(LSR_ASSET, cutoff))
     finally:
         con.close()
     if df.empty:
@@ -178,8 +178,8 @@ def _load_okx_1h(now: datetime, days_back: int) -> pd.Series:
     con = sqlite3.connect(str(db.PROD_DB))
     try:
         cutoff = int((now - timedelta(days=days_back)).timestamp())
-        df = pd.read_sql("""
-            SELECT timestamp, close FROM okx_perp_1h
+        df = pd.read_sql(f"""
+            SELECT timestamp, close FROM {OKX_1H_TABLE}
             WHERE timestamp >= ?
             ORDER BY timestamp
         """, con, params=(cutoff,))
@@ -469,7 +469,7 @@ def _bar_ohlc_for(ts: pd.Timestamp) -> tuple[float, float, float] | None:
     con = sqlite3.connect(str(db.PROD_DB))
     try:
         row = con.execute(
-            "SELECT high, low, close FROM cd_futures_15m WHERE timestamp = ?",
+            f"SELECT high, low, close FROM {PERP_15M_TABLE} WHERE timestamp = ?",
             (int(ts.timestamp()),),
         ).fetchone()
     finally:
