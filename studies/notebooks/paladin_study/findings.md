@@ -135,3 +135,22 @@ the correct next use is as an **exit overlay on sleeves whose entries have real 
 - `results/unresolved_resolved.csv`, `results/manual_exit_mfe.csv`, `results/loss_wick_analysis.csv`
 - `results/venue_offset.csv` — join-quality evidence
 - `paladin_ohlcv.db` — 68 symbols × 15m, 2026-03-01→08-22 (regenerate with `fetch_ohlcv.py`)
+
+## Addendum 2026-08-23b: the 1-minute question (one_minute_check.py)
+
+He discusses 1m candles; nearly all our tests ran at 15m. Checked on the 77
+BTC/ETH positions (alts have no 1m history on our side):
+
+- **H0 plan replay: identical at 1m / 5m / 15m** — 0/77 outcome flips, same
+  mean (+0.102R), same stop/target counts. Stop-vs-target touch order never
+  changes at finer granularity; the entries-have-no-edge verdict is not a
+  bar-size artifact.
+- **Wick-exit: 1m is mildly better** (+0.143R / 86% WR vs +0.101R / 83% at
+  15m — more rejection wicks visible → slightly earlier books). Consistent
+  with him watching the tape for exits, but the +0.04R delta would not have
+  flipped the harvester kill (best OOS net was −0.034R with a −0.05R floor
+  and every gated variant deeper in the red).
+- **1m entry microstructure: nothing.** Sweep-and-reclaim in the 5 minutes
+  before his signals: 14% vs 11% at matched controls.
+
+Bar size was not the missing variable.
