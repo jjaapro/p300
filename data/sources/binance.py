@@ -798,6 +798,12 @@ def fix_all_gaps() -> dict[str, int]:
         FAPI, "BTCUSDT", "cd_futures_15m", "15m", 900, since=None)
     out["cd_spot_15m"] = backfill_klines_interval(
         SPOT_API, "BTCUSDT", "cd_spot_15m", "15m", 900, since=None)
+    try:
+        out["cd_futures_eth_15m"] = backfill_klines_interval(
+            FAPI, "ETHUSDT", "cd_futures_eth_15m", "15m", 900, since=None)
+    except Exception as e:  # noqa: BLE001
+        log.warning(f"fix_all_gaps: cd_futures_eth_15m heal failed: {e}")
+        out["cd_futures_eth_15m"] = -1
     for sym, tbl in [("BTCUSDT", "cd_funding_rate"),
                      ("ETHUSDT", "cd_funding_rate_eth")]:
         out[tbl] = backfill_funding_rate(sym, tbl, since=None)
@@ -835,6 +841,20 @@ def fix_all_gaps() -> dict[str, int]:
                 start = date.fromtimestamp(float(row[0])) - timedelta(days=1)
                 okx_perp.backfill("BTC-USDT-SWAP", start=start, end=date.today())
         out["okx_perp_1h"] = okx_perp.refresh_latest()
+        row = None
+        con = sqlite3.connect(str(DB_PATH))
+        try:
+            row = con.execute("SELECT MAX(timestamp) FROM okx_perp_eth_1h").fetchone()
+        finally:
+            con.close()
+        if row and row[0] is not None:
+            age_h = (time.time() - float(row[0])) / 3600
+            if age_h > 250:
+                start = date.fromtimestamp(float(row[0])) - timedelta(days=1)
+                okx_perp.backfill("ETH-USDT-SWAP", start=start, end=date.today(),
+                                  table="okx_perp_eth_1h")
+        out["okx_perp_eth_1h"] = okx_perp.refresh_latest(
+            "ETH-USDT-SWAP", table="okx_perp_eth_1h")
     except Exception as e:  # noqa: BLE001
         log.warning(f"fix_all_gaps: okx heal failed: {e}")
         out["okx_perp_1h"] = -1
@@ -867,6 +887,14 @@ def refresh_all() -> dict[str, int]:
     except Exception as e:
         log.warning(f"cd_futures_15m fetch failed: {e}")
         results["cd_futures_15m"] = -1
+    # ETH perp 15m — the multi-asset chento leg (2026-08-23). Same fetcher,
+    # same taker-split schema; table revived from the 2026-05-26 freeze.
+    try:
+        results["cd_futures_eth_15m"] = fetch_klines_interval(
+            FAPI, "ETHUSDT", "cd_futures_eth_15m", "15m")
+    except Exception as e:
+        log.warning(f"cd_futures_eth_15m fetch failed: {e}")
+        results["cd_futures_eth_15m"] = -1
     try:
         results["cd_spot_15m"] = fetch_spot_klines_15m()
     except Exception as e:
@@ -974,15 +1002,19 @@ _last_okx_refresh_ts: float = 0.0
 
 
 def _refresh_hourly_okx(min_interval_s: int = 3300) -> int:
-    """Throttled okx_perp_1h refresh — runs at most every ~55 min so the
-    per-minute refresh_all() doesn't hammer OKX for hourly bars. Returns 0
-    on throttled ticks, row count on refresh ticks."""
+    """Throttled OKX 1h refresh (BTC + ETH swaps) — runs at most every
+    ~55 min so the per-minute refresh_all() doesn't hammer OKX for hourly
+    bars. Returns 0 on throttled ticks, BTC row count on refresh ticks."""
     global _last_okx_refresh_ts
     now = time.time()
     if now - _last_okx_refresh_ts < min_interval_s:
         return 0
     from data.sources import okx_perp
     n = okx_perp.refresh_latest()
+    try:
+        okx_perp.refresh_latest("ETH-USDT-SWAP", table="okx_perp_eth_1h")
+    except Exception as e:  # noqa: BLE001 — ETH leg must not break BTC's
+        log.warning(f"okx_perp_eth_1h refresh failed: {e}")
     _last_okx_refresh_ts = now
     return n
 

@@ -46,6 +46,10 @@ FRESHNESS_CONTRACTS: dict[str, tuple[str, float, int]] = {
     "cd_funding_rate":     ("timestamp", 1.0,   9 * 3600),
     "cd_funding_rate_eth": ("timestamp", 1.0,   9 * 3600),
     "fear_greed_index":    ("date",      1.0,   3 * 86400),
+    # multi-asset chento ETH leg (revived from freeze 2026-08-23; same
+    # cadence/limits as their BTC twins)
+    "cd_futures_eth_15m":  ("timestamp", 1.0,   45 * 60),
+    "okx_perp_eth_1h":     ("timestamp", 1.0,   3 * 3600),
 }
 
 # ─── Table classification ─────────────────────────────────────────────────────
@@ -64,12 +68,10 @@ FROZEN_TABLES: dict[str, str] = {
     "bybit_perp_eth_1h":      "2026-05-26 — cross-exchange study backfill",
     "bybit_perp_op_1h":       "2026-05-26 — cross-exchange study backfill",
     "ca_liquidations":        "2026-05-24 — Coinalyze one-shot (30d-retention source)",
-    "cd_futures_eth_15m":     "2026-05-26 — multi-asset validation backfill",
     "cd_futures_op_15m":      "2026-05-26 — multi-asset validation backfill",
     "cd_spot_5s":             "2026-06-07 — dwell-block study (Binance Vision bulk)",
     "cm_daily_metrics":       "2026-05-24 — CoinMetrics community one-shot",
     "cm_reference_rate_1h":   "2026-05-25 — CoinMetrics community one-shot",
-    "okx_perp_eth_1h":        "2026-05-26 — multi-asset validation backfill",
     "okx_perp_op_1h":         "2026-05-26 — multi-asset validation backfill",
     "op_perp_1m":             "2026-05-19 — chento journal research; writer never committed",
     "screener_klines_daily":  "2026-05-23 — screener research one-shot, never a live feed",
