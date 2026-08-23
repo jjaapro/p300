@@ -100,6 +100,33 @@ His entries are also grid-anchored: 97% sit within 0.25% of a round level (pack 
    near-null. EMA200/round-levels: confounded with "price is always near some level"; the
    grid anchoring is real but is a *description* of where he clicks, not a demonstrated edge.
 
+## Addendum 2026-08-23: the rejection-wick exit IS partially automatable
+
+The original conclusion "the exits cannot be copied" was too strong — it was based on
+testing only fixed-TP/BE/time-cap exit variants. Prompted by the corpus (playbook signal
+"Rejection / wick at a level as the manual exit trigger", msgs 451/462/633/937), a
+pre-registered mechanical translation was tested in `exit_wick_study.py`:
+
+> Armed only while the trade shows ≥ P_min R unrealized; on any bar whose favourable
+> extreme reaches a round level (or published TP) within 0.15% and closes back on the
+> entry side with a rejection shadow ≥ WICK_FRAC of the bar range → exit at that close.
+> Otherwise the original plan runs (stop / TP1 / 72h close).
+
+Result on the same 173 positions where the mechanical baseline earns +0.003R:
+
+- best variant (P_min 0.3, wick 0.4): **+0.122R/trade gross, 81% WR** (his real WR ~77%),
+  135 wick exits at median +0.31R, stops cut 65 → 29 with **42 confirmed stop-dodges**
+- stable: positive in all 8 variants × both halves of the window; OOS (Jul–Aug) ≥ IS in
+  7 of 8; 5m and 15m granularity nearly identical (not a resolution artifact)
+- per-position correlation with his recorded R ≈ 0 — the rule does not mimic his specific
+  exits; it independently manufactures the same hit-rate-for-tail-R trade
+
+Honest sizing: ~+0.08R/trade net of costs, on entries that are themselves noise, in one
+3.5-month V-shaped window. This does NOT resurrect a Paladin sleeve. It DOES validate the
+exit mechanism as real, automatable alpha (~a third of his estimated true exit skill), and
+the correct next use is as an **exit overlay on sleeves whose entries have real edge**
+(chento_v3, short_squeeze historical trade sets).
+
 ## Files
 
 - `paladin_study.ipynb` — executed notebook, all tables/plots
