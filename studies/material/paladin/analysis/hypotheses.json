@@ -1,0 +1,162 @@
+{
+ "purpose": "Testable hypotheses about what Paladin was actually watching, each phrased so it can be computed from OHLCV joined on positions.signal_time_utc. Derived from the playbook (what he says he watches) plus the geometry of the 173 backtestable positions. Test them against a control set of random timestamps on the same symbols, otherwise everything looks significant in a trending market.",
+ "primary_test": {
+  "id": "H0",
+  "name": "Mechanical plan vs his discretionary execution",
+  "why_it_matters": "This is the question that decides whether any of this is automatable. He publishes entry, stop and target; he then usually exits by hand somewhere else. If the published plan traded mechanically beats his own execution, the edge lives in the setup and can be automated. If it loses, the edge lives in his exits and cannot.",
+  "procedure": [
+   "For each position where is_backtestable is true: enter at entry_ref at signal_time_utc (or the next bar open).",
+   "Exit at planned_stop or planned_tp1, whichever the price touches first, scanning forward bar by bar.",
+   "If neither is touched within N hours (test N = 24, 72, 168, and no limit), close at the bar close and record the R.",
+   "Compare the resulting R distribution against r_from_prices (his actual exits) and against outcome.",
+   "Also run a variant where the stop is moved to entry once +1R is touched — that is his stated rule."
+  ],
+  "expected_signal": "His median win is about 1.0R stated but only 38% of wins reached a published target, so the mechanical version should show a lower hit rate and a fatter right tail. Which one has higher expectancy is the actual finding."
+ },
+ "hypotheses": [
+  {
+   "id": "H1",
+   "claim": "He anchors entries and targets to round levels — WEAK, see correction",
+   "playbook_signal": "Round-number k-levels (47 messages)",
+   "feature": "min(|entry_ref - k|)/entry_ref where k runs over multiples of 500 and 1000 for BTC, and over 1/2/5-significant-figure round numbers for alts",
+   "test": "Test the fractional position between round levels against a uniform null, separately at each granularity, and separately for planned_entry (what he wrote) and avg_entry (what he got). The claim only survives at the finer granularities and only on the quoted price.",
+   "data_needed": "none beyond the positions table for entries; OHLCV only for the control set",
+   "correction": "An earlier headline of '97% of entries within 0.25% of a round level' was an artefact of a loose threshold. Against a uniform null: thousands granularity 27% vs 25% null (no effect); hundreds 51% vs 25% (real, ~2x); tens 73% vs 25% (this is quoting precision, not level selection). His quoted entries are 3-significant-figure numbers (114 of 194) while his actual fills carry 4-7 significant digits, median gap 0.13%. He rounds when he writes and fills at market. Use as a weak prior, one feature, not a rule."
+  },
+  {
+   "id": "H2",
+   "claim": "He buys sweeps of the prior daily low (and shorts sweeps of the daily high)",
+   "playbook_signal": "New daily low sweep then bounce",
+   "feature": "was_new_low_N = 1 if the low in the 6h before signal_time_utc is the lowest low of the prior N days (N = 1, 3, 7); plus recovery = (close_at_signal - low_6h)/ATR14",
+   "test": "Rate of was_new_low_1 among his longs vs base rate. Split by outcome — if it predicts wins as well as entries, it is a real filter and not just a habit.",
+   "data_needed": "1h or 15m OHLCV"
+  },
+  {
+   "id": "H3",
+   "claim": "The 4h close is his confirmation and his real stop trigger",
+   "playbook_signal": "Candle-close stops and confirmation (35 messages)",
+   "feature": "minutes_since_4h_close at signal_time_utc; and for stop-outs, whether the 4h candle actually closed beyond planned_stop versus only wicking through it",
+   "test": "Histogram of minutes_since_4h_close — a spike in the first 30 minutes after 00/04/08/12/16/20 UTC confirms it. Then: of the 33 backtestable losses, how many had a 4h close beyond the stop versus a wick only? A high wick-only share means his stop is effectively wider than published, which changes every R in the dataset.",
+   "data_needed": "4h OHLCV aligned to UTC"
+  },
+  {
+   "id": "H4",
+   "claim": "The 200 EMA is the line in the sand",
+   "playbook_signal": "200 EMA, mostly 4h (14 messages)",
+   "feature": "(entry_ref - ema200_4h)/atr14_4h at signal_time_utc, and the same for planned_stop",
+   "test": "Are longs clustered just above the 4h 200 EMA and stops just below it? Compare |stop - ema200|/atr against a random control.",
+   "data_needed": "4h OHLCV, 200-period EMA"
+  },
+  {
+   "id": "H5",
+   "claim": "Stop distance is chosen by structure, not by volatility",
+   "playbook_signal": "geometry of the dataset",
+   "feature": "correlation between risk_dist_pct and atr14_pct at signal_time_utc, per symbol and pooled",
+   "test": "A high correlation means his stop is really a volatility multiple and is trivially automatable. A low one means he is reading levels, and you would need the level-detection to replicate him. Median risk_dist_pct is 4.18% with an IQR of 2.29-6.50%, so there is real dispersion to explain.",
+   "data_needed": "1h OHLCV, ATR"
+  },
+  {
+   "id": "H6",
+   "claim": "Every alt position is really a BTC position",
+   "playbook_signal": "BTC as the driver of every altcoin position (14 messages)",
+   "feature": "btc_ret_4h, btc_ret_24h at signal_time_utc; alt-vs-BTC relative strength over the prior 24h",
+   "test": "Do his alt longs cluster after positive BTC 4h returns? Does alt outcome correlate more with BTC's move over the holding period than with anything alt-specific? Regress r_from_prices on btc_ret_over_hold.",
+   "data_needed": "BTC 1h OHLCV plus the alt's"
+  },
+  {
+   "id": "H7",
+   "claim": "He picks alts that held up while BTC dumped",
+   "playbook_signal": "Relative strength during a BTC dump (6 messages)",
+   "feature": "rs_24h = alt_ret_24h - btc_ret_24h, computed only on windows where btc_ret_24h < 0",
+   "test": "Is rs_24h positive at his alt entries more often than chance? This is a specific, cheap, automatable filter if it holds.",
+   "data_needed": "1h OHLCV for the alt and BTC"
+  },
+  {
+   "id": "H8",
+   "claim": "There is a weekend / Sunday-Monday seasonality he trades",
+   "playbook_signal": "Weekend / Sunday-Monday pump seasonality (14 messages)",
+   "feature": "signal_dow and signal_hour_utc are already in positions.csv; join forward returns",
+   "test": "Note the raw counts first: Sat 23 and Sun 11 signals versus Thu 35 — he posts less at the weekend, so a weekend effect in his results may be a sample-size artefact. Test the seasonality directly on OHLCV instead of on his trades, then check whether his weekend entries beat his weekday ones.",
+   "data_needed": "OHLCV only"
+  },
+  {
+   "id": "H9",
+   "claim": "Macro events gate his risk",
+   "playbook_signal": "Scheduled macro events, CPI/FOMC/monthly close (8 messages)",
+   "feature": "hours_to_next_event and hours_since_last_event against a US CPI/FOMC calendar for May-Aug 2026",
+   "test": "Does position count drop and risk_note='half risk' rise in the 24h before an event? Does post-event entry perform better?",
+   "data_needed": "an economic calendar — not in this dataset, you must supply it"
+  },
+  {
+   "id": "H10",
+   "claim": "He enters at the low end of the day's range, never chasing",
+   "playbook_signal": "Buy supports, do not chase pumps (8 messages)",
+   "feature": "range_position = (entry_ref - day_low)/(day_high - day_low) using the UTC day up to signal_time_utc",
+   "test": "Longs should cluster below 0.5. This is one of the easiest claims to falsify and one of the most automatable if true.",
+   "data_needed": "daily and 1h OHLCV"
+  },
+  {
+   "id": "H11",
+   "claim": "His exits leave money on the table in a measurable, systematic way",
+   "playbook_signal": "Discretionary early exit (62 manual closes, 61 wins, 0 losses)",
+   "feature": "MFE_R and MAE_R: maximum favourable and adverse excursion in R units within 24h / 72h / until exit_time_utc",
+   "test": "For each manual close, compute MFE_R after his exit. If MFE_R keeps rising well past his exit, a mechanical trailing stop beats him. Also check MAE_R on his winners — if many dipped below -0.8R before working, his real stop was not honoured and the published stop is not the stop he traded.",
+   "data_needed": "1m or 5m OHLCV for precision, 15m acceptable"
+  },
+  {
+   "id": "H12",
+   "claim": "The 35 unresolved positions were quietly losers",
+   "playbook_signal": "reconciliation gap",
+   "feature": "for each row of unresolved_positions.csv, scan forward from signal_time_utc for the first touch of planned_stop or planned_tp1",
+   "test": "This is the single highest-value cheap fix in the whole dataset. Resolving these turns the 77% reconstructed win rate into a measured one, and directly tests whether the trades that vanish from the channel are disproportionately losses.",
+   "data_needed": "1h OHLCV"
+  },
+  {
+   "id": "H13",
+   "claim": "The DCA tranche is a rescue tool that changes the risk profile",
+   "playbook_signal": "Reserved DCA tranche, graded weak",
+   "feature": "for positions with planned_dca, did price touch the DCA level before the stop or the target? Recompute R with the averaged entry when it did.",
+   "test": "Only 30 of 57 planned DCAs ever filled. Compute the true blended-entry R for those and see whether DCA improves or degrades expectancy, correcting the 68% vs 80% figure with real prices.",
+   "data_needed": "1h OHLCV"
+  },
+  {
+   "id": "H14",
+   "claim": "His edge is a long bias in a rising market, not selection",
+   "playbook_signal": "152 longs vs 47 shorts",
+   "feature": "for each position, the buy-and-hold return of the same symbol over the same holding period",
+   "test": "Compute alpha = his R minus the R a passive hold of that symbol over the same window would have produced at the same stop distance. If alpha is near zero, he is levered beta with good risk control, which is a completely different thing to automate.",
+   "data_needed": "1h OHLCV"
+  },
+  {
+   "id": "H15",
+   "claim": "Something in the data front-runs his published levels",
+   "playbook_signal": "'Front run' (4 messages)",
+   "feature": "price action in the 5-30 minutes after signal_time_utc versus the 30 minutes before",
+   "test": "Do his published limit/DCA levels get touched and reversed more often than a random level at the same distance? A weak claim on 4 mentions, but cheap to test and interesting if true given the channel's size.",
+   "data_needed": "1m OHLCV"
+  },
+  {
+   "id": "H16",
+   "claim": "The entry trigger is not written down anywhere and must be recovered from price action",
+   "playbook_signal": "33% of call messages are the order block and nothing else; only 28% contain anything reason-like; only 39 of 182 calls have a prior view/plan on the same asset within 12h; 168 of 217 positions are entered at CMP",
+   "feature": "Everything you can compute in the 1-4h window before signal_time_utc, ATR-normalised: return over 15m/1h/4h, position in the daily range, distance to the prior daily high/low, distance to the 4h 200 EMA, whether a local low/high was swept and recovered, realised vol vs its own 7d median, BTC's move over the same window, and alt-minus-BTC relative strength",
+   "test": "Supervised classification. Positives: the 173 backtestable signal_time_utc stamps. Negatives: random timestamps on the same symbols, matched on hour-of-day and weekday (his signals cluster 08:00-15:00 UTC and only 20% are weekend, so an unmatched control will make time-of-day look predictive). Fit something interpretable - logistic regression or a shallow tree - and read the coefficients as the trigger he never stated. 62 of 173 are BTC, so either weight or fit per-symbol before pooling.",
+   "holdout": "Check whatever the model finds against the 50 conditional statements in the corpus (events where event_type == 'plan' and the quote contains if/when/wait/close - e.g. msg 33 '4h close above 80.5k and I would...', msg 131 'If BTC doesn't hold here we go 76k...', msg 43 'LTF looks bearish so waiting for entry'). Those are the only places he states a rule in advance, so agreement between them and the fitted model is genuine corroboration.",
+   "data_needed": "15m or 1h OHLCV for the symbol and for BTC"
+  }
+ ],
+ "controls_and_pitfalls": [
+  "Build a matched control set: the same symbols, the same hour-of-day distribution, random dates. Everything looks predictive in a market that fell 28% and then recovered.",
+  "signal_time_utc is when he posted, which is the earliest a follower could act. entry_time_utc is often the same message; where it differs, use signal_time_utc for any tradability test.",
+  "He runs the same idea on several venues at once. Prices in this dataset come from Blofin, MEXC, Bybit, Yubit and Binance cards; expect 0.05-0.3% disagreement with any single OHLCV feed. Use price_observations.csv to measure that offset for your feed before trusting tight comparisons.",
+  "23 of 217 positions carry a data_quality_flag. is_backtestable already excludes the implausible ones; low_confidence_reconstruction is left in, so filter on confidence_rank >= 2 for a stricter run.",
+  "Multiple concurrent positions are common. If you size a portfolio simulation, correlated BTC and alt positions open at the same time are not independent bets.",
+  "9 of 217 positions are gold or oil, not crypto. asset_class separates them."
+ ],
+ "what_is_and_is_not_recorded": {
+  "fully_recorded": "direction, entry price, stop, usually a target and a DCA level (180/200 with a stop, 118 with a target); a conviction grade in his own words on 156 of 217 positions (56 'half risk', 22 risky/gamble, 16 small size)",
+  "partly_recorded": "the reason - 28% of call messages contain anything reason-like, and when present it is directional bias over days, not a trigger",
+  "not_recorded": "the moment. 168 of 217 entries are at CMP, so the price is not the decision, the timing is - and the timing is absent from the text. No chart markup, no indicator values, no watchlist (only 23 of 320 images are charts, most without user drawings).",
+  "implication": "The productive framing is H16: treat his signal times as labels and learn the trigger from price action, rather than testing the handful of signals he happens to name."
+ }
+}

@@ -1,0 +1,981 @@
+{"time_utc":"2026-05-06T23:34:43Z","time_ms":1778110483759,"symbol":"UNIUSDT","observed_price":3.46,"field":"price_ref","event_type":"call","msg":5.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-06T23:34:43Z","time_ms":1778110483759,"symbol":"UNIUSDT","observed_price":3.46,"field":"entry_price","event_type":"call","msg":5.0,"note":"stated entry"}
+{"time_utc":"2026-05-06T23:35:46Z","time_ms":1778110546105,"symbol":"ETHUSDT","observed_price":2348.0,"field":"price_ref","event_type":"call","msg":6.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-06T23:35:46Z","time_ms":1778110546105,"symbol":"ETHUSDT","observed_price":2348.0,"field":"entry_price","event_type":"call","msg":6.0,"note":"stated entry"}
+{"time_utc":"2026-05-07T08:06:57Z","time_ms":1778141217506,"symbol":"BTCUSDT","observed_price":81500.0,"field":"entry_price","event_type":"call","msg":8.0,"note":"stated entry"}
+{"time_utc":"2026-05-07T12:32:55Z","time_ms":1778157175797,"symbol":"ZROUSDT","observed_price":1.48,"field":"entry_price","event_type":"call","msg":11.0,"note":"stated entry"}
+{"time_utc":"2026-05-07T12:32:55Z","time_ms":1778157175797,"symbol":"ZROUSDT","observed_price":1.48,"field":"price_ref","event_type":"call","msg":11.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-07T12:35:12Z","time_ms":1778157312649,"symbol":"ZROUSDT","observed_price":1.486,"field":"entry_price","event_type":"entry","msg":12.0,"note":"stated entry"}
+{"time_utc":"2026-05-07T12:35:12Z","time_ms":1778157312649,"symbol":"ZROUSDT","observed_price":1.486,"field":"price_ref","event_type":"entry","msg":12.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-07T22:40:42Z","time_ms":1778193642827,"symbol":"BTCUSDT","observed_price":79700.0,"field":"entry_price","event_type":"call","msg":17.0,"note":"stated entry"}
+{"time_utc":"2026-05-07T22:40:42Z","time_ms":1778193642827,"symbol":"BTCUSDT","observed_price":79700.0,"field":"price_ref","event_type":"call","msg":17.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-08T03:24:00Z","time_ms":1778210640166,"symbol":"BTCUSDT","observed_price":79590.0,"field":"entry_price","event_type":"dca","msg":19.0,"note":"stated entry"}
+{"time_utc":"2026-05-08T03:24:00Z","time_ms":1778210640166,"symbol":"BTCUSDT","observed_price":79590.0,"field":"price_ref","event_type":"partial_close","msg":19.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-08T03:43:06Z","time_ms":1778211786564,"symbol":"AVNTUSDT","observed_price":0.158,"field":"price_ref","event_type":"call","msg":22.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-08T03:43:06Z","time_ms":1778211786564,"symbol":"AVNTUSDT","observed_price":0.158,"field":"entry_price","event_type":"call","msg":22.0,"note":"stated entry"}
+{"time_utc":"2026-05-08T10:48:41Z","time_ms":1778237321639,"symbol":"BTCUSDT","observed_price":79564.8,"field":"entry_price","event_type":"partial_close","msg":25.0,"note":"stated entry"}
+{"time_utc":"2026-05-08T15:44:20Z","time_ms":1778255060823,"symbol":"UNIUSDT","observed_price":3.46,"field":"entry_price","event_type":"sl_move","msg":26.0,"note":"stated entry"}
+{"time_utc":"2026-05-08T15:47:55Z","time_ms":1778255275357,"symbol":"KERNELUSDT","observed_price":0.064,"field":"entry_price","event_type":"call","msg":27.0,"note":"stated entry"}
+{"time_utc":"2026-05-08T15:48:07Z","time_ms":1778255287983,"symbol":"KERNELUSDT","observed_price":0.064,"field":"price_ref","event_type":"update","msg":28.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-08T16:41:13Z","time_ms":1778258473533,"symbol":"UNIUSDT","observed_price":3.7,"field":"price_ref","event_type":"close","msg":29.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-08T16:41:13Z","time_ms":1778258473533,"symbol":"UNIUSDT","observed_price":4.0,"field":"price_ref","event_type":"view","msg":29.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-08T16:49:28Z","time_ms":1778258968177,"symbol":"SNXUSDT","observed_price":0.354,"field":"price_ref","event_type":"call","msg":31.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-08T16:49:28Z","time_ms":1778258968177,"symbol":"SNXUSDT","observed_price":0.354,"field":"entry_price","event_type":"call","msg":31.0,"note":"stated entry"}
+{"time_utc":"2026-05-08T18:22:35Z","time_ms":1778264555255,"symbol":"BTCUSDT","observed_price":79500.0,"field":"entry_price","event_type":"plan","msg":33.0,"note":"stated entry"}
+{"time_utc":"2026-05-09T01:45:42Z","time_ms":1778291142281,"symbol":"KERNELUSDT","observed_price":0.06615,"field":"price_ref","event_type":"tp_hit","msg":35.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-09T01:45:42Z","time_ms":1778291142281,"symbol":"KERNELUSDT","observed_price":0.06615,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-09T01:45:42Z","time_ms":1778291142281,"symbol":"KERNELUSDT","observed_price":0.06454,"field":"entry_price","event_type":"tp_hit","msg":35.0,"note":"stated entry"}
+{"time_utc":"2026-05-09T01:48:32Z","time_ms":1778291312851,"symbol":"ZROUSDT","observed_price":1.4849,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-09T01:48:32Z","time_ms":1778291312851,"symbol":"AVNTUSDT","observed_price":0.16787,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-09T01:48:32Z","time_ms":1778291312851,"symbol":"SNXUSDT","observed_price":0.3727,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-09T01:48:32Z","time_ms":1778291312851,"symbol":"BTCUSDT","observed_price":80333.9,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-09T01:48:32Z","time_ms":1778291312851,"symbol":"BTCUSDT","observed_price":80333.9,"field":"price_ref","event_type":"update","msg":36.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-09T01:48:32Z","time_ms":1778291312851,"symbol":"AVNTUSDT","observed_price":0.16787,"field":"price_ref","event_type":"update","msg":36.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-09T01:48:32Z","time_ms":1778291312851,"symbol":"AVNTUSDT","observed_price":0.15851,"field":"entry_price","event_type":"update","msg":36.0,"note":"stated entry"}
+{"time_utc":"2026-05-09T01:48:32Z","time_ms":1778291312851,"symbol":"KERNELUSDT","observed_price":0.06615,"field":"price_ref","event_type":"update","msg":36.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-09T01:48:32Z","time_ms":1778291312851,"symbol":"KERNELUSDT","observed_price":0.06454,"field":"entry_price","event_type":"update","msg":36.0,"note":"stated entry"}
+{"time_utc":"2026-05-09T01:48:32Z","time_ms":1778291312851,"symbol":"SNXUSDT","observed_price":0.3545,"field":"entry_price","event_type":"update","msg":36.0,"note":"stated entry"}
+{"time_utc":"2026-05-09T01:48:32Z","time_ms":1778291312851,"symbol":"SNXUSDT","observed_price":0.3727,"field":"price_ref","event_type":"update","msg":36.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-09T01:48:32Z","time_ms":1778291312851,"symbol":"BTCUSDT","observed_price":79764.4,"field":"entry_price","event_type":"update","msg":36.0,"note":"stated entry"}
+{"time_utc":"2026-05-09T01:48:32Z","time_ms":1778291312851,"symbol":"KERNELUSDT","observed_price":0.06615,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-09T01:48:32Z","time_ms":1778291312851,"symbol":"ZROUSDT","observed_price":1.4744,"field":"entry_price","event_type":"update","msg":36.0,"note":"stated entry"}
+{"time_utc":"2026-05-09T01:48:32Z","time_ms":1778291312851,"symbol":"UNIUSDT","observed_price":3.528,"field":"price_ref","event_type":"update","msg":36.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-09T01:48:32Z","time_ms":1778291312851,"symbol":"ZROUSDT","observed_price":1.4849,"field":"price_ref","event_type":"update","msg":36.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-09T01:48:32Z","time_ms":1778291312851,"symbol":"UNIUSDT","observed_price":3.458,"field":"entry_price","event_type":"update","msg":36.0,"note":"stated entry"}
+{"time_utc":"2026-05-09T01:52:10Z","time_ms":1778291530882,"symbol":"SYRUPUSDT","observed_price":0.25328,"field":"entry_price","event_type":"close","msg":38.0,"note":"stated entry"}
+{"time_utc":"2026-05-09T01:52:10Z","time_ms":1778291530882,"symbol":"SYRUPUSDT","observed_price":0.26013,"field":"price_ref","event_type":"close","msg":38.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-09T03:06:56Z","time_ms":1778296016774,"symbol":"BTCUSDT","observed_price":79764.4,"field":"entry_price","event_type":"close","msg":40.0,"note":"stated entry"}
+{"time_utc":"2026-05-09T03:06:56Z","time_ms":1778296016774,"symbol":"BTCUSDT","observed_price":80400.0,"field":"price_ref","event_type":"close","msg":40.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-09T03:54:44Z","time_ms":1778298884699,"symbol":"BTCUSDT","observed_price":79500.0,"field":"entry_price","event_type":"update","msg":41.0,"note":"stated entry"}
+{"time_utc":"2026-05-09T04:10:34Z","time_ms":1778299834450,"symbol":"BTCUSDT","observed_price":80300.0,"field":"entry_price","event_type":"plan","msg":42.0,"note":"stated entry"}
+{"time_utc":"2026-05-09T06:53:50Z","time_ms":1778309630576,"symbol":"BTCUSDT","observed_price":79000.0,"field":"entry_price","event_type":"plan","msg":43.0,"note":"stated entry"}
+{"time_utc":"2026-05-09T08:51:05Z","time_ms":1778316665057,"symbol":"STABLEUSDT","observed_price":0.0346,"field":"price_ref","event_type":"call","msg":44.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-09T08:51:05Z","time_ms":1778316665057,"symbol":"STABLEUSDT","observed_price":0.0346,"field":"entry_price","event_type":"call","msg":44.0,"note":"stated entry"}
+{"time_utc":"2026-05-09T10:58:20Z","time_ms":1778324300982,"symbol":"ETHUSDT","observed_price":2310.0,"field":"price_ref","event_type":"call","msg":45.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-09T10:58:20Z","time_ms":1778324300982,"symbol":"ETHUSDT","observed_price":2310.0,"field":"entry_price","event_type":"call","msg":45.0,"note":"stated entry"}
+{"time_utc":"2026-05-10T15:45:44Z","time_ms":1778427944212,"symbol":"ETHUSDT","observed_price":2340.53,"field":"price_ref","event_type":"close","msg":49.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-10T15:45:44Z","time_ms":1778427944212,"symbol":"ETHUSDT","observed_price":2311.73,"field":"entry_price","event_type":"close","msg":49.0,"note":"stated entry"}
+{"time_utc":"2026-05-10T15:47:56Z","time_ms":1778428076921,"symbol":"ETHUSDT","observed_price":2350.0,"field":"price_ref","event_type":"tp_hit","msg":50.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-10T18:01:23Z","time_ms":1778436083161,"symbol":"AVNTUSDT","observed_price":0.15851,"field":"entry_price","event_type":"partial_close","msg":52.0,"note":"stated entry"}
+{"time_utc":"2026-05-10T18:01:23Z","time_ms":1778436083161,"symbol":"AVNTUSDT","observed_price":0.16709,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-10T18:01:23Z","time_ms":1778436083161,"symbol":"AVNTUSDT","observed_price":0.16709,"field":"price_ref","event_type":"partial_close","msg":52.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-10T19:10:30Z","time_ms":1778440230676,"symbol":"ZROUSDT","observed_price":1.4744,"field":"entry_price","event_type":"partial_close","msg":54.0,"note":"stated entry"}
+{"time_utc":"2026-05-10T19:10:30Z","time_ms":1778440230676,"symbol":"ZROUSDT","observed_price":1.53,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-10T19:10:30Z","time_ms":1778440230676,"symbol":"ZROUSDT","observed_price":1.53,"field":"price_ref","event_type":"partial_close","msg":54.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-10T20:33:31Z","time_ms":1778445211407,"symbol":"SNXUSDT","observed_price":0.3545,"field":"entry_price","event_type":"close","msg":56.0,"note":"stated entry"}
+{"time_utc":"2026-05-10T20:33:31Z","time_ms":1778445211407,"symbol":"SNXUSDT","observed_price":0.3626,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-10T20:33:31Z","time_ms":1778445211407,"symbol":"SNXUSDT","observed_price":0.3626,"field":"price_ref","event_type":"close","msg":56.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-10T21:40:45Z","time_ms":1778449245500,"symbol":"ZROUSDT","observed_price":1.486,"field":"entry_price","event_type":"call","msg":57.0,"note":"stated entry"}
+{"time_utc":"2026-05-10T23:30:48Z","time_ms":1778455848098,"symbol":"BTCUSDT","observed_price":82300.0,"field":"entry_price","event_type":"call","msg":59.0,"note":"stated entry"}
+{"time_utc":"2026-05-10T23:30:48Z","time_ms":1778455848098,"symbol":"BTCUSDT","observed_price":82300.0,"field":"price_ref","event_type":"call","msg":59.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-11T00:58:37Z","time_ms":1778461117677,"symbol":"BTCUSDT","observed_price":82202.8,"field":"entry_price","event_type":"close","msg":61.0,"note":"stated entry"}
+{"time_utc":"2026-05-11T00:58:37Z","time_ms":1778461117677,"symbol":"BTCUSDT","observed_price":81302.9,"field":"price_ref","event_type":"close","msg":61.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-11T00:59:09Z","time_ms":1778461149461,"symbol":"BTCUSDT","observed_price":80000.0,"field":"entry_price","event_type":"plan","msg":62.0,"note":"stated entry"}
+{"time_utc":"2026-05-11T06:12:24Z","time_ms":1778479944480,"symbol":"ZROUSDT","observed_price":1.5369,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-11T06:12:24Z","time_ms":1778479944480,"symbol":"ZROUSDT","observed_price":1.5369,"field":"price_ref","event_type":"partial_close","msg":67.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-11T06:12:24Z","time_ms":1778479944480,"symbol":"ZROUSDT","observed_price":1.4772,"field":"entry_price","event_type":"partial_close","msg":67.0,"note":"stated entry"}
+{"time_utc":"2026-05-11T06:13:29Z","time_ms":1778480009890,"symbol":"BTCUSDT","observed_price":80600.0,"field":"entry_price","event_type":"entry","msg":68.0,"note":"stated entry"}
+{"time_utc":"2026-05-11T06:23:32Z","time_ms":1778480612674,"symbol":"BTCUSDT","observed_price":80900.0,"field":"price_ref","event_type":"call","msg":70.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-11T06:23:32Z","time_ms":1778480612674,"symbol":"BTCUSDT","observed_price":80900.0,"field":"entry_price","event_type":"call","msg":70.0,"note":"stated entry"}
+{"time_utc":"2026-05-11T09:32:58Z","time_ms":1778491978060,"symbol":"ZROUSDT","observed_price":1.5457,"field":"price_ref","event_type":"tp_hit","msg":72.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-11T09:32:58Z","time_ms":1778491978060,"symbol":"ZROUSDT","observed_price":1.4772,"field":"entry_price","event_type":"tp_hit","msg":72.0,"note":"stated entry"}
+{"time_utc":"2026-05-11T09:32:58Z","time_ms":1778491978060,"symbol":"ZROUSDT","observed_price":1.5457,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-11T16:33:50Z","time_ms":1778517230297,"symbol":"BTCUSDT","observed_price":80914.2,"field":"entry_price","event_type":"update","msg":76.0,"note":"stated entry"}
+{"time_utc":"2026-05-11T16:33:50Z","time_ms":1778517230297,"symbol":"BTCUSDT","observed_price":81798.7,"field":"price_ref","event_type":"update","msg":76.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-12T01:30:58Z","time_ms":1778549458575,"symbol":"BTCUSDT","observed_price":81300.0,"field":"entry_price","event_type":"call","msg":79.0,"note":"stated entry"}
+{"time_utc":"2026-05-12T01:50:49Z","time_ms":1778550649078,"symbol":"BTCUSDT","observed_price":81000.0,"field":"entry_price","event_type":"dca","msg":80.0,"note":"stated entry"}
+{"time_utc":"2026-05-12T03:19:25Z","time_ms":1778555965585,"symbol":"STABLEUSDT","observed_price":0.03459,"field":"entry_price","event_type":"tp_set","msg":82.0,"note":"stated entry"}
+{"time_utc":"2026-05-12T03:19:25Z","time_ms":1778555965585,"symbol":"STABLEUSDT","observed_price":0.036652,"field":"price_ref","event_type":"tp_set","msg":82.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-12T03:19:25Z","time_ms":1778555965585,"symbol":"STABLEUSDT","observed_price":0.036652,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-12T03:49:52Z","time_ms":1778557792425,"symbol":"STABLEUSDT","observed_price":0.03737,"field":"price_ref","event_type":"close","msg":83.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-12T03:49:52Z","time_ms":1778557792425,"symbol":"STABLEUSDT","observed_price":0.03459,"field":"entry_price","event_type":"close","msg":83.0,"note":"stated entry"}
+{"time_utc":"2026-05-12T03:51:54Z","time_ms":1778557914783,"symbol":"STABLEUSDT","observed_price":0.037953,"field":"price_ref","event_type":"update","msg":84.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-12T12:01:26Z","time_ms":1778587286656,"symbol":"XRPUSDT","observed_price":1.448,"field":"entry_price","event_type":"call","msg":85.0,"note":"stated entry"}
+{"time_utc":"2026-05-12T12:11:23Z","time_ms":1778587883200,"symbol":"STABLEUSDT","observed_price":0.03886,"field":"price_ref","event_type":"update","msg":86.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-12T12:11:23Z","time_ms":1778587883200,"symbol":"STABLEUSDT","observed_price":0.03886,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-12T12:11:23Z","time_ms":1778587883200,"symbol":"STABLEUSDT","observed_price":0.03453,"field":"entry_price","event_type":"update","msg":86.0,"note":"stated entry"}
+{"time_utc":"2026-05-12T12:11:23Z","time_ms":1778587883200,"symbol":"STABLEUSDT","observed_price":0.03884,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-13T03:14:46Z","time_ms":1778642086257,"symbol":"BTCUSDT","observed_price":81100.0,"field":"price_ref","event_type":"plan","msg":90.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-13T03:41:20Z","time_ms":1778643680884,"symbol":"ETHUSDT","observed_price":2293.0,"field":"entry_price","event_type":"call","msg":91.0,"note":"stated entry"}
+{"time_utc":"2026-05-13T03:41:31Z","time_ms":1778643691733,"symbol":"ETHUSDT","observed_price":2298.0,"field":"price_ref","event_type":"update","msg":92.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-13T04:02:05Z","time_ms":1778644925277,"symbol":"SOLUSDT","observed_price":95.5,"field":"entry_price","event_type":"call","msg":94.0,"note":"stated entry"}
+{"time_utc":"2026-05-13T09:11:15Z","time_ms":1778663475836,"symbol":"SOLUSDT","observed_price":95.7,"field":"price_ref","event_type":"close","msg":96.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-13T09:11:15Z","time_ms":1778663475836,"symbol":"SOLUSDT","observed_price":95.53,"field":"entry_price","event_type":"close","msg":96.0,"note":"stated entry"}
+{"time_utc":"2026-05-13T15:16:30Z","time_ms":1778685390019,"symbol":"BTCUSDT","observed_price":79400.0,"field":"entry_price","event_type":"call","msg":100.0,"note":"stated entry"}
+{"time_utc":"2026-05-14T00:17:11Z","time_ms":1778717831020,"symbol":"SOLUSDT","observed_price":91.25,"field":"entry_price","event_type":"call","msg":103.0,"note":"stated entry"}
+{"time_utc":"2026-05-14T00:18:10Z","time_ms":1778717890571,"symbol":"BBUSDT","observed_price":0.03535,"field":"entry_price","event_type":"call","msg":104.0,"note":"stated entry"}
+{"time_utc":"2026-05-14T07:40:51Z","time_ms":1778744451590,"symbol":"ENSUSDT","observed_price":6.89,"field":"entry_price","event_type":"call","msg":107.0,"note":"stated entry"}
+{"time_utc":"2026-05-14T14:30:30Z","time_ms":1778769030106,"symbol":"BTCUSDT","observed_price":79200.0,"field":"entry_price","event_type":"update","msg":108.0,"note":"stated entry"}
+{"time_utc":"2026-05-14T14:30:30Z","time_ms":1778769030106,"symbol":"SOLUSDT","observed_price":91.46,"field":"price_ref","event_type":"close","msg":108.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-14T14:30:30Z","time_ms":1778769030106,"symbol":"XRPUSDT","observed_price":1.4497,"field":"entry_price","event_type":"close","msg":108.0,"note":"stated entry"}
+{"time_utc":"2026-05-14T14:30:30Z","time_ms":1778769030106,"symbol":"SOLUSDT","observed_price":91.05,"field":"entry_price","event_type":"close","msg":108.0,"note":"stated entry"}
+{"time_utc":"2026-05-14T14:30:30Z","time_ms":1778769030106,"symbol":"XRPUSDT","observed_price":1.4531,"field":"price_ref","event_type":"close","msg":108.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-14T14:38:18Z","time_ms":1778769498813,"symbol":"BTCUSDT","observed_price":80199.5,"field":"price_ref","event_type":"update","msg":109.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-14T14:38:18Z","time_ms":1778769498813,"symbol":"ENSUSDT","observed_price":6.9,"field":"entry_price","event_type":"update","msg":109.0,"note":"stated entry"}
+{"time_utc":"2026-05-14T14:38:18Z","time_ms":1778769498813,"symbol":"BTCUSDT","observed_price":79284.35,"field":"entry_price","event_type":"update","msg":109.0,"note":"stated entry"}
+{"time_utc":"2026-05-14T14:38:18Z","time_ms":1778769498813,"symbol":"ENSUSDT","observed_price":7.107,"field":"price_ref","event_type":"update","msg":109.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-14T14:38:18Z","time_ms":1778769498813,"symbol":"ENSUSDT","observed_price":7.107,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-14T14:38:18Z","time_ms":1778769498813,"symbol":"BTCUSDT","observed_price":80199.5,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-14T14:47:29Z","time_ms":1778770049454,"symbol":"XRPUSDT","observed_price":1.4654,"field":"price_ref","event_type":"update","msg":110.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-14T15:02:51Z","time_ms":1778770971374,"symbol":"BTCUSDT","observed_price":79284.35,"field":"entry_price","event_type":"close","msg":112.0,"note":"stated entry"}
+{"time_utc":"2026-05-14T15:02:51Z","time_ms":1778770971374,"symbol":"BTCUSDT","observed_price":80893.8,"field":"price_ref","event_type":"close","msg":112.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-14T15:03:36Z","time_ms":1778771016963,"symbol":"ENSUSDT","observed_price":7.171,"field":"price_ref","event_type":"partial_close","msg":113.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-14T15:03:36Z","time_ms":1778771016963,"symbol":"ENSUSDT","observed_price":6.9,"field":"entry_price","event_type":"partial_close","msg":113.0,"note":"stated entry"}
+{"time_utc":"2026-05-14T15:03:36Z","time_ms":1778771016963,"symbol":"ENSUSDT","observed_price":7.171,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-14T15:13:38Z","time_ms":1778771618478,"symbol":"BTCUSDT","observed_price":79313.4,"field":"entry_price","event_type":"update","msg":115.0,"note":"stated entry"}
+{"time_utc":"2026-05-14T15:13:38Z","time_ms":1778771618478,"symbol":"BTCUSDT","observed_price":80926.4,"field":"price_ref","event_type":"update","msg":115.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-14T16:03:51Z","time_ms":1778774631715,"symbol":"BBUSDT","observed_price":0.03709,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-14T16:19:52Z","time_ms":1778775592109,"symbol":"ENSUSDT","observed_price":7.135,"field":"price_ref","event_type":"close","msg":120.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-14T16:19:52Z","time_ms":1778775592109,"symbol":"ENSUSDT","observed_price":7.135,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-14T16:19:52Z","time_ms":1778775592109,"symbol":"ENSUSDT","observed_price":6.9,"field":"entry_price","event_type":"close","msg":120.0,"note":"stated entry"}
+{"time_utc":"2026-05-14T17:12:39Z","time_ms":1778778759595,"symbol":"BTCUSDT","observed_price":82000.0,"field":"price_ref","event_type":"view","msg":121.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-14T17:27:12Z","time_ms":1778779632250,"symbol":"BTCUSDT","observed_price":81300.0,"field":"entry_price","event_type":"call","msg":122.0,"note":"stated entry"}
+{"time_utc":"2026-05-14T18:54:01Z","time_ms":1778784841026,"symbol":"XRPUSDT","observed_price":1.5431,"field":"price_ref","event_type":"tp_hit","msg":124.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-14T23:59:36Z","time_ms":1778803176285,"symbol":"HBARUSDT","observed_price":0.0948,"field":"entry_price","event_type":"call","msg":125.0,"note":"stated entry"}
+{"time_utc":"2026-05-15T00:20:30Z","time_ms":1778804430974,"symbol":"BBUSDT","observed_price":0.03538,"field":"entry_price","event_type":"close","msg":127.0,"note":"stated entry"}
+{"time_utc":"2026-05-15T00:20:30Z","time_ms":1778804430974,"symbol":"BBUSDT","observed_price":0.0371,"field":"price_ref","event_type":"close","msg":127.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-15T00:20:30Z","time_ms":1778804430974,"symbol":"BBUSDT","observed_price":0.0371,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-16T01:15:48Z","time_ms":1778894148255,"symbol":"BTCUSDT","observed_price":81300.0,"field":"entry_price","event_type":"stopped_out","msg":128.0,"note":"stated entry"}
+{"time_utc":"2026-05-16T01:15:48Z","time_ms":1778894148255,"symbol":"BTCUSDT","observed_price":82000.0,"field":"price_ref","event_type":"stopped_out","msg":128.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-16T01:23:08Z","time_ms":1778894588444,"symbol":"PARTIUSDT","observed_price":0.0615,"field":"entry_price","event_type":"call","msg":129.0,"note":"stated entry"}
+{"time_utc":"2026-05-16T01:36:09Z","time_ms":1778895369602,"symbol":"BTCUSDT","observed_price":76850.0,"field":"entry_price","event_type":"plan","msg":131.0,"note":"stated entry"}
+{"time_utc":"2026-05-16T01:36:09Z","time_ms":1778895369602,"symbol":"BTCUSDT","observed_price":77700.0,"field":"price_ref","event_type":"view","msg":131.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-16T09:58:40Z","time_ms":1778925520942,"symbol":"ETHUSDT","observed_price":2170.0,"field":"entry_price","event_type":"call","msg":135.0,"note":"stated entry"}
+{"time_utc":"2026-05-16T09:58:40Z","time_ms":1778925520942,"symbol":"BTCUSDT","observed_price":78000.0,"field":"entry_price","event_type":"call","msg":135.0,"note":"stated entry"}
+{"time_utc":"2026-05-16T10:35:54Z","time_ms":1778927754256,"symbol":"ETHUSDT","observed_price":2172.0,"field":"entry_price","event_type":"entry","msg":136.0,"note":"stated entry"}
+{"time_utc":"2026-05-16T16:29:46Z","time_ms":1778948986189,"symbol":"PARTIUSDT","observed_price":0.606,"field":"entry_price","event_type":"update","msg":139.0,"note":"stated entry"}
+{"time_utc":"2026-05-17T10:34:36Z","time_ms":1779014076402,"symbol":"ETHUSDT","observed_price":2194.45,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-17T10:34:36Z","time_ms":1779014076402,"symbol":"ETHUSDT","observed_price":2194.45,"field":"price_ref","event_type":"partial_close","msg":140.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-17T10:34:36Z","time_ms":1779014076402,"symbol":"ETHUSDT","observed_price":2173.61,"field":"entry_price","event_type":"partial_close","msg":140.0,"note":"stated entry"}
+{"time_utc":"2026-05-17T10:37:15Z","time_ms":1779014235008,"symbol":"BTCUSDT","observed_price":78494.9,"field":"price_ref","event_type":"update","msg":141.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-17T10:37:15Z","time_ms":1779014235008,"symbol":"BTCUSDT","observed_price":78494.9,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-17T10:37:15Z","time_ms":1779014235008,"symbol":"BTCUSDT","observed_price":78041.3,"field":"entry_price","event_type":"update","msg":141.0,"note":"stated entry"}
+{"time_utc":"2026-05-18T00:50:36Z","time_ms":1779065436705,"symbol":"BTCUSDT","observed_price":77000.0,"field":"entry_price","event_type":"call","msg":145.0,"note":"stated entry"}
+{"time_utc":"2026-05-18T14:05:56Z","time_ms":1779113156243,"symbol":"BOMEUSDT","observed_price":0.000599,"field":"entry_price","event_type":"call","msg":150.0,"note":"stated entry"}
+{"time_utc":"2026-05-18T14:25:57Z","time_ms":1779114357362,"symbol":"BTCUSDT","observed_price":76700.0,"field":"entry_price","event_type":"dca","msg":152.0,"note":"stated entry"}
+{"time_utc":"2026-05-18T19:14:08Z","time_ms":1779131648295,"symbol":"ZECUSDT","observed_price":544.0,"field":"entry_price","event_type":"call","msg":153.0,"note":"stated entry"}
+{"time_utc":"2026-05-19T01:02:19Z","time_ms":1779152539615,"symbol":"BOMEUSDT","observed_price":0.0005998,"field":"entry_price","event_type":"partial_close","msg":154.0,"note":"stated entry"}
+{"time_utc":"2026-05-19T01:02:19Z","time_ms":1779152539615,"symbol":"BOMEUSDT","observed_price":0.0005998,"field":"entry_price","event_type":"sl_move","msg":154.0,"note":"stated entry"}
+{"time_utc":"2026-05-19T01:02:19Z","time_ms":1779152539615,"symbol":"BOMEUSDT","observed_price":0.0006203,"field":"price_ref","event_type":"partial_close","msg":154.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-19T01:02:19Z","time_ms":1779152539615,"symbol":"BOMEUSDT","observed_price":0.0006203,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-19T01:26:18Z","time_ms":1779153978346,"symbol":"ZECUSDT","observed_price":545.99,"field":"entry_price","event_type":"sl_move","msg":155.0,"note":"stated entry"}
+{"time_utc":"2026-05-19T01:26:18Z","time_ms":1779153978346,"symbol":"ZECUSDT","observed_price":545.99,"field":"entry_price","event_type":"partial_close","msg":155.0,"note":"stated entry"}
+{"time_utc":"2026-05-19T01:26:18Z","time_ms":1779153978346,"symbol":"ZECUSDT","observed_price":572.12,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-19T01:26:18Z","time_ms":1779153978346,"symbol":"ZECUSDT","observed_price":572.12,"field":"price_ref","event_type":"partial_close","msg":155.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-19T07:30:37Z","time_ms":1779175837799,"symbol":"BOMEUSDT","observed_price":0.0005998,"field":"entry_price","event_type":"tp_hit","msg":156.0,"note":"stated entry"}
+{"time_utc":"2026-05-19T07:30:37Z","time_ms":1779175837799,"symbol":"BOMEUSDT","observed_price":0.000643,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-19T07:30:37Z","time_ms":1779175837799,"symbol":"BOMEUSDT","observed_price":0.000643,"field":"price_ref","event_type":"tp_hit","msg":156.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-19T07:48:14Z","time_ms":1779176894757,"symbol":"SUIUSDT","observed_price":1.09,"field":"entry_price","event_type":"call","msg":157.0,"note":"stated entry"}
+{"time_utc":"2026-05-19T18:04:20Z","time_ms":1779213860800,"symbol":"ZECUSDT","observed_price":545.99,"field":"entry_price","event_type":"tp_hit","msg":158.0,"note":"stated entry"}
+{"time_utc":"2026-05-19T18:04:20Z","time_ms":1779213860800,"symbol":"ZECUSDT","observed_price":581.92,"field":"price_ref","event_type":"tp_hit","msg":158.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-20T01:16:21Z","time_ms":1779239781722,"symbol":"BTCUSDT","observed_price":76704.7,"field":"entry_price","event_type":"update","msg":160.0,"note":"stated entry"}
+{"time_utc":"2026-05-20T01:16:21Z","time_ms":1779239781722,"symbol":"BTCUSDT","observed_price":76853.8,"field":"price_ref","event_type":"update","msg":160.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-20T01:16:21Z","time_ms":1779239781722,"symbol":"BTCUSDT","observed_price":76853.8,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-20T05:33:19Z","time_ms":1779255199502,"symbol":"SUIUSDT","observed_price":1.076,"field":"entry_price","event_type":"dca","msg":161.0,"note":"stated entry"}
+{"time_utc":"2026-05-20T06:20:41Z","time_ms":1779258041803,"symbol":"ZECUSDT","observed_price":540.0,"field":"entry_price","event_type":"dca","msg":163.0,"note":"stated entry"}
+{"time_utc":"2026-05-20T06:20:47Z","time_ms":1779258047685,"symbol":"ZECUSDT","observed_price":592.0,"field":"price_ref","event_type":"tp_hit","msg":164.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-20T06:20:54Z","time_ms":1779258054358,"symbol":"ZECUSDT","observed_price":580.25,"field":"entry_price","event_type":"update","msg":165.0,"note":"stated entry"}
+{"time_utc":"2026-05-20T06:20:54Z","time_ms":1779258054358,"symbol":"ZECUSDT","observed_price":591.75,"field":"price_ref","event_type":"update","msg":165.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-20T13:23:21Z","time_ms":1779283401095,"symbol":"BTCUSDT","observed_price":77450.5,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-20T13:23:21Z","time_ms":1779283401095,"symbol":"BTCUSDT","observed_price":76704.7,"field":"entry_price","event_type":"update","msg":167.0,"note":"stated entry"}
+{"time_utc":"2026-05-20T13:23:21Z","time_ms":1779283401095,"symbol":"BTCUSDT","observed_price":77450.5,"field":"price_ref","event_type":"update","msg":167.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-20T17:35:41Z","time_ms":1779298541262,"symbol":"BONKUSDT","observed_price":0.614,"field":"entry_price","event_type":"call","msg":168.0,"note":"stated entry"}
+{"time_utc":"2026-05-21T01:30:48Z","time_ms":1779327048709,"symbol":"BTCUSDT","observed_price":77826.3,"field":"price_ref","event_type":"close","msg":170.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-21T01:30:48Z","time_ms":1779327048709,"symbol":"BTCUSDT","observed_price":76704.7,"field":"entry_price","event_type":"close","msg":170.0,"note":"stated entry"}
+{"time_utc":"2026-05-21T02:03:46Z","time_ms":1779329026308,"symbol":"SUIUSDT","observed_price":1.0738,"field":"entry_price","event_type":"tp_set","msg":171.0,"note":"stated entry"}
+{"time_utc":"2026-05-21T02:03:46Z","time_ms":1779329026308,"symbol":"SUIUSDT","observed_price":1.1127,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-21T02:03:46Z","time_ms":1779329026308,"symbol":"SUIUSDT","observed_price":1.1127,"field":"price_ref","event_type":"tp_set","msg":171.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-21T02:57:24Z","time_ms":1779332244556,"symbol":"SUIUSDT","observed_price":1.14,"field":"price_ref","event_type":"tp_hit","msg":172.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-21T02:57:24Z","time_ms":1779332244556,"symbol":"SUIUSDT","observed_price":1.0738,"field":"entry_price","event_type":"tp_hit","msg":172.0,"note":"stated entry"}
+{"time_utc":"2026-05-21T02:57:39Z","time_ms":1779332259877,"symbol":"SUIUSDT","observed_price":1.1401,"field":"price_ref","event_type":"update","msg":173.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-21T02:57:39Z","time_ms":1779332259877,"symbol":"SUIUSDT","observed_price":1.0481,"field":"entry_price","event_type":"update","msg":173.0,"note":"stated entry"}
+{"time_utc":"2026-05-21T12:31:36Z","time_ms":1779366696898,"symbol":"BTCUSDT","observed_price":77000.0,"field":"entry_price","event_type":"call","msg":177.0,"note":"stated entry"}
+{"time_utc":"2026-05-21T12:31:50Z","time_ms":1779366710455,"symbol":"BTCUSDT","observed_price":77000.0,"field":"price_ref","event_type":"update","msg":178.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-21T17:21:34Z","time_ms":1779384094189,"symbol":"BTCUSDT","observed_price":77065.1,"field":"entry_price","event_type":"update","msg":180.0,"note":"stated entry"}
+{"time_utc":"2026-05-21T17:21:34Z","time_ms":1779384094189,"symbol":"BTCUSDT","observed_price":77854.8,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-21T17:21:34Z","time_ms":1779384094189,"symbol":"BTCUSDT","observed_price":77854.8,"field":"price_ref","event_type":"update","msg":180.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-22T08:51:14Z","time_ms":1779439874018,"symbol":"WLDUSDT","observed_price":0.284,"field":"entry_price","event_type":"call","msg":183.0,"note":"stated entry"}
+{"time_utc":"2026-05-22T09:23:13Z","time_ms":1779441793945,"symbol":"XPLUSDT","observed_price":0.089,"field":"entry_price","event_type":"call","msg":185.0,"note":"stated entry"}
+{"time_utc":"2026-05-22T13:02:49Z","time_ms":1779454969857,"symbol":"BONKUSDT","observed_price":0.006323,"field":"price_ref","event_type":"tp_hit","msg":186.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-22T13:02:49Z","time_ms":1779454969857,"symbol":"BONKUSDT","observed_price":0.006158,"field":"entry_price","event_type":"tp_hit","msg":186.0,"note":"stated entry"}
+{"time_utc":"2026-05-22T13:19:59Z","time_ms":1779455999630,"symbol":"AVAXUSDT","observed_price":9.569,"field":"entry_price","event_type":"call","msg":188.0,"note":"stated entry"}
+{"time_utc":"2026-05-22T13:41:48Z","time_ms":1779457308978,"symbol":"WLDUSDT","observed_price":0.284,"field":"entry_price","event_type":"sl_move","msg":190.0,"note":"stated entry"}
+{"time_utc":"2026-05-22T13:41:48Z","time_ms":1779457308978,"symbol":"WLDUSDT","observed_price":0.2908,"field":"price_ref","event_type":"partial_close","msg":190.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-22T13:41:48Z","time_ms":1779457308978,"symbol":"WLDUSDT","observed_price":0.2908,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-22T13:41:48Z","time_ms":1779457308978,"symbol":"WLDUSDT","observed_price":0.284,"field":"entry_price","event_type":"partial_close","msg":190.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T05:33:37Z","time_ms":1779514417001,"symbol":"BEATUSDT","observed_price":1.286,"field":"entry_price","event_type":"call","msg":194.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T06:21:38Z","time_ms":1779517298222,"symbol":"BEATUSDT","observed_price":1.169,"field":"price_ref","event_type":"partial_close","msg":195.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-23T06:21:38Z","time_ms":1779517298222,"symbol":"BEATUSDT","observed_price":1.2875,"field":"entry_price","event_type":"partial_close","msg":195.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T07:35:06Z","time_ms":1779521706159,"symbol":"JCTUSDT","observed_price":0.004,"field":"entry_price","event_type":"call","msg":197.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T07:35:23Z","time_ms":1779521723171,"symbol":"BTCUSDT","observed_price":74000.0,"field":"entry_price","event_type":"plan","msg":198.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T07:39:06Z","time_ms":1779521946246,"symbol":"BTCUSDT","observed_price":74000.0,"field":"price_ref","event_type":"plan","msg":200.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-23T07:45:52Z","time_ms":1779522352769,"symbol":"HYPEUSDT","observed_price":54.8,"field":"entry_price","event_type":"call","msg":202.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T07:46:50Z","time_ms":1779522410290,"symbol":"HYPEUSDT","observed_price":54.8,"field":"price_ref","event_type":"update","msg":203.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-23T07:52:47Z","time_ms":1779522767687,"symbol":"JCTUSDT","observed_price":0.00387,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-23T07:52:47Z","time_ms":1779522767687,"symbol":"JCTUSDT","observed_price":0.00387,"field":"price_ref","event_type":"partial_close","msg":204.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-23T07:52:47Z","time_ms":1779522767687,"symbol":"JCTUSDT","observed_price":0.004,"field":"entry_price","event_type":"sl_move","msg":204.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T07:52:47Z","time_ms":1779522767687,"symbol":"JCTUSDT","observed_price":0.004,"field":"entry_price","event_type":"partial_close","msg":204.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T07:57:00Z","time_ms":1779523020750,"symbol":"HYPEUSDT","observed_price":55.507,"field":"price_ref","event_type":"update","msg":206.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-23T07:57:00Z","time_ms":1779523020750,"symbol":"HYPEUSDT","observed_price":55.507,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-23T07:57:00Z","time_ms":1779523020750,"symbol":"HYPEUSDT","observed_price":54.991,"field":"entry_price","event_type":"update","msg":206.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T08:13:43Z","time_ms":1779524023744,"symbol":"SUIUSDT","observed_price":1.0,"field":"entry_price","event_type":"call","msg":208.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T13:15:56Z","time_ms":1779542156840,"symbol":"SUIUSDT","observed_price":1.0165,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-23T13:15:56Z","time_ms":1779542156840,"symbol":"SUIUSDT","observed_price":1.0165,"field":"price_ref","event_type":"update","msg":212.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-23T13:15:56Z","time_ms":1779542156840,"symbol":"SUIUSDT","observed_price":1.0014,"field":"entry_price","event_type":"update","msg":212.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T13:48:09Z","time_ms":1779544089852,"symbol":"SUIUSDT","observed_price":1.0,"field":"entry_price","event_type":"update","msg":220.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T14:16:47Z","time_ms":1779545807322,"symbol":"BTCUSDT","observed_price":75159.2,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-23T14:16:47Z","time_ms":1779545807322,"symbol":"BTCUSDT","observed_price":75166.5,"field":"entry_price","event_type":"entry","msg":222.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T14:16:47Z","time_ms":1779545807322,"symbol":"BTCUSDT","observed_price":75159.2,"field":"price_ref","event_type":"entry","msg":222.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-23T14:22:17Z","time_ms":1779546137295,"symbol":"BTCUSDT","observed_price":75100.0,"field":"entry_price","event_type":"call","msg":224.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T15:13:54Z","time_ms":1779549234727,"symbol":"FILUSDT","observed_price":0.955,"field":"entry_price","event_type":"call","msg":227.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T18:18:48Z","time_ms":1779560328951,"symbol":"SUIUSDT","observed_price":1.0014,"field":"entry_price","event_type":"partial_close","msg":232.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T18:18:48Z","time_ms":1779560328951,"symbol":"SUIUSDT","observed_price":1.0539,"field":"price_ref","event_type":"partial_close","msg":232.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-23T18:18:48Z","time_ms":1779560328951,"symbol":"SUIUSDT","observed_price":1.0539,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-23T20:42:34Z","time_ms":1779568954278,"symbol":"FILUSDT","observed_price":0.955,"field":"entry_price","event_type":"tp_hit","msg":234.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T20:42:51Z","time_ms":1779568971332,"symbol":"BTCUSDT","observed_price":75197.2,"field":"entry_price","event_type":"update","msg":235.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T20:42:51Z","time_ms":1779568971332,"symbol":"BTCUSDT","observed_price":76903.8,"field":"price_ref","event_type":"update","msg":235.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-23T20:42:51Z","time_ms":1779568971332,"symbol":"BTCUSDT","observed_price":76903.8,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-23T20:43:25Z","time_ms":1779569005996,"symbol":"SUIUSDT","observed_price":1.0803,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-23T20:43:25Z","time_ms":1779569005996,"symbol":"SUIUSDT","observed_price":1.0014,"field":"entry_price","event_type":"update","msg":236.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T20:43:25Z","time_ms":1779569005996,"symbol":"SUIUSDT","observed_price":1.0803,"field":"price_ref","event_type":"update","msg":236.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-23T20:57:10Z","time_ms":1779569830821,"symbol":"BTCUSDT","observed_price":77072.3,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-23T20:57:10Z","time_ms":1779569830821,"symbol":"BTCUSDT","observed_price":77072.3,"field":"price_ref","event_type":"update","msg":239.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-23T20:57:10Z","time_ms":1779569830821,"symbol":"BTCUSDT","observed_price":75166.5,"field":"entry_price","event_type":"update","msg":239.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T21:01:23Z","time_ms":1779570083556,"symbol":"BTCUSDT","observed_price":75197.2,"field":"entry_price","event_type":"update","msg":240.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T21:01:23Z","time_ms":1779570083556,"symbol":"BTCUSDT","observed_price":77348.4,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-23T21:01:23Z","time_ms":1779570083556,"symbol":"BTCUSDT","observed_price":77348.4,"field":"price_ref","event_type":"update","msg":240.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-23T21:09:16Z","time_ms":1779570556477,"symbol":"SUIUSDT","observed_price":1.0909,"field":"price_ref","event_type":"tp_hit","msg":241.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-23T21:09:16Z","time_ms":1779570556477,"symbol":"SUIUSDT","observed_price":1.0909,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-23T21:09:16Z","time_ms":1779570556477,"symbol":"SUIUSDT","observed_price":1.0006,"field":"entry_price","event_type":"tp_hit","msg":241.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T21:09:23Z","time_ms":1779570563188,"symbol":"SUIUSDT","observed_price":1.089,"field":"price_ref","event_type":"close","msg":242.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-23T21:09:23Z","time_ms":1779570563188,"symbol":"SUIUSDT","observed_price":1.0014,"field":"entry_price","event_type":"close","msg":242.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T21:12:10Z","time_ms":1779570730652,"symbol":"BTCUSDT","observed_price":77036.2,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-23T21:49:01Z","time_ms":1779572941904,"symbol":"BTCUSDT","observed_price":76799.9,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-23T21:49:01Z","time_ms":1779572941904,"symbol":"HYPEUSDT","observed_price":55.061,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-23T21:49:01Z","time_ms":1779572941904,"symbol":"BTCUSDT","observed_price":77032.7,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-23T21:49:01Z","time_ms":1779572941904,"symbol":"SUIUSDT","observed_price":1.0934,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-23T21:49:01Z","time_ms":1779572941904,"symbol":"BTCUSDT","observed_price":77140.7,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-23T23:33:55Z","time_ms":1779579235746,"symbol":"BTCUSDT","observed_price":75197.2,"field":"entry_price","event_type":"close","msg":246.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T23:33:55Z","time_ms":1779579235746,"symbol":"BTCUSDT","observed_price":77000.0,"field":"price_ref","event_type":"partial_close","msg":246.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-23T23:33:55Z","time_ms":1779579235746,"symbol":"BTCUSDT","observed_price":76609.2,"field":"price_ref","event_type":"close","msg":246.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-23T23:33:55Z","time_ms":1779579235746,"symbol":"BTCUSDT","observed_price":75197.2,"field":"entry_price","event_type":"partial_close","msg":246.0,"note":"stated entry"}
+{"time_utc":"2026-05-23T23:34:56Z","time_ms":1779579296497,"symbol":"BTCUSDT","observed_price":76609.2,"field":"price_ref","event_type":"close","msg":247.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-23T23:35:41Z","time_ms":1779579341589,"symbol":"BTCUSDT","observed_price":75700.0,"field":"entry_price","event_type":"plan","msg":248.0,"note":"stated entry"}
+{"time_utc":"2026-05-24T04:56:03Z","time_ms":1779598563021,"symbol":"BTCUSDT","observed_price":76767.0,"field":"price_ref","event_type":"entry","msg":249.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-24T04:56:03Z","time_ms":1779598563021,"symbol":"BTCUSDT","observed_price":76767.0,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-24T04:56:03Z","time_ms":1779598563021,"symbol":"BTCUSDT","observed_price":76754.6,"field":"entry_price","event_type":"entry","msg":249.0,"note":"stated entry"}
+{"time_utc":"2026-05-24T04:57:06Z","time_ms":1779598626967,"symbol":"BTCUSDT","observed_price":76750.0,"field":"entry_price","event_type":"call","msg":250.0,"note":"stated entry"}
+{"time_utc":"2026-05-24T05:03:37Z","time_ms":1779599017837,"symbol":"BTCUSDT","observed_price":78300.0,"field":"price_ref","event_type":"view","msg":253.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-24T12:58:06Z","time_ms":1779627486602,"symbol":"BTCUSDT","observed_price":76754.6,"field":"entry_price","event_type":"update","msg":257.0,"note":"stated entry"}
+{"time_utc":"2026-05-24T12:58:06Z","time_ms":1779627486602,"symbol":"BTCUSDT","observed_price":77060.0,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-24T12:58:06Z","time_ms":1779627486602,"symbol":"BTCUSDT","observed_price":77060.0,"field":"price_ref","event_type":"update","msg":257.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-25T09:08:18Z","time_ms":1779700098369,"symbol":"BTCUSDT","observed_price":77416.5,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-25T09:08:18Z","time_ms":1779700098369,"symbol":"BTCUSDT","observed_price":77416.5,"field":"price_ref","event_type":"update","msg":258.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-25T09:08:18Z","time_ms":1779700098369,"symbol":"BTCUSDT","observed_price":76754.6,"field":"entry_price","event_type":"update","msg":258.0,"note":"stated entry"}
+{"time_utc":"2026-05-25T10:51:28Z","time_ms":1779706288492,"symbol":"WLDUSDT","observed_price":0.302,"field":"entry_price","event_type":"entry","msg":260.0,"note":"stated entry"}
+{"time_utc":"2026-05-25T17:49:52Z","time_ms":1779731392060,"symbol":"WLDUSDT","observed_price":0.3117,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-25T17:49:52Z","time_ms":1779731392060,"symbol":"WLDUSDT","observed_price":0.3117,"field":"price_ref","event_type":"partial_close","msg":262.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-25T17:49:52Z","time_ms":1779731392060,"symbol":"WLDUSDT","observed_price":0.3023,"field":"entry_price","event_type":"partial_close","msg":262.0,"note":"stated entry"}
+{"time_utc":"2026-05-25T18:35:21Z","time_ms":1779734121520,"symbol":"WLDUSDT","observed_price":0.3191,"field":"price_ref","event_type":"close","msg":265.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-25T18:35:21Z","time_ms":1779734121520,"symbol":"WLDUSDT","observed_price":0.3023,"field":"entry_price","event_type":"close","msg":265.0,"note":"stated entry"}
+{"time_utc":"2026-05-25T19:14:51Z","time_ms":1779736491601,"symbol":"WLDUSDT","observed_price":0.3321,"field":"price_ref","event_type":"update","msg":266.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-26T05:42:49Z","time_ms":1779774169537,"symbol":"TAOUSDT","observed_price":287.0,"field":"entry_price","event_type":"call","msg":268.0,"note":"stated entry"}
+{"time_utc":"2026-05-26T07:46:30Z","time_ms":1779781590466,"symbol":"RENDERUSDT","observed_price":2.33,"field":"entry_price","event_type":"call","msg":270.0,"note":"stated entry"}
+{"time_utc":"2026-05-26T10:49:37Z","time_ms":1779792577617,"symbol":"RENDERUSDT","observed_price":2.333,"field":"entry_price","event_type":"partial_close","msg":273.0,"note":"stated entry"}
+{"time_utc":"2026-05-26T10:49:37Z","time_ms":1779792577617,"symbol":"RENDERUSDT","observed_price":2.416,"field":"price_ref","event_type":"partial_close","msg":273.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-26T10:49:37Z","time_ms":1779792577617,"symbol":"RENDERUSDT","observed_price":2.416,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-26T14:32:51Z","time_ms":1779805971858,"symbol":"BTCUSDT","observed_price":77906.3,"field":"price_ref","event_type":"close","msg":276.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-26T14:32:51Z","time_ms":1779805971858,"symbol":"BTCUSDT","observed_price":76754.6,"field":"entry_price","event_type":"close","msg":276.0,"note":"stated entry"}
+{"time_utc":"2026-05-26T14:34:08Z","time_ms":1779806048348,"symbol":"BTCUSDT","observed_price":78012.9,"field":"price_ref","event_type":"tp_hit","msg":277.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-26T14:34:08Z","time_ms":1779806048348,"symbol":"BTCUSDT","observed_price":76754.6,"field":"entry_price","event_type":"tp_hit","msg":277.0,"note":"stated entry"}
+{"time_utc":"2026-05-26T14:45:39Z","time_ms":1779806739494,"symbol":"BTCUSDT","observed_price":78012.9,"field":"price_ref","event_type":"close","msg":279.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-26T14:46:05Z","time_ms":1779806765195,"symbol":"BTCUSDT","observed_price":78049.1,"field":"price_ref","event_type":"update","msg":280.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-27T00:18:30Z","time_ms":1779841110582,"symbol":"BTCUSDT","observed_price":75900.0,"field":"entry_price","event_type":"call","msg":281.0,"note":"stated entry"}
+{"time_utc":"2026-05-27T00:24:59Z","time_ms":1779841499725,"symbol":"BTCUSDT","observed_price":75900.0,"field":"entry_price","event_type":"call","msg":283.0,"note":"stated entry"}
+{"time_utc":"2026-05-27T06:51:56Z","time_ms":1779864716953,"symbol":"TAOUSDT","observed_price":276.92,"field":"price_ref","event_type":"dca","msg":286.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-27T06:51:56Z","time_ms":1779864716953,"symbol":"TAOUSDT","observed_price":276.92,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-27T06:51:56Z","time_ms":1779864716953,"symbol":"TAOUSDT","observed_price":276.63,"field":"entry_price","event_type":"dca","msg":286.0,"note":"stated entry"}
+{"time_utc":"2026-05-27T15:41:39Z","time_ms":1779896499851,"symbol":"TAOUSDT","observed_price":280.0,"field":"price_ref","event_type":"partial_close","msg":287.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-27T15:41:39Z","time_ms":1779896499851,"symbol":"TAOUSDT","observed_price":276.63,"field":"entry_price","event_type":"partial_close","msg":287.0,"note":"stated entry"}
+{"time_utc":"2026-05-28T04:44:12Z","time_ms":1779943452553,"symbol":"BTCUSDT","observed_price":73000.0,"field":"entry_price","event_type":"call","msg":291.0,"note":"stated entry"}
+{"time_utc":"2026-05-28T14:16:30Z","time_ms":1779977790429,"symbol":"BTCUSDT","observed_price":75000.0,"field":"price_ref","event_type":"view","msg":294.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-28T17:23:18Z","time_ms":1779988998070,"symbol":"ADAUSDT","observed_price":0.234,"field":"entry_price","event_type":"call","msg":297.0,"note":"stated entry"}
+{"time_utc":"2026-05-28T17:49:03Z","time_ms":1779990543798,"symbol":"ETHUSDT","observed_price":2021.86,"field":"price_ref","event_type":"entry","msg":298.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-28T17:49:03Z","time_ms":1779990543798,"symbol":"ETHUSDT","observed_price":2021.86,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-28T17:49:03Z","time_ms":1779990543798,"symbol":"ETHUSDT","observed_price":1988.23,"field":"entry_price","event_type":"entry","msg":298.0,"note":"stated entry"}
+{"time_utc":"2026-05-29T02:49:14Z","time_ms":1780022954964,"symbol":"ETHUSDT","observed_price":1988.23,"field":"entry_price","event_type":"sl_move","msg":300.0,"note":"stated entry"}
+{"time_utc":"2026-05-29T09:40:35Z","time_ms":1780047635711,"symbol":"ETHUSDT","observed_price":1988.23,"field":"entry_price","event_type":"partial_close","msg":302.0,"note":"stated entry"}
+{"time_utc":"2026-05-29T09:40:35Z","time_ms":1780047635711,"symbol":"ETHUSDT","observed_price":2015.08,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-29T09:40:35Z","time_ms":1780047635711,"symbol":"ETHUSDT","observed_price":2015.08,"field":"price_ref","event_type":"partial_close","msg":302.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-29T15:35:56Z","time_ms":1780068956986,"symbol":"BTCUSDT","observed_price":74036.0,"field":"price_ref","event_type":"update","msg":303.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-29T15:35:56Z","time_ms":1780068956986,"symbol":"BTCUSDT","observed_price":74036.0,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-05-29T15:35:56Z","time_ms":1780068956986,"symbol":"BTCUSDT","observed_price":73141.2,"field":"entry_price","event_type":"update","msg":303.0,"note":"stated entry"}
+{"time_utc":"2026-05-29T16:10:23Z","time_ms":1780071023109,"symbol":"NEARUSDT","observed_price":2.56,"field":"entry_price","event_type":"call","msg":304.0,"note":"stated entry"}
+{"time_utc":"2026-05-29T16:11:27Z","time_ms":1780071087808,"symbol":"NEARUSDT","observed_price":2.603,"field":"price_ref","event_type":"update","msg":305.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-29T16:11:27Z","time_ms":1780071087808,"symbol":"NEARUSDT","observed_price":2.565,"field":"entry_price","event_type":"update","msg":305.0,"note":"stated entry"}
+{"time_utc":"2026-05-29T19:15:55Z","time_ms":1780082155018,"symbol":"BTCUSDT","observed_price":74200.0,"field":"price_ref","event_type":"partial_close","msg":306.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-30T05:32:55Z","time_ms":1780119175230,"symbol":"ADAUSDT","observed_price":0.2385,"field":"price_ref","event_type":"tp_hit","msg":307.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-05-30T05:32:55Z","time_ms":1780119175230,"symbol":"ADAUSDT","observed_price":0.2343,"field":"entry_price","event_type":"tp_hit","msg":307.0,"note":"stated entry"}
+{"time_utc":"2026-05-30T05:46:54Z","time_ms":1780120014026,"symbol":"XPLUSDT","observed_price":0.0916,"field":"entry_price","event_type":"call","msg":308.0,"note":"stated entry"}
+{"time_utc":"2026-05-31T12:24:11Z","time_ms":1780230251767,"symbol":"SOLUSDT","observed_price":82.69,"field":"entry_price","event_type":"call","msg":310.0,"note":"stated entry"}
+{"time_utc":"2026-06-01T13:57:12Z","time_ms":1780322232766,"symbol":"RAYUSDT","observed_price":0.697,"field":"entry_price","event_type":"call","msg":314.0,"note":"stated entry"}
+{"time_utc":"2026-06-01T14:50:57Z","time_ms":1780325457941,"symbol":"BNBUSDT","observed_price":680.0,"field":"entry_price","event_type":"call","msg":317.0,"note":"stated entry"}
+{"time_utc":"2026-06-01T17:37:01Z","time_ms":1780335421026,"symbol":"BTCUSDT","observed_price":71500.0,"field":"entry_price","event_type":"call","msg":321.0,"note":"stated entry"}
+{"time_utc":"2026-06-01T18:12:12Z","time_ms":1780337532634,"symbol":"BTCUSDT","observed_price":71551.3,"field":"price_ref","event_type":"close","msg":322.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-01T18:12:12Z","time_ms":1780337532634,"symbol":"BTCUSDT","observed_price":71514.9,"field":"entry_price","event_type":"close","msg":322.0,"note":"stated entry"}
+{"time_utc":"2026-06-01T18:18:51Z","time_ms":1780337931885,"symbol":"RAYUSDT","observed_price":0.7005,"field":"entry_price","event_type":"close","msg":323.0,"note":"stated entry"}
+{"time_utc":"2026-06-01T18:18:51Z","time_ms":1780337931885,"symbol":"RAYUSDT","observed_price":0.7128,"field":"price_ref","event_type":"close","msg":323.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-01T18:18:51Z","time_ms":1780337931885,"symbol":"RAYUSDT","observed_price":0.7128,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-01T18:21:53Z","time_ms":1780338113155,"symbol":"RAYUSDT","observed_price":0.69,"field":"price_ref","event_type":"update","msg":324.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-01T19:21:47Z","time_ms":1780341707490,"symbol":"BNBUSDT","observed_price":693.96,"field":"price_ref","event_type":"update","msg":325.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-01T19:21:47Z","time_ms":1780341707490,"symbol":"BNBUSDT","observed_price":693.96,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-01T19:21:47Z","time_ms":1780341707490,"symbol":"BNBUSDT","observed_price":676.49,"field":"entry_price","event_type":"update","msg":325.0,"note":"stated entry"}
+{"time_utc":"2026-06-01T20:24:24Z","time_ms":1780345464207,"symbol":"BNBUSDT","observed_price":701.97,"field":"price_ref","event_type":"partial_close","msg":326.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-01T20:24:24Z","time_ms":1780345464207,"symbol":"BNBUSDT","observed_price":676.49,"field":"entry_price","event_type":"partial_close","msg":326.0,"note":"stated entry"}
+{"time_utc":"2026-06-01T20:24:24Z","time_ms":1780345464207,"symbol":"BNBUSDT","observed_price":701.97,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-02T04:06:26Z","time_ms":1780373186060,"symbol":"XPLUSDT","observed_price":0.0958,"field":"price_ref","event_type":"tp_hit","msg":327.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-02T04:06:26Z","time_ms":1780373186060,"symbol":"XPLUSDT","observed_price":0.0918,"field":"entry_price","event_type":"tp_hit","msg":327.0,"note":"stated entry"}
+{"time_utc":"2026-06-02T05:31:10Z","time_ms":1780378270448,"symbol":"FETUSDT","observed_price":0.276,"field":"entry_price","event_type":"call","msg":328.0,"note":"stated entry"}
+{"time_utc":"2026-06-02T08:51:30Z","time_ms":1780390290970,"symbol":"BTCUSDT","observed_price":69446.0,"field":"entry_price","event_type":"plan","msg":329.0,"note":"stated entry"}
+{"time_utc":"2026-06-02T10:04:58Z","time_ms":1780394698304,"symbol":"BTCUSDT","observed_price":69300.0,"field":"entry_price","event_type":"call","msg":331.0,"note":"stated entry"}
+{"time_utc":"2026-06-02T10:08:07Z","time_ms":1780394887757,"symbol":"BTCUSDT","observed_price":69400.0,"field":"entry_price","event_type":"entry","msg":332.0,"note":"stated entry"}
+{"time_utc":"2026-06-02T14:35:43Z","time_ms":1780410943762,"symbol":"SEIUSDT","observed_price":0.067,"field":"entry_price","event_type":"call","msg":333.0,"note":"stated entry"}
+{"time_utc":"2026-06-02T20:06:42Z","time_ms":1780430802530,"symbol":"NEARUSDT","observed_price":2.64,"field":"entry_price","event_type":"call","msg":339.0,"note":"stated entry"}
+{"time_utc":"2026-06-02T20:06:42Z","time_ms":1780430802530,"symbol":"NEARUSDT","observed_price":2.64,"field":"price_ref","event_type":"call","msg":339.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-03T06:11:21Z","time_ms":1780467081547,"symbol":"NEARUSDT","observed_price":2.845,"field":"price_ref","event_type":"partial_close","msg":342.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-03T06:11:21Z","time_ms":1780467081547,"symbol":"NEARUSDT","observed_price":2.643,"field":"entry_price","event_type":"partial_close","msg":342.0,"note":"stated entry"}
+{"time_utc":"2026-06-03T06:11:21Z","time_ms":1780467081547,"symbol":"NEARUSDT","observed_price":2.845,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-03T06:39:45Z","time_ms":1780468785709,"symbol":"BTCUSDT","observed_price":67300.0,"field":"entry_price","event_type":"call","msg":343.0,"note":"stated entry"}
+{"time_utc":"2026-06-03T10:55:38Z","time_ms":1780484138967,"symbol":"NEARUSDT","observed_price":2.897,"field":"price_ref","event_type":"close","msg":347.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-03T10:55:38Z","time_ms":1780484138967,"symbol":"NEARUSDT","observed_price":2.643,"field":"entry_price","event_type":"close","msg":347.0,"note":"stated entry"}
+{"time_utc":"2026-06-03T11:15:43Z","time_ms":1780485343556,"symbol":"DEXEUSDT","observed_price":21.53,"field":"entry_price","event_type":"call","msg":350.0,"note":"stated entry"}
+{"time_utc":"2026-06-03T12:59:26Z","time_ms":1780491566618,"symbol":"GOLD","observed_price":4474.0,"field":"entry_price","event_type":"call","msg":351.0,"note":"stated entry"}
+{"time_utc":"2026-06-03T14:22:07Z","time_ms":1780496527759,"symbol":"GOLD","observed_price":4452.0,"field":"entry_price","event_type":"call","msg":353.0,"note":"stated entry"}
+{"time_utc":"2026-06-03T15:11:49Z","time_ms":1780499509927,"symbol":"DEXEUSDT","observed_price":19.54,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-03T15:11:49Z","time_ms":1780499509927,"symbol":"DEXEUSDT","observed_price":19.54,"field":"price_ref","event_type":"partial_close","msg":354.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-03T15:11:49Z","time_ms":1780499509927,"symbol":"DEXEUSDT","observed_price":21.506,"field":"entry_price","event_type":"partial_close","msg":354.0,"note":"stated entry"}
+{"time_utc":"2026-06-03T16:06:17Z","time_ms":1780502777582,"symbol":"DEXEUSDT","observed_price":21.506,"field":"entry_price","event_type":"tp_move","msg":355.0,"note":"stated entry"}
+{"time_utc":"2026-06-03T16:06:17Z","time_ms":1780502777582,"symbol":"DEXEUSDT","observed_price":18.618,"field":"price_ref","event_type":"tp_move","msg":355.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-03T16:06:17Z","time_ms":1780502777582,"symbol":"DEXEUSDT","observed_price":18.618,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-03T16:47:24Z","time_ms":1780505244549,"symbol":"DEXEUSDT","observed_price":18.53,"field":"price_ref","event_type":"close","msg":356.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-03T16:47:24Z","time_ms":1780505244549,"symbol":"DEXEUSDT","observed_price":21.506,"field":"entry_price","event_type":"close","msg":356.0,"note":"stated entry"}
+{"time_utc":"2026-06-03T16:55:00Z","time_ms":1780505700481,"symbol":"GOLD","observed_price":4452.0,"field":"entry_price","event_type":"sl_move","msg":358.0,"note":"stated entry"}
+{"time_utc":"2026-06-03T17:41:29Z","time_ms":1780508489017,"symbol":"DEXEUSDT","observed_price":17.464,"field":"price_ref","event_type":"tp_hit","msg":360.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-03T18:05:13Z","time_ms":1780509913223,"symbol":"PHAUSDT","observed_price":0.038,"field":"entry_price","event_type":"call","msg":361.0,"note":"stated entry"}
+{"time_utc":"2026-06-03T19:05:38Z","time_ms":1780513538818,"symbol":"PHAUSDT","observed_price":0.04,"field":"price_ref","event_type":"partial_close","msg":362.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-04T01:33:47Z","time_ms":1780536827931,"symbol":"BTCUSDT","observed_price":62800.0,"field":"entry_price","event_type":"entry","msg":369.0,"note":"stated entry"}
+{"time_utc":"2026-06-04T05:52:37Z","time_ms":1780552357168,"symbol":"BTCUSDT","observed_price":64082.2,"field":"price_ref","event_type":"close","msg":370.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-04T05:52:37Z","time_ms":1780552357168,"symbol":"BTCUSDT","observed_price":63094.1,"field":"entry_price","event_type":"close","msg":370.0,"note":"stated entry"}
+{"time_utc":"2026-06-04T10:22:03Z","time_ms":1780568523569,"symbol":"BTCUSDT","observed_price":62800.0,"field":"entry_price","event_type":"entry","msg":371.0,"note":"stated entry"}
+{"time_utc":"2026-06-04T10:24:16Z","time_ms":1780568656168,"symbol":"BTCUSDT","observed_price":62800.0,"field":"entry_price","event_type":"call","msg":374.0,"note":"stated entry"}
+{"time_utc":"2026-06-04T11:43:21Z","time_ms":1780573401074,"symbol":"BTCUSDT","observed_price":62700.0,"field":"entry_price","event_type":"dca","msg":375.0,"note":"stated entry"}
+{"time_utc":"2026-06-04T12:33:44Z","time_ms":1780576424900,"symbol":"BTCUSDT","observed_price":63600.0,"field":"price_ref","event_type":"close","msg":376.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-04T12:54:49Z","time_ms":1780577689419,"symbol":"BTCUSDT","observed_price":63567.7,"field":"price_ref","event_type":"update","msg":377.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-04T12:54:49Z","time_ms":1780577689419,"symbol":"BTCUSDT","observed_price":62711.2,"field":"entry_price","event_type":"update","msg":377.0,"note":"stated entry"}
+{"time_utc":"2026-06-05T03:54:21Z","time_ms":1780631661292,"symbol":"DEXEUSDT","observed_price":20.63,"field":"entry_price","event_type":"call","msg":378.0,"note":"stated entry"}
+{"time_utc":"2026-06-05T08:56:04Z","time_ms":1780649764007,"symbol":"BTCUSDT","observed_price":62300.0,"field":"entry_price","event_type":"call","msg":380.0,"note":"stated entry"}
+{"time_utc":"2026-06-05T16:24:30Z","time_ms":1780676670055,"symbol":"BTCUSDT","observed_price":62300.0,"field":"entry_price","event_type":"dca","msg":382.0,"note":"stated entry"}
+{"time_utc":"2026-06-06T08:48:44Z","time_ms":1780735724240,"symbol":"DEXEUSDT","observed_price":20.63,"field":"entry_price","event_type":"sl_move","msg":383.0,"note":"stated entry"}
+{"time_utc":"2026-06-06T09:10:39Z","time_ms":1780737039006,"symbol":"BTCUSDT","observed_price":61000.0,"field":"entry_price","event_type":"plan","msg":384.0,"note":"stated entry"}
+{"time_utc":"2026-06-06T09:10:39Z","time_ms":1780737039006,"symbol":"ETHUSDT","observed_price":1578.0,"field":"entry_price","event_type":"plan","msg":384.0,"note":"stated entry"}
+{"time_utc":"2026-06-06T09:10:39Z","time_ms":1780737039006,"symbol":"SOLUSDT","observed_price":63.0,"field":"entry_price","event_type":"plan","msg":384.0,"note":"stated entry"}
+{"time_utc":"2026-06-07T22:22:14Z","time_ms":1780870934200,"symbol":"BTCUSDT","observed_price":64100.0,"field":"price_ref","event_type":"close","msg":387.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-07T22:24:15Z","time_ms":1780871055820,"symbol":"BTCUSDT","observed_price":64000.0,"field":"price_ref","event_type":"update","msg":388.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-08T02:39:15Z","time_ms":1780886355290,"symbol":"DEXEUSDT","observed_price":20.382,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-08T02:39:15Z","time_ms":1780886355290,"symbol":"DEXEUSDT","observed_price":20.382,"field":"price_ref","event_type":"update","msg":389.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-08T11:06:00Z","time_ms":1780916760298,"symbol":"BTCUSDT","observed_price":63123.0,"field":"entry_price","event_type":"call","msg":390.0,"note":"stated entry"}
+{"time_utc":"2026-06-09T00:22:25Z","time_ms":1780964545759,"symbol":"GOLD","observed_price":4325.0,"field":"entry_price","event_type":"call","msg":393.0,"note":"stated entry"}
+{"time_utc":"2026-06-09T05:08:31Z","time_ms":1780981711511,"symbol":"BEATUSDT","observed_price":4.25,"field":"entry_price","event_type":"call","msg":397.0,"note":"stated entry"}
+{"time_utc":"2026-06-09T08:14:10Z","time_ms":1780992850169,"symbol":"BEATUSDT","observed_price":3.7131,"field":"price_ref","event_type":"update","msg":399.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-09T08:14:10Z","time_ms":1780992850169,"symbol":"BEATUSDT","observed_price":4.2,"field":"entry_price","event_type":"update","msg":399.0,"note":"stated entry"}
+{"time_utc":"2026-06-09T08:14:10Z","time_ms":1780992850169,"symbol":"BEATUSDT","observed_price":3.7131,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-09T10:54:22Z","time_ms":1781002462957,"symbol":"BTCUSDT","observed_price":62600.0,"field":"price_ref","event_type":"close","msg":400.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-09T12:01:13Z","time_ms":1781006473109,"symbol":"GOLD","observed_price":4340.0,"field":"entry_price","event_type":"call","msg":404.0,"note":"stated entry"}
+{"time_utc":"2026-06-09T13:50:29Z","time_ms":1781013029123,"symbol":"GOLD","observed_price":4361.07,"field":"price_ref","event_type":"update","msg":411.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-09T14:31:10Z","time_ms":1781015470513,"symbol":"BTCUSDT","observed_price":61400.0,"field":"entry_price","event_type":"call","msg":413.0,"note":"stated entry"}
+{"time_utc":"2026-06-09T16:55:34Z","time_ms":1781024134060,"symbol":"BEATUSDT","observed_price":4.7,"field":"entry_price","event_type":"call","msg":416.0,"note":"stated entry"}
+{"time_utc":"2026-06-09T16:55:40Z","time_ms":1781024140008,"symbol":"BEATUSDT","observed_price":4.7,"field":"entry_price","event_type":"update","msg":417.0,"note":"stated entry"}
+{"time_utc":"2026-06-09T23:42:36Z","time_ms":1781048556336,"symbol":"BTCUSDT","observed_price":61600.0,"field":"price_ref","event_type":"close","msg":423.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-10T08:21:57Z","time_ms":1781079717993,"symbol":"ALLOUSDT","observed_price":0.425,"field":"entry_price","event_type":"call","msg":425.0,"note":"stated entry"}
+{"time_utc":"2026-06-10T08:49:46Z","time_ms":1781081386221,"symbol":"BTCUSDT","observed_price":61100.0,"field":"entry_price","event_type":"call","msg":427.0,"note":"stated entry"}
+{"time_utc":"2026-06-10T13:31:11Z","time_ms":1781098271953,"symbol":"INJUSDT","observed_price":5.14,"field":"entry_price","event_type":"call","msg":430.0,"note":"stated entry"}
+{"time_utc":"2026-06-10T13:31:17Z","time_ms":1781098277598,"symbol":"INJUSDT","observed_price":5.14,"field":"price_ref","event_type":"update","msg":431.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-10T13:33:14Z","time_ms":1781098394852,"symbol":"WLDUSDT","observed_price":0.515,"field":"entry_price","event_type":"call","msg":432.0,"note":"stated entry"}
+{"time_utc":"2026-06-10T15:42:30Z","time_ms":1781106150799,"symbol":"WLDUSDT","observed_price":0.49,"field":"entry_price","event_type":"dca","msg":436.0,"note":"stated entry"}
+{"time_utc":"2026-06-10T15:53:52Z","time_ms":1781106832932,"symbol":"WLDUSDT","observed_price":0.484,"field":"entry_price","event_type":"dca","msg":437.0,"note":"stated entry"}
+{"time_utc":"2026-06-10T15:56:57Z","time_ms":1781107017907,"symbol":"BTCUSDT","observed_price":62700.0,"field":"price_ref","event_type":"close","msg":438.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-10T16:03:48Z","time_ms":1781107428947,"symbol":"BTCUSDT","observed_price":61100.0,"field":"entry_price","event_type":"update","msg":439.0,"note":"stated entry"}
+{"time_utc":"2026-06-10T16:03:48Z","time_ms":1781107428947,"symbol":"BTCUSDT","observed_price":63200.0,"field":"entry_price","event_type":"plan","msg":439.0,"note":"stated entry"}
+{"time_utc":"2026-06-10T16:03:48Z","time_ms":1781107428947,"symbol":"BTCUSDT","observed_price":62668.4,"field":"price_ref","event_type":"update","msg":439.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-10T17:04:13Z","time_ms":1781111053598,"symbol":"BTCUSDT","observed_price":62200.0,"field":"entry_price","event_type":"call","msg":441.0,"note":"stated entry"}
+{"time_utc":"2026-06-11T00:10:39Z","time_ms":1781136639202,"symbol":"SOLUSDT","observed_price":63.2,"field":"entry_price","event_type":"call","msg":444.0,"note":"stated entry"}
+{"time_utc":"2026-06-11T04:01:21Z","time_ms":1781150481503,"symbol":"INJUSDT","observed_price":5.3,"field":"price_ref","event_type":"partial_close","msg":448.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-11T04:02:15Z","time_ms":1781150535183,"symbol":"BTCUSDT","observed_price":62900.0,"field":"price_ref","event_type":"update","msg":449.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-11T08:37:06Z","time_ms":1781167026361,"symbol":"INJUSDT","observed_price":5.28,"field":"price_ref","event_type":"close","msg":452.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-11T08:40:04Z","time_ms":1781167204682,"symbol":"BTCUSDT","observed_price":62946.0,"field":"price_ref","event_type":"tp_hit","msg":453.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-11T12:59:59Z","time_ms":1781182799692,"symbol":"BTCUSDT","observed_price":62200.0,"field":"entry_price","event_type":"update","msg":457.0,"note":"stated entry"}
+{"time_utc":"2026-06-11T13:00:57Z","time_ms":1781182857344,"symbol":"BTCUSDT","observed_price":62800.0,"field":"price_ref","event_type":"plan","msg":458.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-11T13:00:57Z","time_ms":1781182857344,"symbol":"BTCUSDT","observed_price":62800.0,"field":"entry_price","event_type":"plan","msg":458.0,"note":"stated entry"}
+{"time_utc":"2026-06-11T17:54:33Z","time_ms":1781200473834,"symbol":"SOLUSDT","observed_price":66.97,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-11T17:54:33Z","time_ms":1781200473834,"symbol":"SOLUSDT","observed_price":63.3,"field":"entry_price","event_type":"sl_move","msg":460.0,"note":"stated entry"}
+{"time_utc":"2026-06-11T17:54:33Z","time_ms":1781200473834,"symbol":"SOLUSDT","observed_price":63.3,"field":"entry_price","event_type":"update","msg":460.0,"note":"stated entry"}
+{"time_utc":"2026-06-11T17:54:33Z","time_ms":1781200473834,"symbol":"SOLUSDT","observed_price":66.97,"field":"price_ref","event_type":"update","msg":460.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-11T19:38:19Z","time_ms":1781206699326,"symbol":"BTCUSDT","observed_price":63800.0,"field":"price_ref","event_type":"plan","msg":463.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-11T19:38:19Z","time_ms":1781206699326,"symbol":"BTCUSDT","observed_price":63800.0,"field":"price_ref","event_type":"close","msg":463.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-11T19:42:56Z","time_ms":1781206976283,"symbol":"SOLUSDT","observed_price":67.24,"field":"price_ref","event_type":"close","msg":465.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-11T19:42:56Z","time_ms":1781206976283,"symbol":"SOLUSDT","observed_price":63.3,"field":"entry_price","event_type":"close","msg":465.0,"note":"stated entry"}
+{"time_utc":"2026-06-12T08:54:07Z","time_ms":1781254447442,"symbol":"BTCUSDT","observed_price":63400.0,"field":"entry_price","event_type":"call","msg":467.0,"note":"stated entry"}
+{"time_utc":"2026-06-12T15:33:06Z","time_ms":1781278386567,"symbol":"BTCUSDT","observed_price":63000.0,"field":"entry_price","event_type":"plan","msg":470.0,"note":"stated entry"}
+{"time_utc":"2026-06-12T15:33:06Z","time_ms":1781278386567,"symbol":"BTCUSDT","observed_price":66000.0,"field":"entry_price","event_type":"plan","msg":470.0,"note":"stated entry"}
+{"time_utc":"2026-06-13T00:24:26Z","time_ms":1781310266646,"symbol":"BTCUSDT","observed_price":63500.0,"field":"entry_price","event_type":"call","msg":474.0,"note":"stated entry"}
+{"time_utc":"2026-06-13T00:25:23Z","time_ms":1781310323922,"symbol":"BTCUSDT","observed_price":63500.0,"field":"price_ref","event_type":"update","msg":475.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-13T13:14:38Z","time_ms":1781356478193,"symbol":"BTCUSDT","observed_price":64200.0,"field":"price_ref","event_type":"partial_close","msg":479.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-13T18:25:11Z","time_ms":1781375111459,"symbol":"BTCUSDT","observed_price":64200.0,"field":"price_ref","event_type":"close","msg":482.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-13T18:25:11Z","time_ms":1781375111459,"symbol":"BTCUSDT","observed_price":63300.0,"field":"entry_price","event_type":"plan","msg":482.0,"note":"stated entry"}
+{"time_utc":"2026-06-14T07:20:26Z","time_ms":1781421626279,"symbol":"RENDERUSDT","observed_price":1.76,"field":"entry_price","event_type":"call","msg":484.0,"note":"stated entry"}
+{"time_utc":"2026-06-14T08:24:29Z","time_ms":1781425469407,"symbol":"PYTHUSDT","observed_price":0.039,"field":"entry_price","event_type":"call","msg":485.0,"note":"stated entry"}
+{"time_utc":"2026-06-14T08:24:34Z","time_ms":1781425474553,"symbol":"PYTHUSDT","observed_price":0.039,"field":"price_ref","event_type":"update","msg":486.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-14T21:29:25Z","time_ms":1781472565846,"symbol":"BTCUSDT","observed_price":63094.1,"field":"entry_price","event_type":"update","msg":487.0,"note":"stated entry"}
+{"time_utc":"2026-06-15T02:45:54Z","time_ms":1781491554825,"symbol":"PYTHUSDT","observed_price":0.392,"field":"price_ref","event_type":"close","msg":492.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-15T02:51:14Z","time_ms":1781491874879,"symbol":"BTCUSDT","observed_price":66000.0,"field":"entry_price","event_type":"call","msg":493.0,"note":"stated entry"}
+{"time_utc":"2026-06-15T11:36:32Z","time_ms":1781523392555,"symbol":"PYTHUSDT","observed_price":0.04062,"field":"price_ref","event_type":"update","msg":494.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-15T11:36:32Z","time_ms":1781523392555,"symbol":"PYTHUSDT","observed_price":0.0391,"field":"entry_price","event_type":"update","msg":494.0,"note":"stated entry"}
+{"time_utc":"2026-06-15T11:37:24Z","time_ms":1781523444201,"symbol":"BTCUSDT","observed_price":66000.0,"field":"entry_price","event_type":"entry","msg":495.0,"note":"stated entry"}
+{"time_utc":"2026-06-15T17:43:58Z","time_ms":1781545438999,"symbol":"ZECUSDT","observed_price":530.0,"field":"entry_price","event_type":"call","msg":500.0,"note":"stated entry"}
+{"time_utc":"2026-06-15T17:43:58Z","time_ms":1781545438999,"symbol":"ZECUSDT","observed_price":530.0,"field":"price_ref","event_type":"call","msg":500.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-15T19:08:50Z","time_ms":1781550530121,"symbol":"XMRUSDT","observed_price":357.0,"field":"entry_price","event_type":"call","msg":502.0,"note":"stated entry"}
+{"time_utc":"2026-06-15T19:08:50Z","time_ms":1781550530121,"symbol":"XMRUSDT","observed_price":357.0,"field":"price_ref","event_type":"call","msg":502.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-15T21:12:39Z","time_ms":1781557959901,"symbol":"RENDERUSDT","observed_price":1.761,"field":"entry_price","event_type":"close","msg":503.0,"note":"stated entry"}
+{"time_utc":"2026-06-15T21:12:39Z","time_ms":1781557959901,"symbol":"RENDERUSDT","observed_price":1.779,"field":"price_ref","event_type":"close","msg":503.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-16T11:14:23Z","time_ms":1781608463190,"symbol":"WLDUSDT","observed_price":0.653,"field":"entry_price","event_type":"call","msg":507.0,"note":"stated entry"}
+{"time_utc":"2026-06-16T11:14:23Z","time_ms":1781608463190,"symbol":"WLDUSDT","observed_price":0.653,"field":"price_ref","event_type":"call","msg":507.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-16T14:28:56Z","time_ms":1781620136237,"symbol":"BTCUSDT","observed_price":66200.0,"field":"entry_price","event_type":"dca","msg":511.0,"note":"stated entry"}
+{"time_utc":"2026-06-16T14:28:56Z","time_ms":1781620136237,"symbol":"BTCUSDT","observed_price":66200.0,"field":"entry_price","event_type":"tp_move","msg":511.0,"note":"stated entry"}
+{"time_utc":"2026-06-16T14:36:35Z","time_ms":1781620595960,"symbol":"BTCUSDT","observed_price":66200.0,"field":"entry_price","event_type":"tp_hit","msg":512.0,"note":"stated entry"}
+{"time_utc":"2026-06-16T14:54:03Z","time_ms":1781621643486,"symbol":"BTCUSDT","observed_price":65634.5,"field":"price_ref","event_type":"update","msg":513.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-16T14:54:03Z","time_ms":1781621643486,"symbol":"BTCUSDT","observed_price":67119.9,"field":"entry_price","event_type":"update","msg":513.0,"note":"stated entry"}
+{"time_utc":"2026-06-16T14:57:27Z","time_ms":1781621847069,"symbol":"BTCUSDT","observed_price":64000.0,"field":"entry_price","event_type":"plan","msg":514.0,"note":"stated entry"}
+{"time_utc":"2026-06-16T14:57:27Z","time_ms":1781621847069,"symbol":"BTCUSDT","observed_price":67000.0,"field":"entry_price","event_type":"plan","msg":514.0,"note":"stated entry"}
+{"time_utc":"2026-06-16T15:10:38Z","time_ms":1781622638354,"symbol":"HYPEUSDT","observed_price":60.0,"field":"entry_price","event_type":"call","msg":516.0,"note":"stated entry"}
+{"time_utc":"2026-06-16T15:37:22Z","time_ms":1781624242192,"symbol":"BTCUSDT","observed_price":66700.0,"field":"entry_price","event_type":"plan","msg":517.0,"note":"stated entry"}
+{"time_utc":"2026-06-16T16:48:15Z","time_ms":1781628495555,"symbol":"PORTALUSDT","observed_price":0.01635,"field":"price_ref","event_type":"call","msg":518.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-16T16:48:15Z","time_ms":1781628495555,"symbol":"PORTALUSDT","observed_price":0.01635,"field":"entry_price","event_type":"call","msg":518.0,"note":"stated entry"}
+{"time_utc":"2026-06-16T19:54:59Z","time_ms":1781639699585,"symbol":"PORTALUSDT","observed_price":0.01515,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-16T19:54:59Z","time_ms":1781639699585,"symbol":"PORTALUSDT","observed_price":0.01631,"field":"entry_price","event_type":"sl_move","msg":519.0,"note":"stated entry"}
+{"time_utc":"2026-06-16T19:54:59Z","time_ms":1781639699585,"symbol":"PORTALUSDT","observed_price":0.01515,"field":"price_ref","event_type":"partial_close","msg":519.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-16T19:54:59Z","time_ms":1781639699585,"symbol":"PORTALUSDT","observed_price":0.01515,"field":"price_ref","event_type":"sl_move","msg":519.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-16T19:54:59Z","time_ms":1781639699585,"symbol":"PORTALUSDT","observed_price":0.01631,"field":"entry_price","event_type":"partial_close","msg":519.0,"note":"stated entry"}
+{"time_utc":"2026-06-16T19:57:22Z","time_ms":1781639842251,"symbol":"WLDUSDT","observed_price":0.653,"field":"entry_price","event_type":"dca","msg":520.0,"note":"stated entry"}
+{"time_utc":"2026-06-16T19:57:22Z","time_ms":1781639842251,"symbol":"WLDUSDT","observed_price":0.653,"field":"entry_price","event_type":"dca","msg":520.0,"note":"stated entry"}
+{"time_utc":"2026-06-16T21:30:43Z","time_ms":1781645443021,"symbol":"HBARUSDT","observed_price":0.08123,"field":"entry_price","event_type":"call","msg":524.0,"note":"stated entry"}
+{"time_utc":"2026-06-16T21:30:43Z","time_ms":1781645443021,"symbol":"HBARUSDT","observed_price":0.08123,"field":"price_ref","event_type":"call","msg":524.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-17T01:40:49Z","time_ms":1781660449596,"symbol":"WLDUSDT","observed_price":0.7079,"field":"price_ref","event_type":"update","msg":525.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-17T01:40:49Z","time_ms":1781660449596,"symbol":"WLDUSDT","observed_price":0.6545,"field":"entry_price","event_type":"update","msg":525.0,"note":"stated entry"}
+{"time_utc":"2026-06-17T01:40:49Z","time_ms":1781660449596,"symbol":"WLDUSDT","observed_price":0.7079,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-17T12:18:38Z","time_ms":1781698718234,"symbol":"BTCUSDT","observed_price":64700.0,"field":"entry_price","event_type":"call","msg":526.0,"note":"stated entry"}
+{"time_utc":"2026-06-17T12:18:38Z","time_ms":1781698718234,"symbol":"BTCUSDT","observed_price":64700.0,"field":"price_ref","event_type":"call","msg":526.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-17T12:20:38Z","time_ms":1781698838578,"symbol":"BTCUSDT","observed_price":63900.0,"field":"entry_price","event_type":"plan","msg":527.0,"note":"stated entry"}
+{"time_utc":"2026-06-17T12:22:43Z","time_ms":1781698963498,"symbol":"HBARUSDT","observed_price":0.08123,"field":"entry_price","event_type":"stopped_out","msg":528.0,"note":"stated entry"}
+{"time_utc":"2026-06-17T13:15:46Z","time_ms":1781702146648,"symbol":"LDOUSDT","observed_price":0.288,"field":"price_ref","event_type":"call","msg":529.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-17T13:15:46Z","time_ms":1781702146648,"symbol":"LDOUSDT","observed_price":0.288,"field":"entry_price","event_type":"call","msg":529.0,"note":"stated entry"}
+{"time_utc":"2026-06-17T13:16:29Z","time_ms":1781702189461,"symbol":"TAOUSDT","observed_price":256.05,"field":"price_ref","event_type":"entry","msg":530.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-17T13:16:29Z","time_ms":1781702189461,"symbol":"TAOUSDT","observed_price":256.05,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-17T13:16:29Z","time_ms":1781702189461,"symbol":"TAOUSDT","observed_price":249.66,"field":"entry_price","event_type":"entry","msg":530.0,"note":"stated entry"}
+{"time_utc":"2026-06-17T13:53:16Z","time_ms":1781704396884,"symbol":"BTCUSDT","observed_price":65257.6,"field":"price_ref","event_type":"update","msg":531.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-17T13:53:16Z","time_ms":1781704396884,"symbol":"BTCUSDT","observed_price":64736.5,"field":"entry_price","event_type":"update","msg":531.0,"note":"stated entry"}
+{"time_utc":"2026-06-17T13:53:16Z","time_ms":1781704396884,"symbol":"BTCUSDT","observed_price":65257.6,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-17T16:28:07Z","time_ms":1781713687267,"symbol":"BTCUSDT","observed_price":66021.6,"field":"price_ref","event_type":"update","msg":532.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-17T16:29:48Z","time_ms":1781713788342,"symbol":"BTCUSDT","observed_price":64736.5,"field":"entry_price","event_type":"partial_close","msg":533.0,"note":"stated entry"}
+{"time_utc":"2026-06-17T16:29:48Z","time_ms":1781713788342,"symbol":"BTCUSDT","observed_price":66370.9,"field":"price_ref","event_type":"partial_close","msg":533.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-17T16:29:48Z","time_ms":1781713788342,"symbol":"BTCUSDT","observed_price":66370.9,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-17T16:56:33Z","time_ms":1781715393528,"symbol":"BTCUSDT","observed_price":64700.0,"field":"entry_price","event_type":"sl_move","msg":535.0,"note":"stated entry"}
+{"time_utc":"2026-06-17T18:10:27Z","time_ms":1781719827142,"symbol":"BTCUSDT","observed_price":64700.0,"field":"entry_price","event_type":"breakeven","msg":536.0,"note":"stated entry"}
+{"time_utc":"2026-06-17T19:54:34Z","time_ms":1781726074716,"symbol":"BTCUSDT","observed_price":63800.0,"field":"entry_price","event_type":"plan","msg":537.0,"note":"stated entry"}
+{"time_utc":"2026-06-17T20:00:41Z","time_ms":1781726441101,"symbol":"BTCUSDT","observed_price":64600.0,"field":"entry_price","event_type":"dca","msg":538.0,"note":"stated entry"}
+{"time_utc":"2026-06-17T20:04:20Z","time_ms":1781726660926,"symbol":"BTCUSDT","observed_price":64300.0,"field":"price_ref","event_type":"call","msg":539.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-17T20:04:20Z","time_ms":1781726660926,"symbol":"BTCUSDT","observed_price":64300.0,"field":"entry_price","event_type":"call","msg":539.0,"note":"stated entry"}
+{"time_utc":"2026-06-17T20:08:23Z","time_ms":1781726903236,"symbol":"BTCUSDT","observed_price":64500.0,"field":"entry_price","event_type":"update","msg":540.0,"note":"stated entry"}
+{"time_utc":"2026-06-17T20:08:23Z","time_ms":1781726903236,"symbol":"BTCUSDT","observed_price":64260.0,"field":"entry_price","event_type":"tp_set","msg":540.0,"note":"stated entry"}
+{"time_utc":"2026-06-18T08:40:04Z","time_ms":1781772004013,"symbol":"ETHUSDT","observed_price":1750.0,"field":"price_ref","event_type":"call","msg":541.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-18T08:40:04Z","time_ms":1781772004013,"symbol":"ETHUSDT","observed_price":1750.0,"field":"entry_price","event_type":"call","msg":541.0,"note":"stated entry"}
+{"time_utc":"2026-06-18T08:41:15Z","time_ms":1781772075844,"symbol":"XAU","observed_price":4299.0,"field":"entry_price","event_type":"plan","msg":542.0,"note":"stated entry"}
+{"time_utc":"2026-06-18T09:12:48Z","time_ms":1781773968464,"symbol":"LABUSDT","observed_price":20.0,"field":"entry_price","event_type":"plan","msg":543.0,"note":"stated entry"}
+{"time_utc":"2026-06-18T15:18:26Z","time_ms":1781795906623,"symbol":"BTCUSDT","observed_price":63900.0,"field":"entry_price","event_type":"dca","msg":545.0,"note":"stated entry"}
+{"time_utc":"2026-06-18T15:58:18Z","time_ms":1781798298732,"symbol":"ETHUSDT","observed_price":1750.0,"field":"entry_price","event_type":"stopped_out","msg":548.0,"note":"stated entry"}
+{"time_utc":"2026-06-18T18:24:32Z","time_ms":1781807072282,"symbol":"LABUSDT","observed_price":17.015,"field":"price_ref","event_type":"update","msg":551.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-18T18:24:32Z","time_ms":1781807072282,"symbol":"LABUSDT","observed_price":17.015,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-18T18:24:32Z","time_ms":1781807072282,"symbol":"LABUSDT","observed_price":15.679,"field":"entry_price","event_type":"update","msg":551.0,"note":"stated entry"}
+{"time_utc":"2026-06-18T18:26:47Z","time_ms":1781807207454,"symbol":"BTCUSDT","observed_price":63700.0,"field":"entry_price","event_type":"update","msg":552.0,"note":"stated entry"}
+{"time_utc":"2026-06-18T18:26:47Z","time_ms":1781807207454,"symbol":"BTCUSDT","observed_price":62800.0,"field":"entry_price","event_type":"call","msg":552.0,"note":"stated entry"}
+{"time_utc":"2026-06-18T18:26:47Z","time_ms":1781807207454,"symbol":"BTCUSDT","observed_price":62800.0,"field":"price_ref","event_type":"call","msg":552.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-18T18:36:31Z","time_ms":1781807791958,"symbol":"LABUSDT","observed_price":18.0,"field":"price_ref","event_type":"close","msg":553.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-19T00:14:39Z","time_ms":1781828079610,"symbol":"LABUSDT","observed_price":18.008,"field":"price_ref","event_type":"close","msg":554.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-19T00:14:39Z","time_ms":1781828079610,"symbol":"LABUSDT","observed_price":15.679,"field":"entry_price","event_type":"close","msg":554.0,"note":"stated entry"}
+{"time_utc":"2026-06-19T00:14:39Z","time_ms":1781828079610,"symbol":"LABUSDT","observed_price":18.008,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-19T01:06:43Z","time_ms":1781831203940,"symbol":"BTCUSDT","observed_price":62800.0,"field":"entry_price","event_type":"entry","msg":555.0,"note":"stated entry"}
+{"time_utc":"2026-06-19T01:06:43Z","time_ms":1781831203940,"symbol":"BTCUSDT","observed_price":63700.0,"field":"entry_price","event_type":"update","msg":555.0,"note":"stated entry"}
+{"time_utc":"2026-06-19T19:56:43Z","time_ms":1781899003522,"symbol":"BTCUSDT","observed_price":62800.0,"field":"entry_price","event_type":"partial_close","msg":557.0,"note":"stated entry"}
+{"time_utc":"2026-06-19T19:56:43Z","time_ms":1781899003522,"symbol":"BTCUSDT","observed_price":62800.0,"field":"entry_price","event_type":"dca","msg":557.0,"note":"stated entry"}
+{"time_utc":"2026-06-20T13:11:38Z","time_ms":1781961098100,"symbol":"REUSDT","observed_price":0.75,"field":"entry_price","event_type":"partial_close","msg":559.0,"note":"stated entry"}
+{"time_utc":"2026-06-20T14:53:47Z","time_ms":1781967227292,"symbol":"BTCUSDT","observed_price":63923.2,"field":"price_ref","event_type":"update","msg":560.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-20T14:53:47Z","time_ms":1781967227292,"symbol":"BTCUSDT","observed_price":63923.2,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-20T14:53:47Z","time_ms":1781967227292,"symbol":"BTCUSDT","observed_price":63667.3,"field":"entry_price","event_type":"update","msg":560.0,"note":"stated entry"}
+{"time_utc":"2026-06-20T14:54:21Z","time_ms":1781967261915,"symbol":"BTCUSDT","observed_price":62800.0,"field":"entry_price","event_type":"sl_move","msg":561.0,"note":"stated entry"}
+{"time_utc":"2026-06-20T15:38:04Z","time_ms":1781969884590,"symbol":"BTCUSDT","observed_price":63923.2,"field":"price_ref","event_type":"close","msg":562.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-20T15:38:04Z","time_ms":1781969884590,"symbol":"BTCUSDT","observed_price":63667.3,"field":"entry_price","event_type":"close","msg":562.0,"note":"stated entry"}
+{"time_utc":"2026-06-20T15:38:04Z","time_ms":1781969884590,"symbol":"BTCUSDT","observed_price":63923.2,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-20T15:38:55Z","time_ms":1781969935790,"symbol":"BTCUSDT","observed_price":62800.0,"field":"entry_price","event_type":"partial_close","msg":563.0,"note":"stated entry"}
+{"time_utc":"2026-06-20T15:38:55Z","time_ms":1781969935790,"symbol":"BTCUSDT","observed_price":62800.0,"field":"entry_price","event_type":"tp_set","msg":563.0,"note":"stated entry"}
+{"time_utc":"2026-06-20T19:22:58Z","time_ms":1781983378544,"symbol":"BTCUSDT","observed_price":62800.0,"field":"entry_price","event_type":"partial_close","msg":564.0,"note":"stated entry"}
+{"time_utc":"2026-06-20T19:22:58Z","time_ms":1781983378544,"symbol":"BTCUSDT","observed_price":63000.0,"field":"entry_price","event_type":"dca","msg":564.0,"note":"stated entry"}
+{"time_utc":"2026-06-20T19:22:58Z","time_ms":1781983378544,"symbol":"BTCUSDT","observed_price":64150.0,"field":"price_ref","event_type":"partial_close","msg":564.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-22T02:30:05Z","time_ms":1782095405239,"symbol":"BTCUSDT","observed_price":64594.2,"field":"price_ref","event_type":"update","msg":566.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-22T02:30:05Z","time_ms":1782095405239,"symbol":"BTCUSDT","observed_price":63044.0,"field":"entry_price","event_type":"update","msg":566.0,"note":"stated entry"}
+{"time_utc":"2026-06-22T02:30:05Z","time_ms":1782095405239,"symbol":"BTCUSDT","observed_price":64594.2,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-22T12:57:09Z","time_ms":1782133029545,"symbol":"BTCUSDT","observed_price":63044.0,"field":"entry_price","event_type":"tp_hit","msg":567.0,"note":"stated entry"}
+{"time_utc":"2026-06-22T12:57:09Z","time_ms":1782133029545,"symbol":"BTCUSDT","observed_price":64987.9,"field":"price_ref","event_type":"tp_hit","msg":567.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-22T16:21:41Z","time_ms":1782145301257,"symbol":"BTCUSDT","observed_price":64700.0,"field":"price_ref","event_type":"plan","msg":570.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-22T16:21:41Z","time_ms":1782145301257,"symbol":"BTCUSDT","observed_price":63900.0,"field":"entry_price","event_type":"plan","msg":570.0,"note":"stated entry"}
+{"time_utc":"2026-06-22T18:04:54Z","time_ms":1782151494742,"symbol":"BTCUSDT","observed_price":63600.0,"field":"entry_price","event_type":"plan","msg":571.0,"note":"stated entry"}
+{"time_utc":"2026-06-22T22:30:10Z","time_ms":1782167410633,"symbol":"BTCUSDT","observed_price":63940.0,"field":"entry_price","event_type":"call","msg":572.0,"note":"stated entry"}
+{"time_utc":"2026-06-23T14:39:50Z","time_ms":1782225590305,"symbol":"BTCUSDT","observed_price":62700.0,"field":"price_ref","event_type":"dca","msg":573.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-24T13:42:34Z","time_ms":1782308554200,"symbol":"SPCXUSDT","observed_price":155.0,"field":"entry_price","event_type":"plan","msg":575.0,"note":"stated entry"}
+{"time_utc":"2026-06-24T14:16:09Z","time_ms":1782310569841,"symbol":"JUPUSDT","observed_price":0.214,"field":"entry_price","event_type":"call","msg":576.0,"note":"stated entry"}
+{"time_utc":"2026-06-24T14:36:22Z","time_ms":1782311782674,"symbol":"BTCUSDT","observed_price":63300.0,"field":"entry_price","event_type":"update","msg":578.0,"note":"stated entry"}
+{"time_utc":"2026-06-24T17:34:12Z","time_ms":1782322452799,"symbol":"BTCUSDT","observed_price":59500.0,"field":"entry_price","event_type":"entry","msg":582.0,"note":"stated entry"}
+{"time_utc":"2026-06-24T17:41:28Z","time_ms":1782322888538,"symbol":"BTCUSDT","observed_price":59400.0,"field":"entry_price","event_type":"call","msg":585.0,"note":"stated entry"}
+{"time_utc":"2026-06-24T20:10:48Z","time_ms":1782331848914,"symbol":"BTCUSDT","observed_price":60649.7,"field":"price_ref","event_type":"update","msg":587.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-24T20:10:48Z","time_ms":1782331848914,"symbol":"BTCUSDT","observed_price":59214.3,"field":"entry_price","event_type":"update","msg":587.0,"note":"stated entry"}
+{"time_utc":"2026-06-24T20:10:48Z","time_ms":1782331848914,"symbol":"BTCUSDT","observed_price":60649.7,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-24T20:11:06Z","time_ms":1782331866790,"symbol":"BTCUSDT","observed_price":59595.1,"field":"entry_price","event_type":"update","msg":588.0,"note":"stated entry"}
+{"time_utc":"2026-06-24T20:11:06Z","time_ms":1782331866790,"symbol":"BTCUSDT","observed_price":60793.4,"field":"price_ref","event_type":"update","msg":588.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-24T20:11:06Z","time_ms":1782331866790,"symbol":"BTCUSDT","observed_price":60793.4,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-24T20:54:35Z","time_ms":1782334475770,"symbol":"BTCUSDT","observed_price":61117.2,"field":"price_ref","event_type":"update","msg":589.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-24T20:54:35Z","time_ms":1782334475770,"symbol":"BTCUSDT","observed_price":59595.1,"field":"entry_price","event_type":"update","msg":589.0,"note":"stated entry"}
+{"time_utc":"2026-06-24T20:54:35Z","time_ms":1782334475770,"symbol":"BTCUSDT","observed_price":61117.2,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-24T20:54:35Z","time_ms":1782334475770,"symbol":"BTCUSDT","observed_price":61117.2,"field":"price_ref","event_type":"partial_close","msg":589.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-24T20:55:14Z","time_ms":1782334514037,"symbol":"BTCUSDT","observed_price":61037.6,"field":"price_ref","event_type":"update","msg":590.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-24T20:55:14Z","time_ms":1782334514037,"symbol":"BTCUSDT","observed_price":61037.6,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-24T20:55:14Z","time_ms":1782334514037,"symbol":"BTCUSDT","observed_price":59214.3,"field":"entry_price","event_type":"update","msg":590.0,"note":"stated entry"}
+{"time_utc":"2026-06-24T23:59:21Z","time_ms":1782345561166,"symbol":"BTCUSDT","observed_price":61117.2,"field":"price_ref","event_type":"tp_set","msg":591.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-24T23:59:21Z","time_ms":1782345561166,"symbol":"BTCUSDT","observed_price":61117.2,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-24T23:59:21Z","time_ms":1782345561166,"symbol":"BTCUSDT","observed_price":61117.2,"field":"price_ref","event_type":"close","msg":591.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-24T23:59:21Z","time_ms":1782345561166,"symbol":"BTCUSDT","observed_price":59595.1,"field":"entry_price","event_type":"close","msg":591.0,"note":"stated entry"}
+{"time_utc":"2026-06-25T00:04:47Z","time_ms":1782345887797,"symbol":"BTCUSDT","observed_price":59214.3,"field":"entry_price","event_type":"update","msg":592.0,"note":"stated entry"}
+{"time_utc":"2026-06-25T00:04:47Z","time_ms":1782345887797,"symbol":"BTCUSDT","observed_price":61042.1,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-25T00:04:47Z","time_ms":1782345887797,"symbol":"BTCUSDT","observed_price":61042.1,"field":"price_ref","event_type":"update","msg":592.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-25T12:12:55Z","time_ms":1782389575493,"symbol":"TOSHIUSDT","observed_price":0.00011,"field":"entry_price","event_type":"call","msg":593.0,"note":"stated entry"}
+{"time_utc":"2026-06-25T12:35:07Z","time_ms":1782390907989,"symbol":"BTCUSDT","observed_price":61200.0,"field":"entry_price","event_type":"entry","msg":594.0,"note":"stated entry"}
+{"time_utc":"2026-06-25T12:35:07Z","time_ms":1782390907989,"symbol":"BTCUSDT","observed_price":60600.0,"field":"price_ref","event_type":"plan","msg":594.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-25T12:39:09Z","time_ms":1782391149054,"symbol":"BTCUSDT","observed_price":61300.0,"field":"entry_price","event_type":"call","msg":595.0,"note":"stated entry"}
+{"time_utc":"2026-06-25T13:02:26Z","time_ms":1782392546368,"symbol":"BTCUSDT","observed_price":61270.6,"field":"price_ref","event_type":"breakeven","msg":597.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-25T13:02:26Z","time_ms":1782392546368,"symbol":"BTCUSDT","observed_price":61253.1,"field":"entry_price","event_type":"breakeven","msg":597.0,"note":"stated entry"}
+{"time_utc":"2026-06-25T13:02:26Z","time_ms":1782392546368,"symbol":"BTCUSDT","observed_price":62000.0,"field":"entry_price","event_type":"plan","msg":597.0,"note":"stated entry"}
+{"time_utc":"2026-06-25T13:05:43Z","time_ms":1782392743210,"symbol":"BTCUSDT","observed_price":60000.0,"field":"entry_price","event_type":"plan","msg":598.0,"note":"stated entry"}
+{"time_utc":"2026-06-25T13:58:03Z","time_ms":1782395883536,"symbol":"BTCUSDT","observed_price":58200.0,"field":"entry_price","event_type":"call","msg":600.0,"note":"stated entry"}
+{"time_utc":"2026-06-25T13:58:43Z","time_ms":1782395923630,"symbol":"BTCUSDT","observed_price":58200.0,"field":"price_ref","event_type":"entry","msg":601.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-25T13:58:43Z","time_ms":1782395923630,"symbol":"BTCUSDT","observed_price":58500.0,"field":"entry_price","event_type":"entry","msg":601.0,"note":"stated entry"}
+{"time_utc":"2026-06-25T14:10:34Z","time_ms":1782396634020,"symbol":"BTCUSDT","observed_price":58616.4,"field":"entry_price","event_type":"tp_set","msg":602.0,"note":"stated entry"}
+{"time_utc":"2026-06-25T14:10:34Z","time_ms":1782396634020,"symbol":"BTCUSDT","observed_price":59502.9,"field":"price_ref","event_type":"partial_close","msg":602.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-25T14:10:34Z","time_ms":1782396634020,"symbol":"BTCUSDT","observed_price":58616.4,"field":"entry_price","event_type":"partial_close","msg":602.0,"note":"stated entry"}
+{"time_utc":"2026-06-25T14:10:34Z","time_ms":1782396634020,"symbol":"BTCUSDT","observed_price":59502.9,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-25T14:18:22Z","time_ms":1782397102409,"symbol":"BTCUSDT","observed_price":59100.0,"field":"price_ref","event_type":"close","msg":603.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-25T14:37:58Z","time_ms":1782398278927,"symbol":"BTCUSDT","observed_price":60008.6,"field":"price_ref","event_type":"tp_hit","msg":605.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-25T14:37:58Z","time_ms":1782398278927,"symbol":"BTCUSDT","observed_price":58305.1,"field":"entry_price","event_type":"tp_hit","msg":605.0,"note":"stated entry"}
+{"time_utc":"2026-06-25T15:39:49Z","time_ms":1782401989973,"symbol":"BTCUSDT","observed_price":58000.0,"field":"entry_price","event_type":"plan","msg":607.0,"note":"stated entry"}
+{"time_utc":"2026-06-25T15:39:49Z","time_ms":1782401989973,"symbol":"BTCUSDT","observed_price":62000.0,"field":"price_ref","event_type":"view","msg":607.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-26T05:28:49Z","time_ms":1782451729375,"symbol":"BTCUSDT","observed_price":59800.0,"field":"entry_price","event_type":"call","msg":608.0,"note":"stated entry"}
+{"time_utc":"2026-06-26T13:53:58Z","time_ms":1782482038701,"symbol":"BTCUSDT","observed_price":59800.0,"field":"entry_price","event_type":"breakeven","msg":609.0,"note":"stated entry"}
+{"time_utc":"2026-06-26T13:56:14Z","time_ms":1782482174944,"symbol":"SOLUSDT","observed_price":70.3,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-26T13:56:14Z","time_ms":1782482174944,"symbol":"SOLUSDT","observed_price":67.55,"field":"entry_price","event_type":"update","msg":611.0,"note":"stated entry"}
+{"time_utc":"2026-06-26T13:56:14Z","time_ms":1782482174944,"symbol":"SOLUSDT","observed_price":70.3,"field":"price_ref","event_type":"update","msg":611.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-26T15:39:27Z","time_ms":1782488367578,"symbol":"BTCUSDT","observed_price":62000.0,"field":"price_ref","event_type":"plan","msg":613.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-26T15:42:00Z","time_ms":1782488520530,"symbol":"SOLUSDT","observed_price":75.0,"field":"price_ref","event_type":"view","msg":614.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-27T03:16:37Z","time_ms":1782530197592,"symbol":"BEATUSDT","observed_price":2.6,"field":"entry_price","event_type":"call","msg":615.0,"note":"stated entry"}
+{"time_utc":"2026-06-27T03:20:08Z","time_ms":1782530408214,"symbol":"BTCUSDT","observed_price":60000.0,"field":"entry_price","event_type":"call","msg":616.0,"note":"stated entry"}
+{"time_utc":"2026-06-28T13:24:41Z","time_ms":1782653081593,"symbol":"TOSHIUSDT","observed_price":0.0001297,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-28T13:24:41Z","time_ms":1782653081593,"symbol":"TOSHIUSDT","observed_price":0.0001297,"field":"price_ref","event_type":"update","msg":617.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-28T13:24:41Z","time_ms":1782653081593,"symbol":"TOSHIUSDT","observed_price":0.0001101,"field":"entry_price","event_type":"update","msg":617.0,"note":"stated entry"}
+{"time_utc":"2026-06-28T13:24:44Z","time_ms":1782653084407,"symbol":"TOSHIUSDT","observed_price":0.0001314,"field":"price_ref","event_type":"update","msg":618.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-28T13:24:44Z","time_ms":1782653084407,"symbol":"TOSHIUSDT","observed_price":0.0001314,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-28T13:24:44Z","time_ms":1782653084407,"symbol":"TOSHIUSDT","observed_price":0.0001101,"field":"entry_price","event_type":"update","msg":618.0,"note":"stated entry"}
+{"time_utc":"2026-06-28T23:53:53Z","time_ms":1782690833472,"symbol":"BTCUSDT","observed_price":59700.0,"field":"entry_price","event_type":"call","msg":620.0,"note":"stated entry"}
+{"time_utc":"2026-06-29T02:42:18Z","time_ms":1782700938893,"symbol":"BTCUSDT","observed_price":59000.0,"field":"price_ref","event_type":"update","msg":622.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-29T03:12:13Z","time_ms":1782702733177,"symbol":"BTCUSDT","observed_price":60063.9,"field":"price_ref","event_type":"update","msg":623.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-29T03:12:13Z","time_ms":1782702733177,"symbol":"BTCUSDT","observed_price":59200.0,"field":"entry_price","event_type":"update","msg":623.0,"note":"stated entry"}
+{"time_utc":"2026-06-29T03:12:13Z","time_ms":1782702733177,"symbol":"BTCUSDT","observed_price":60063.9,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-29T17:22:36Z","time_ms":1782753756728,"symbol":"SOLUSDT","observed_price":76.02,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-06-29T17:22:36Z","time_ms":1782753756728,"symbol":"SOLUSDT","observed_price":76.02,"field":"price_ref","event_type":"update","msg":624.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-29T17:22:36Z","time_ms":1782753756728,"symbol":"SOLUSDT","observed_price":68.46,"field":"entry_price","event_type":"update","msg":624.0,"note":"stated entry"}
+{"time_utc":"2026-06-30T13:02:13Z","time_ms":1782824533672,"symbol":"BTCUSDT","observed_price":60000.0,"field":"entry_price","event_type":"tp_move","msg":627.0,"note":"stated entry"}
+{"time_utc":"2026-06-30T13:02:13Z","time_ms":1782824533672,"symbol":"BTCUSDT","observed_price":58300.0,"field":"entry_price","event_type":"call","msg":627.0,"note":"stated entry"}
+{"time_utc":"2026-06-30T13:44:44Z","time_ms":1782827084095,"symbol":"BTCUSDT","observed_price":58300.0,"field":"entry_price","event_type":"tp_set","msg":629.0,"note":"stated entry"}
+{"time_utc":"2026-06-30T13:46:29Z","time_ms":1782827189530,"symbol":"HYPEUSDT","observed_price":64.8,"field":"entry_price","event_type":"call","msg":630.0,"note":"stated entry"}
+{"time_utc":"2026-06-30T14:22:10Z","time_ms":1782829330323,"symbol":"BTCUSDT","observed_price":59104.4,"field":"price_ref","event_type":"tp_hit","msg":631.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-30T14:23:50Z","time_ms":1782829430118,"symbol":"BTCUSDT","observed_price":59300.0,"field":"price_ref","event_type":"plan","msg":633.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-06-30T14:58:28Z","time_ms":1782831508112,"symbol":"BTCUSDT","observed_price":58400.0,"field":"entry_price","event_type":"call","msg":634.0,"note":"stated entry"}
+{"time_utc":"2026-06-30T14:58:28Z","time_ms":1782831508112,"symbol":"BTCUSDT","observed_price":59200.0,"field":"price_ref","event_type":"update","msg":634.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-01T01:48:43Z","time_ms":1782870523684,"symbol":"BTCUSDT","observed_price":58372.7,"field":"entry_price","event_type":"close","msg":635.0,"note":"stated entry"}
+{"time_utc":"2026-07-01T01:48:43Z","time_ms":1782870523684,"symbol":"BTCUSDT","observed_price":58957.8,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-01T01:48:43Z","time_ms":1782870523684,"symbol":"BTCUSDT","observed_price":58957.8,"field":"price_ref","event_type":"close","msg":635.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-01T01:56:00Z","time_ms":1782870960884,"symbol":"BTCUSDT","observed_price":58950.3,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-01T01:56:00Z","time_ms":1782870960884,"symbol":"BTCUSDT","observed_price":58372.7,"field":"entry_price","event_type":"update","msg":636.0,"note":"stated entry"}
+{"time_utc":"2026-07-01T01:56:00Z","time_ms":1782870960884,"symbol":"BTCUSDT","observed_price":58957.8,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-01T01:56:00Z","time_ms":1782870960884,"symbol":"BTCUSDT","observed_price":58486.2,"field":"entry_price","event_type":"update","msg":636.0,"note":"stated entry"}
+{"time_utc":"2026-07-01T01:56:00Z","time_ms":1782870960884,"symbol":"BTCUSDT","observed_price":58950.3,"field":"price_ref","event_type":"update","msg":636.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-01T01:56:00Z","time_ms":1782870960884,"symbol":"BTCUSDT","observed_price":58957.8,"field":"price_ref","event_type":"update","msg":636.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-01T01:56:25Z","time_ms":1782870985048,"symbol":"BTCUSDT","observed_price":59318.1,"field":"price_ref","event_type":"close","msg":637.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-01T01:56:25Z","time_ms":1782870985048,"symbol":"BTCUSDT","observed_price":59972.9,"field":"entry_price","event_type":"close","msg":637.0,"note":"stated entry"}
+{"time_utc":"2026-07-01T01:58:53Z","time_ms":1782871133438,"symbol":"BTCUSDT","observed_price":59200.0,"field":"price_ref","event_type":"close","msg":638.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-01T01:58:53Z","time_ms":1782871133438,"symbol":"BTCUSDT","observed_price":59000.0,"field":"price_ref","event_type":"close","msg":638.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-01T14:03:13Z","time_ms":1782914593205,"symbol":"JUPUSDT","observed_price":0.239,"field":"entry_price","event_type":"call","msg":640.0,"note":"stated entry"}
+{"time_utc":"2026-07-01T14:17:49Z","time_ms":1782915469356,"symbol":"BTCUSDT","observed_price":59939.6,"field":"price_ref","event_type":"close","msg":641.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-01T14:17:49Z","time_ms":1782915469356,"symbol":"BTCUSDT","observed_price":58637.9,"field":"entry_price","event_type":"close","msg":641.0,"note":"stated entry"}
+{"time_utc":"2026-07-01T14:24:05Z","time_ms":1782915845802,"symbol":"BEATUSDT","observed_price":2.6,"field":"entry_price","event_type":"close","msg":642.0,"note":"stated entry"}
+{"time_utc":"2026-07-01T14:24:05Z","time_ms":1782915845802,"symbol":"BEATUSDT","observed_price":4.0,"field":"price_ref","event_type":"view","msg":642.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-01T15:09:03Z","time_ms":1782918543578,"symbol":"BTCUSDT","observed_price":59800.0,"field":"entry_price","event_type":"call","msg":644.0,"note":"stated entry"}
+{"time_utc":"2026-07-01T16:01:27Z","time_ms":1782921687314,"symbol":"BTCUSDT","observed_price":60050.0,"field":"entry_price","event_type":"dca","msg":647.0,"note":"stated entry"}
+{"time_utc":"2026-07-01T20:53:58Z","time_ms":1782939238080,"symbol":"SOLUSDT","observed_price":77.46,"field":"price_ref","event_type":"update","msg":648.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-01T20:53:58Z","time_ms":1782939238080,"symbol":"SOLUSDT","observed_price":77.46,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-01T20:53:58Z","time_ms":1782939238080,"symbol":"SOLUSDT","observed_price":68.53,"field":"entry_price","event_type":"update","msg":648.0,"note":"stated entry"}
+{"time_utc":"2026-07-01T22:23:16Z","time_ms":1782944596976,"symbol":"BTCUSDT","observed_price":62000.0,"field":"price_ref","event_type":"view","msg":650.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-02T11:13:48Z","time_ms":1782990828796,"symbol":"SOLUSDT","observed_price":68.53,"field":"entry_price","event_type":"close","msg":651.0,"note":"stated entry"}
+{"time_utc":"2026-07-02T11:13:48Z","time_ms":1782990828796,"symbol":"SOLUSDT","observed_price":82.0,"field":"price_ref","event_type":"close","msg":651.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-02T12:19:14Z","time_ms":1782994754304,"symbol":"ETHUSDT","observed_price":1660.0,"field":"entry_price","event_type":"call","msg":652.0,"note":"stated entry"}
+{"time_utc":"2026-07-02T12:19:14Z","time_ms":1782994754304,"symbol":"ETHUSDT","observed_price":1656.0,"field":"price_ref","event_type":"call","msg":652.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-02T12:22:21Z","time_ms":1782994941944,"symbol":"ETHUSDT","observed_price":1662.0,"field":"entry_price","event_type":"call","msg":653.0,"note":"stated entry"}
+{"time_utc":"2026-07-02T13:29:21Z","time_ms":1782998961084,"symbol":"BTCUSDT","observed_price":62000.0,"field":"price_ref","event_type":"view","msg":655.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-02T13:29:43Z","time_ms":1782998983374,"symbol":"BTCUSDT","observed_price":59000.0,"field":"price_ref","event_type":"view","msg":656.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-02T15:07:26Z","time_ms":1783004846029,"symbol":"ETHUSDT","observed_price":1697.0,"field":"price_ref","event_type":"call","msg":657.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-02T15:07:26Z","time_ms":1783004846029,"symbol":"ETHUSDT","observed_price":1702.0,"field":"entry_price","event_type":"call","msg":657.0,"note":"stated entry"}
+{"time_utc":"2026-07-02T23:54:22Z","time_ms":1783036462539,"symbol":"ETHUSDT","observed_price":1699.37,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-02T23:54:22Z","time_ms":1783036462539,"symbol":"ETHUSDT","observed_price":1702.0,"field":"entry_price","event_type":"breakeven","msg":658.0,"note":"stated entry"}
+{"time_utc":"2026-07-02T23:54:22Z","time_ms":1783036462539,"symbol":"ETHUSDT","observed_price":1699.37,"field":"price_ref","event_type":"breakeven","msg":658.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-02T23:57:25Z","time_ms":1783036645023,"symbol":"XRPUSDT","observed_price":1.086,"field":"entry_price","event_type":"call","msg":659.0,"note":"stated entry"}
+{"time_utc":"2026-07-03T06:25:45Z","time_ms":1783059945351,"symbol":"XRPUSDT","observed_price":1.1052,"field":"price_ref","event_type":"tp_set","msg":660.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-03T06:25:45Z","time_ms":1783059945351,"symbol":"XRPUSDT","observed_price":1.087,"field":"entry_price","event_type":"tp_set","msg":660.0,"note":"stated entry"}
+{"time_utc":"2026-07-03T06:25:45Z","time_ms":1783059945351,"symbol":"XRPUSDT","observed_price":1.1052,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-03T18:47:02Z","time_ms":1783104422764,"symbol":"XRPUSDT","observed_price":1.087,"field":"entry_price","event_type":"tp_hit","msg":662.0,"note":"stated entry"}
+{"time_utc":"2026-07-03T18:47:02Z","time_ms":1783104422764,"symbol":"XRPUSDT","observed_price":1.127,"field":"price_ref","event_type":"tp_hit","msg":662.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-03T20:53:23Z","time_ms":1783112003317,"symbol":"BTCUSDT","observed_price":64000.0,"field":"price_ref","event_type":"view","msg":663.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-04T01:13:31Z","time_ms":1783127611284,"symbol":"ETHUSDT","observed_price":1750.0,"field":"entry_price","event_type":"call","msg":664.0,"note":"stated entry"}
+{"time_utc":"2026-07-04T11:17:28Z","time_ms":1783163848148,"symbol":"TAOUSDT","observed_price":212.4,"field":"entry_price","event_type":"call","msg":665.0,"note":"stated entry"}
+{"time_utc":"2026-07-04T15:13:03Z","time_ms":1783177983057,"symbol":"XRPUSDT","observed_price":1.0868,"field":"entry_price","event_type":"tp_hit","msg":667.0,"note":"stated entry"}
+{"time_utc":"2026-07-04T15:13:03Z","time_ms":1783177983057,"symbol":"XRPUSDT","observed_price":1.162,"field":"price_ref","event_type":"tp_hit","msg":667.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-04T15:15:33Z","time_ms":1783178133524,"symbol":"TAOUSDT","observed_price":215.07,"field":"price_ref","event_type":"tp_set","msg":668.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-04T15:15:33Z","time_ms":1783178133524,"symbol":"TAOUSDT","observed_price":212.45,"field":"entry_price","event_type":"tp_set","msg":668.0,"note":"stated entry"}
+{"time_utc":"2026-07-04T15:15:33Z","time_ms":1783178133524,"symbol":"TAOUSDT","observed_price":215.07,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-04T17:36:59Z","time_ms":1783186619806,"symbol":"TAOUSDT","observed_price":218.36,"field":"price_ref","event_type":"close","msg":670.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-04T17:36:59Z","time_ms":1783186619806,"symbol":"TAOUSDT","observed_price":212.45,"field":"entry_price","event_type":"close","msg":670.0,"note":"stated entry"}
+{"time_utc":"2026-07-04T20:07:23Z","time_ms":1783195643888,"symbol":"ZECUSDT","observed_price":469.0,"field":"entry_price","event_type":"call","msg":671.0,"note":"stated entry"}
+{"time_utc":"2026-07-04T23:20:44Z","time_ms":1783207244333,"symbol":"ZECUSDT","observed_price":462.71,"field":"price_ref","event_type":"tp_set","msg":672.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-04T23:20:44Z","time_ms":1783207244333,"symbol":"ZECUSDT","observed_price":462.71,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-04T23:20:44Z","time_ms":1783207244333,"symbol":"ZECUSDT","observed_price":468.7,"field":"entry_price","event_type":"sl_move","msg":672.0,"note":"stated entry"}
+{"time_utc":"2026-07-04T23:20:44Z","time_ms":1783207244333,"symbol":"ZECUSDT","observed_price":468.7,"field":"entry_price","event_type":"tp_set","msg":672.0,"note":"stated entry"}
+{"time_utc":"2026-07-05T02:23:45Z","time_ms":1783218225985,"symbol":"ZECUSDT","observed_price":468.7,"field":"entry_price","event_type":"tp_hit","msg":673.0,"note":"stated entry"}
+{"time_utc":"2026-07-05T02:23:45Z","time_ms":1783218225985,"symbol":"ZECUSDT","observed_price":453.04,"field":"price_ref","event_type":"tp_hit","msg":673.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-05T03:38:05Z","time_ms":1783222685703,"symbol":"JUPUSDT","observed_price":0.2358,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-05T03:38:05Z","time_ms":1783222685703,"symbol":"JUPUSDT","observed_price":0.2358,"field":"price_ref","event_type":"close","msg":674.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-05T03:38:05Z","time_ms":1783222685703,"symbol":"JUPUSDT","observed_price":0.238,"field":"entry_price","event_type":"close","msg":674.0,"note":"stated entry"}
+{"time_utc":"2026-07-05T09:51:48Z","time_ms":1783245108203,"symbol":"ETHUSDT","observed_price":1753.36,"field":"price_ref","event_type":"update","msg":675.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-05T09:51:48Z","time_ms":1783245108203,"symbol":"ETHUSDT","observed_price":1753.36,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-05T09:51:48Z","time_ms":1783245108203,"symbol":"ETHUSDT","observed_price":1759.84,"field":"entry_price","event_type":"update","msg":675.0,"note":"stated entry"}
+{"time_utc":"2026-07-05T10:17:01Z","time_ms":1783246621743,"symbol":"HYPEUSDT","observed_price":68.8,"field":"entry_price","event_type":"call","msg":676.0,"note":"stated entry"}
+{"time_utc":"2026-07-05T21:34:37Z","time_ms":1783287277363,"symbol":"HYPEUSDT","observed_price":70.796,"field":"price_ref","event_type":"tp_hit","msg":680.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-05T21:34:37Z","time_ms":1783287277363,"symbol":"HYPEUSDT","observed_price":68.787,"field":"entry_price","event_type":"tp_hit","msg":680.0,"note":"stated entry"}
+{"time_utc":"2026-07-05T21:36:12Z","time_ms":1783287372996,"symbol":"HYPEUSDT","observed_price":60.0,"field":"price_ref","event_type":"view","msg":681.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-06T09:18:25Z","time_ms":1783329505514,"symbol":"OPUSDT","observed_price":0.1068,"field":"entry_price","event_type":"call","msg":682.0,"note":"stated entry"}
+{"time_utc":"2026-07-06T09:34:58Z","time_ms":1783330498652,"symbol":"MEUSDT","observed_price":0.0644,"field":"entry_price","event_type":"call","msg":683.0,"note":"stated entry"}
+{"time_utc":"2026-07-06T13:10:45Z","time_ms":1783343445886,"symbol":"OPUSDT","observed_price":0.1067,"field":"entry_price","event_type":"tp_hit","msg":684.0,"note":"stated entry"}
+{"time_utc":"2026-07-06T13:10:45Z","time_ms":1783343445886,"symbol":"OPUSDT","observed_price":0.1034,"field":"price_ref","event_type":"tp_hit","msg":684.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-06T13:12:02Z","time_ms":1783343522273,"symbol":"ETHUSDT","observed_price":1736.9,"field":"price_ref","event_type":"update","msg":685.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-06T13:12:02Z","time_ms":1783343522273,"symbol":"ETHUSDT","observed_price":1759.84,"field":"entry_price","event_type":"update","msg":685.0,"note":"stated entry"}
+{"time_utc":"2026-07-06T13:12:02Z","time_ms":1783343522273,"symbol":"ETHUSDT","observed_price":1736.9,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-06T14:25:28Z","time_ms":1783347928579,"symbol":"XLMUSDT","observed_price":0.1993,"field":"entry_price","event_type":"call","msg":688.0,"note":"stated entry"}
+{"time_utc":"2026-07-06T22:40:58Z","time_ms":1783377658548,"symbol":"BTCUSDT","observed_price":64000.0,"field":"price_ref","event_type":"view","msg":689.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-06T22:41:43Z","time_ms":1783377703071,"symbol":"BTCUSDT","observed_price":65000.0,"field":"price_ref","event_type":"view","msg":690.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-07T11:33:11Z","time_ms":1783423991369,"symbol":"XLMUSDT","observed_price":0.19789,"field":"entry_price","event_type":"tp_hit","msg":692.0,"note":"stated entry"}
+{"time_utc":"2026-07-07T11:33:11Z","time_ms":1783423991369,"symbol":"XLMUSDT","observed_price":0.19291,"field":"price_ref","event_type":"tp_hit","msg":692.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-08T14:42:46Z","time_ms":1783521766225,"symbol":"AVAXUSDT","observed_price":6.42,"field":"entry_price","event_type":"call","msg":694.0,"note":"stated entry"}
+{"time_utc":"2026-07-09T13:52:33Z","time_ms":1783605153671,"symbol":"SOLUSDT","observed_price":77.9,"field":"entry_price","event_type":"call","msg":696.0,"note":"stated entry"}
+{"time_utc":"2026-07-09T20:35:37Z","time_ms":1783629337686,"symbol":"BTCUSDT","observed_price":63200.0,"field":"entry_price","event_type":"call","msg":697.0,"note":"stated entry"}
+{"time_utc":"2026-07-10T02:53:30Z","time_ms":1783652010571,"symbol":"BTCUSDT","observed_price":63229.9,"field":"entry_price","event_type":"tp_hit","msg":698.0,"note":"stated entry"}
+{"time_utc":"2026-07-10T02:53:30Z","time_ms":1783652010571,"symbol":"BTCUSDT","observed_price":63998.4,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-10T02:53:30Z","time_ms":1783652010571,"symbol":"BTCUSDT","observed_price":63998.4,"field":"price_ref","event_type":"tp_hit","msg":698.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-10T18:10:51Z","time_ms":1783707051765,"symbol":"GENIUSUSDT","observed_price":0.359,"field":"entry_price","event_type":"call","msg":699.0,"note":"stated entry"}
+{"time_utc":"2026-07-10T18:10:51Z","time_ms":1783707051765,"symbol":"GENIUSUSDT","observed_price":0.364,"field":"price_ref","event_type":"call","msg":699.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-13T03:33:40Z","time_ms":1783913620838,"symbol":"BTCUSDT","observed_price":62800.0,"field":"entry_price","event_type":"call","msg":702.0,"note":"stated entry"}
+{"time_utc":"2026-07-13T03:33:45Z","time_ms":1783913625970,"symbol":"BTCUSDT","observed_price":62800.0,"field":"price_ref","event_type":"entry","msg":703.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-13T03:33:45Z","time_ms":1783913625970,"symbol":"BTCUSDT","observed_price":62800.0,"field":"entry_price","event_type":"entry","msg":703.0,"note":"stated entry"}
+{"time_utc":"2026-07-14T00:27:55Z","time_ms":1783988875732,"symbol":"EIGENUSDT","observed_price":0.241,"field":"price_ref","event_type":"call","msg":704.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-14T00:27:55Z","time_ms":1783988875732,"symbol":"EIGENUSDT","observed_price":0.241,"field":"entry_price","event_type":"call","msg":704.0,"note":"stated entry"}
+{"time_utc":"2026-07-14T03:24:47Z","time_ms":1783999487435,"symbol":"TRIAUSDT","observed_price":0.009649,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-14T03:24:47Z","time_ms":1783999487435,"symbol":"TRIAUSDT","observed_price":0.009649,"field":"price_ref","event_type":"close","msg":707.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-14T03:24:47Z","time_ms":1783999487435,"symbol":"TRIAUSDT","observed_price":0.008487,"field":"entry_price","event_type":"close","msg":707.0,"note":"stated entry"}
+{"time_utc":"2026-07-14T04:58:58Z","time_ms":1784005138181,"symbol":"BTCUSDT","observed_price":62700.0,"field":"entry_price","event_type":"update","msg":708.0,"note":"stated entry"}
+{"time_utc":"2026-07-14T13:12:22Z","time_ms":1784034742385,"symbol":"BTCUSDT","observed_price":63781.6,"field":"price_ref","event_type":"close","msg":709.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-14T13:12:22Z","time_ms":1784034742385,"symbol":"BTCUSDT","observed_price":62775.4,"field":"entry_price","event_type":"close","msg":709.0,"note":"stated entry"}
+{"time_utc":"2026-07-14T21:40:11Z","time_ms":1784065211235,"symbol":"BTCUSDT","observed_price":64850.0,"field":"price_ref","event_type":"call","msg":711.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-14T21:40:11Z","time_ms":1784065211235,"symbol":"BTCUSDT","observed_price":64850.0,"field":"entry_price","event_type":"call","msg":711.0,"note":"stated entry"}
+{"time_utc":"2026-07-14T21:42:23Z","time_ms":1784065343575,"symbol":"BTCUSDT","observed_price":64850.0,"field":"price_ref","event_type":"update","msg":712.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-16T06:01:24Z","time_ms":1784181684476,"symbol":"BTCUSDT","observed_price":64896.8,"field":"price_ref","event_type":"close","msg":718.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-16T06:01:24Z","time_ms":1784181684476,"symbol":"BTCUSDT","observed_price":64948.66,"field":"entry_price","event_type":"close","msg":718.0,"note":"stated entry"}
+{"time_utc":"2026-07-16T06:01:24Z","time_ms":1784181684476,"symbol":"BTCUSDT","observed_price":64896.8,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-17T02:03:10Z","time_ms":1784253790917,"symbol":"BTCUSDT","observed_price":63469.0,"field":"entry_price","event_type":"call","msg":721.0,"note":"stated entry"}
+{"time_utc":"2026-07-17T02:03:10Z","time_ms":1784253790917,"symbol":"BTCUSDT","observed_price":63469.0,"field":"price_ref","event_type":"call","msg":721.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-17T02:04:09Z","time_ms":1784253849942,"symbol":"BTCUSDT","observed_price":63323.0,"field":"price_ref","event_type":"call","msg":722.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-17T02:04:09Z","time_ms":1784253849942,"symbol":"BTCUSDT","observed_price":63323.0,"field":"entry_price","event_type":"call","msg":722.0,"note":"stated entry"}
+{"time_utc":"2026-07-17T18:30:23Z","time_ms":1784313023240,"symbol":"BTCUSDT","observed_price":63100.0,"field":"entry_price","event_type":"tp_hit","msg":725.0,"note":"stated entry"}
+{"time_utc":"2026-07-17T18:40:07Z","time_ms":1784313607739,"symbol":"BTCUSDT","observed_price":64100.0,"field":"price_ref","event_type":"update","msg":726.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-18T12:16:28Z","time_ms":1784376988547,"symbol":"ZECUSDT","observed_price":544.0,"field":"price_ref","event_type":"call","msg":728.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-18T12:16:28Z","time_ms":1784376988547,"symbol":"ZECUSDT","observed_price":544.0,"field":"entry_price","event_type":"call","msg":728.0,"note":"stated entry"}
+{"time_utc":"2026-07-18T14:55:56Z","time_ms":1784386556623,"symbol":"ZECUSDT","observed_price":560.0,"field":"price_ref","event_type":"close","msg":729.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-19T05:34:26Z","time_ms":1784439266695,"symbol":"BTCUSDT","observed_price":64900.0,"field":"price_ref","event_type":"partial_close","msg":733.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-20T00:23:14Z","time_ms":1784506994747,"symbol":"BTCUSDT","observed_price":63244.7,"field":"entry_price","event_type":"tp_hit","msg":735.0,"note":"stated entry"}
+{"time_utc":"2026-07-20T00:23:14Z","time_ms":1784506994747,"symbol":"BTCUSDT","observed_price":65024.1,"field":"price_ref","event_type":"tp_hit","msg":735.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-20T00:28:37Z","time_ms":1784507317346,"symbol":"BTCUSDT","observed_price":64883.9,"field":"price_ref","event_type":"view","msg":737.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-20T16:01:04Z","time_ms":1784563264443,"symbol":"BTCUSDT","observed_price":65578.6,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-20T16:01:04Z","time_ms":1784563264443,"symbol":"BTCUSDT","observed_price":65578.6,"field":"price_ref","event_type":"partial_close","msg":739.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-20T16:01:04Z","time_ms":1784563264443,"symbol":"BTCUSDT","observed_price":63244.7,"field":"entry_price","event_type":"partial_close","msg":739.0,"note":"stated entry"}
+{"time_utc":"2026-07-21T00:57:23Z","time_ms":1784595443599,"symbol":"SOLUSDT","observed_price":77.99,"field":"price_ref","event_type":"breakeven","msg":740.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-21T00:57:23Z","time_ms":1784595443599,"symbol":"SOLUSDT","observed_price":77.9,"field":"entry_price","event_type":"breakeven","msg":740.0,"note":"stated entry"}
+{"time_utc":"2026-07-21T07:53:23Z","time_ms":1784620403200,"symbol":"BTCUSDT","observed_price":66200.0,"field":"price_ref","event_type":"tp_hit","msg":743.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-21T07:54:47Z","time_ms":1784620487916,"symbol":"BTCUSDT","observed_price":66250.0,"field":"entry_price","event_type":"call","msg":744.0,"note":"stated entry"}
+{"time_utc":"2026-07-21T07:54:47Z","time_ms":1784620487916,"symbol":"BTCUSDT","observed_price":66250.0,"field":"price_ref","event_type":"call","msg":744.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-21T07:56:22Z","time_ms":1784620582300,"symbol":"BTCUSDT","observed_price":66500.0,"field":"entry_price","event_type":"plan","msg":745.0,"note":"stated entry"}
+{"time_utc":"2026-07-21T10:58:19Z","time_ms":1784631499629,"symbol":"ZECUSDT","observed_price":545.0,"field":"entry_price","event_type":"call","msg":747.0,"note":"stated entry"}
+{"time_utc":"2026-07-22T09:02:00Z","time_ms":1784710920454,"symbol":"ZECUSDT","observed_price":543.18,"field":"entry_price","event_type":"tp_hit","msg":749.0,"note":"stated entry"}
+{"time_utc":"2026-07-22T09:02:00Z","time_ms":1784710920454,"symbol":"ZECUSDT","observed_price":527.22,"field":"price_ref","event_type":"tp_hit","msg":749.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-22T10:42:58Z","time_ms":1784716978008,"symbol":"ENAUSDT","observed_price":0.08825,"field":"entry_price","event_type":"call","msg":750.0,"note":"stated entry"}
+{"time_utc":"2026-07-22T10:42:58Z","time_ms":1784716978008,"symbol":"ENAUSDT","observed_price":0.08825,"field":"price_ref","event_type":"call","msg":750.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-23T05:04:33Z","time_ms":1784783073033,"symbol":"BTCUSDT","observed_price":66137.7,"field":"entry_price","event_type":"tp_set","msg":752.0,"note":"stated entry"}
+{"time_utc":"2026-07-23T05:04:33Z","time_ms":1784783073033,"symbol":"BTCUSDT","observed_price":65552.1,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-23T05:04:33Z","time_ms":1784783073033,"symbol":"BTCUSDT","observed_price":65552.1,"field":"price_ref","event_type":"tp_set","msg":752.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-23T07:18:00Z","time_ms":1784791080171,"symbol":"BTCUSDT","observed_price":66137.7,"field":"entry_price","event_type":"partial_close","msg":754.0,"note":"stated entry"}
+{"time_utc":"2026-07-23T07:18:00Z","time_ms":1784791080171,"symbol":"BTCUSDT","observed_price":65120.0,"field":"price_ref","event_type":"partial_close","msg":754.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-23T09:25:04Z","time_ms":1784798704159,"symbol":"NEARUSDT","observed_price":1.871,"field":"entry_price","event_type":"call","msg":755.0,"note":"stated entry"}
+{"time_utc":"2026-07-23T09:25:04Z","time_ms":1784798704159,"symbol":"NEARUSDT","observed_price":1.871,"field":"price_ref","event_type":"call","msg":755.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-23T14:08:17Z","time_ms":1784815697595,"symbol":"XRPUSDT","observed_price":1.112,"field":"entry_price","event_type":"call","msg":757.0,"note":"stated entry"}
+{"time_utc":"2026-07-23T14:08:17Z","time_ms":1784815697595,"symbol":"XRPUSDT","observed_price":1.112,"field":"price_ref","event_type":"call","msg":757.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-23T18:10:11Z","time_ms":1784830211146,"symbol":"BTCUSDT","observed_price":64600.0,"field":"price_ref","event_type":"plan","msg":759.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-23T18:28:28Z","time_ms":1784831308729,"symbol":"BTCUSDT","observed_price":64700.0,"field":"entry_price","event_type":"call","msg":760.0,"note":"stated entry"}
+{"time_utc":"2026-07-23T18:28:28Z","time_ms":1784831308729,"symbol":"BTCUSDT","observed_price":64700.0,"field":"price_ref","event_type":"call","msg":760.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-24T07:16:44Z","time_ms":1784877404589,"symbol":"BTCUSDT","observed_price":64790.5,"field":"entry_price","event_type":"tp_hit","msg":762.0,"note":"stated entry"}
+{"time_utc":"2026-07-24T07:16:44Z","time_ms":1784877404589,"symbol":"BTCUSDT","observed_price":65700.0,"field":"price_ref","event_type":"tp_hit","msg":762.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-24T07:16:44Z","time_ms":1784877404589,"symbol":"BTCUSDT","observed_price":65716.4,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-24T07:26:56Z","time_ms":1784878016652,"symbol":"INJUSDT","observed_price":5.42,"field":"entry_price","event_type":"call","msg":763.0,"note":"stated entry"}
+{"time_utc":"2026-07-24T07:26:56Z","time_ms":1784878016652,"symbol":"INJUSDT","observed_price":5.42,"field":"price_ref","event_type":"call","msg":763.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-24T09:23:57Z","time_ms":1784885037000,"symbol":"BTCUSDT","observed_price":64700.0,"field":"entry_price","event_type":"call","msg":764.0,"note":"stated entry"}
+{"time_utc":"2026-07-24T13:39:45Z","time_ms":1784900385403,"symbol":"INJUSDT","observed_price":5.36,"field":"entry_price","event_type":"dca","msg":765.0,"note":"stated entry"}
+{"time_utc":"2026-07-24T15:03:42Z","time_ms":1784905422718,"symbol":"GOLD","observed_price":4065.0,"field":"entry_price","event_type":"plan","msg":767.0,"note":"stated entry"}
+{"time_utc":"2026-07-24T15:03:42Z","time_ms":1784905422718,"symbol":"GOLD","observed_price":4065.0,"field":"price_ref","event_type":"plan","msg":767.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-24T15:19:25Z","time_ms":1784906365726,"symbol":"GOLD","observed_price":4066.9,"field":"entry_price","event_type":"sl_move","msg":768.0,"note":"stated entry"}
+{"time_utc":"2026-07-24T15:19:25Z","time_ms":1784906365726,"symbol":"GOLD","observed_price":4080.98,"field":"price_ref","event_type":"sl_move","msg":768.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-24T15:19:25Z","time_ms":1784906365726,"symbol":"XAUUSDT","observed_price":4080.98,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-25T06:34:19Z","time_ms":1784961259353,"symbol":"MEUSDT","observed_price":0.06447,"field":"entry_price","event_type":"close","msg":769.0,"note":"stated entry"}
+{"time_utc":"2026-07-25T06:34:19Z","time_ms":1784961259353,"symbol":"MEUSDT","observed_price":0.0668,"field":"price_ref","event_type":"close","msg":769.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-25T06:39:02Z","time_ms":1784961542143,"symbol":"GENIUSUSDT","observed_price":0.3509,"field":"entry_price","event_type":"close","msg":770.0,"note":"stated entry"}
+{"time_utc":"2026-07-25T06:39:02Z","time_ms":1784961542143,"symbol":"GENIUSUSDT","observed_price":0.3816,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-25T06:39:02Z","time_ms":1784961542143,"symbol":"GENIUSUSDT","observed_price":0.3816,"field":"price_ref","event_type":"close","msg":770.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-25T08:55:37Z","time_ms":1784969737073,"symbol":"BNBUSDT","observed_price":565.0,"field":"entry_price","event_type":"call","msg":771.0,"note":"stated entry"}
+{"time_utc":"2026-07-25T10:36:06Z","time_ms":1784975766587,"symbol":"EDUUSDT","observed_price":0.0337,"field":"entry_price","event_type":"call","msg":772.0,"note":"stated entry"}
+{"time_utc":"2026-07-25T12:15:03Z","time_ms":1784981703449,"symbol":"EDUUSDT","observed_price":0.03375,"field":"entry_price","event_type":"close","msg":774.0,"note":"stated entry"}
+{"time_utc":"2026-07-25T12:15:03Z","time_ms":1784981703449,"symbol":"EDUUSDT","observed_price":0.03504,"field":"price_ref","event_type":"close","msg":774.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-26T03:40:00Z","time_ms":1785037200819,"symbol":"BTCUSDT","observed_price":64350.0,"field":"entry_price","event_type":"plan","msg":776.0,"note":"stated entry"}
+{"time_utc":"2026-07-26T10:05:19Z","time_ms":1785060319742,"symbol":"BNBUSDT","observed_price":571.95,"field":"price_ref","event_type":"sl_move","msg":778.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-26T10:05:19Z","time_ms":1785060319742,"symbol":"BNBUSDT","observed_price":571.95,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-26T10:05:19Z","time_ms":1785060319742,"symbol":"BNBUSDT","observed_price":565.35,"field":"entry_price","event_type":"sl_move","msg":778.0,"note":"stated entry"}
+{"time_utc":"2026-07-26T16:41:03Z","time_ms":1785084063807,"symbol":"BTCUSDT","observed_price":64800.0,"field":"price_ref","event_type":"close","msg":779.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-26T16:41:53Z","time_ms":1785084113389,"symbol":"BTCUSDT","observed_price":64489.7,"field":"entry_price","event_type":"update","msg":780.0,"note":"stated entry"}
+{"time_utc":"2026-07-26T16:41:53Z","time_ms":1785084113389,"symbol":"BTCUSDT","observed_price":64791.9,"field":"price_ref","event_type":"update","msg":780.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-26T16:41:53Z","time_ms":1785084113389,"symbol":"BTCUSDT","observed_price":65716.4,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-26T16:42:40Z","time_ms":1785084160272,"symbol":"BTCUSDT","observed_price":65500.0,"field":"price_ref","event_type":"view","msg":781.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-27T02:40:00Z","time_ms":1785120000372,"symbol":"BTCUSDT","observed_price":65555.0,"field":"price_ref","event_type":"view","msg":782.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-27T02:58:03Z","time_ms":1785121083982,"symbol":"NEARUSDT","observed_price":1.871,"field":"entry_price","event_type":"plan","msg":783.0,"note":"stated entry"}
+{"time_utc":"2026-07-27T03:16:35Z","time_ms":1785122195699,"symbol":"BTCUSDT","observed_price":66500.0,"field":"price_ref","event_type":"view","msg":784.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-27T06:17:52Z","time_ms":1785133072119,"symbol":"BNBUSDT","observed_price":577.3,"field":"price_ref","event_type":"tp_hit","msg":785.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-27T06:17:52Z","time_ms":1785133072119,"symbol":"BNBUSDT","observed_price":565.46,"field":"entry_price","event_type":"tp_hit","msg":785.0,"note":"stated entry"}
+{"time_utc":"2026-07-27T06:18:19Z","time_ms":1785133099664,"symbol":"BNBUSDT","observed_price":576.08,"field":"price_ref","event_type":"update","msg":786.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-27T06:18:19Z","time_ms":1785133099664,"symbol":"BNBUSDT","observed_price":565.35,"field":"entry_price","event_type":"update","msg":786.0,"note":"stated entry"}
+{"time_utc":"2026-07-27T06:24:31Z","time_ms":1785133471207,"symbol":"ETHUSDT","observed_price":2000.0,"field":"price_ref","event_type":"view","msg":789.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-27T06:24:31Z","time_ms":1785133471207,"symbol":"BTCUSDT","observed_price":66000.0,"field":"price_ref","event_type":"view","msg":789.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-27T08:50:11Z","time_ms":1785142211988,"symbol":"BTCUSDT","observed_price":65200.0,"field":"entry_price","event_type":"call","msg":790.0,"note":"stated entry"}
+{"time_utc":"2026-07-27T09:39:35Z","time_ms":1785145175018,"symbol":"ZECUSDT","observed_price":502.0,"field":"entry_price","event_type":"call","msg":792.0,"note":"stated entry"}
+{"time_utc":"2026-07-27T10:02:44Z","time_ms":1785146564380,"symbol":"XRPUSDT","observed_price":1.1081,"field":"price_ref","event_type":"close","msg":793.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-27T10:02:44Z","time_ms":1785146564380,"symbol":"XRPUSDT","observed_price":1.08,"field":"entry_price","event_type":"plan","msg":793.0,"note":"stated entry"}
+{"time_utc":"2026-07-27T10:02:44Z","time_ms":1785146564380,"symbol":"XRPUSDT","observed_price":1.1069,"field":"entry_price","event_type":"close","msg":793.0,"note":"stated entry"}
+{"time_utc":"2026-07-27T10:22:01Z","time_ms":1785147721346,"symbol":"BTWUSDT","observed_price":0.095,"field":"entry_price","event_type":"entry","msg":794.0,"note":"stated entry"}
+{"time_utc":"2026-07-27T15:43:56Z","time_ms":1785167036170,"symbol":"ZECUSDT","observed_price":483.0,"field":"price_ref","event_type":"close","msg":795.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-27T15:43:56Z","time_ms":1785167036170,"symbol":"BTCUSDT","observed_price":64500.0,"field":"price_ref","event_type":"tp_hit","msg":795.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-27T15:44:22Z","time_ms":1785167062954,"symbol":"ZECUSDT","observed_price":501.92,"field":"entry_price","event_type":"update","msg":796.0,"note":"stated entry"}
+{"time_utc":"2026-07-27T15:44:22Z","time_ms":1785167062954,"symbol":"ZECUSDT","observed_price":482.14,"field":"price_ref","event_type":"update","msg":796.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-27T15:44:26Z","time_ms":1785167066261,"symbol":"BTCUSDT","observed_price":65213.3,"field":"entry_price","event_type":"update","msg":797.0,"note":"stated entry"}
+{"time_utc":"2026-07-27T15:44:26Z","time_ms":1785167066261,"symbol":"BTCUSDT","observed_price":64551.1,"field":"price_ref","event_type":"update","msg":797.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-27T16:23:53Z","time_ms":1785169433561,"symbol":"BTCUSDT","observed_price":63500.0,"field":"entry_price","event_type":"plan","msg":803.0,"note":"stated entry"}
+{"time_utc":"2026-07-28T02:08:21Z","time_ms":1785204501120,"symbol":"BTCUSDT","observed_price":63100.0,"field":"entry_price","event_type":"call","msg":804.0,"note":"stated entry"}
+{"time_utc":"2026-07-28T11:40:46Z","time_ms":1785238846681,"symbol":"SOLUSDT","observed_price":73.18,"field":"entry_price","event_type":"call","msg":808.0,"note":"stated entry"}
+{"time_utc":"2026-07-28T16:14:04Z","time_ms":1785255244937,"symbol":"SOLUSDT","observed_price":74.1,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-28T16:14:04Z","time_ms":1785255244937,"symbol":"SOLUSDT","observed_price":73.19,"field":"entry_price","event_type":"sl_move","msg":812.0,"note":"stated entry"}
+{"time_utc":"2026-07-28T16:14:04Z","time_ms":1785255244937,"symbol":"SOLUSDT","observed_price":74.1,"field":"price_ref","event_type":"sl_move","msg":812.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-28T17:06:58Z","time_ms":1785258418462,"symbol":"BTCUSDT","observed_price":63939.0,"field":"price_ref","event_type":"partial_close","msg":814.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-28T17:06:58Z","time_ms":1785258418462,"symbol":"BTCUSDT","observed_price":63182.1,"field":"entry_price","event_type":"partial_close","msg":814.0,"note":"stated entry"}
+{"time_utc":"2026-07-28T17:06:58Z","time_ms":1785258418462,"symbol":"BTCUSDT","observed_price":63100.0,"field":"entry_price","event_type":"plan","msg":814.0,"note":"stated entry"}
+{"time_utc":"2026-07-28T17:10:41Z","time_ms":1785258641839,"symbol":"BTCUSDT","observed_price":64100.0,"field":"price_ref","event_type":"plan","msg":815.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-29T07:42:18Z","time_ms":1785310938074,"symbol":"BTCUSDT","observed_price":64160.0,"field":"entry_price","event_type":"call","msg":817.0,"note":"stated entry"}
+{"time_utc":"2026-07-29T07:45:11Z","time_ms":1785311111144,"symbol":"BTCUSDT","observed_price":64160.0,"field":"entry_price","event_type":"update","msg":818.0,"note":"stated entry"}
+{"time_utc":"2026-07-29T07:49:13Z","time_ms":1785311353676,"symbol":"BTCUSDT","observed_price":63700.0,"field":"entry_price","event_type":"update","msg":819.0,"note":"stated entry"}
+{"time_utc":"2026-07-29T08:07:06Z","time_ms":1785312426637,"symbol":"BTCUSDT","observed_price":66000.0,"field":"price_ref","event_type":"view","msg":821.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-29T08:07:06Z","time_ms":1785312426637,"symbol":"ETHUSDT","observed_price":2000.0,"field":"price_ref","event_type":"view","msg":821.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-29T10:12:16Z","time_ms":1785319936990,"symbol":"BTCUSDT","observed_price":64652.4,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-29T10:12:16Z","time_ms":1785319936990,"symbol":"BTCUSDT","observed_price":64652.4,"field":"price_ref","event_type":"close","msg":822.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-29T10:12:16Z","time_ms":1785319936990,"symbol":"BTCUSDT","observed_price":63182.1,"field":"entry_price","event_type":"close","msg":822.0,"note":"stated entry"}
+{"time_utc":"2026-07-29T13:27:22Z","time_ms":1785331642219,"symbol":"BTCUSDT","observed_price":64100.0,"field":"entry_price","event_type":"call","msg":824.0,"note":"stated entry"}
+{"time_utc":"2026-07-29T13:32:39Z","time_ms":1785331959728,"symbol":"BTCUSDT","observed_price":63700.0,"field":"entry_price","event_type":"update","msg":825.0,"note":"stated entry"}
+{"time_utc":"2026-07-30T09:40:20Z","time_ms":1785404420260,"symbol":"BTCUSDT","observed_price":63812.5,"field":"entry_price","event_type":"partial_close","msg":830.0,"note":"stated entry"}
+{"time_utc":"2026-07-30T09:40:20Z","time_ms":1785404420260,"symbol":"BTCUSDT","observed_price":64578.7,"field":"price_ref","event_type":"partial_close","msg":830.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-30T09:40:20Z","time_ms":1785404420260,"symbol":"BTCUSDT","observed_price":64578.7,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-07-30T11:39:57Z","time_ms":1785411597346,"symbol":"BTCUSDT","observed_price":67000.0,"field":"price_ref","event_type":"view","msg":832.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-30T11:56:43Z","time_ms":1785412603933,"symbol":"BTCUSDT","observed_price":64800.0,"field":"price_ref","event_type":"tp_hit","msg":833.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-30T11:56:43Z","time_ms":1785412603933,"symbol":"BTCUSDT","observed_price":63812.5,"field":"entry_price","event_type":"tp_hit","msg":833.0,"note":"stated entry"}
+{"time_utc":"2026-07-30T13:58:50Z","time_ms":1785419930199,"symbol":"BTCUSDT","observed_price":65200.0,"field":"entry_price","event_type":"call","msg":834.0,"note":"stated entry"}
+{"time_utc":"2026-07-30T14:04:20Z","time_ms":1785420260099,"symbol":"BTCUSDT","observed_price":65000.0,"field":"entry_price","event_type":"entry","msg":835.0,"note":"stated entry"}
+{"time_utc":"2026-07-31T05:17:01Z","time_ms":1785475021177,"symbol":"BTCUSDT","observed_price":64200.0,"field":"price_ref","event_type":"tp_hit","msg":839.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-31T07:23:26Z","time_ms":1785482606193,"symbol":"BTCUSDT","observed_price":63969.0,"field":"entry_price","event_type":"call","msg":840.0,"note":"stated entry"}
+{"time_utc":"2026-07-31T11:04:14Z","time_ms":1785495854503,"symbol":"BNBUSDT","observed_price":582.0,"field":"entry_price","event_type":"plan","msg":842.0,"note":"stated entry"}
+{"time_utc":"2026-07-31T14:08:19Z","time_ms":1785506899569,"symbol":"BTCUSDT","observed_price":62200.0,"field":"entry_price","event_type":"plan","msg":844.0,"note":"stated entry"}
+{"time_utc":"2026-07-31T14:22:19Z","time_ms":1785507739261,"symbol":"BNBUSDT","observed_price":586.6,"field":"entry_price","event_type":"call","msg":845.0,"note":"stated entry"}
+{"time_utc":"2026-07-31T14:22:19Z","time_ms":1785507739261,"symbol":"BTCUSDT","observed_price":63500.0,"field":"price_ref","event_type":"plan","msg":845.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-07-31T15:30:38Z","time_ms":1785511838539,"symbol":"UNIUSDT","observed_price":4.25,"field":"entry_price","event_type":"call","msg":846.0,"note":"stated entry"}
+{"time_utc":"2026-07-31T15:38:00Z","time_ms":1785512280598,"symbol":"ARKMUSDT","observed_price":0.096,"field":"entry_price","event_type":"sl_move","msg":847.0,"note":"stated entry"}
+{"time_utc":"2026-07-31T15:38:00Z","time_ms":1785512280598,"symbol":"ARKMUSDT","observed_price":0.096,"field":"entry_price","event_type":"close","msg":847.0,"note":"stated entry"}
+{"time_utc":"2026-08-01T06:35:00Z","time_ms":1785566100898,"symbol":"UNIUSDT","observed_price":4.088,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-08-01T06:35:00Z","time_ms":1785566100898,"symbol":"UNIUSDT","observed_price":4.088,"field":"price_ref","event_type":"close","msg":850.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-01T06:35:00Z","time_ms":1785566100898,"symbol":"UNIUSDT","observed_price":4.24,"field":"entry_price","event_type":"close","msg":850.0,"note":"stated entry"}
+{"time_utc":"2026-08-01T08:27:43Z","time_ms":1785572863802,"symbol":"BTCUSDT","observed_price":63000.0,"field":"entry_price","event_type":"call","msg":851.0,"note":"stated entry"}
+{"time_utc":"2026-08-01T08:50:34Z","time_ms":1785574234667,"symbol":"HYPEUSDT","observed_price":52.4,"field":"entry_price","event_type":"call","msg":852.0,"note":"stated entry"}
+{"time_utc":"2026-08-01T18:42:13Z","time_ms":1785609733148,"symbol":"ETHUSDT","observed_price":1840.0,"field":"entry_price","event_type":"entry","msg":853.0,"note":"stated entry"}
+{"time_utc":"2026-08-02T07:10:06Z","time_ms":1785654606445,"symbol":"BTCUSDT","observed_price":63500.0,"field":"price_ref","event_type":"partial_close","msg":856.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-02T07:10:06Z","time_ms":1785654606445,"symbol":"BTCUSDT","observed_price":62500.0,"field":"entry_price","event_type":"partial_close","msg":856.0,"note":"stated entry"}
+{"time_utc":"2026-08-02T11:07:13Z","time_ms":1785668833294,"symbol":"ZECUSDT","observed_price":473.5,"field":"entry_price","event_type":"call","msg":858.0,"note":"stated entry"}
+{"time_utc":"2026-08-02T15:58:34Z","time_ms":1785686314591,"symbol":"BNBUSDT","observed_price":587.0,"field":"price_ref","event_type":"close","msg":859.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-02T16:08:14Z","time_ms":1785686894275,"symbol":"ETHUSDT","observed_price":1840.0,"field":"entry_price","event_type":"tp_set","msg":860.0,"note":"stated entry"}
+{"time_utc":"2026-08-02T17:03:22Z","time_ms":1785690202828,"symbol":"ETHUSDT","observed_price":1862.0,"field":"entry_price","event_type":"call","msg":861.0,"note":"stated entry"}
+{"time_utc":"2026-08-02T20:36:35Z","time_ms":1785702995810,"symbol":"ZECUSDT","observed_price":490.0,"field":"price_ref","event_type":"tp_hit","msg":862.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-02T22:12:44Z","time_ms":1785708764357,"symbol":"BTCUSDT","observed_price":64000.0,"field":"price_ref","event_type":"plan","msg":866.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-03T08:25:55Z","time_ms":1785745555530,"symbol":"BTCUSDT","observed_price":61800.0,"field":"entry_price","event_type":"plan","msg":867.0,"note":"stated entry"}
+{"time_utc":"2026-08-03T12:32:50Z","time_ms":1785760370375,"symbol":"ZECUSDT","observed_price":480.0,"field":"entry_price","event_type":"plan","msg":868.0,"note":"stated entry"}
+{"time_utc":"2026-08-03T13:35:02Z","time_ms":1785764102483,"symbol":"ZECUSDT","observed_price":482.0,"field":"entry_price","event_type":"call","msg":869.0,"note":"stated entry"}
+{"time_utc":"2026-08-03T13:56:57Z","time_ms":1785765417023,"symbol":"BTCUSDT","observed_price":63220.0,"field":"price_ref","event_type":"update","msg":870.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-03T13:56:57Z","time_ms":1785765417023,"symbol":"BTCUSDT","observed_price":63220.0,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-08-03T13:56:57Z","time_ms":1785765417023,"symbol":"BTCUSDT","observed_price":62512.3,"field":"entry_price","event_type":"update","msg":870.0,"note":"stated entry"}
+{"time_utc":"2026-08-03T14:06:15Z","time_ms":1785765975773,"symbol":"HYPEUSDT","observed_price":53.5,"field":"price_ref","event_type":"close","msg":871.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-03T14:06:52Z","time_ms":1785766012593,"symbol":"ZECUSDT","observed_price":482.0,"field":"entry_price","event_type":"sl_move","msg":872.0,"note":"stated entry"}
+{"time_utc":"2026-08-03T14:44:38Z","time_ms":1785768278096,"symbol":"HYPEUSDT","observed_price":54.0,"field":"price_ref","event_type":"tp_hit","msg":873.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-03T14:49:14Z","time_ms":1785768554135,"symbol":"SPCXUSDT","observed_price":112.01,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-08-03T14:49:14Z","time_ms":1785768554135,"symbol":"SPCXUSDT","observed_price":107.82,"field":"entry_price","event_type":"update","msg":874.0,"note":"stated entry"}
+{"time_utc":"2026-08-03T14:49:14Z","time_ms":1785768554135,"symbol":"SPCXUSDT","observed_price":112.01,"field":"price_ref","event_type":"update","msg":874.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-03T14:51:18Z","time_ms":1785768678268,"symbol":"BTCUSDT","observed_price":64000.0,"field":"price_ref","event_type":"plan","msg":875.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-03T20:55:51Z","time_ms":1785790551959,"symbol":"SPCXUSDT","observed_price":107.83,"field":"entry_price","event_type":"partial_close","msg":876.0,"note":"stated entry"}
+{"time_utc":"2026-08-03T20:55:51Z","time_ms":1785790551959,"symbol":"SPCXUSDT","observed_price":115.0,"field":"price_ref","event_type":"partial_close","msg":876.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-04T11:44:56Z","time_ms":1785843896841,"symbol":"BTCUSDT","observed_price":64500.0,"field":"price_ref","event_type":"plan","msg":878.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-04T14:35:14Z","time_ms":1785854114773,"symbol":"ETHUSDT","observed_price":1867.0,"field":"entry_price","event_type":"call","msg":879.0,"note":"stated entry"}
+{"time_utc":"2026-08-04T14:40:44Z","time_ms":1785854444915,"symbol":"BTCUSDT","observed_price":64400.0,"field":"price_ref","event_type":"view","msg":880.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-04T16:23:53Z","time_ms":1785860633902,"symbol":"SPCXUSDT","observed_price":121.91,"field":"price_ref","event_type":"update","msg":881.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-04T16:23:53Z","time_ms":1785860633902,"symbol":"SPCXUSDT","observed_price":107.82,"field":"entry_price","event_type":"update","msg":881.0,"note":"stated entry"}
+{"time_utc":"2026-08-04T16:23:53Z","time_ms":1785860633902,"symbol":"SPCXUSDT","observed_price":121.91,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-08-04T19:19:33Z","time_ms":1785871173958,"symbol":"SPCXUSDT","observed_price":126.67,"field":"price_ref","event_type":"partial_close","msg":882.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-04T19:19:33Z","time_ms":1785871173958,"symbol":"SPCXUSDT","observed_price":126.67,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-08-04T19:19:33Z","time_ms":1785871173958,"symbol":"SPCXUSDT","observed_price":107.82,"field":"entry_price","event_type":"partial_close","msg":882.0,"note":"stated entry"}
+{"time_utc":"2026-08-05T00:18:55Z","time_ms":1785889135668,"symbol":"BTCUSDT","observed_price":64500.0,"field":"price_ref","event_type":"update","msg":883.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-05T10:24:45Z","time_ms":1785925485262,"symbol":"GOLD","observed_price":4162.0,"field":"entry_price","event_type":"entry","msg":884.0,"note":"stated entry"}
+{"time_utc":"2026-08-05T12:33:19Z","time_ms":1785933199199,"symbol":"ETHUSDT","observed_price":1882.0,"field":"price_ref","event_type":"close","msg":886.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-05T12:33:19Z","time_ms":1785933199199,"symbol":"ETHUSDT","observed_price":1867.0,"field":"entry_price","event_type":"sl_move","msg":886.0,"note":"stated entry"}
+{"time_utc":"2026-08-05T12:38:28Z","time_ms":1785933508172,"symbol":"BTCUSDT","observed_price":64500.0,"field":"price_ref","event_type":"tp_hit","msg":887.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-05T12:43:37Z","time_ms":1785933817416,"symbol":"HYPEUSDT","observed_price":57.3,"field":"price_ref","event_type":"plan","msg":888.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-05T12:43:37Z","time_ms":1785933817416,"symbol":"GOLD","observed_price":4182.0,"field":"entry_price","event_type":"update","msg":888.0,"note":"stated entry"}
+{"time_utc":"2026-08-05T12:43:37Z","time_ms":1785933817416,"symbol":"HYPEUSDT","observed_price":58.5,"field":"entry_price","event_type":"plan","msg":888.0,"note":"stated entry"}
+{"time_utc":"2026-08-05T13:04:08Z","time_ms":1785935048632,"symbol":"ZECUSDT","observed_price":482.0,"field":"entry_price","event_type":"breakeven","msg":889.0,"note":"stated entry"}
+{"time_utc":"2026-08-05T13:05:17Z","time_ms":1785935117143,"symbol":"BNBUSDT","observed_price":599.41,"field":"price_ref","event_type":"update","msg":890.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-05T13:51:42Z","time_ms":1785937902173,"symbol":"ETHUSDT","observed_price":1870.0,"field":"entry_price","event_type":"call","msg":891.0,"note":"stated entry"}
+{"time_utc":"2026-08-05T16:22:58Z","time_ms":1785946978850,"symbol":"ETHUSDT","observed_price":1890.27,"field":"price_ref","event_type":"close","msg":894.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-05T16:22:58Z","time_ms":1785946978850,"symbol":"ETHUSDT","observed_price":1890.27,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-08-05T16:22:58Z","time_ms":1785946978850,"symbol":"ETHUSDT","observed_price":1871.53,"field":"entry_price","event_type":"close","msg":894.0,"note":"stated entry"}
+{"time_utc":"2026-08-05T18:23:48Z","time_ms":1785954228933,"symbol":"ETHUSDT","observed_price":1920.0,"field":"entry_price","event_type":"call","msg":896.0,"note":"stated entry"}
+{"time_utc":"2026-08-05T23:39:43Z","time_ms":1785973183223,"symbol":"GOLD","observed_price":4350.0,"field":"price_ref","event_type":"view","msg":897.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-06T09:27:31Z","time_ms":1786008451961,"symbol":"BTCUSDT","observed_price":64823.0,"field":"entry_price","event_type":"entry","msg":898.0,"note":"stated entry"}
+{"time_utc":"2026-08-06T09:27:31Z","time_ms":1786008451961,"symbol":"BTCUSDT","observed_price":64774.6,"field":"price_ref","event_type":"entry","msg":898.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-06T09:27:31Z","time_ms":1786008451961,"symbol":"BTCUSDT","observed_price":64774.6,"field":"card_mark_price","event_type":"screenshot","msg":null,"note":"mark price on an exchange share card — the tightest timestamp\/price pair available"}
+{"time_utc":"2026-08-06T13:25:06Z","time_ms":1786022706878,"symbol":"ETHUSDT","observed_price":1892.0,"field":"price_ref","event_type":"close","msg":899.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-06T13:49:55Z","time_ms":1786024195089,"symbol":"HYPEUSDT","observed_price":58.0,"field":"entry_price","event_type":"update","msg":901.0,"note":"stated entry"}
+{"time_utc":"2026-08-06T13:49:55Z","time_ms":1786024195089,"symbol":"GOLD","observed_price":4350.0,"field":"entry_price","event_type":"update","msg":901.0,"note":"stated entry"}
+{"time_utc":"2026-08-06T13:49:55Z","time_ms":1786024195089,"symbol":"HYPEUSDT","observed_price":53.999,"field":"price_ref","event_type":"update","msg":901.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-06T15:12:03Z","time_ms":1786029123286,"symbol":"BTCUSDT","observed_price":64800.0,"field":"entry_price","event_type":"call","msg":902.0,"note":"stated entry"}
+{"time_utc":"2026-08-06T20:32:13Z","time_ms":1786048333166,"symbol":"TRADOORUSDT","observed_price":0.72,"field":"entry_price","event_type":"call","msg":904.0,"note":"stated entry"}
+{"time_utc":"2026-08-06T20:33:30Z","time_ms":1786048410247,"symbol":"TRADOORUSDT","observed_price":0.73,"field":"entry_price","event_type":"dca","msg":905.0,"note":"stated entry"}
+{"time_utc":"2026-08-07T09:11:09Z","time_ms":1786093869951,"symbol":"BTCUSDT","observed_price":65300.0,"field":"entry_price","event_type":"plan","msg":907.0,"note":"stated entry"}
+{"time_utc":"2026-08-07T09:32:02Z","time_ms":1786095122863,"symbol":"BTCUSDT","observed_price":64800.0,"field":"entry_price","event_type":"call","msg":908.0,"note":"stated entry"}
+{"time_utc":"2026-08-07T13:18:24Z","time_ms":1786108704164,"symbol":"THETAUSDT","observed_price":0.134,"field":"entry_price","event_type":"call","msg":909.0,"note":"stated entry"}
+{"time_utc":"2026-08-07T14:10:18Z","time_ms":1786111818948,"symbol":"BTCUSDT","observed_price":65300.0,"field":"entry_price","event_type":"sl_move","msg":910.0,"note":"stated entry"}
+{"time_utc":"2026-08-07T16:26:33Z","time_ms":1786119993411,"symbol":"ETHUSDT","observed_price":1920.0,"field":"entry_price","event_type":"call","msg":911.0,"note":"stated entry"}
+{"time_utc":"2026-08-07T16:27:16Z","time_ms":1786120036485,"symbol":"ETHUSDT","observed_price":1913.0,"field":"price_ref","event_type":"dca","msg":912.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-07T18:21:52Z","time_ms":1786126912239,"symbol":"BTCUSDT","observed_price":65300.0,"field":"entry_price","event_type":"tp_set","msg":914.0,"note":"stated entry"}
+{"time_utc":"2026-08-10T13:09:39Z","time_ms":1786367379355,"symbol":"ETHUSDT","observed_price":1907.31,"field":"price_ref","event_type":"close","msg":919.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-10T13:09:39Z","time_ms":1786367379355,"symbol":"ETHUSDT","observed_price":1922.78,"field":"entry_price","event_type":"close","msg":919.0,"note":"stated entry"}
+{"time_utc":"2026-08-10T13:34:31Z","time_ms":1786368871929,"symbol":"GRTUSDT","observed_price":0.0146,"field":"entry_price","event_type":"call","msg":920.0,"note":"stated entry"}
+{"time_utc":"2026-08-10T13:59:01Z","time_ms":1786370341767,"symbol":"BTCUSDT","observed_price":65024.1,"field":"entry_price","event_type":"partial_close","msg":921.0,"note":"stated entry"}
+{"time_utc":"2026-08-10T13:59:01Z","time_ms":1786370341767,"symbol":"BTCUSDT","observed_price":64504.5,"field":"price_ref","event_type":"partial_close","msg":921.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-10T15:02:51Z","time_ms":1786374171934,"symbol":"GRTUSDT","observed_price":0.01457,"field":"entry_price","event_type":"tp_hit","msg":922.0,"note":"stated entry"}
+{"time_utc":"2026-08-10T15:02:51Z","time_ms":1786374171934,"symbol":"GRTUSDT","observed_price":0.01443,"field":"price_ref","event_type":"tp_hit","msg":922.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-10T15:20:21Z","time_ms":1786375221959,"symbol":"ETHUSDT","observed_price":1905.0,"field":"price_ref","event_type":"tp_hit","msg":925.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-10T16:21:18Z","time_ms":1786378878403,"symbol":"BTCUSDT","observed_price":64060.0,"field":"price_ref","event_type":"tp_hit","msg":926.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-10T16:23:17Z","time_ms":1786378997170,"symbol":"BTCUSDT","observed_price":63960.0,"field":"entry_price","event_type":"call","msg":927.0,"note":"stated entry"}
+{"time_utc":"2026-08-10T19:00:57Z","time_ms":1786388457076,"symbol":"ETHUSDT","observed_price":1871.0,"field":"entry_price","event_type":"call","msg":930.0,"note":"stated entry"}
+{"time_utc":"2026-08-11T11:05:41Z","time_ms":1786446341375,"symbol":"ETHUSDT","observed_price":1890.16,"field":"price_ref","event_type":"tp_hit","msg":932.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-11T11:05:41Z","time_ms":1786446341375,"symbol":"ETHUSDT","observed_price":1872.74,"field":"entry_price","event_type":"tp_hit","msg":932.0,"note":"stated entry"}
+{"time_utc":"2026-08-11T15:07:19Z","time_ms":1786460839324,"symbol":"SOLUSDT","observed_price":75.23,"field":"price_ref","event_type":"update","msg":933.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-11T15:07:19Z","time_ms":1786460839324,"symbol":"SOLUSDT","observed_price":77.23,"field":"entry_price","event_type":"update","msg":933.0,"note":"stated entry"}
+{"time_utc":"2026-08-11T20:24:28Z","time_ms":1786479868375,"symbol":"BTCUSDT","observed_price":63500.0,"field":"entry_price","event_type":"entry","msg":934.0,"note":"stated entry"}
+{"time_utc":"2026-08-11T23:00:25Z","time_ms":1786489225898,"symbol":"HOLOUSDT","observed_price":0.084,"field":"entry_price","event_type":"entry","msg":935.0,"note":"stated entry"}
+{"time_utc":"2026-08-11T23:00:25Z","time_ms":1786489225898,"symbol":"HOLOUSDT","observed_price":0.088,"field":"price_ref","event_type":"entry","msg":935.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-12T12:15:55Z","time_ms":1786536955752,"symbol":"BTCUSDT","observed_price":63800.0,"field":"entry_price","event_type":"dca","msg":937.0,"note":"stated entry"}
+{"time_utc":"2026-08-13T15:29:53Z","time_ms":1786634993260,"symbol":"HYPEUSDT","observed_price":58.36,"field":"entry_price","event_type":"call","msg":939.0,"note":"stated entry"}
+{"time_utc":"2026-08-14T08:40:00Z","time_ms":1786696800246,"symbol":"HYPEUSDT","observed_price":58.35,"field":"entry_price","event_type":"tp_hit","msg":943.0,"note":"stated entry"}
+{"time_utc":"2026-08-14T08:40:00Z","time_ms":1786696800246,"symbol":"HYPEUSDT","observed_price":56.503,"field":"price_ref","event_type":"tp_hit","msg":943.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-14T16:08:35Z","time_ms":1786723715781,"symbol":"ZECUSDT","observed_price":486.0,"field":"entry_price","event_type":"call","msg":945.0,"note":"stated entry"}
+{"time_utc":"2026-08-14T16:21:01Z","time_ms":1786724461983,"symbol":"ENSUSDT","observed_price":4.036,"field":"entry_price","event_type":"call","msg":946.0,"note":"stated entry"}
+{"time_utc":"2026-08-15T01:43:45Z","time_ms":1786758225903,"symbol":"ZECUSDT","observed_price":498.0,"field":"price_ref","event_type":"close","msg":948.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-15T12:08:40Z","time_ms":1786795720794,"symbol":"ZECUSDT","observed_price":498.44,"field":"price_ref","event_type":"view","msg":949.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-16T01:38:20Z","time_ms":1786844300357,"symbol":"SOLUSDT","observed_price":75.3,"field":"entry_price","event_type":"call","msg":952.0,"note":"stated entry"}
+{"time_utc":"2026-08-17T10:36:07Z","time_ms":1786962967539,"symbol":"SOLUSDT","observed_price":75.6,"field":"price_ref","event_type":"close","msg":953.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-17T14:03:39Z","time_ms":1786975419682,"symbol":"BTCUSDT","observed_price":63800.0,"field":"entry_price","event_type":"tp_move","msg":954.0,"note":"stated entry"}
+{"time_utc":"2026-08-17T14:12:17Z","time_ms":1786975937309,"symbol":"GPSUSDT","observed_price":0.155,"field":"price_ref","event_type":"view","msg":955.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-17T14:18:33Z","time_ms":1786976313875,"symbol":"WLDUSDT","observed_price":0.355,"field":"entry_price","event_type":"call","msg":956.0,"note":"stated entry"}
+{"time_utc":"2026-08-17T15:49:32Z","time_ms":1786981772584,"symbol":"BTCUSDT","observed_price":63797.1,"field":"entry_price","event_type":"update","msg":958.0,"note":"stated entry"}
+{"time_utc":"2026-08-17T15:49:32Z","time_ms":1786981772584,"symbol":"BTCUSDT","observed_price":64144.9,"field":"price_ref","event_type":"update","msg":958.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-17T15:56:16Z","time_ms":1786982176481,"symbol":"BTCUSDT","observed_price":64200.0,"field":"entry_price","event_type":"call","msg":960.0,"note":"stated entry"}
+{"time_utc":"2026-08-17T19:52:29Z","time_ms":1786996349627,"symbol":"WLDUSDT","observed_price":0.3552,"field":"entry_price","event_type":"close","msg":963.0,"note":"stated entry"}
+{"time_utc":"2026-08-17T19:52:29Z","time_ms":1786996349627,"symbol":"WLDUSDT","observed_price":0.3493,"field":"price_ref","event_type":"close","msg":963.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-18T13:32:08Z","time_ms":1787059928916,"symbol":"ZECUSDT","observed_price":505.2,"field":"entry_price","event_type":"call","msg":964.0,"note":"stated entry"}
+{"time_utc":"2026-08-18T13:37:17Z","time_ms":1787060237983,"symbol":"BTCUSDT","observed_price":64300.0,"field":"entry_price","event_type":"dca","msg":965.0,"note":"stated entry"}
+{"time_utc":"2026-08-19T15:05:47Z","time_ms":1787151947429,"symbol":"HYPEUSDT","observed_price":59.82,"field":"entry_price","event_type":"call","msg":974.0,"note":"stated entry"}
+{"time_utc":"2026-08-19T15:38:59Z","time_ms":1787153939447,"symbol":"HYPEUSDT","observed_price":60.5,"field":"price_ref","event_type":"dca","msg":976.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-19T15:56:39Z","time_ms":1787154999314,"symbol":"BTCUSDT","observed_price":63000.0,"field":"price_ref","event_type":"view","msg":978.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-19T19:37:03Z","time_ms":1787168223908,"symbol":"HYPEUSDT","observed_price":56.23,"field":"entry_price","event_type":"update","msg":981.0,"note":"stated entry"}
+{"time_utc":"2026-08-20T01:34:21Z","time_ms":1787189661274,"symbol":"BTCUSDT","observed_price":69280.0,"field":"entry_price","event_type":"call","msg":982.0,"note":"stated entry"}
+{"time_utc":"2026-08-20T01:51:14Z","time_ms":1787190674235,"symbol":"BTCUSDT","observed_price":71000.0,"field":"price_ref","event_type":"view","msg":983.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-20T02:02:49Z","time_ms":1787191369039,"symbol":"BTCUSDT","observed_price":70000.0,"field":"price_ref","event_type":"plan","msg":984.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-20T07:13:39Z","time_ms":1787210019069,"symbol":"BTCUSDT","observed_price":69907.6,"field":"price_ref","event_type":"close","msg":986.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-20T07:13:39Z","time_ms":1787210019069,"symbol":"BTCUSDT","observed_price":69111.2,"field":"entry_price","event_type":"close","msg":986.0,"note":"stated entry"}
+{"time_utc":"2026-08-20T08:18:35Z","time_ms":1787213915046,"symbol":"BTCUSDT","observed_price":70999.5,"field":"price_ref","event_type":"close","msg":987.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-20T08:18:35Z","time_ms":1787213915046,"symbol":"BTCUSDT","observed_price":69220.4,"field":"entry_price","event_type":"close","msg":987.0,"note":"stated entry"}
+{"time_utc":"2026-08-20T10:19:46Z","time_ms":1787221186943,"symbol":"BTCUSDT","observed_price":72400.0,"field":"entry_price","event_type":"call","msg":988.0,"note":"stated entry"}
+{"time_utc":"2026-08-20T15:09:34Z","time_ms":1787238574645,"symbol":"ARBUSDT","observed_price":0.0889,"field":"entry_price","event_type":"call","msg":991.0,"note":"stated entry"}
+{"time_utc":"2026-08-20T17:07:05Z","time_ms":1787245625198,"symbol":"SUIUSDT","observed_price":0.74,"field":"entry_price","event_type":"entry","msg":994.0,"note":"stated entry"}
+{"time_utc":"2026-08-20T17:07:05Z","time_ms":1787245625198,"symbol":"AVAXUSDT","observed_price":7.2,"field":"entry_price","event_type":"entry","msg":994.0,"note":"stated entry"}
+{"time_utc":"2026-08-21T01:47:22Z","time_ms":1787276842632,"symbol":"BTCUSDT","observed_price":75000.0,"field":"price_ref","event_type":"view","msg":996.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-21T01:56:15Z","time_ms":1787277375954,"symbol":"BTCUSDT","observed_price":63000.0,"field":"entry_price","event_type":"update","msg":998.0,"note":"stated entry"}
+{"time_utc":"2026-08-21T10:32:36Z","time_ms":1787308356564,"symbol":"BTCUSDT","observed_price":80000.0,"field":"price_ref","event_type":"view","msg":999.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-21T10:51:59Z","time_ms":1787309519829,"symbol":"BERAUSDT","observed_price":0.19,"field":"entry_price","event_type":"entry","msg":1000.0,"note":"stated entry"}
+{"time_utc":"2026-08-21T13:50:53Z","time_ms":1787320253505,"symbol":"SOLUSDT","observed_price":80.0,"field":"entry_price","event_type":"view","msg":1002.0,"note":"stated entry"}
+{"time_utc":"2026-08-21T13:50:53Z","time_ms":1787320253505,"symbol":"SOLUSDT","observed_price":90.0,"field":"price_ref","event_type":"view","msg":1002.0,"note":"price he referenced as live\/current"}
+{"time_utc":"2026-08-21T14:58:07Z","time_ms":1787324287902,"symbol":"BTCUSDT","observed_price":77300.0,"field":"entry_price","event_type":"call","msg":1004.0,"note":"stated entry"}

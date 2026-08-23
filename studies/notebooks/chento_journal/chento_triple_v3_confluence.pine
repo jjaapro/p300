@@ -1,0 +1,195 @@
+//@version=6
+indicator("Chento Triple V3 - Confluence Monitor", shorttitle="ChentoV3", overlay=true, max_lines_count=500, max_labels_count=500)
+
+import TradingView/ta/9 as tvta
+import TradingView/Request/3 as req
+
+// =====================================================================
+//  VISUAL-CONFIRMATION MONITOR for the chento_triple_v3 sleeve.
+//  Built for BINANCE:BTCUSDT.P @ 15m (the production timeframe).
+//
+//  This is a CONVERSION / PRACTICE artifact, NOT a faithful backtest.
+//
+//  FAITHFUL (same data as production):
+//    B5  LSR extremes (cryptoDerivativeMetric "Long Accounts")
+//    Filter 3  OKX-Binance perp delta z-score gate
+//    Filter 4  up_30d regime (skip shorts when BTC 30d return > +10%)
+//    Filter 2  opposite Order Block within 2R   (APPROX via swing pivots)
+//    Exit rails  5xATR stop / 6R target / 72h TIF
+//
+//  PROXY (NOT production's Binance taker buy/sell quote volume -- this is
+//  TradingView's tick-rule volume delta; measured vs real taker CVD over
+//  6.4y: r=0.72, ~67% direction match on B1 fires, ~27% over-fire):
+//    B1  money-flow CVD divergence  (the trigger ANCHOR)
+//    B7  multi-TF CVD alignment (1h/4h/1d/3d)
+//
+//  OMITTED: Filter 1 no_tilt (a post-loss throttle; it suppresses some
+//    signals after a loss but does not move where signals occur).
+//
+//  LIMITS: lower-TF (1m) data is ~69d deep on a standard TV account, so
+//    B1/B7 are blank before that. Do NOT read backtest stats off this.
+// =====================================================================
+
+// ---------------- Inputs ----------------
+string GC = "CVD proxy (tick-rule, NOT taker volume)"
+b1_thr  = input.float(0.5, "B1 CVD |z| threshold",     group=GC)
+b1_vmax = input.float(1.0, "B1 velocity |z| max",      group=GC)
+b7_thr  = input.float(2.0, "B7 median |z| threshold",  group=GC)
+ltf     = input.string("1", "CVD lower timeframe",     group=GC)
+
+string GF = "Faithful gates"
+okx_zmin = input.float(0.0,  "OKX align |z| min",            group=GF)
+up30_thr = input.float(0.10, "Skip-shorts when 30d return >", group=GF)
+
+string GE = "Exit rails"
+atr_len = input.int(14,   "ATR length",      group=GE)
+atr_x   = input.float(5.0, "Stop = ATR x",   group=GE)
+rr      = input.float(6.0, "Target R multiple", group=GE)
+
+string GD = "Display"
+show_tbl  = input.bool(true, "Show status table", group=GD)
+show_rail = input.bool(true, "Draw ATR/6R rails", group=GD)
+
+// ---------------- Constants (15m bars) ----------------
+int ZW    = 2880   // 30d  z / percentile window
+int VELW  = 4      // 1h   velocity lookback
+int TW    = 96     // 24h  triple confirmation window
+int CD_B1 = 24     // 6h   B1 cooldown
+int CD_B5 = 96     // 24h  B5 cooldown
+int CD_TR = 24     // 6h   cooldown between triples
+int TIF   = 288    // 72h  rail length
+
+// ---------------- Helpers ----------------
+zscore(float src, int len) => (src - ta.sma(src, len)) / ta.stdev(src, len)
+
+med4(float a, float b, float c, float d) =>
+    arr = array.from(a, b, c, d)
+    array.sort(arr)
+    (array.get(arr, 1) + array.get(arr, 2)) / 2.0
+
+fireCD(bool cond, int cd) =>
+    var int last = na
+    bool f = cond and (na(last) or (bar_index - last) >= cd)
+    if f
+        last := bar_index
+    f
+
+// ---------------- B1: money-flow CVD divergence (PROXY) ----------------
+[vo, vh, vl, vd] = tvta.requestVolumeDelta(ltf, timeframe.period)
+cvd_z = zscore(vd, ZW)
+vel   = close / close[VELW] - 1.0
+vel_z = zscore(vel, ZW)
+b1_long  = fireCD(cvd_z < -b1_thr and math.abs(vel_z) < b1_vmax, CD_B1)
+b1_short = fireCD(cvd_z >  b1_thr and math.abs(vel_z) < b1_vmax, CD_B1)
+
+// ---------------- B7: multi-TF CVD alignment (PROXY) ----------------
+z1 = zscore(math.sum(vd, 4),   ZW)   // 1h
+z2 = zscore(math.sum(vd, 16),  ZW)   // 4h
+z3 = zscore(math.sum(vd, 96),  ZW)   // 1d
+z4 = zscore(math.sum(vd, 288), ZW)   // 3d
+all_pos = z1 > 0 and z2 > 0 and z3 > 0 and z4 > 0
+all_neg = z1 < 0 and z2 < 0 and z3 < 0 and z4 < 0
+medz = med4(z1, z2, z3, z4)
+b7_long  = all_pos and medz >  b7_thr
+b7_short = all_neg and medz < -b7_thr
+
+// ---------------- B5: LSR extremes (FAITHFUL) ----------------
+lsr = req.cryptoDerivativeMetric(syminfo.tickerid, "Long Accounts", timeframe.period)
+p10 = ta.percentile_nearest_rank(lsr, ZW, 10)
+p90 = ta.percentile_nearest_rank(lsr, ZW, 90)
+b5_long  = fireCD(not na(lsr) and lsr < p10, CD_B5)
+b5_short = fireCD(not na(lsr) and lsr > p90, CD_B5)
+
+// ---------------- Filter 3: OKX-Binance delta gate (FAITHFUL) ----------------
+okx   = request.security("OKX:BTCUSDT.P", "60", close)
+bnb   = request.security(syminfo.tickerid, "60", close)
+delta = math.log(okx) - math.log(bnb)
+okx_z = zscore(delta, 672)   // 7d on 15m
+
+// ---------------- Filter 4: up_30d regime (FAITHFUL) ----------------
+ret30 = close / close[ZW] - 1.0
+up30  = ret30 > up30_thr
+
+// ---------------- ATR / risk ----------------
+atr  = ta.atr(atr_len)
+risk = atr_x * atr
+
+// ---------------- Filter 2: opposite OB within 2R (APPROX via swings) ----------------
+ph = ta.pivothigh(5, 5)
+pl = ta.pivotlow(5, 5)
+var float res = na
+var float sup = na
+if not na(ph)
+    res := ph
+if not na(pl)
+    sup := pl
+bear_ob_near = not na(res) and res > close and (res - close) <= 2.0 * risk
+bull_ob_near = not na(sup) and sup < close and (close - sup) <= 2.0 * risk
+
+// ---------------- Triple (B1-anchored) + filters ----------------
+b5_long_w  = ta.barssince(b5_long)  <= TW
+b7_long_w  = ta.barssince(b7_long)  <= TW
+b5_short_w = ta.barssince(b5_short) <= TW
+b7_short_w = ta.barssince(b7_short) <= TW
+
+triple_long  = b1_long  and b5_long_w  and b7_long_w
+triple_short = b1_short and b5_short_w and b7_short_w
+
+long_sig  = fireCD(triple_long  and okx_z >=  okx_zmin and not bear_ob_near,               CD_TR)
+short_sig = fireCD(triple_short and okx_z <= -okx_zmin and not bull_ob_near and not up30,  CD_TR)
+
+// ---------------- Plot entries + rails ----------------
+plotshape(long_sig,  "Long",  shape.triangleup,   location.belowbar, color.new(color.teal, 0), size=size.small)
+plotshape(short_sig, "Short", shape.triangledown, location.abovebar, color.new(color.red, 0),  size=size.small)
+
+draw_rails(bool isLong) =>
+    e = close
+    s = isLong ? e - risk : e + risk
+    t = isLong ? e + rr * risk : e - rr * risk
+    col = isLong ? color.teal : color.red
+    line.new(bar_index, e, bar_index + TIF, e, color=color.new(color.gray, 40))
+    line.new(bar_index, s, bar_index + TIF, s, color=color.new(color.red, 20),  style=line.style_dashed)
+    line.new(bar_index, t, bar_index + TIF, t, color=color.new(color.teal, 20), style=line.style_dashed)
+    label.new(bar_index, t, (isLong ? "LONG " : "SHORT ") + str.tostring(rr, "#") + "R", style=isLong ? label.style_label_down : label.style_label_up, color=color.new(col, 80), textcolor=color.white, size=size.small)
+
+if show_rail and long_sig
+    draw_rails(true)
+if show_rail and short_sig
+    draw_rails(false)
+
+// ---------------- Status table ----------------
+f2(float x)            => na(x) ? "-" : str.tostring(x, "#.##")
+scol(bool l, bool s)   => l ? color.teal : s ? color.red : color.gray
+sstr(bool l, bool s)   => l ? "LONG" : s ? "SHORT" : "."
+
+color CBG = color.rgb(30, 34, 45)   // dark cell bg so text is visible on any theme
+var table t = table.new(position.top_right, 3, 9, frame_color=color.gray, frame_width=1, border_color=color.gray, border_width=1)
+gcell(int col, int row, string txt) => table.cell(t, col, row, txt, bgcolor=CBG, text_color=color.white)
+if show_tbl and barstate.islast
+    table.cell(t, 0, 0, "Gate",  bgcolor=color.gray, text_color=color.white)
+    table.cell(t, 1, 0, "Value", bgcolor=color.gray, text_color=color.white)
+    table.cell(t, 2, 0, "State", bgcolor=color.gray, text_color=color.white)
+    gcell(0, 1, "B1 cvd/vel (proxy)")
+    gcell(1, 1, f2(cvd_z) + " / " + f2(vel_z))
+    table.cell(t, 2, 1, sstr(b1_long, b1_short), text_color=color.white, bgcolor=color.new(scol(b1_long, b1_short), 40))
+    gcell(0, 2, "B7 med|z| (proxy)")
+    gcell(1, 2, f2(medz))
+    table.cell(t, 2, 2, sstr(b7_long, b7_short), text_color=color.white, bgcolor=color.new(scol(b7_long, b7_short), 40))
+    gcell(0, 3, "B5 long% / p10-p90")
+    gcell(1, 3, f2(lsr) + " / " + f2(p10) + "-" + f2(p90))
+    table.cell(t, 2, 3, sstr(b5_long, b5_short), text_color=color.white, bgcolor=color.new(scol(b5_long, b5_short), 40))
+    gcell(0, 4, "OKX delta z")
+    gcell(1, 4, f2(okx_z))
+    table.cell(t, 2, 4, okx_z >= okx_zmin ? "L-ok" : okx_z <= -okx_zmin ? "S-ok" : ".", text_color=color.white, bgcolor=CBG)
+    gcell(0, 5, "30d return")
+    gcell(1, 5, f2(ret30 * 100) + "%")
+    table.cell(t, 2, 5, up30 ? "skip-S" : ".", text_color=color.white, bgcolor=color.new(up30 ? color.orange : color.gray, 40))
+    gcell(0, 6, "OB near (2R)")
+    gcell(1, 6, (bear_ob_near ? "res " : "") + (bull_ob_near ? "sup" : ""))
+    table.cell(t, 2, 6, bear_ob_near ? "blk-L" : bull_ob_near ? "blk-S" : ".", text_color=color.white, bgcolor=CBG)
+    gcell(0, 7, "TRIPLE (pre-filter)")
+    gcell(1, 7, "B1+B5+B7")
+    table.cell(t, 2, 7, sstr(triple_long, triple_short), text_color=color.white, bgcolor=color.new(scol(triple_long, triple_short), 30))
+    gcell(0, 8, "SIGNAL")
+    gcell(1, 8, "post-filter")
+    table.cell(t, 2, 8, sstr(long_sig, short_sig), text_color=color.white, bgcolor=color.new(scol(long_sig, short_sig), 0))

@@ -1,0 +1,148 @@
+//@version=5
+// ═════════════════════════════════════════════════════════════════════════════
+// S-003 ADX Regime Flip — ENHANCED (2026-06-26 study build)
+//
+// Faithful port of the live sleeve (strategies/sleeves/adx/signal.py) with two
+// VALIDATED, OOS-confirmed drawdown reducers added as toggles (both default OFF,
+// so out of the box this == current live behaviour and reproduces the Python
+// harness trade list).
+//
+// Research source: studies/notebooks/adx_study/ (harness.py, experiments.py,
+// funding_overlay.py). 9y BTC daily from cd_spot_binance.
+//
+//   BASELINE (toggles off):  34 trades, WR 50%, PF 5.2, +2769%, maxDD -27.3%, MAR 1.78
+//   + ATR x4 catastrophe stop:          maxDD -23.7%, MAR 1.97   (keeps funding shorts)
+//   + short trend filter + ATR x4:      maxDD -15.1%, MAR 3.09   (drops funding shorts)
+//
+// READ THIS — why some SHORTS show as "losers" on the strategy tester:
+//   The tester is PRICE-ONLY. The live sleeve trades PERPS and the counter-trend
+//   shorts (entered while price is ABOVE EMA150, in a bull market) EARN funding.
+//   Over 9y those 7 shorts lost -31% on price but earned +33% funding -> ~net flat.
+//   They are a FUNDING-HARVEST overlay, not broken entries. They are drawn in a
+//   DIM red below so you can tell them apart from with-trend (engine) shorts.
+//   Turning on "Short trend filter" removes them: lower DD, but forfeits the carry.
+//
+// Recommended chart for parity with the live signal: BINANCE:BTCUSDT, 1D.
+// ═════════════════════════════════════════════════════════════════════════════
+
+strategy("S-003 ADX Regime Flip — ENHANCED",
+         overlay=true,
+         default_qty_type=strategy.percent_of_equity,
+         default_qty_value=100,
+         commission_type=strategy.commission.percent,
+         commission_value=0.05,           // 5bp/side, 10bp round-trip
+         process_orders_on_close=true,
+         calc_on_every_tick=false)
+
+// ─── Inputs: signal (canonical S-003) ────────────────────────────────────────
+adx_len       = input.int(14, "ADX period", group="Signal")
+adx_high      = input.float(25, "ADX entry threshold", minval=10, maxval=50, step=1, group="Signal")
+adx_low       = input.float(20, "ADX exit threshold",  minval=5,  maxval=40, step=1, group="Signal")
+ema_len       = input.int(50,  "Direction EMA length", group="Signal")
+trend_ema_len = input.int(150, "Trend filter EMA length (0=off)", minval=0, maxval=400, step=10, group="Signal",
+     tooltip="ASYMMETRIC by default: LONG entries require close>EMA(N); SHORT entries unfiltered. See 'Short trend filter' to make it symmetric.")
+sl_pct        = input.float(10, "Hard SL %", minval=0, step=1, group="Signal")
+allow_short   = input.bool(true, "Enable SHORT regime", group="Signal")
+
+// ─── Inputs: validated improvements (both OFF = live behaviour) ───────────────
+short_trend_filter = input.bool(false, "DD-1: Short trend filter (close<EMA150)", group="Improvements",
+     tooltip="Makes the trend filter symmetric: SHORT entries also require close<EMA(trend). Removes the 7 counter-trend funding-harvest shorts. maxDD -27%->-19%, MAR 1.78->2.83, but forfeits funding carry (~net-flat on PRICE+FUNDING). Use only if you value DD over the carry overlay.")
+use_atr_stop  = input.bool(false, "DD-2: ATR catastrophe stop (keeps shorts)", group="Improvements",
+     tooltip="Adds a wide ATR trailing stop ALONGSIDE the 10% hard SL and ADX<20 exit. Trims worst price excursions without cutting trends. maxDD -27%->-24%, return ~flat. Does NOT touch the short/funding decision.")
+atr_mult      = input.float(4.0, "  ATR stop multiple", minval=1.0, maxval=8.0, step=0.5, group="Improvements",
+     tooltip="4.0 validated. <3 cuts trends short and underperforms; this is a catastrophe stop, not a scalp trail.")
+atr_len       = input.int(14, "  ATR length", group="Improvements")
+
+show_bg       = input.bool(true, "Highlight in-position bars", group="Display")
+mark_carry    = input.bool(true, "Mark counter-trend (funding-harvest) shorts", group="Display")
+
+// ─── ADX (Wilder, == strategies.support.indicators.adx) ──────────────────────
+up       = ta.change(high)
+down     = -ta.change(low)
+plus_dm  = na(up)   ? na : (up   > down and up   > 0 ? up   : 0)
+minus_dm = na(down) ? na : (down > up   and down > 0 ? down : 0)
+tr_rma   = ta.rma(ta.tr, adx_len)
+plus_di  = 100 * ta.rma(plus_dm,  adx_len) / tr_rma
+minus_di = 100 * ta.rma(minus_dm, adx_len) / tr_rma
+dx       = 100 * math.abs(plus_di - minus_di) / (plus_di + minus_di + 1e-9)
+adx_val  = ta.rma(dx, adx_len)
+
+ema50     = ta.ema(close, ema_len)
+trend_ema = trend_ema_len > 0 ? ta.ema(close, trend_ema_len) : na
+atr_val   = ta.atr(atr_len)
+
+// ─── State machine (sticky was_low, consumed on entry) ───────────────────────
+var bool   was_low = false
+var string cur_dir = na
+var float  trail   = na          // ATR trailing-stop level (ratchets on close)
+
+if adx_val < adx_low
+    was_low := true
+
+entry_event = was_low and adx_val >= adx_high
+exit_event  = not na(cur_dir) and adx_val < adx_low
+new_dir     = close > ema50 ? "long" : "short"
+counter_trend_short = new_dir == "short" and trend_ema_len > 0 and not na(trend_ema) and close > trend_ema
+
+// Trend filter. LONG always requires close>trend_ema. SHORT requires
+// close<trend_ema ONLY when short_trend_filter is on (else unfiltered = live).
+long_ok  = trend_ema_len <= 0 or na(trend_ema) or close > trend_ema
+short_ok = (trend_ema_len <= 0 or na(trend_ema) or not short_trend_filter) or close < trend_ema
+trend_ok = new_dir == "long" ? long_ok : short_ok
+
+// ─── Exit first (ADX death), then entry (matches Python ordering) ────────────
+if exit_event
+    strategy.close_all(comment="ADX<20")
+    cur_dir := na
+    trail   := na
+
+if entry_event
+    was_low := false                       // consume (one attempt per cycle)
+    if trend_ok and (new_dir == "long" or allow_short)
+        if not na(cur_dir) and cur_dir != new_dir
+            strategy.close_all(comment="regime flip")
+            cur_dir := na
+        if na(cur_dir)
+            trail := na
+            if new_dir == "long"
+                strategy.entry("LONG", strategy.long)
+                cur_dir := "long"
+            else
+                strategy.entry("SHORT", strategy.short)
+                cur_dir := "short"
+
+// ─── Protective stops: hard 10% SL, optionally combined with ATR trail ───────
+// Effective long stop = the higher (closer) of the hard SL and the ATR trail.
+// Effective short stop = the lower (closer) of the two. One strategy.exit each.
+if strategy.position_size > 0
+    if use_atr_stop and not na(atr_val)
+        trail := na(trail) ? close - atr_mult * atr_val : math.max(trail, close - atr_mult * atr_val)
+    sl_long  = sl_pct > 0 ? strategy.position_avg_price * (1.0 - sl_pct / 100.0) : na
+    stop_long = na(trail) ? sl_long : (na(sl_long) ? trail : math.max(sl_long, trail))
+    if not na(stop_long)
+        strategy.exit("LONG_X", from_entry="LONG", stop=stop_long)
+
+if strategy.position_size < 0
+    if use_atr_stop and not na(atr_val)
+        trail := na(trail) ? close + atr_mult * atr_val : math.min(trail, close + atr_mult * atr_val)
+    sl_short  = sl_pct > 0 ? strategy.position_avg_price * (1.0 + sl_pct / 100.0) : na
+    stop_short = na(trail) ? sl_short : (na(sl_short) ? trail : math.min(sl_short, trail))
+    if not na(stop_short)
+        strategy.exit("SHORT_X", from_entry="SHORT", stop=stop_short)
+
+// ─── Visualisation ───────────────────────────────────────────────────────────
+plot(ema50, "EMA50", color=color.orange)
+plot(trend_ema_len > 0 ? trend_ema : na, "Trend EMA filter", color=color.new(color.purple, 0), linewidth=2)
+
+bgcolor(show_bg and cur_dir == "long"  ? color.new(color.green, 90) : na, title="In LONG")
+bgcolor(show_bg and cur_dir == "short" ? color.new(color.red,   92) : na, title="In SHORT")
+
+fired_long  = entry_event and trend_ok and new_dir == "long"
+fired_short = entry_event and trend_ok and new_dir == "short" and allow_short
+blocked     = entry_event and not trend_ok
+plotshape(fired_long,  "Long entry",  shape.triangleup,   location.belowbar, color.green, size=size.small)
+// with-trend (engine) shorts bright; counter-trend (funding-harvest) shorts dim
+plotshape(fired_short and not counter_trend_short, "Short entry (with trend)", shape.triangledown, location.abovebar, color.red, size=size.small)
+plotshape(fired_short and counter_trend_short and mark_carry, "Short entry (funding-harvest)", shape.triangledown, location.abovebar, color.new(color.red, 55), size=size.tiny)
+plotshape(blocked, "Trend-filter block", shape.xcross, location.belowbar, color.new(color.gray, 30), size=size.tiny)
+plotshape(exit_event, "Regime exit", shape.xcross, location.absolute, color.gray, size=size.tiny)

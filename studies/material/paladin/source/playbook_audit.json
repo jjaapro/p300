@@ -1,0 +1,296 @@
+{
+ "method_note": "Every quote in the playbook (257 across all sections) was machine-checked against messages_full.txt: fragments split on '...', normalised for markdown/whitespace/smart-quotes, required to appear IN ORDER inside the body of the stated message number, with the stated date matching the message timestamp. 29 were additionally re-read by eye in full raw context. Counts come from messages_full.txt (1,005 msgs), events_all.json (1,242 events) and positions_all.json (217 positions). Image-description lines ([IMAGE ...]) are the extraction pipeline's summaries of screenshots, NOT the trader's words, and are excluded from prose counts unless stated.",
+
+ "quote_check": {
+  "checked": 257,
+  "verbatim": 257,
+  "note": "All 257 quotes are verbatim at the message number given, with a matching date. Zero paraphrases, zero misattributions, zero wrong-message citations, zero quotes lifted from the 3 messages posted by other people, and zero ellipsis splices that skip more than 200 characters (largest gap skipped was under 200 chars, so no quote stitches together distant text to fabricate a meaning). The problems below are NOT quotation errors - they are evidence-fit errors, where a verbatim quote does not actually support the claim it is filed under.",
+  "problems": [
+   {
+    "section": "trade_management",
+    "item": "Manual take-profit; resting TP orders are removed or overridden",
+    "msg": 502,
+    "issue": "The quote used is 'SL: 4h under 330 or hard SL @ 320' - a STOP-LOSS line. It has nothing to do with manual take-profits. Msg 502 does contain a plain 'TP: 400' but nothing about taking it manually. Evidence does not support the tactic; drop or replace this item (msgs 5, 105 and 355 already carry it)."
+   },
+   {
+    "section": "signals",
+    "item": "4h close above/below a level (soft SL and confirmation trigger)",
+    "msg": 17,
+    "issue": "The quote is 'SL: 1h close under 79k or hard SL @ 78.5k' - a ONE-HOUR close, cited as the lead evidence and the first_seen anchor (2026-05-08) for a signal named '4h close'. Only 2 messages in the whole corpus use a 1h close; 35 use a 4h close. Either rename the item to 'candle-close stops (almost always 4h)' or move first_seen to msg 27 (the first genuine 4h reference, same day)."
+   },
+   {
+    "section": "signals",
+    "item": "4h close above/below a level",
+    "msg": 27,
+    "issue": "Quote is verbatim ('SL: 4h under 0.59 or hard SLs at 0.581') but the source itself is internally broken: the KERNEL entry in that same message is 0.064, so a 0.59 stop is a typo by the trader. Citing it as a clean illustration of the soft/hard stop structure is unfortunate - msg 902 ('SL: 4h close above 66k or hard SL @ 66.3k') is the sound example."
+   },
+   {
+    "section": "signals",
+    "item": "Gold (XAU) and oil as correlated macro reads for BTC",
+    "msg": 884,
+    "issue": "The quote ('Shorted gold from 4162, will keep 30% for DCA...SL @ 4269') shows him TRADING gold as a separate book, not reading gold as an intermarket signal for BTC. Only ONE message in the corpus (424) actually makes the gold->BTC inference, and even there he hedges it as 'just a thought'. The claimed frequency of 8 is carried almost entirely by gold trades, not by intermarket reads."
+   },
+   {
+    "section": "signals",
+    "item": "Daily high / daily low as stop placement",
+    "msg": 33,
+    "issue": "Quote ('I have a feeling we will pump hard on BTC this weekend, can visit previous daily high') is about a TARGET, not stop placement. The item's own description concedes this ('He also uses previous daily high as the natural target'), but it is filed under a stop-placement signal and is the first_seen anchor for it."
+   }
+  ]
+ },
+
+ "negative_claims": [
+  {"term": "RSI", "occurrences": 0, "verdict": "supported", "examples": []},
+  {"term": "divergence", "occurrences": 0, "verdict": "supported", "examples": []},
+  {"term": "fibonacci / fib", "occurrences": 0, "verdict": "supported", "examples": []},
+  {
+   "term": "volume",
+   "occurrences": 4,
+   "verdict": "refuted (as literally worded); supported in substance",
+   "examples": [
+    "MSG 225 [IMAGE]: Bybit 15m chart of UNIUSDT '...showing a parabolic breakout to the 24h high 3.698 with last price 3.687 and a volume spike'",
+    "MSG 2450-line [IMAGE, msg 391]: Blofin 15m DEXEUSDT chart 'showing a violent wick to 22.049 on a volume spike'",
+    "MSG 686 [IMAGE]: exchange stats panel 'trading volume 5,163.94, 11 closed orders, 11 winning'",
+    "MSG 892 [IMAGE]: Binance BNB/USDT ticker header '24h volume 118,699.57 BNB / 70.87M USDT'"
+   ],
+   "detail": "All 4 hits are inside [IMAGE ...] screenshot summaries - exchange UI chrome that happened to be visible in a chart he posted, plus his own account's turnover statistic. He never writes the word himself and never reasons from volume. The claim 'zero occurrences in 1,005 messages' is factually wrong and must be reworded to 'never mentions volume in his own text'."
+  },
+  {
+   "term": "funding / funding rate",
+   "occurrences": 1,
+   "verdict": "refuted (as literally worded); supported in substance",
+   "examples": [
+    "MSG 617 [IMAGE, 2026-06-28]: Blofin 1h TOSHIUSDT chart '...now at 0.0001297 (+18.44% 24h) with a heavily negative funding rate (-1.1492%)'"
+   ],
+   "detail": "The single hit is the screenshot summariser describing the funding figure on a chart he posted to show a pump. His own text for that message is 'TOSHI up 25% in spot move + 1.5R move' - no funding reasoning. Substantive claim survives; 'zero occurrences' does not."
+  },
+  {"term": "open interest / OI", "occurrences": 0, "verdict": "supported", "examples": []},
+  {"term": "order flow / orderflow", "occurrences": 0, "verdict": "supported", "examples": []},
+  {"term": "orderbook / order book", "occurrences": 0, "verdict": "supported", "examples": []},
+  {"term": "CVD", "occurrences": 0, "verdict": "supported", "examples": []},
+  {"term": "delta", "occurrences": 0, "verdict": "supported", "examples": []},
+  {
+   "term": "liquidity",
+   "occurrences": 0,
+   "verdict": "supported on the word; REFUTED on the concept",
+   "examples": [
+    "MSG 382 (2026-06-05): 'Okay lows are swept you can add around 25% margin if you want, optional'",
+    "MSG 589 (2026-06-24): 'as I said they'll make a new daily low then bounce it, you can take 25-30%'"
+   ],
+   "detail": "The word never appears. But 'lows are swept' is a liquidity-sweep read, and the playbook's OWN signal #3 ('New daily low sweep then bounce') is built on it - so what_he_never_does contradicts the signals section. The events file even tags msg 382 with indicators_mentioned: ['liquidity']. Note 'swept/sweep' appears only ONCE in 1,005 messages, so signal #3's claimed frequency of 5 rests on the idea being restated in other words ('new daily low then bounce'), which is fair but should be said."
+  },
+  {"term": "liq map / liqmap / heatmap", "occurrences": 0, "verdict": "supported", "examples": []},
+  {
+   "term": "liquidation (distinct from liquidity)",
+   "occurrences": 6,
+   "verdict": "n/a - not a claimed negative, but worth noting",
+   "examples": ["MSG 365: 'Have a hard SL somewhere around 63-64k to avoid liqudiation wick'"],
+   "detail": "He uses 'liquidation' only in the sense of his own position being liquidated - the stated purpose of the hard SL. Not a market-data input. Do not let this be confused with liquidity in any rewrite."
+  },
+  {"term": "stochastic / MACD / bollinger / VWAP / OBV / oscillator", "occurrences": 0, "verdict": "supported", "examples": []},
+  {"term": "FVG / order block / imbalance / smart money / wyckoff / elliott / supply-demand zone / trendline / head and shoulders", "occurrences": 0, "verdict": "supported", "examples": []},
+  {
+   "term": "positive control: what he DOES name",
+   "occurrences": 0,
+   "verdict": "supported",
+   "examples": ["EMA: 21 line-hits / 14 messages", "wick: 14", "candle: 9", "support: 9", "resistance: 6", "4h close family: 35 messages", "1h close family: 2 messages"],
+   "detail": "The playbook's positive inventory - 'EMA 20/50/200, 4h and 1h closes, support/resistance, daily high/low, wicks and round price levels' - is exactly right and exhaustive. Nothing else technical appears in 1,005 messages."
+  }
+ ],
+
+ "headline_mechanics": [
+  {
+   "mechanic": "small targets (0.5-0.8R)",
+   "verdict": "supported",
+   "evidence": "His own explicit statements are unambiguous and verbatim: msg 318 'Avg TP R:** 0.64'; msg 410 'BTC scalps (90% WR but 0.5R TPs)'; msg 802 'Yes my R is small 0.5-0.8R on avg but there are so many TPs that 2 trades cover 1SL easily'; msg 929 'I usually target 0.5R for scalps'. 31 messages state a 0.5-0.8R figure. But the RECONSTRUCTED record is weaker than the playbook implies.",
+   "counts": "Of 120 winning positions, only 27 carry a stated R. Median 1.00R, mean 1.05R; 11/27 (41%) are <=0.8R, 18/27 (67%) are <=1.0R, 2 are >=2R. Eight wins are exactly 0.5R. So 'small targets' is his stated policy and true of his scalp book, but the observable win distribution centres on 1R, not 0.5-0.8R. Downgrade from the playbook's 'EXPLICIT AND CONFIRMED BY HIS OWN STATS' - his own stats confirm it, the reconstruction only half-confirms it, and the sample of stated-R wins is self-selected (he reports R when it flatters)."
+  },
+  {
+   "mechanic": "a reserved DCA tranche",
+   "verdict": "weak - the causal claim should be dropped",
+   "evidence": "The playbook says 'EXPLICIT AND CONSTANT - 162 messages mention DCA. The reserved tranche is the mechanism that turns a losing entry into a winner.' The 162 message count is exactly right, but it is a count of DCA CHATTER, not of signals that reserve a tranche, and the causal claim fails a direct test.",
+   "counts": "Only 53 of 139 signal-format posts (38%) publish a DCA line. Only 58 of 217 positions (27%) have a planned DCA. Only 30 (14%) ever had a DCA fill. Decisive: positions where a DCA actually filled won 19 / lost 9 = 68% win rate; positions with NO DCA fill won 101 / lost 26 / BE 10 = 74% (80% excluding BE). The DCA cohort performs WORSE, so the reserved tranche cannot be what produces the headline win rate. It genuinely rescues individual trades - msg 959 'From almost an SL to a decent TP with a DCA in', msg 725 'BTC TP hit with a DCA filled so good gains' - but on ~1 trade in 7, and those trades are below-average performers. Reword to: 'a rescue tool used on a minority of trades, not the engine of the win rate.'"
+  },
+  {
+   "mechanic": "soft / moveable stops",
+   "verdict": "weak",
+   "evidence": "Vividly real as behaviour, far too rare to explain an 85-90% win rate. The smoking guns are genuine and verbatim: msg 969 'Removing BTC SL for now...if I get stopped I'll short again so not gonna accept my SL here'; msg 368 'BTC closed below the manual SL...I'LL PERSONALLY HOLD TILL 63K'; msg 381 'I'm extending SL to 59k'; msg 860 ETH short held with no stop at all.",
+   "counts": "Only 14 of 139 signal posts (10%) publish a candle-close soft SL, and only 10 publish a soft+hard pair - 90% of his signals carry a plain numeric stop. Across 217 positions there are 46 with any stop move, of which only 15 are a widen / extend / remove / hard-to-manual (7% of positions). Meanwhile 35 losses did close at a stop. So he does move stops, but 9 times in 10 he does not, and the playbook's framing of the 4h-close soft stop as 'his single most-used piece of chart logic' overstates its footprint in the published signals."
+  },
+  {
+   "mechanic": "breakeven exits framed as discipline",
+   "verdict": "refuted as worded; strongly supported when restated as 'discretionary early exits'",
+   "evidence": "Literal breakeven exits are rare - only 12 of 217 positions end BE. The playbook's own claim that this is 'probably the single biggest driver of the reported win rate' does not survive on BE exits alone. But the underlying intuition is right and the real mechanism is bigger and cleaner: he closes MANUALLY, before the published target, and manual closes essentially never lose.",
+   "counts": "Exit types: manual_close 62, take_profit 45, stop_loss 35, breakeven 11, unknown 42. Of the 62 manual closes, 61 are wins, 1 is BE, and ZERO are losses - discretionary exits never produce a loss in his record; losses only ever arrive via a stop. Only 45 of 120 wins (38%) actually reached a published take-profit. At least 26 wins (22%) were manual closes that exited SHORT of the published TP1 (e.g. BTC 2026-06-17 long: exit 63,923 against a published 65,000 target; BB 2026-05-14: exit 0.0371 against a published 0.39). 44 messages carry BE / small-profit exit language; 15 use 'small profits' explicitly. Suggested rewrite of the headline: the win rate is bought by closing early at his own discretion, below the published target, on more than half of all winners - of which breakeven exits are only the most extreme case."
+  },
+  {
+   "mechanic": "OVERALL - does the four-part explanation account for the win rate?",
+   "verdict": "supported in direction, but incomplete",
+   "evidence": "Two of the four mechanics (small targets, discretionary early exits) hold; two (DCA tranche, soft stops) are far weaker than claimed. And the playbook takes the 85-90% win rate as a given to be explained, when the reconstruction says a chunk of it is a counting artifact - see missed_findings.",
+   "counts": "Reconstructed record across 165 resolved positions: 120 wins, 35 losses, 10 breakeven = 72.7% (77.4% excluding BE). His published figures are 85% (May) and 89% (July)."
+  }
+ ],
+
+ "frequency_check": [
+  {"item": "vocabulary / CMP - 'appears in 240 messages'", "claimed": 240, "found": 240, "ok": true, "note": "Exact."},
+  {"item": "entry_style / holds back 25-50% for a DCA - frequency 162", "claimed": 162, "found": 162, "ok": true, "note": "Exact as a count of messages containing 'DCA' - but see headline_mechanics: it is not a count of signals that reserve a tranche (that is 53), and the field is presented as the frequency of the PATTERN. Misleading denominator."},
+  {"item": "vocabulary / BE - 'appears in 106 messages'", "claimed": 106, "found": 107, "ok": true, "note": "Within 1."},
+  {"item": "trade_management / manual take-profit - frequency 30", "claimed": 30, "found": 30, "ok": true, "note": "Exact (messages containing 'manual')."},
+  {"item": "signals / 200 EMA - frequency 14", "claimed": 14, "found": 14, "ok": true, "note": "Exact for all EMA mentions. Note only 9 messages name the 200 EMA specifically; the item's title over-weights the 200 relative to the EMA 20/50 references it also covers."},
+  {"item": "signals / 4h close - frequency 32", "claimed": 32, "found": 35, "ok": true, "note": "Within 10%."},
+  {"item": "risk_rules / half risk, weekend size - frequency 44", "claimed": 44, "found": 54, "ok": true, "note": "Within 23% on a broad pattern (half risk / half margin / weekend size / go low / small margin / risk half)."},
+  {"item": "trade_management / SL to BE - frequency 40", "claimed": 40, "found": 44, "ok": true, "note": "Within 10%. Separately, only 22 of 217 positions (10%) have a recorded to_entry stop move, so he instructs it about 4x more often than he does it."},
+  {"item": "trade_management / BE-and-small-profit exits - frequency 41", "claimed": 41, "found": 44, "ok": true, "note": "Message count is right; the inference drawn from it is not (see headline_mechanics)."},
+  {"item": "trade_management / no partials while taking them - frequency 26", "claimed": 26, "found": 28, "ok": true, "note": "28 messages record one of his own partial exits ('took 25%', 'took 70%'); only 17 messages contain the word 'partial'. 43 of 217 positions carry a recorded partial, 47 partial exits in total."},
+  {"item": "trade_management / small targets 0.5-0.8R - frequency 24", "claimed": 24, "found": 31, "ok": true, "note": "31 messages state a 0.5-0.8R figure. Within 30%."},
+  {"item": "signals / front run - frequency 6", "claimed": 6, "found": 4, "ok": false, "note": "OVERSTATED BY 50%. Only 4 messages in 1,005 contain 'front ran'/'front run' - msgs 352, 571, 711, 820 - which are exactly the 4 the playbook cites as evidence. There is no fifth or sixth instance. Set frequency to 4."},
+  {"item": "signals / weekend-Sunday pump seasonality - frequency 16", "claimed": 16, "found": 14, "ok": true, "note": "Within 13% on a pump-near-weekend pattern."},
+  {"item": "entry_style / long bias - '~113 longs and ~39 shorts of 151 signal posts'", "claimed": 151, "found": 139, "ok": true, "note": "139 signal-format posts found by a strict regex (Long/Short TICKER + Entry), split 106 long / 33 short = 3.2:1. Reconstructed positions: 159 long / 57 short = 2.8:1, or 156/50 = 3.1:1 excluding gold/oil/equities. The 'roughly 3 longs per short' claim is solid; the exact 113/39/151 triple is a soft estimate, not a verified count."},
+  {"item": "instruments / Blofin '~242 references'", "claimed": 242, "found": 242, "ok": true, "note": "Exact as raw occurrences (122 distinct messages). The monthly venue narrative also checks out: Bybit dominates May (33 msgs), Blofin May-July (43/37/39), Yubit takes over in August (23 vs Blofin's 3)."},
+  {"item": "instruments / '150x is by far the most common (99 card mentions)'", "claimed": 99, "found": 115, "ok": true, "note": "Within 16%. 150x is indeed the modal leverage (115), ahead of 100x (77), 75x (59), 50x (47), 250x (45)."},
+  {"item": "entry_style / grades every call - frequency 44", "claimed": 44, "found": 59, "ok": true, "note": "59 messages contain risky/gamble/gambling/shitcoin alone; 174 if the full label set (incl. half risk, swing, scalp) is used. If anything the claim is conservative."},
+  {"item": "trade_management / percentage instructions - frequency 40", "claimed": 40, "found": null, "ok": true, "note": "Not cleanly countable - any regex broad enough to catch 'take 20-25% here' also catches ROI percentages. Broad pattern gives 69. Directionally right; treat as an estimate."}
+ ],
+
+ "contradictions": [
+  {
+   "claim": "He preaches 1-2% risk while running much larger size (risk_rules item 1: 'BEHAVIOURAL CONTRADICTION')",
+   "verdict": "refuted",
+   "evidence_for": "Msg 213 'I risk 1-2% on ALTs and 3-5% on BTC trades' and msg 846 'I risk 2% on ALTs, 3-5% on BTC' versus msg 221 'I'll try to risk 10-20% which isn't healthy for your main wallet', plus msg 687 'This is where I risk only 3-5% per trade' over a +30.92% four-day curve.",
+   "evidence_against": "Both legs collapse on inspection. (1) Msg 221 in full: 'I found this today in some account, for fun I'll do BTC scalp trades only on this and let's see if we can double it... Nothing serious just for fun, don't follow it on main account I'll try to risk 10-20% which isn't healthy for your main wallet.' The attached image is a wallet screenshot showing 89.36 USDT. That is a disclosed, ring-fenced $89 novelty account, announced as reckless and explicitly not to be copied - the opposite of a hidden contradiction. (2) The +30.92%/4-day curve is arithmetically CONSISTENT with 3-5% risk: the immediately preceding message 686 posts the exchange's own stats panel for that same window - '11 closed orders, 11 winning closed orders, 100% win rate'. Eleven consecutive wins at 3-5% risk and roughly 0.5-1R apiece produce well over +30%. Nothing in 1,005 messages shows him running larger-than-stated risk on his main book. DROP this contradiction; the honest finding is that he discloses the carve-out."
+  },
+  {
+   "claim": "He says he takes no partials while taking them (trade_management item 2)",
+   "verdict": "supported",
+   "evidence_for": "Same-day, same-instrument collision: msg 457 at 15:59 on 2026-06-11 'I'm still in BTC long from 62.2k I only took 25% at 63k' versus msg 465 at 22:42 the SAME DAY 'Made 3.2R today, that's realized without any partials, I don't take partials!'. Also msg 226 'only take 25-40% and save majority for when I exit, I personally take no partials'; msg 522 'Take 50, I don't take partials but I advise if you take partials at least do 50%'; msg 754 'Took 70% fully at 65120, SL to BE'; msg 802 'Since I don't take partials and take only 1TP so calculating my real R is very easy!'. Behaviourally: 43 of 217 positions carry a recorded partial exit, 47 partial exits in total, sized 50% (x11), 25% (x9), 20% (x9), 70% (x3), 30%, 40%, 60%, 75%, 10%.",
+   "evidence_against": "None. The only mitigation is that his July stats line reads '23.5R (Without Partials)' (msg 848), i.e. he claims the ACCOUNTING excludes partials - but that is a different claim from 'I don't take partials', which he states flatly and repeatedly. This is the playbook's strongest contradiction and should be kept as-is."
+  },
+  {
+   "claim": "He teaches 'SL to entry after TP1' but announces he is not doing it himself (trade_management item 1)",
+   "verdict": "supported, with a correction to the wording",
+   "evidence_for": "Teaches it: msg 39 'Common knowledge but a reminder, SL to Entry after TP1'. Refuses it: msg 182 'Personally didn't move SL to entry, will play full setup either SL or TP'; msg 306 'Still holding BTC, either a full TP or SL, not moving SL to entry.'",
+   "evidence_against": "He does do it, just inconsistently: msg 155 'took 20% SL to entry'; msg 754 'Took 70% fully at 65120, SL to BE'; msg 535 'SL to BE due to FOMC'; and 22 of 217 positions carry a recorded to_entry stop move. So the finding is inconsistency (instructs it in ~44 messages, executes it on ~10% of positions), not divergence. The playbook's phrase 'the follower-facing rule and his own behaviour diverge' overstates - soften to 'he applies it selectively and announces when he is not'."
+  },
+  {
+   "claim": "He widens/removes stops, contradicting his own teaching (trade_management item 6)",
+   "verdict": "supported, but rarer than the framing implies",
+   "evidence_for": "Msg 969 is decisive and verbatim: 'Removing BTC SL for now will wait a 4h close above 65.2k... Reason is if I get stopped I'll short again so not gonna accept my SL here'. Plus msg 368, msg 381 'I'm extending SL to 59k', msg 944 hard-to-manual, msg 860 ETH short run with no stop.",
+   "evidence_against": "Only 15 widen/extend/remove/hard-to-manual events across 217 positions (7%). The claimed frequency of 16 is right as a MESSAGE count but reads as though this is habitual. Also msg 550 shows the opposite instinct - 'don't want a trade running publicly without SL'. Keep the item, soften 'frequency' framing to 'documented 15 times, on ~7% of positions, but decisive when it happens'."
+  },
+  {
+   "claim": "what_he_never_does: 'Never lets a public signal run without a stated stop for long'",
+   "verdict": "refuted",
+   "evidence_for": "Msg 550 'don't want a trade running publicly without SL'.",
+   "evidence_against": "He ran the 1840 ETH short with no stop for at least a day AND publicly invited followers into it: msg 853 'Personally I have started a ETH short from 1840, I don't have a SL for this, maybe 2k? But I'm using 1% margin with Max Lev if anyone wants to join'; msg 860 'I do not recommend trading without SL but if anyone wants to short with me you're more than welcome'. Ring-fencing it as 'personal' while soliciting followers into it is not the same as not publishing it. Combined with msg 969 removing a published BTC stop, this negative claim does not hold."
+  },
+  {
+   "claim": "what_he_never_does: 'Never re-takes a setup he has just traded to a full target'",
+   "verdict": "refuted",
+   "evidence_for": "Msg 954 'I just don't like taking same setups so didn't myself'.",
+   "evidence_against": "The playbook already notes the conflict but still lists it as a never. It is flatly contradicted by an entire trade_management item ('Re-run the identical setup after it works', frequency 8): msg 179 'it's the same last setup playing again', msg 371 'Longed BTC again from 62.8k same setup', msg 764 'will use this setup again... TP SL same', msg 780 'Used same setup for both, won 6 out of 6 BTC trades last week!'. Msg 954 is a one-off remark about an ALT (ZEC) he declined. Delete this from what_he_never_does or restate it as 'says this once about alts, while systematically recycling BTC setups'."
+  }
+ ],
+
+ "claims_to_drop_or_soften": [
+  {
+   "section": "what_he_never_does",
+   "item": "Never uses an oscillator, volume, funding, open interest or orderbook data",
+   "why": "The basis sentence says 'Zero occurrences of RSI, divergence, fibonacci, volume, funding, open interest, liquidity or orderbook in 1,005 messages.' Volume occurs 4 times and funding once, in [IMAGE] screenshot descriptions. A single grep refutes the sentence as written, which needlessly puts the whole (correct) finding at risk.",
+   "suggested_wording": "In 1,005 messages he never once reasons from an oscillator, volume, funding, open interest, or orderbook data. RSI, divergence, fibonacci, open interest, orderbook, CVD, delta and heatmap return zero hits of any kind. 'Volume' appears 4 times and 'funding' once - every instance inside a screenshot of an exchange screen he posted for another reason, never in his own words. His entire named toolkit is EMA 20/50/200, 4h (occasionally 1h) closes, support/resistance, daily high/low, wicks and round price levels."
+  },
+  {
+   "section": "what_he_never_does",
+   "item": "'liquidity' listed among terms he never uses",
+   "why": "Contradicts the playbook's own signal #3, which is a liquidity-sweep pattern ('lows are swept', 'new daily low then bounce'). He avoids the vocabulary, not the concept.",
+   "suggested_wording": "He never says 'liquidity' or 'liq map', though he trades the sweep concept in plain language - 'lows are swept' (msg 382), 'they'll make a new daily low then bounce it' (msg 589)."
+  },
+  {
+   "section": "entry_style",
+   "item": "Holds back 25-50% of the intended size for a DCA below entry - 'EXPLICIT AND CONSTANT - 162 messages'",
+   "why": "'Constant' is wrong and the 162 figure invites the reader to think 162 signals reserved a tranche. Only 38% of signal posts publish a DCA; only 27% of positions plan one; only 14% ever fill one. And the causal claim ('the mechanism that turns a losing entry into a winner') is contradicted by outcomes - DCA-filled positions win 68% versus 80% for the rest.",
+   "suggested_wording": "A DCA tranche is his standard tool for a bad entry, but not a standing feature of every trade: 53 of 139 signal posts (38%) publish a DCA level, 58 of 217 positions plan one, and only 30 (14%) ever fill it. When one does fill it can rescue the trade outright ('From almost an SL to a decent TP with a DCA in', msg 959) - but DCA-filled positions actually win LESS often than the rest (19W/9L = 68%, versus 80% where no DCA was needed), so the reserved tranche is a rescue tool on a minority of trades, not the engine of the headline win rate."
+  },
+  {
+   "section": "trade_management",
+   "item": "Exit at breakeven or 'small profits' - 'probably the single biggest driver of the reported win rate'",
+   "why": "Only 12 of 217 positions actually end breakeven, so the claim cannot rest on BE exits. The real, larger mechanism sitting right next to it is discretionary early exit generally.",
+   "suggested_wording": "Discretionary early exit is the single biggest driver of the reported win rate. 62 positions ended in a manual close - more than the 45 that reached a published take-profit - and of those 62, 61 are wins, 1 breakeven, and none a loss. Losses arrive only via stops. Only 38% of his 120 wins actually reached a target he had published; at least 26 wins were manual closes booked short of the stated TP. Breakeven and 'small profits' exits (44 messages) are the most extreme version of this, framed as discipline: 'better to be disciplined and get out around BE, much better than SL at least?' (msg 110)."
+  },
+  {
+   "section": "risk_rules",
+   "item": "Risks 1-2% on alts, 3-5% on BTC - 'BEHAVIOURAL CONTRADICTION'",
+   "why": "Neither leg of the alleged contradiction survives. The 10-20% account is a disclosed $89 novelty account he tells members not to copy; the +30.92%/4-day curve is consistent with 3-5% risk given the 11-win, 100%-WR week posted one message earlier.",
+   "suggested_wording": "EXPLICIT AND OFTEN REPEATED - his headline teaching, stated identically in May, July and 31 Jul. The one departure is disclosed rather than hidden: on a separate $89 account he announced he would run 10-20% per trade as a 'for fun' 2x challenge, explicitly telling members 'don't follow it on main account' (msg 221). Nothing in the record shows him exceeding his stated risk on his main book."
+  },
+  {
+   "section": "signals",
+   "item": "4h close - 'It is his single most-used piece of chart logic', frequency 32",
+   "why": "True as a share of his chart TALK (35 messages), misleading as a share of his published trades: only 14 of 139 signal posts (10%) carry a candle-close stop, and only 10 carry the soft+hard pair. Nine signals in ten use a plain numeric stop.",
+   "suggested_wording": "The 4h close is his most-cited piece of chart logic in commentary (35 messages), but it is a minority structure in his actual signals - 14 of 139 signal posts publish a candle-close stop, 10 of them paired with a wider hard SL. It matters most when a trade is going against him, as the reason not to accept a stop."
+  },
+  {
+   "section": "signals",
+   "item": "Gold (XAU) and oil as correlated macro reads for BTC, frequency 8",
+   "why": "Only one message (424) actually makes the gold->BTC inference, and he hedges it as 'just a thought'. The other evidence shows a separate gold book kept out of the crypto tally.",
+   "suggested_wording": "He runs a small separate gold/oil book whose results he deliberately excludes from the crypto tally (msg 405). He offered the gold-BTC correlation as an intermarket read exactly once - 'These days they both move together, If Gold pumps probably takes BTC higher, just a thought' (msg 424) - and never traded crypto off it."
+  },
+  {
+   "section": "signals",
+   "item": "front run, frequency 6",
+   "why": "Only 4 occurrences exist in the corpus, and they are the 4 already cited as evidence.",
+   "suggested_wording": "Set frequency to 4."
+  },
+  {
+   "section": "what_he_never_does",
+   "item": "Never lets a public signal run without a stated stop for long",
+   "why": "Refuted - he ran the 1840 ETH short stopless and openly invited followers to join it (msgs 853, 860), and removed a published BTC stop (msg 969).",
+   "suggested_wording": "Delete as a 'never'. Restate under trade_management: he states the principle ('don't want a trade running publicly without SL', msg 550) and breaks it twice in the sample - removing a published BTC stop (msg 969) and running a stopless ETH short he invited followers into while calling it 'personal' (msgs 853, 860)."
+  },
+  {
+   "section": "what_he_never_does",
+   "item": "Never re-takes a setup he has just traded to a full target",
+   "why": "Directly contradicted by his own trade_management item 'Re-run the identical setup after it works' (msgs 179, 371, 764, 780). Msg 954 is one remark about one alt.",
+   "suggested_wording": "Delete. If retained, restate as: 'Says once, of an alt, that he dislikes repeating a setup (msg 954) - while systematically recycling the same BTC level setup (msg 764, msg 780: won 6 out of 6 BTC trades last week using it).'"
+  },
+  {
+   "section": "trade_management",
+   "item": "Manual take-profit - msg 502 evidence",
+   "why": "The quoted line is a stop-loss, not a take-profit. Irrelevant to the tactic.",
+   "suggested_wording": "Replace with msg 725 or msg 438 ('Also fully out of BTC @ 62.7k don't want to round trip these gains')."
+  },
+  {
+   "section": "trade_management",
+   "item": "Stop to entry / BE after TP1 - 'the follower-facing rule and his own behaviour diverge'",
+   "why": "Overstated - he does it on ~22 positions, he just announces the exceptions loudly.",
+   "suggested_wording": "He instructs it constantly (~44 messages) and applies it selectively (22 of 217 positions), and makes a point of announcing when he is NOT doing it: 'will play full setup either SL or TP' (msg 182)."
+  },
+  {
+   "section": "signals",
+   "item": "New daily low sweep then bounce, frequency 5",
+   "why": "Sound, but note 'sweep/swept' appears only once in 1,005 messages; the other four instances are the same idea in different words. Worth stating so a reader who greps does not think the claim is inflated.",
+   "suggested_wording": "Add: He uses the word 'swept' only once (msg 382); the pattern otherwise appears as 'new daily low then bounce'."
+  }
+ ],
+
+ "missed_findings": [
+  "THE BIGGEST ONE - his published win rate does not reconcile with his own trade record, and the gap is not explained by trade management. May summary (msg 315): 60 trades, 51 wins, 9 losses, 85.0%. Reconstruction of May: 36 wins, 13 losses, 1 breakeven from 50 resolved positions = 72% (73% excluding BE). July summary (msg 848): 45 trades, 40 wins, 5 SLs, 89%. Reconstruction of July: 31 wins, 7 losses, 3 BE from 41 resolved = 76% (82% excluding BE). Across the whole sample: 120 wins / 35 losses / 10 BE = 72.7%. His published figures run 10-13 points hot and understate the loss count in both months (9 claimed vs 13 found in May; 5 claimed vs 7 found in July). The playbook treats the 85-90% win rate as a fact to be explained; a material part of it is a counting artifact.",
+
+  "His monthly summaries have NO breakeven bucket - and he used to have one. His pre-server journal recap (msg 2) reports '25 trades, 22 Wins, 3 BE, 0 loss' as three separate categories. Every server-era summary (msgs 315, 848) reports only Trades / Wins / Losses. Given 10-12 breakeven positions in the sample, dropping the BE category alone lifts the headline percentage. Msg 403 is the tell - he crowd-sources whether a round-tripped trade 'should count as a win or loss'. This is a cleaner and more damning finding than the 'BE exits framed as discipline' framing the playbook uses.",
+
+  "Manual closes never lose. Of 62 positions closed by manual/discretionary exit, 61 are wins and 1 is breakeven - zero losses. Every one of his 35 losses came through a stop. This asymmetry, not the DCA and not the soft stop, is the structural fact that produces the win rate: he can always choose to book, and he only ever chooses to book when green.",
+
+  "Only 38% of his wins reached a target he had published. 45 of 120 wins closed at a stated take-profit; 26 more closed manually BELOW the published TP1 (BB long exited 0.0371 against a 0.39 target; BTC 2026-06-17 exited 63,923 against 65,000; SOL 2026-06-11 exited 67.24 against 68). Followers who set the published TP and waited would have had a materially different - and worse - experience than his tally suggests. The playbook never tests plan-versus-execution on targets, even though the positions file separates planned_take_profits from exit_price precisely to allow it.",
+
+  "He posts almost no charts. Of 320 attached images, 247 are PnL share cards and only 23 (7%) are charts - and several of those are after-the-fact. 23 more are screenshots of his own earlier Discord messages, i.e. proof-of-call rather than analysis. This is much stronger quantitative backing for the playbook's 'never publishes drawn chart analysis' claim than the single msg-736 quote it currently rests on.",
+
+  "The venue migration is a live risk signal the playbook records but does not interpret: Bybit (May, incl. a CFT funded account watermarked 'Demo') -> Blofin (mid-May to July) -> Yubit (August: 23 messages vs Blofin's 3). Three primary exchanges in four months, with the newest being the most obscure, and share cards at 150x-500x. Worth flagging alongside the leverage note.",
+
+  "'Half risk' is his only real position-sizing lever, and it is applied AFTER the fact as an excuse as often as before the fact as a rule: msg 639 'HYPE stopped mentioned it was risky so hopefully risk was managed', msg 997 'If anyone used half risk as I mentioned I promise we will use full risk and quickly recover'. The label pre-assigns responsibility for the loss to the follower's sizing. The playbook records the tag (44 messages) and the labelling habit but does not name this function.",
+
+  "Position-count limits act as an unacknowledged filter on the record. He repeatedly declines setups he rates highly because too many trades are open (msgs 24, 48, 187, 706) and closes trades purely for clutter (msg 769 'Too many trades running it's getting messy so closing this now'). Combined with 'not forcing any trades' after hitting a weekly target (msgs 701, 875, 878, 843), the sample of trades that reach the tally is selected on more than setup quality - and the closures-for-clutter land in the manual-close/never-loses bucket.",
+
+  "The R denominator moves. He publishes R against the ORIGINAL entry-to-stop distance, but 30 positions had a DCA fill that changed the average entry, and 15 had the stop widened or removed. Msg 922 makes the elasticity explicit: 'TP taken for a 0.7R, 1R with soft SL' - the same exit is worth 0.7R or 1R depending on which stop you measure from, and he quotes whichever he likes. The playbook flags this in open_questions but does not connect it to the 0.5-0.8R average, which is measured on the same moving denominator.",
+
+  "Ten of the first eleven signals of the sample and the last trade of the sample are both breakeven-or-better exits taken under stress - and the sample ends mid-drawdown (5 stops in 2 days, msg 997) with the very last action being 'Closing long at BE' (msg 1005). Whatever the method is, the record stops at the exact point where it was first under sustained pressure, so the 85-90% figure has never been observed through a losing month."
+ ]
+}

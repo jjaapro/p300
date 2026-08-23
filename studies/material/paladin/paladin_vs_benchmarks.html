@@ -1,0 +1,273 @@
+<title>Paladin vs Buy and Hold</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bitter:wght@500;600&family=Karla:wght@400;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root{
+  --ground:#F6F4EF; --surface:#FFFFFF; --surface-2:#F0EDE5; --ink:#191C24; --ink-2:#3E434F;
+  --muted:#6A6E7A; --line:#E3DDD2; --line-2:#D3CBBC; --accent:#8A6212; --accent-soft:#F3E7CE;
+  --bench:#9AA0AC; --bench-ink:#5C616D; --neg:#A93127;
+  --shadow:0 1px 2px rgba(25,28,36,.06), 0 8px 24px -16px rgba(25,28,36,.25);
+}
+@media (prefers-color-scheme: dark){ :root:not([data-theme="light"]){
+  --ground:#13151B; --surface:#1A1D25; --surface-2:#20242E; --ink:#E9E7E2; --ink-2:#C3C1BC;
+  --muted:#8B909D; --line:#282C36; --line-2:#39404E; --accent:#D9A441; --accent-soft:#2E2718;
+  --bench:#5F6674; --bench-ink:#9AA0AC; --neg:#F07A6E;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -16px rgba(0,0,0,.7);
+}}
+:root[data-theme="dark"]{
+  --ground:#13151B; --surface:#1A1D25; --surface-2:#20242E; --ink:#E9E7E2; --ink-2:#C3C1BC;
+  --muted:#8B909D; --line:#282C36; --line-2:#39404E; --accent:#D9A441; --accent-soft:#2E2718;
+  --bench:#5F6674; --bench-ink:#9AA0AC; --neg:#F07A6E;
+  --shadow:0 1px 2px rgba(0,0,0,.3), 0 8px 24px -16px rgba(0,0,0,.7);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);
+  font-family:Karla,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:15.5px;line-height:1.6;-webkit-font-smoothing:antialiased}
+h1,h2,h3{font-family:Bitter,Georgia,"Times New Roman",serif;font-weight:600;margin:0;text-wrap:balance;letter-spacing:-.01em}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Consolas,monospace;font-variant-numeric:tabular-nums}
+.wrap{max-width:900px;margin:0 auto;padding:0 24px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:3px}
+
+header{background:var(--surface);border-bottom:1px solid var(--line);padding:36px 0 28px}
+.kicker{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--accent);margin-bottom:12px}
+h1{font-size:clamp(27px,4vw,40px);line-height:1.12;max-width:18ch}
+.lede{margin:16px 0 0;max-width:64ch;color:var(--ink-2);font-size:16.5px}
+
+section{padding:40px 0}
+section+section{border-top:1px solid var(--line)}
+h2{font-size:22px;margin-bottom:6px}
+.sub{color:var(--muted);font-size:13.5px;margin-bottom:22px}
+p{max-width:68ch}
+p+p{margin-top:14px}
+
+/* ---- chart ---- */
+.chart{background:var(--surface);border:1px solid var(--line);border-radius:4px;
+  padding:24px 26px 16px;box-shadow:var(--shadow)}
+.plot{position:relative;padding-left:0}
+.row{display:grid;grid-template-columns:190px 1fr;gap:16px;align-items:center;
+  padding:11px 0;border-top:1px solid var(--line)}
+.row:first-child{border-top:0}
+.rlab{font-size:13.5px;line-height:1.3}
+.rlab .n{display:block;font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--muted);margin-top:2px}
+.track{position:relative;height:30px}
+.zero{position:absolute;top:-6px;bottom:-6px;width:1px;background:var(--line-2)}
+.bar{position:absolute;top:8px;height:14px;border-radius:0 4px 4px 0;background:var(--bench)}
+.bar.neg{border-radius:4px 0 0 4px;background:var(--neg)}
+.bar.band{background:var(--accent);opacity:.28;border-radius:4px;top:5px;height:20px}
+.pt{position:absolute;top:3px;width:3px;height:24px;background:var(--accent);border-radius:2px}
+.vlab{position:absolute;top:6px;padding:0 5px;border-radius:3px;font-family:"IBM Plex Mono",monospace;font-size:12.5px;
+  font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--ink)}
+.row.hl .vlab{background:var(--surface);box-shadow:0 0 0 3px var(--surface)}
+.row.hl .rlab strong{color:var(--accent)}
+.axis{position:relative;height:26px;margin-top:6px;border-top:1px solid var(--line)}
+.tick{position:absolute;top:5px;font-family:"IBM Plex Mono",monospace;font-size:11px;
+  color:var(--muted);transform:translateX(-50%)}
+.gl{position:absolute;top:-660px;bottom:26px;width:1px;background:var(--line);opacity:.7}
+.figcap{font-size:12.5px;color:var(--muted);margin-top:14px;border-top:1px dashed var(--line-2);padding-top:11px;max-width:none}
+.tip{position:fixed;z-index:50;background:var(--ink);color:var(--ground);font-size:12.5px;
+  padding:8px 11px;border-radius:4px;max-width:280px;pointer-events:none;opacity:0;transition:opacity .12s;line-height:1.45}
+.tip.on{opacity:1}
+
+/* ---- tables ---- */
+.scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--muted);font-weight:500;
+  border-bottom:1px solid var(--line-2);padding:0 12px 8px 0}
+td{border-bottom:1px solid var(--line);padding:10px 12px 10px 0;vertical-align:top;color:var(--ink-2)}
+td.num{font-family:"IBM Plex Mono",monospace;font-variant-numeric:tabular-nums;
+  text-align:right;color:var(--ink);white-space:nowrap}
+tr.pick td{background:var(--accent-soft)}
+tr.pick td.num{font-weight:600}
+caption{caption-side:bottom;text-align:left;font-size:12.5px;color:var(--muted);padding-top:11px}
+
+.why{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px;margin-top:20px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:15px 17px}
+.card h3{font-size:15px;margin-bottom:6px}
+.card p{font-size:13.5px;color:var(--ink-2);margin:0;max-width:none}
+
+.pull{border-left:2px solid var(--accent);padding:2px 0 2px 16px;margin:22px 0;max-width:64ch}
+.pull b{color:var(--ink)}
+footer{border-top:1px solid var(--line);padding:28px 0 60px;color:var(--muted);font-size:13px}
+footer p{max-width:72ch}
+footer a{color:var(--accent)}
+@media (max-width:640px){.row{grid-template-columns:1fr;gap:4px}}
+</style>
+
+<header><div class="wrap">
+  <div class="kicker">6 May – 21 Aug 2026 · 107 days · 217 reconstructed positions</div>
+  <h1>Did he beat the market, or would holding have been better?</h1>
+  <p class="lede">The benchmarks are settled facts. His own return is not — it can only be bounded,
+  because he never published an account size or a position size. Even the most punitive reading of
+  the record beats both benchmarks, and buy-and-hold was the worst option available.</p>
+</div></header>
+
+<section><div class="wrap">
+  <h2>The comparison</h2>
+  <div class="sub">Return over the exact window his channel covers, 6 May to 21 Aug 2026</div>
+
+  <div class="chart">
+    <div class="plot" id="plot"></div>
+    <p class="figcap"><b>Reading this:</b> the three grey bars are settled prices. The amber band is an
+    estimate, not a measurement — its left edge is the most punitive reading of his record and its right
+    edge the most generous; the vertical mark is the central case. Its width is the honest measure of what
+    the data does not pin down.</p>
+  </div>
+
+  <div class="pull">
+    <b>Buy-and-hold was the worst of the three.</b> Bitcoin opened his window at $82,320 and closed it at
+    $76,712 — down 6.8%, after a 28% drawdown to about $59,000 at the start of July. Someone who bought the
+    day he started posting and did nothing was still underwater four months later. The S&amp;P 500 made
+    roughly 5%. He needed about 1.3R of trading profit to match the index; the reconstructed record shows
+    between 42R and 85R.
+  </div>
+</div></section>
+
+<section><div class="wrap">
+  <h2>How the estimate is built</h2>
+  <div class="sub">Net R × risk per trade. Both inputs come from his own numbers.</div>
+
+  <p>His record converts to <b>R</b> — multiples of the money risked on one trade — and R converts to an
+  account return once you know what fraction of the account he risks per trade. The reconstructed record is
+  120 wins, 35 losses and 10 breakevens, plus 35 trades that simply stop being mentioned.</p>
+
+  <div class="scroll"><table>
+    <caption>Net R under four readings of the record. He states his May average win was 0.64R; the 27 wins
+    where he published an R figure have a median of 1.00R.</caption>
+    <thead><tr><th>Reading of the record</th><th style="text-align:right">Net R</th>
+      <th style="text-align:right">at 2% risk</th><th style="text-align:right">at 3%</th>
+      <th style="text-align:right">at 4%</th><th style="text-align:right">at 5%</th></tr></thead>
+    <tbody>
+      <tr><td>Punitive — every unresolved trade was a silent loss, wins average 0.64R</td>
+        <td class="num">+6.8R</td><td class="num">+14%</td><td class="num">+20%</td><td class="num">+27%</td><td class="num">+34%</td></tr>
+      <tr class="pick"><td>Central — resolved trades only, wins average his own 0.64R</td>
+        <td class="num">+41.8R</td><td class="num">+84%</td><td class="num">+125%</td><td class="num">+167%</td><td class="num">+209%</td></tr>
+      <tr><td>Central+ — resolved only, wins average 0.71R (implied by his July +23.5R claim)</td>
+        <td class="num">+50.2R</td><td class="num">+100%</td><td class="num">+151%</td><td class="num">+201%</td><td class="num">+251%</td></tr>
+      <tr><td>Generous — resolved only, wins average the 1.00R median he reports</td>
+        <td class="num">+85.0R</td><td class="num">+170%</td><td class="num">+255%</td><td class="num">+340%</td><td class="num">+425%</td></tr>
+    </tbody>
+  </table></div>
+
+  <p style="margin-top:22px"><b>Why 3–4% risk is the right column.</b> He teaches 1–2% on alts and 3–5% on BTC,
+  and his book is mostly BTC. Independently: he reported May as 51 wins, 9 losses, a 0.64R average win and
+  <span class="mono">+159.60%</span> on the account. Compounding that exact win record at 4% of equity per
+  trade reproduces <span class="mono">+151%</span> — near enough that 4% is almost certainly his real size.
+  That is the one place his own arithmetic and the reconstruction agree closely.</p>
+</div></section>
+
+<section><div class="wrap">
+  <h2>Why it cannot be tighter than that</h2>
+  <div class="sub">Four gaps in the source, each of which widens the band</div>
+  <div class="why">
+    <div class="card"><h3>No account size, ever</h3>
+      <p>Not once in 1,005 messages does he state what he trades with. Only 10 positions carry a dollar
+      PnL, and 8 of those belong to a disclosed $89 novelty account.</p></div>
+    <div class="card"><h3>Card ROI is not account return</h3>
+      <p>A "+331.94%" share card at 150× leverage is a 2.2% move in the underlying on whatever margin was
+      posted. Those headline percentages say nothing about the account.</p></div>
+    <div class="card"><h3>Several accounts at once</h3>
+      <p>The same idea appears as a Blofin 150× card, a MEXC 250× card and an $89 challenge-account fill.
+      One trade, three numbers, no way to weight them.</p></div>
+    <div class="card"><h3>The record is self-selected</h3>
+      <p>35 positions are never resolved in the channel, and he concedes some trades go only to X and never
+      to the server. Unposted trades cannot be assumed to resemble posted ones.</p></div>
+  </div>
+  <p style="margin-top:22px">There is also a ceiling the arithmetic hides. Compounding 4% risk across 155
+  trades at his win rate gives roughly 45× over four months — a number nobody achieves. Fees, funding,
+  slippage, position sizes that do not scale with equity, and the fact that he often runs three to five
+  correlated positions at once all eat it. The table above therefore uses <b>simple</b> R × risk, not
+  compounding, which is the conservative choice.</p>
+</div></section>
+
+<section><div class="wrap">
+  <h2>What the comparison leaves out</h2>
+  <div class="sub">Return is only half of a fair benchmark</div>
+  <p>None of this is risk-adjusted, and the risk is not comparable. Holding the S&amp;P through this window
+  meant a quiet 5%. Holding bitcoin meant sitting through a 28% drawdown to end 7% down. His book carried
+  75× to 250× leverage on a stop that was typically 1–4% away, several positions at a time, through the same
+  drawdown — a stop honoured late on a 150× position can end an account in one candle, and the record shows
+  him widening or removing a stop 15 times.</p>
+  <p>The four-month window also flatters everything about his approach. He is structurally long — 152 longs
+  against 47 shorts — in a market that fell and then recovered past its starting point. His worst stretch,
+  five stops in two days in August, came from shorting against his own bullish view. A directional book with
+  small targets does well when the direction is right; the same book is what produced the losses.</p>
+  <p>One last thing the record shows plainly: his own <b>spot</b> bitcoin, bought at about $63,500 on
+  11 August, was up 20.8% by the 21st. He timed the buy far better than a passive holder from May — which is
+  the part of his edge that survives every caveat above.</p>
+</div></section>
+
+<footer><div class="wrap">
+  <p><b>Sources.</b> Bitcoin $82,320.02 on 6 May 2026 and $76,712.47 on 21 August 2026, both from Fortune's
+  daily price reports; his own messages quote 81.5k and 76.1k on those dates, so the two agree. S&amp;P 500
+  closed at 7,674.37 on 21 August 2026 (up 0.43%); it first closed above 7,300 on 5 May and finished the week
+  of 8 May at 7,398.93, which brackets the start of the window at roughly 7,300 — giving +5.1% price return,
+  or +3.7% measured from the 8 May close, plus about 0.35% in dividends. The trade record is the 217-position
+  reconstruction built from all 1,005 messages in his channel.</p>
+  <p style="margin-top:12px">Every figure attributed to him — the 0.64R average win, the +159.60% May result,
+  the +23.5R July result, the 1–2% and 3–5% risk rules — is his own published claim, quoted in the timeline.
+  Nothing here is a measurement of his account.</p>
+</div></footer>
+
+<div class="tip" id="tip"></div>
+<script>
+const ROWS = [
+  {label:'Bitcoin, bought and held', note:'$82,320 → $76,712', v:-6.8, kind:'bench',
+   tip:'Buying BTC on 6 May and doing nothing. Down 6.8%, after a 28% drawdown to about $59,000 on 1 July.'},
+  {label:'S&P 500', note:'≈7,300 → 7,674', v:5.1, kind:'bench',
+   tip:'Price return over the same 107 days, plus roughly 0.35% in dividends. Annualises to about +19%.'},
+  {label:'His own spot BTC bag', note:'bought 11 Aug at ≈$63,500', v:20.8, kind:'bench',
+   tip:'The one return in this chart that is genuinely his and genuinely measurable — an unleveraged spot buy, +20.95% on his own screenshot.'},
+  {label:'His futures trading', note:'estimated band, central case marked', lo:14, hi:425, v:167, kind:'band',
+   tip:'Left edge: every unresolved trade treated as a silent loss, at 2% risk. Right edge: the generous reading at 5% risk. Mark: 41.8R at 4% risk.'}
+];
+const LO = -50, HI = 450;
+const x = v => ((v - LO) / (HI - LO) * 100);
+const plot = document.getElementById('plot');
+const tip = document.getElementById('tip');
+
+let html = '';
+ROWS.forEach(r => {
+  let bars = `<div class="zero" style="left:${x(0)}%"></div>`;
+  let labX, labTxt;
+  if (r.kind === 'band') {
+    bars += `<div class="bar band" style="left:${x(r.lo)}%;width:${x(r.hi) - x(r.lo)}%"></div>`;
+    bars += `<div class="pt" style="left:${x(r.v)}%"></div>`;
+    labX = x(r.hi); labTxt = `+${r.lo}% to +${r.hi}%`;
+  } else if (r.v < 0) {
+    bars += `<div class="bar neg" style="left:${x(r.v)}%;width:${x(0) - x(r.v)}%"></div>`;
+    labX = x(r.v); labTxt = `${r.v}%`;
+  } else {
+    bars += `<div class="bar" style="left:${x(0)}%;width:${x(r.v) - x(0)}%"></div>`;
+    labX = x(r.v); labTxt = `+${r.v}%`;
+  }
+  const right = labX < 78;
+  html += `<div class="row ${r.kind === 'band' ? 'hl' : ''}" data-tip="${r.tip.replace(/"/g,'&quot;')}" tabindex="0">
+    <div class="rlab"><strong>${r.label}</strong><span class="n">${r.note}</span></div>
+    <div class="track">${bars}
+      <div class="vlab" style="${right ? `left:${labX}%;margin-left:9px` : `right:${100 - labX}%;margin-right:9px`}">${labTxt}</div>
+    </div></div>`;
+});
+let axis = '<div class="axis">';
+for (const t of [0, 100, 200, 300, 400]) axis += `<div class="tick" style="left:calc(206px + (100% - 206px) * ${x(t) / 100})">${t}%</div>`;
+axis += '</div>';
+plot.innerHTML = html + axis;
+
+document.querySelectorAll('.row').forEach(el => {
+  const show = e => {
+    tip.textContent = el.dataset.tip; tip.classList.add('on');
+    const r = el.getBoundingClientRect();
+    const px = (e && e.clientX) ? e.clientX : r.left + 60;
+    tip.style.left = Math.min(px + 14, window.innerWidth - 300) + 'px';
+    tip.style.top = Math.max(8, r.top - 8) + 'px';
+  };
+  const hide = () => tip.classList.remove('on');
+  el.addEventListener('mousemove', show);
+  el.addEventListener('mouseleave', hide);
+  el.addEventListener('focus', show);
+  el.addEventListener('blur', hide);
+});
+</script>

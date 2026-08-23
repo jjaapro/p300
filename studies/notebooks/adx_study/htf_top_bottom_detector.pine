@@ -1,0 +1,77 @@
+//@version=6
+// ADX HTF Top/Bottom Detector — TradingView experiment (no prod code).
+// Flags HTF tops (don't long them) / bottoms, to read alongside the S-003 ADX
+// strategy. PRICE GEOMETRY is the mandatory anchor (price at an N-bar extreme +
+// rejection close + stretch from EMA — full history, works at Oct-2025); then
+// require >= minConfirm microstructure CONFIRMS from {funding extreme, CVD
+// divergence, failed-breakout sweep}. Funding ~238d / CVD ~69d history (na
+// before that => those bars need the sweep confirm or a lower minConfirm).
+//
+// Validated 2026-06-27: TOP fired on the Oct-2025 ATH cluster (123k/126k,
+// funding z 1.8/0.9); a BTM caught the Nov/Dec low.
+indicator("ADX HTF Top/Bottom Detector", overlay=true, max_labels_count=500)
+import TradingView/ta/9 as tvta
+import TradingView/Request/3 as req
+
+nLook      = input.int(180,  "Swing high/low lookback (bars)", group="Geometry (mandatory)")
+prox       = input.float(4.0,"Proximity to N-bar extreme %", group="Geometry (mandatory)")/100.0
+emaLen     = input.int(150,  "Trend EMA", group="Geometry (mandatory)")
+cirTop     = input.float(0.45,"TOP max close-in-range (weak close)", step=0.05, group="Geometry (mandatory)")
+cirBot     = input.float(0.55,"BOTTOM min close-in-range (strong close)", step=0.05, group="Geometry (mandatory)")
+extTop     = input.float(6.0, "TOP min % above EMA", group="Geometry (mandatory)")
+extBot     = input.float(-6.0,"BOTTOM max % below EMA", group="Geometry (mandatory)")
+minConfirm = input.int(1, "Min microstructure confirms (0-3)", minval=0, maxval=3, group="Confirms")
+useFund    = input.bool(true, "Funding extreme (perp, ~238d hist)", group="Confirms")
+fundZlen   = input.int(30,   "Funding z lookback (bars)", group="Confirms")
+fundZth    = input.float(1.5,"Funding z extreme", step=0.25, group="Confirms")
+useCVD     = input.bool(true, "CVD divergence (~69d hist)", group="Confirms")
+useSweep   = input.bool(true, "Failed-breakout sweep", group="Confirms")
+perpSym    = input.symbol("BINANCE:BTCUSDT.P", "Perp symbol for funding/CVD", group="Confirms")
+
+ema = ta.ema(close, emaLen)
+ext = (close - ema) / ema * 100.0
+cir = high > low ? (close - low) / (high - low) : 0.5
+nHigh = ta.highest(high, nLook)
+nLow  = ta.lowest(low,  nLook)
+nearHigh = close >= nHigh * (1.0 - prox)
+nearLow  = close <= nLow  * (1.0 + prox)
+
+// mandatory geometry anchor
+geomTop = nearHigh and cir < cirTop and ext > extTop
+geomBot = nearLow  and cir > cirBot and ext < extBot
+
+// confirms
+fund  = useFund ? req.cryptoDerivativeMetric(perpSym, "Funding Rate", timeframe.period) : na
+fSma  = ta.sma(fund, fundZlen)
+fStd  = ta.stdev(fund, fundZlen)
+fundZ = (not na(fund) and not na(fStd) and fStd > 0) ? (fund - fSma) / fStd : na
+fundHot  = useFund and not na(fundZ) and fundZ >  fundZth
+fundCold = useFund and not na(fundZ) and fundZ < -fundZth
+
+[cvo, cvh, cvl, cvd] = tvta.requestVolumeDelta("60", timeframe.period)
+cHH = ta.highest(close, 10)[1]
+cLL = ta.lowest(close, 10)[1]
+dHH = ta.highest(cvd, 10)[1]
+dLL = ta.lowest(cvd, 10)[1]
+cvdOn = useCVD and not na(cvd)
+cvdBearDiv = cvdOn and close > cHH and cvd < dHH
+cvdBullDiv = cvdOn and close < cLL and cvd > dLL
+
+sweepHigh = useSweep and high > nHigh[1] and close < nHigh[1]
+sweepLow  = useSweep and low  < nLow[1]  and close > nLow[1]
+
+topConfirms = (fundHot?1:0) + (cvdBearDiv?1:0) + (sweepHigh?1:0)
+botConfirms = (fundCold?1:0) + (cvdBullDiv?1:0) + (sweepLow?1:0)
+isTop = geomTop and topConfirms >= minConfirm
+isBot = geomBot and botConfirms >= minConfirm
+
+plot(ema, "EMA", color=color.new(color.gray, 40))
+plotshape(isTop, "TOP", shape.triangledown, location.abovebar, color=color.red, size=size.small, text="TOP")
+plotshape(isBot, "BOTTOM", shape.triangleup, location.belowbar, color=color.green, size=size.small, text="BTM")
+bgcolor(isTop ? color.new(color.red, 78) : na, title="top bg")
+bgcolor(isBot ? color.new(color.green, 78) : na, title="bottom bg")
+
+if isTop
+    label.new(bar_index, high, "T"+str.tostring(1+topConfirms)+(na(fundZ)?" nf":" fz="+str.tostring(fundZ,"#.0")), style=label.style_none, textcolor=color.red, size=size.tiny, yloc=yloc.abovebar)
+if isBot
+    label.new(bar_index, low, "B"+str.tostring(1+botConfirms)+(na(fundZ)?" nf":" fz="+str.tostring(fundZ,"#.0")), style=label.style_none, textcolor=color.green, size=size.tiny, yloc=yloc.belowbar)

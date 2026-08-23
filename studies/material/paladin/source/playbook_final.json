@@ -1,0 +1,2267 @@
+{
+ "signals": [
+  {
+   "name": "Candle-close stops and confirmation (almost always the 4h close)",
+   "category": "technical",
+   "what_it_is": "He treats a candle close beyond a specific price - the 4h close in 35 of 37 cases, the 1h close twice - as the real decision point, publishing stops as 'SL: 4h close under X or hard SL @ Y'.",
+   "how_he_uses_it": "He gives a 'soft SL' (a 4h close beyond the level) plus a wider 'hard SL' underneath it so a wick cannot take him out, and refuses to accept a stop until the candle actually closes. The same rule is used to stay in a losing trade ('mentioned will wait for 4h close hence I didn't take SL') and to decide whether a level is reclaimed. AUDIT CORRECTION: this is his most-cited piece of chart logic in commentary (35 messages), but it is a minority structure in his published signals - only 14 of 139 signal posts (10%) carry a candle-close stop and only 10 carry the soft+hard pair. Nine signals in ten use a plain numeric stop. It matters most when a trade is going against him, as the reason not to accept a stop.",
+   "frequency": 35,
+   "first_seen": "2026-05-08",
+   "last_seen": "2026-08-19",
+   "evidence": [
+    {
+     "msg": 902,
+     "date": "2026-08-06",
+     "quote": "SL: 4h close above 66k or hard SL @ 66.3k"
+    },
+    {
+     "msg": 337,
+     "date": "2026-06-02",
+     "quote": "Guys I am gonna wait for 4h closing on SEI, I think we can easily get BE, will manually close. If 4h closes under 0.064 I exit this"
+    },
+    {
+     "msg": 579,
+     "date": "2026-06-24",
+     "quote": "Mentioned will wait for 4h close hence I didn't take SL"
+    },
+    {
+     "msg": 944,
+     "date": "2026-08-14",
+     "quote": "Keeping BTC SL manual for now, will wait for 4h candle below 62.5"
+    },
+    {
+     "msg": 17,
+     "date": "2026-05-08",
+     "quote": "SL: 1h close under 79k or hard SL @ 78.5k"
+    }
+   ],
+   "frequency_note": "35 messages use a 4h close, 2 use a 1h close. Signal posts publishing a candle-close stop: 14 of 139 (10 of those paired with a wider hard SL).",
+   "evidence_notes": "Msg 902 leads because it is the clean canonical example. Msg 17 is retained only to document the rare 1h variant - it was previously the lead evidence and first_seen anchor for an item named '4h close', which the audit flagged as an evidence-fit error. Msg 27 ('SL: 4h under 0.59 or hard SLs at 0.581'), the first genuine 4h reference, is dropped from the evidence list because the trader's own numbers in that message are internally inconsistent (the KERNEL entry in the same post is 0.064), so it is an unreliable illustration."
+  },
+  {
+   "name": "200 EMA (mostly 4h, also 15m/daily) as the line in the sand",
+   "category": "technical",
+   "what_it_is": "The 200 EMA is the only indicator he names repeatedly; holding/reclaiming it is bullish, losing it opens the next leg down.",
+   "how_he_uses_it": "He converts the 200 EMA into a hard price level and builds the whole trade around it ('we shouldn't lose the 200 ema on 4h that is 77.7k'). A reclaim is a long trigger and a reason to expect repeat bounces; sitting on it is a reason to expect a bounce back to entry rather than take a stop. He also cites EMA 20 and EMA 50 as intraday bounce/rejection points.",
+   "frequency": 14,
+   "first_seen": "2026-05-16",
+   "last_seen": "2026-08-18",
+   "evidence": [
+    {
+     "msg": 131,
+     "date": "2026-05-16",
+     "quote": "for that we shouldn't lose the 200 ema on 4h that is 77.7k, currently we around 4h support so we are surviving"
+    },
+    {
+     "msg": 162,
+     "date": "2026-05-20",
+     "quote": "BTC reclaimed EMA 200 on lower tf after like 2 days, expecting 78k+ great for our BTC long!"
+    },
+    {
+     "msg": 357,
+     "date": "2026-06-03",
+     "quote": "I see support form and ema 50 on 4h it'll either hold or bounce from here if BTC recovers so better close"
+    },
+    {
+     "msg": 913,
+     "date": "2026-08-07",
+     "quote": "PA is super frustrating, BTC ETH both keep bouncing from EMA 200 on 15m"
+    },
+    {
+     "msg": 968,
+     "date": "2026-08-18",
+     "quote": "this is how EMA 200 acts, if it's reclaims, it's very hard to breakdown, you can expect at least 2 bounce from EMA 200 on any time frame"
+    }
+   ],
+   "frequency_note": "14 messages mention any EMA; only 9 name the 200 specifically. The item title over-weights the 200 relative to the EMA 20/50 references it also covers."
+  },
+  {
+   "name": "New daily low sweep then bounce ('dead cat bounce on LTF')",
+   "category": "technical",
+   "what_it_is": "He expects the market to print a fresh daily low, sweep the lows, and then bounce; he buys the sweep.",
+   "how_he_uses_it": "When BTC is dumping he waits for a new daily low rather than buying into weakness, then longs the bounce and takes a fast 0.5-1R. The same idea appears as 'lows are swept you can add around 25% margin'. Two of his best-timed BTC longs (59.2k on 24 Jun, 58.2k on 25 Jun) came from this. NOTE ON WORDING: he uses 'swept' only once in 1,005 messages (msg 382); the other instances are the same idea in his own plain language ('they'll make a new daily low then bounce it'). The frequency of 5 is a count of the concept, not the word.",
+   "frequency": 5,
+   "first_seen": "2026-06-05",
+   "last_seen": "2026-06-29",
+   "evidence": [
+    {
+     "msg": 382,
+     "date": "2026-06-05",
+     "quote": "Okay lows are swept you can add around 25% margin if you want, optional"
+    },
+    {
+     "msg": 582,
+     "date": "2026-06-24",
+     "quote": "Think they hit new daily low and a dead cat bounce on LTF"
+    },
+    {
+     "msg": 589,
+     "date": "2026-06-24",
+     "quote": "as I said they'll make a new daily low then bounce it, you can take 25-30%"
+    },
+    {
+     "msg": 605,
+     "date": "2026-06-25",
+     "quote": "60k hit, caught both yesterday's + today's bottom bounce"
+    },
+    {
+     "msg": 621,
+     "date": "2026-06-29",
+     "quote": "I'll long too, waiting for a new daily low for that"
+    }
+   ]
+  },
+  {
+   "name": "Prior daily high / daily low as the anchor for both stops and targets",
+   "category": "technical",
+   "what_it_is": "He anchors stops - and, in the other direction, targets - to the prior daily extreme on the trader's own exchange rather than to a structural level.",
+   "how_he_uses_it": "On shorts the daily high is the stop; on longs the daily low is the stop. He explicitly tells followers to read the level off their own venue because of price differences. The same extreme in the other direction is the natural target ('can visit previous daily high'). AUDIT CORRECTION: the item was previously filed as stop placement only, with a target quote (msg 33) as its lead evidence and first_seen anchor; it now covers both uses explicitly.",
+   "frequency": 5,
+   "first_seen": "2026-05-08",
+   "last_seen": "2026-08-07",
+   "evidence": [
+    {
+     "msg": 843,
+     "date": "2026-07-31",
+     "quote": "ARKM looking nice, if anyone wants so long from CMP with daily low as SL 0.093"
+    },
+    {
+     "msg": 909,
+     "date": "2026-08-07",
+     "quote": "SL: 0.1375 (daily high on your exchange)"
+    },
+    {
+     "msg": 892,
+     "date": "2026-08-05",
+     "quote": "ETH couldn't even reach last daily high, DCA @ 1852"
+    },
+    {
+     "msg": 33,
+     "date": "2026-05-08",
+     "quote": "I have a feeling we will pump hard on BTC this weekend, can visit previous daily high."
+    }
+   ],
+   "evidence_notes": "Msg 33 is the target usage, not stop placement; it is retained under the corrected item name."
+  },
+  {
+   "name": "Round-number k-levels on BTC as an entry/TP grid",
+   "category": "technical",
+   "what_it_is": "Nearly every BTC call is framed on round or half-round thousand levels (63.5k, 64k, 65k, 66.2k) rather than on drawn structure.",
+   "how_he_uses_it": "He publishes an entry at CMP, a DCA 500-1500 lower and a TP at the next round number, then closes there manually. He also narrates price paths purely as level sequences ('65.3-65.6k over the weekend, then 62-63k, then 66-67k') and grades himself on whether the sequence played out. He explicitly boasts about not using charts. Quantitative support for the no-charts claim: of 320 attached images only 23 (7%) are charts, against 247 PnL share cards.",
+   "frequency": 47,
+   "first_seen": "2026-05-07",
+   "last_seen": "2026-08-21",
+   "evidence": [
+    {
+     "msg": 253,
+     "date": "2026-05-24",
+     "quote": "4h above 78.3k and we're good to go to 80s"
+    },
+    {
+     "msg": 462,
+     "date": "2026-06-11",
+     "quote": "I'm moving BTC remaining 75% TP @ 64.2k but if you see rejection after 64k immediately book it because that's resistance too"
+    },
+    {
+     "msg": 736,
+     "date": "2026-07-20",
+     "quote": "Gave BTC prediction a week ago, no messy charts, no long explanation, just one line."
+    },
+    {
+     "msg": 815,
+     "date": "2026-07-28",
+     "quote": "For now 64.1-64.2k is a wall, reclaim that and 65-66k in no time"
+    }
+   ]
+  },
+  {
+   "name": "Weekend / Sunday-Monday pump seasonality",
+   "category": "time-based",
+   "what_it_is": "A standing belief that crypto pumps into and over the weekend, particularly Sunday, and that Monday can dump before recovering.",
+   "how_he_uses_it": "He holds longs into weekends specifically for this ('I'm this close to completely closing it but I think we are in for a Sunday pump'), sizes down for weekend risk ('WEEKEND SIZE, recommended half risk'), and structures shorts to survive the weekend pump instead of avoiding it. Alt calls on Friday are justified by 'coins that look ready for a weekend PUMP'.",
+   "frequency": 14,
+   "first_seen": "2026-05-08",
+   "last_seen": "2026-08-16",
+   "evidence": [
+    {
+     "msg": 32,
+     "date": "2026-05-08",
+     "quote": "I like many more ALTs that look ready for a weekend PUMP ASTER, NEAR, SOL"
+    },
+    {
+     "msg": 233,
+     "date": "2026-05-23",
+     "quote": "I'm this close to completey closing it but I think we are in for a Sunday pump"
+    },
+    {
+     "msg": 689,
+     "date": "2026-07-07",
+     "quote": "Mentioned on Sunday, we go 64k -> dump to 60-61k on Monday -> back to 64-65k"
+    },
+    {
+     "msg": 908,
+     "date": "2026-08-07",
+     "quote": "An alternative BTC setup would be this to save yourself from weekend pump"
+    },
+    {
+     "msg": 952,
+     "date": "2026-08-16",
+     "quote": "WEEKEND SIZE, recommended half risk."
+    }
+   ],
+   "frequency_note": "Re-counted at 14 (playbook claimed 16); pattern-matching on pump-near-weekend language."
+  },
+  {
+   "name": "Scheduled macro events (CPI, FOMC, monthly close)",
+   "category": "fundamental",
+   "what_it_is": "He trades the calendar: CPI prints, FOMC, and the monthly candle close are named as reasons to enter, size down, or de-risk.",
+   "how_he_uses_it": "He positions before the event when he has a directional view ('opening it right before FOMC... either half risk or skip but I'm in'), moves SL to BE ahead of events he is unsure about, and warns of volatility on monthly close. He treats the post-event impulse as the payoff ('1400$ move caught, that's how we trade CPI').",
+   "frequency": 8,
+   "first_seen": "2026-06-10",
+   "last_seen": "2026-08-12",
+   "evidence": [
+    {
+     "msg": 435,
+     "date": "2026-06-10",
+     "quote": "1400$ move caught, that's how we trade CPI"
+    },
+    {
+     "msg": 535,
+     "date": "2026-06-17",
+     "quote": "SL to BE due to FOMC, though I don't think FOMC gives us a major dump... better be safe"
+    },
+    {
+     "msg": 808,
+     "date": "2026-07-28",
+     "quote": "Now this is a pure gamble trade because I'm opening it right before FOMC and markets looking weak"
+    },
+    {
+     "msg": 841,
+     "date": "2026-07-31",
+     "quote": "Just a reminder monthly close today, can pump or dump real fast that's why risky, at BE, go half risk"
+    },
+    {
+     "msg": 937,
+     "date": "2026-08-12",
+     "quote": "If anyone wants to exit before CPI they can safely"
+    }
+   ]
+  },
+  {
+   "name": "Geopolitical / headline catalysts (ceasefire, deals, Trump, Saylor)",
+   "category": "fundamental",
+   "what_it_is": "He forms a directional bias off political headlines and pending 'deals' and holds trades through them.",
+   "how_he_uses_it": "He pre-announces expected news ('a deal is coming this Sunday, free money, keep longing'), attributes moves to specific headlines after the fact, and will hold a losing position because a catalyst is due tomorrow. He also cuts shorting entirely around an event he thinks is bullish.",
+   "frequency": 12,
+   "first_seen": "2026-05-14",
+   "last_seen": "2026-08-19",
+   "evidence": [
+    {
+     "msg": 121,
+     "date": "2026-05-14",
+     "quote": "bounced around 78.5 and clarity act helped us push to 82k, told you at 79k, 82k is coming!"
+    },
+    {
+     "msg": 238,
+     "date": "2026-05-23",
+     "quote": "expecting good news, trump just announced it, ceasefire continuation on the request of gulf stayed that's why we pumped"
+    },
+    {
+     "msg": 489,
+     "date": "2026-06-15",
+     "quote": "Kept mentioning the past full week a deal is coming this Sunday, free money, keep longing"
+    },
+    {
+     "msg": 853,
+     "date": "2026-08-01",
+     "quote": "Saylor's sell news hence BTC dumped like this."
+    },
+    {
+     "msg": 977,
+     "date": "2026-08-19",
+     "quote": "no more shorting before white house summit"
+    }
+   ]
+  },
+  {
+   "name": "BTC as the driver of every altcoin position",
+   "category": "intermarket",
+   "what_it_is": "He explicitly conditions every alt trade on what BTC does next; alts are a leveraged expression of his BTC view.",
+   "how_he_uses_it": "Alt entries are justified with 'if BTC stabilizes/bounces this pumps', and alt losses are attributed to BTC ('started great but BTC ruining it'). He sizes alts down when BTC looks weak and closes alts pre-emptively when he expects BTC to reverse.",
+   "frequency": 14,
+   "first_seen": "2026-05-15",
+   "last_seen": "2026-08-05",
+   "evidence": [
+    {
+     "msg": 126,
+     "date": "2026-05-15",
+     "quote": "Manage your risk as BTC can retrace further though I think we slow grind then weekend Sunday pump and will get the TP"
+    },
+    {
+     "msg": 272,
+     "date": "2026-05-26",
+     "quote": "Just need BTC to get stable or bounce, gonna pump hard."
+    },
+    {
+     "msg": 336,
+     "date": "2026-06-02",
+     "quote": "If BTC stabilizes here, NEAR gonna pump around +10%"
+    },
+    {
+     "msg": 492,
+     "date": "2026-06-15",
+     "quote": "Closed PYTH in very small profits @ 0.392, it's going no where and I'm afraid when BTC reverses it dies."
+    },
+    {
+     "msg": 586,
+     "date": "2026-06-24",
+     "quote": "JUP stopped out, started great but BTC ruining it."
+    }
+   ]
+  },
+  {
+   "name": "Relative strength: alts that hold up during a BTC dump",
+   "category": "technical",
+   "what_it_is": "He looks for coins that refuse to fall while BTC is falling, and treats that as the setup.",
+   "how_he_uses_it": "'Holding well against this dump' is his stated reason to long JUP; the same logic is applied to BOME, XPL, WLD and HYPE. The implied trade is that when BTC bounces, the strong coin gives the outsized move.",
+   "frequency": 6,
+   "first_seen": "2026-05-18",
+   "last_seen": "2026-06-30",
+   "evidence": [
+    {
+     "msg": 151,
+     "date": "2026-05-18",
+     "quote": "Bome holding it's place despite BTC dump but you never know so manage your risk."
+    },
+    {
+     "msg": 320,
+     "date": "2026-06-01",
+     "quote": "Gotta love XPL for pumping and surviving during dump"
+    },
+    {
+     "msg": 520,
+     "date": "2026-06-16",
+     "quote": "WLD is very strong but in case BTC decides to dip better to add more on lower prices"
+    },
+    {
+     "msg": 576,
+     "date": "2026-06-24",
+     "quote": "Holding well against this dump, expecting it to give a breakout here if BTC reverses."
+    },
+    {
+     "msg": 630,
+     "date": "2026-06-30",
+     "quote": "A bit risky but HYPEs holding well, BTC bounce around 57-58k may send it higher"
+    }
+   ]
+  },
+  {
+   "name": "Buy supports, do not chase pumps",
+   "category": "technical",
+   "what_it_is": "His stated preference is to long into support rather than into strength; chasing an extended coin gets a 'half risk' tag.",
+   "how_he_uses_it": "When he does take an already-pumped coin he explicitly halves size and says so ('already too pumped and I usually long supports only'). His best-described setup is 'daily support + EMA's were aligned, was breaking out'. Conversely a market that has run hard triggers half risk on new longs.",
+   "frequency": 8,
+   "first_seen": "2026-05-26",
+   "last_seen": "2026-08-21",
+   "evidence": [
+    {
+     "msg": 270,
+     "date": "2026-05-26",
+     "quote": "Don't go too heavy already too pumped and I usually long supports only"
+    },
+    {
+     "msg": 328,
+     "date": "2026-06-02",
+     "quote": "Better if you use half risk here as it's already too pumped but your choice."
+    },
+    {
+     "msg": 777,
+     "date": "2026-07-26",
+     "quote": "Was an A+ setup, daily support + EMA's were aligned, was breaking out"
+    },
+    {
+     "msg": 1004,
+     "date": "2026-08-21",
+     "quote": "Keeping risk half because market is too pumped!"
+    }
+   ]
+  },
+  {
+   "name": "Rejection / wick at a level as the manual exit trigger",
+   "category": "technical",
+   "what_it_is": "He does not usually leave a resting TP; he closes when he sees price reject a level or wick into one.",
+   "how_he_uses_it": "'I close around 62 (or until I see a rejection)'; 'if you see rejection after 64k immediately book it because that's resistance too'. He also tells followers to grab wicks when he is asleep ('If you see wicks try to TP'). This converts the exit into a discretionary, level-based decision.",
+   "frequency": 9,
+   "first_seen": "2026-06-11",
+   "last_seen": "2026-08-12",
+   "evidence": [
+    {
+     "msg": 451,
+     "date": "2026-06-11",
+     "quote": "If you see wicks try to TP too many positions to update at once and it's my sleeping time."
+    },
+    {
+     "msg": 462,
+     "date": "2026-06-11",
+     "quote": "if you see rejection after 64k immediately book it because that's resistance too"
+    },
+    {
+     "msg": 633,
+     "date": "2026-06-30",
+     "quote": "EMA 50 @ 59.3k if you see a hard rejection exit there"
+    },
+    {
+     "msg": 937,
+     "date": "2026-08-12",
+     "quote": "I'm targeting 64.5-64.6k for now can pump upto 65, will exit when I see rejection"
+    }
+   ]
+  },
+  {
+   "name": "'Front run' — the belief that his own published levels get pre-empted",
+   "category": "orderflow",
+   "what_it_is": "He believes limit orders at obvious levels get front-run, so he prefers to buy at market and posts levels only after entering.",
+   "how_he_uses_it": "He repeatedly cancels or skips limits that were 'front ran', enters CMP instead ('I don't want to take my chances front ran'), and posts the trade after he is filled. It is his stated reason for the CMP-first entry style.",
+   "frequency": 4,
+   "first_seen": "2026-06-03",
+   "last_seen": "2026-07-29",
+   "evidence": [
+    {
+     "msg": 352,
+     "date": "2026-06-03",
+     "quote": "Cancelled, up 2.5R already, missed by 4$ front ran"
+    },
+    {
+     "msg": 571,
+     "date": "2026-06-22",
+     "quote": "I have a feeling I'm being front run here, want to enter at 63.6k CMP"
+    },
+    {
+     "msg": 711,
+     "date": "2026-07-15",
+     "quote": "Also a good price to enter is 65-65.1k but I don't want to take my chances front ran."
+    },
+    {
+     "msg": 820,
+     "date": "2026-07-29",
+     "quote": "We getting front run"
+    }
+   ],
+   "frequency_note": "AUDIT CORRECTION: exactly 4 occurrences of 'front ran'/'front run' exist in 1,005 messages - msgs 352, 571, 711, 820 - and all four are cited below. The playbook's 6 was overstated."
+  },
+  {
+   "name": "Fading the crowd's positioning in chat",
+   "category": "sentiment",
+   "what_it_is": "He uses what members and the wider chat are doing — mostly shorting — as a contrarian marker.",
+   "how_he_uses_it": "When 'everyone else is shorting' he stays long and posts his green position as proof; when many members want to short a coin he tells them to long it instead. He also declares 'don't force short' and 'don't short blindly' at the point where the crowd is bearish.",
+   "frequency": 6,
+   "first_seen": "2026-05-21",
+   "last_seen": "2026-07-27",
+   "evidence": [
+    {
+     "msg": 180,
+     "date": "2026-05-21",
+     "quote": "I saw some in chat saying I'm getting rekt because everyone else is shorting"
+    },
+    {
+     "msg": 277,
+     "date": "2026-05-26",
+     "quote": "anyhow I told you we are going up no need to short, glad I held my place!"
+    },
+    {
+     "msg": 543,
+     "date": "2026-06-18",
+     "quote": "Since alot of you trying to short LAB... For now try longing it instead of shorting"
+    },
+    {
+     "msg": 789,
+     "date": "2026-07-27",
+     "quote": "Btw as mentioned, BTC 66k+, it's going...ETH 2k+...Don't short blindly"
+    }
+   ]
+  },
+  {
+   "name": "LTF vs HTF split: wait on lower timeframe, position on higher",
+   "category": "technical",
+   "what_it_is": "He checks a lower timeframe for entry timing while the trade thesis lives on the 4h/daily.",
+   "how_he_uses_it": "'LTF looks bearish so waiting for entry' — he delays a planned setup rather than entering immediately, and tells followers not to place limits until he confirms. He separately offers 5m entries as unofficial ideas that will not be counted in his record.",
+   "frequency": 6,
+   "first_seen": "2026-05-09",
+   "last_seen": "2026-08-10",
+   "evidence": [
+    {
+     "msg": 43,
+     "date": "2026-05-09",
+     "quote": "LTF looks bearish so waiting for entry... but don't place any limits I'll let you know when I enter."
+    },
+    {
+     "msg": 135,
+     "date": "2026-05-16",
+     "quote": "If anyone like ltf entries (5m)... Just an idea won't count TP or SL, not an official trade."
+    },
+    {
+     "msg": 929,
+     "date": "2026-08-10",
+     "quote": "I think 61.5k we go for a bounce on HTF"
+    }
+   ]
+  },
+  {
+   "name": "A separate gold/oil book, deliberately excluded from the crypto tally",
+   "category": "instrument",
+   "what_it_is": "He trades gold (XAU) and, once, WTI oil as a side book whose results he keeps out of his crypto win-rate statistics. He offered gold as an intermarket read on BTC exactly once.",
+   "how_he_uses_it": "AUDIT CORRECTION - this item was previously framed as an intermarket signal. Only one message in 1,005 makes the gold->BTC inference, and he hedges it as 'just a thought' (msg 424). He never traded crypto off it. What the evidence actually shows is a separate forex book, posted on request from chat, with its own summary: 'I won't count gold trades in crypto summary but will make separate summary for these trades' (msg 405). This matters for the record-keeping picture more than for the method.",
+   "frequency": 8,
+   "first_seen": "2026-06-03",
+   "last_seen": "2026-08-06",
+   "evidence": [
+    {
+     "msg": 405,
+     "date": "2026-06-09",
+     "quote": "Guys I won't count gold trades in crypto summary but will make separate summary for these trades"
+    },
+    {
+     "msg": 351,
+     "date": "2026-06-03",
+     "quote": "Short GOLD (XAU) ... I won't count this with Crypto TP or SL, this for who do forex and demanded in chat."
+    },
+    {
+     "msg": 884,
+     "date": "2026-08-05",
+     "quote": "Shorted gold from 4162, will keep 30% for DCA...SL @ 4269"
+    },
+    {
+     "msg": 424,
+     "date": "2026-06-10",
+     "quote": "Gold dumped, BTC didn't...These days they both move together, If Gold pumps probably takes BTC higher, just a thought."
+    },
+    {
+     "msg": 489,
+     "date": "2026-06-15",
+     "quote": "I regret not giving oil here I thought I have a bad entry"
+    }
+   ],
+   "frequency_note": "8 gold/oil messages; 1 of them is an intermarket read."
+  }
+ ],
+ "risk_rules": [
+  {
+   "rule": "Risks 1-2% on alts, 3-5% on BTC",
+   "detail": "EXPLICIT AND OFTEN REPEATED - this is his headline teaching, stated identically in May, July and again on 31 Jul. Earliest version was '2% on normal trades and 1% on risky ones'. AUDIT CORRECTION: the playbook's 'BEHAVIOURAL CONTRADICTION' is DROPPED - both legs collapse on inspection. The 10-20% risk is a disclosed, ring-fenced $89.36 novelty account he announced as a 'for fun' 2x challenge and explicitly told members not to copy (msg 221). The +30.92%-in-four-days curve captioned 'This is where I risk only 3-5% per trade' is arithmetically consistent with 3-5% risk, because the message immediately before it posts the exchange's own stats panel for that same window showing 11 closed orders and 11 winners. Nothing in 1,005 messages shows him exceeding his stated risk on his main book. The honest finding is that he discloses the carve-out.",
+   "frequency": 8,
+   "evidence": [
+    {
+     "msg": 23,
+     "date": "2026-05-08",
+     "quote": "Manage risk. I risk 2% on normal traders and 1% on risky ones!"
+    },
+    {
+     "msg": 213,
+     "date": "2026-05-23",
+     "quote": "Also guys, I risk 1-2% on ALTs and 3-5% on BTC trades"
+    },
+    {
+     "msg": 221,
+     "date": "2026-05-23",
+     "quote": "don't follow it on main account I'll try to risk 10-20% which isn't healthy for your main wallet"
+    },
+    {
+     "msg": 687,
+     "date": "2026-07-06",
+     "quote": "This is where I risk only 3-5% per trade"
+    },
+    {
+     "msg": 846,
+     "date": "2026-07-31",
+     "quote": "I risk 2% on ALTs, 3-5% on BTC"
+    }
+   ]
+  },
+  {
+   "rule": "Size every trade with a position-size calculator; leverage is irrelevant",
+   "detail": "EXPLICIT. He posted a step-by-step tutorial (wallet, risk %, entry, SL -> coin quantity), told members to set orders 'By Amount' on the exchange, and argued that once the coin quantity is right the leverage number does not matter. The observed leverage on his own share cards is nevertheless extreme (150x most common, 250x, 300x, 500x seen), which is consistent with the claim only if margin is tiny.",
+   "frequency": 5,
+   "evidence": [
+    {
+     "msg": 214,
+     "date": "2026-05-23",
+     "quote": "Learn to use risk calculator and I PROMISE YOU, YOU'LL END MONTHLY PROFITABLE WITH ME AND NEVER EVER GET LIQUIDATED."
+    },
+    {
+     "msg": 216,
+     "date": "2026-05-23",
+     "quote": "Step1: Write your wallet Step2: Write your risk % Step3: Write your Entry SL Step4: It gives you a position size"
+    },
+    {
+     "msg": 218,
+     "date": "2026-05-23",
+     "quote": "you don't have to worry how much leverage to use, you can use even 500x as long as you're writing down the same amount!"
+    },
+    {
+     "msg": 777,
+     "date": "2026-07-26",
+     "quote": "Just risk 2-3% per setup please, use a risk calculator if you don't know how to."
+    }
+   ]
+  },
+  {
+   "rule": "'Half risk' / 'weekend size' tag on anything he judges risky",
+   "detail": "EXPLICIT AND HEAVILY USED - 54 messages on the broad pattern (half risk / half margin / weekend size / go low / small margin / risk half). He grades each call and attaches a size instruction: half risk for risky setups, shitcoins, pumped markets, weekends, pre-FOMC, wide or manual stops, and anything against his own directional bias. This is his main risk lever, applied per-trade rather than through stop distance. WORTH NAMING: the label is also used retrospectively, after a loss, to assign responsibility for the outcome to the follower's sizing - 'mentioned it was risky so hopefully risk was managed' (msg 639), 'If anyone used half risk as I mentioned I promise we will use full risk and quickly recover' (msg 997).",
+   "frequency": 54,
+   "evidence": [
+    {
+     "msg": 91,
+     "date": "2026-05-13",
+     "quote": "Risky trade go half. I hate ETH."
+    },
+    {
+     "msg": 136,
+     "date": "2026-05-16",
+     "quote": "Entered ETH long here using 0.5% margin/risk only"
+    },
+    {
+     "msg": 700,
+     "date": "2026-07-10",
+     "quote": "Shitcoins so don't go too heavy 2% at max"
+    },
+    {
+     "msg": 920,
+     "date": "2026-08-10",
+     "quote": "Half risk on shitcoins"
+    },
+    {
+     "msg": 960,
+     "date": "2026-08-17",
+     "quote": "I'm using half risk because bullish on BTC"
+    },
+    {
+     "msg": 997,
+     "date": "2026-08-21",
+     "quote": "If anyone used half risk as I mentioned I promise we will use full risk and quickly recover."
+    }
+   ]
+  },
+  {
+   "rule": "Soft SL (4h close) plus a wider hard SL to survive liquidation wicks",
+   "detail": "EXPLICIT but a minority structure. On some trades he gives two stops: a discretionary one on a 4h close and a hard order further away, whose stated purpose is anti-liquidation rather than risk-limitation. He acknowledges the soft stop costs him R and sometimes tightens it deliberately. AUDIT CORRECTION - SOFTENED: only 14 of 139 signal posts (10%) publish a candle-close soft SL and only 10 publish the soft+hard pair; 90% of his signals carry a plain numeric stop. Across 217 positions there are 45 stop moves, of which only 15 are a widen, extend, remove or hard-to-manual switch (7% of positions). And all 35 of his losses did close at a stop. The mechanic is real and decisive when it fires, but it is not a standing feature of the book.",
+   "frequency": 18,
+   "evidence": [
+    {
+     "msg": 338,
+     "date": "2026-06-02",
+     "quote": "Hard SL @ 0.0627, dont want anyone to get liquidated if a crashing wick comes in!"
+    },
+    {
+     "msg": 344,
+     "date": "2026-06-03",
+     "quote": "Bringing SL closer to improve R and avoid soft SL"
+    },
+    {
+     "msg": 365,
+     "date": "2026-06-03",
+     "quote": "Have a hard SL somewhere around 63-64k to avoid liqudiation wick"
+    },
+    {
+     "msg": 827,
+     "date": "2026-07-29",
+     "quote": "if you enter at DCA lower your SL a bit or keep it manual to survive wicks I guess"
+    },
+    {
+     "msg": 902,
+     "date": "2026-08-06",
+     "quote": "SL: 4h close above 66k or hard SL @ 66.3k"
+    }
+   ],
+   "frequency_note": "18 messages; 14 of 139 signal posts; 15 widen/remove/hard-to-manual events across 217 positions."
+  },
+  {
+   "rule": "Cap total risk after DCA at ~1.5R; cap the number of concurrent positions",
+   "detail": "EXPLICIT but soft. After averaging down he states the aggregate risk in R and gives a ceiling. Separately he repeatedly refuses good-looking setups because too many positions are already open, and closes trades purely to reduce clutter.",
+   "frequency": 8,
+   "evidence": [
+    {
+     "msg": 437,
+     "date": "2026-06-10",
+     "quote": "Added some more @ 0.47, avg is 0.484, risking 1.3R don't risk more than 1.5R"
+    },
+    {
+     "msg": 24,
+     "date": "2026-05-08",
+     "quote": "I like SLP and KERNEL too but I think 4 are enough for now"
+    },
+    {
+     "msg": 187,
+     "date": "2026-05-22",
+     "quote": "Ngl SUI looks too good on daily but I have 3 trades running here so imma hold myself"
+    },
+    {
+     "msg": 769,
+     "date": "2026-07-25",
+     "quote": "Too many trades running it's getting messy so closing this now"
+    }
+   ]
+  },
+  {
+   "rule": "Lower risk on funded/prop accounts than on live money",
+   "detail": "EXPLICIT, stated once with specific numbers, and consistent with his early Bybit screenshots being from a CFT funded account.",
+   "frequency": 2,
+   "evidence": [
+    {
+     "msg": 495,
+     "date": "2026-06-15",
+     "quote": "don't risk more than 1% on real and 0.3-0.4% funded because market's highly bullish!"
+    },
+    {
+     "msg": 30,
+     "date": "2026-05-08",
+     "quote": "Btw not trading demo it's CFT funded account on Bybit just clarifying"
+    }
+   ]
+  },
+  {
+   "rule": "De-risk the capital, not just the price: pull the DCA money back out, take 10% to cover fees, small accounts close fully at TP1",
+   "detail": "EXPLICIT. Once a DCA fills and the position returns to breakeven he tells members to withdraw the DCA tranche so the trade reverts to original size. Separately he recommends booking ~10% purely to cover fees before moving the stop to entry, so a breakeven stop is not actually a small loss. Guidance is scaled by account size, with small accounts told to take the whole TP rather than run partials.",
+   "frequency": 4,
+   "evidence": [
+    {
+     "msg": 19,
+     "date": "2026-05-08",
+     "quote": "DCA filled and at BE (79590)...Kindly take out your DCA value here."
+    },
+    {
+     "msg": 154,
+     "date": "2026-05-19",
+     "quote": "if you have a small account close entirely here or just SL to entry and exit at first TP"
+    },
+    {
+     "msg": 181,
+     "date": "2026-05-21",
+     "quote": "Or just 10% as your fee and SL to entry to be safe"
+    },
+    {
+     "msg": 672,
+     "date": "2026-07-05",
+     "quote": "Move SL to entry, setting TP @ 453.23...Can take 10% to get your fee in case it stops BE"
+    }
+   ]
+  },
+  {
+   "rule": "Cut risk after a losing run",
+   "detail": "BEHAVIOURAL, appears at the end of the sample. After five stops in two days he moved to half risk and then closed a live long at breakeven rather than carry it.",
+   "frequency": 3,
+   "evidence": [
+    {
+     "msg": 997,
+     "date": "2026-08-21",
+     "quote": "Sorry for the past 2 days, had 5 SLs, 5 SLs is how much u have monthly usually."
+    },
+    {
+     "msg": 1004,
+     "date": "2026-08-21",
+     "quote": "Trying a half risk BTC long... Keeping risk half because market is too pumped!"
+    },
+    {
+     "msg": 1005,
+     "date": "2026-08-21",
+     "quote": "Closing long at BE, getting risky and I already have 5 SLs I'm gonna play safe."
+    }
+   ]
+  }
+ ],
+ "trade_management": [
+  {
+   "tactic": "Stop to entry / BE after TP1 or ~1R",
+   "detail": "EXPLICIT RULE HE TEACHES ('Common knowledge but a reminder, SL to Entry after TP1'), instructed in ~44 messages. AUDIT CORRECTION - SOFTENED from 'the follower-facing rule and his own behaviour diverge': he does do it, just selectively - 22 of 217 positions (10%) carry a recorded to-entry stop move - and he makes a point of announcing the exceptions loudly ('will play full setup either SL or TP'). The finding is inconsistency plus loud self-exemption, not outright divergence.",
+   "frequency": 44,
+   "evidence": [
+    {
+     "msg": 39,
+     "date": "2026-05-09",
+     "quote": "Common knowledge but a reminder, SL to Entry after TP1"
+    },
+    {
+     "msg": 155,
+     "date": "2026-05-19",
+     "quote": "ZEC going hard, took 20% SL to entry, saving majority for TPs"
+    },
+    {
+     "msg": 182,
+     "date": "2026-05-21",
+     "quote": "Personally didn't move SL to entry, will play full setup either SL or TP (78.4k+)"
+    },
+    {
+     "msg": 306,
+     "date": "2026-05-29",
+     "quote": "Still holding BTC, either a full TP or SL, not moving SL to entry."
+    },
+    {
+     "msg": 754,
+     "date": "2026-07-23",
+     "quote": "Took 70% fully at 65120, SL to BE"
+    }
+   ]
+  },
+  {
+   "tactic": "He takes one full TP and no partials — while telling followers to take partials",
+   "detail": "EXPLICIT AND CENTRAL TO HIS IDENTITY: 'Since I don't take partials and take only 1TP so calculating my real R is very easy!' He frames partial-taking as inflating other traders' R. THE PLAYBOOK'S STRONGEST CONTRADICTION, CONFIRMED BY AUDIT AND KEPT AS-IS: on 2026-06-11 at 15:59 he wrote 'I'm still in BTC long from 62.2k I only took 25% at 63k'; at 22:42 the SAME DAY he wrote 'Made 3.2R today, that's realized without any partials, I don't take partials!'. Behaviourally, 43 of 217 positions carry a recorded partial exit - 47 partial exits in total, sized 50% (x11), 25% (x9), 20% (x9), 70% (x3), and one each at 30/40/60/75/10%. The only mitigation is that his July stats line reads '23.5R (Without Partials)', i.e. he claims the ACCOUNTING excludes partials - but that is a different claim from 'I don't take partials', which he states flatly and repeatedly.",
+   "frequency": 28,
+   "evidence": [
+    {
+     "msg": 226,
+     "date": "2026-05-23",
+     "quote": "SUI almost TP1, only take 25-40% and save majority for when I exit, I personally take no partials."
+    },
+    {
+     "msg": 465,
+     "date": "2026-06-11",
+     "quote": "Made 3.2R today, that's realized without any partials, I don't take partials!"
+    },
+    {
+     "msg": 457,
+     "date": "2026-06-11",
+     "quote": "I'm still in BTC long from 62.2k I only took 25% at 63k"
+    },
+    {
+     "msg": 522,
+     "date": "2026-06-16",
+     "quote": "Take 50, I don't take partials but I advise if you take partials at least do 50%"
+    },
+    {
+     "msg": 802,
+     "date": "2026-07-27",
+     "quote": "Unlike some trades I don't take partial TPs and then count it a whole 5R move when I already took 50% at TP1"
+    }
+   ],
+   "frequency_note": "28 messages record one of his own partial exits; only 17 messages contain the word 'partial'. 43 of 217 positions carry a partial, 47 partial exits total."
+  },
+  {
+   "tactic": "Discretionary early exit - he closes manually, below his own target, and manual closes never lose",
+   "detail": "AUDIT REPLACEMENT for the playbook's 'breakeven exits framed as discipline'. Literal breakeven exits are too rare to carry the win rate (only 10-11 of 217 positions end BE), but the mechanism sitting next to them is bigger and cleaner. He closes MANUALLY, on his own read, usually before the published target - and manual closes essentially never lose. Of the 62 positions closed by discretionary exit, 61 are wins, 1 is breakeven, and ZERO are losses. Every one of his 35 losses arrived through a stop. Only 45 of 120 wins (38%) actually reached a target he had published; at least 26 wins were manual closes booked SHORT of the stated TP (BTC 2026-06-17 exited 63,923 against a published 65,000; BB 2026-05-14 exited 0.0371 against a published 0.39; SOL 2026-06-11 exited 67.24 against 68). There are more manual closes (62) than take-profits (45). Breakeven and 'small profits' exits - 44 messages, 15 of them using 'small profits' explicitly - are simply the most extreme version of the same act, framed as discipline. Followers who set the published TP and waited would have had a materially different, and worse, experience than his tally implies.",
+   "frequency": 44,
+   "evidence": [
+    {
+     "msg": 110,
+     "date": "2026-05-14",
+     "quote": "I exited early because it invalidated my setup, it almost touched my SL so better to be disciplined and get out around BE, much better than SL at least?"
+    },
+    {
+     "msg": 423,
+     "date": "2026-06-10",
+     "quote": "Exiting BTC in small profits @ 61.6k... Small win but better than red"
+    },
+    {
+     "msg": 718,
+     "date": "2026-07-16",
+     "quote": "Closed for a very small profit, I have a feeling BTC wants 66k today better close here than in red"
+    },
+    {
+     "msg": 793,
+     "date": "2026-07-27",
+     "quote": "Closing XRP in very small profits rn, slow mover and we have new trades"
+    },
+    {
+     "msg": 957,
+     "date": "2026-08-17",
+     "quote": "Closing BTC here in some profits. Profits aren't much but what's nice is we survived a SL, the win streak continues!"
+    }
+   ],
+   "numbers": "manual_close 62 / take_profit 45 / stop_loss 35 / breakeven 11 / unknown 43 across 217 positions. Manual closes: 61W, 1BE, 0L. Wins reaching a published TP: 45/120 = 38%."
+  },
+  {
+   "tactic": "Small, quickly-taken targets: 0.5-0.8R on scalps",
+   "detail": "EXPLICIT IN HIS OWN WORDS; ONLY HALF-CONFIRMED BY THE RECONSTRUCTION. He states BTC scalps are '90% WR but 0.5R TPs', that his average TP was 0.64R in May, and that his R is '0.5-0.8R on avg' - 31 messages state a figure in that band - and defends it because 'there are so many TPs that 2 trades cover 1SL easily'. AUDIT CORRECTION: of 120 winning positions only 27 carry a stated R, and their median is 1.00R (mean 1.05R); 11 of 27 are <=0.8R, 18 of 27 are <=1.0R, 8 are exactly 0.5R and 2 are >=2R. So the observable win distribution centres on 1R, not 0.5-0.8R, and that sample is self-selected because he reports R when it flatters. The playbook's 'CONFIRMED BY HIS OWN STATS' is downgraded: his own stats confirm it, the record only half-confirms it. Median hold is 17.2 hours (mean 33.9, max 453), consistent with the fast-target claim.",
+   "frequency": 31,
+   "evidence": [
+    {
+     "msg": 318,
+     "date": "2026-06-01",
+     "quote": "RR:** 23.6...Avg TP R:** 0.64...Highest R Trade:** HYPE (5 R)"
+    },
+    {
+     "msg": 410,
+     "date": "2026-06-09",
+     "quote": "Example is DEXE or BEAT trades (low win rate but minimum 2R TP)...BTC scalps (90% WR but 0.5R TPs)"
+    },
+    {
+     "msg": 802,
+     "date": "2026-07-27",
+     "quote": "Yes my R is small 0.5-0.8R on avg but there are so many TPs that 2 trades cover 1SL easily"
+    },
+    {
+     "msg": 929,
+     "date": "2026-08-10",
+     "quote": "I usually target 0.5R for scalps"
+    }
+   ]
+  },
+  {
+   "tactic": "Manual take-profit; resting TP orders are removed or overridden",
+   "detail": "EXPLICIT from the first week ('I take manual TPs but you can set in case'). He often removes a set TP to extend the target, or closes early before the TP because of a rejection. This gives him discretion to book a small win at any moment - and it is the operational half of the discretionary-exit mechanic above.",
+   "frequency": 30,
+   "evidence": [
+    {
+     "msg": 5,
+     "date": "2026-05-07",
+     "quote": "TP1: 3.669 (I take manual TPs but you can set in case)"
+    },
+    {
+     "msg": 105,
+     "date": "2026-05-14",
+     "quote": "Remove the first TP 0.039 will take full TP around 0.404"
+    },
+    {
+     "msg": 355,
+     "date": "2026-06-03",
+     "quote": "Up 1.6R, I'm removing my TP @ 18 and will close manually, trying for a 3R or around 17.5 on this"
+    },
+    {
+     "msg": 438,
+     "date": "2026-06-10",
+     "quote": "Also fully out of BTC @ 62.7k don't want to round trip these gains"
+    }
+   ],
+   "evidence_notes": "AUDIT CORRECTION: msg 502 ('SL: 4h under 330 or hard SL @ 320') was dropped - it is a stop-loss line and has nothing to do with manual take-profits. Replaced with msg 438."
+  },
+  {
+   "tactic": "Widening, making manual, or removing the stop rather than taking the loss - rare, but decisive when it happens",
+   "detail": "BEHAVIOURAL, and directly contradicts his own teaching. He has extended stops mid-trade, switched a hard stop to 'manual 4h close', held past a stop he had published, run an ETH short with no stop at all, and once removed his BTC stop entirely with the reasoning 'if I get stopped I'll short again so not gonna accept my SL here'. AUDIT CORRECTION - SOFTENED: documented 15 times across 217 positions (7%), not habitually. He also states the opposite instinct - 'don't want a trade running publicly without SL' (msg 550) - and 90% of the time he leaves the stop where he put it. ALSO FOLDED IN HERE (moved out of what_he_never_does, where it was refuted): the claim that he never lets a public signal run without a stated stop does not hold. He ran the 1840 ETH short with no stop for at least a day AND publicly invited followers into it - 'I don't have a SL for this, maybe 2k? But I'm using 1% margin with Max Lev if anyone wants to join' (msg 853) - while calling it 'personal'.",
+   "frequency": 16,
+   "evidence": [
+    {
+     "msg": 368,
+     "date": "2026-06-04",
+     "quote": "Alright guys, BTC closed below the manual SL you guys can exit if you can't risk no more. I'LL PERSONALLY HOLD TILL 63K"
+    },
+    {
+     "msg": 381,
+     "date": "2026-06-05",
+     "quote": "I'm extending SL to 59k, I'll personally hold it till 58.5k"
+    },
+    {
+     "msg": 550,
+     "date": "2026-06-18",
+     "quote": "still believe I'll get my entry but don't want a trade running publicly without SL"
+    },
+    {
+     "msg": 860,
+     "date": "2026-08-02",
+     "quote": "One thing ETH I'm holding without SL so it's more like a personal trade...I do not recommend trading without SL"
+    },
+    {
+     "msg": 969,
+     "date": "2026-08-18",
+     "quote": "Removing BTC SL for now will wait a 4h close above 65.2k...Reason is if I get stopped I'll short again so not gonna accept my SL here"
+    },
+    {
+     "msg": 853,
+     "date": "2026-08-01",
+     "quote": "Personally I have started a ETH short from 1840, I don't have a SL for this, maybe 2k?"
+    }
+   ],
+   "frequency_note": "16 messages; 15 widen/extend/remove/hard-to-manual events across 217 positions (7%)."
+  },
+  {
+   "tactic": "Re-run the identical setup after it works",
+   "detail": "BEHAVIOURAL. When a level-based BTC setup pays, he immediately re-posts the same entry/DCA/TP/SL and trades it again, sometimes back-to-back within days, and counts each as a separate win.",
+   "frequency": 8,
+   "evidence": [
+    {
+     "msg": 179,
+     "date": "2026-05-21",
+     "quote": "Targeting 78+ again, it's the same last setup playing again"
+    },
+    {
+     "msg": 764,
+     "date": "2026-07-24",
+     "quote": "Great exit on our BTC long, will use this setup again...Entry: 64.7...DCA: 64.1k...TP SL same"
+    },
+    {
+     "msg": 780,
+     "date": "2026-07-26",
+     "quote": "Used same setup for both, won 6 out of 6 BTC trades last week!"
+    },
+    {
+     "msg": 371,
+     "date": "2026-06-04",
+     "quote": "Longed BTC again from 62.8k same setup, get in CMP"
+    }
+   ]
+  },
+  {
+   "tactic": "Explicit percentage instructions to followers at every milestone",
+   "detail": "EXPLICIT AND CONSTANT. He converts every update into an actionable size instruction — 'take 20-25% here', 'take 10-20% MAX', 'only take 25-40% and save majority', '50% here and remaining 50% at X'. He also caps how much followers should take when he wants them to hold.",
+   "frequency": 40,
+   "evidence": [
+    {
+     "msg": 140,
+     "date": "2026-05-17",
+     "quote": "ETH over 1R, you can take 25-50% here"
+    },
+    {
+     "msg": 204,
+     "date": "2026-05-23",
+     "quote": "BTC may bounce so securinh my shorts, take 10-20% MAX!"
+    },
+    {
+     "msg": 326,
+     "date": "2026-06-01",
+     "quote": "Up 1.2R take 10-20% only, save MAJORITY!"
+    },
+    {
+     "msg": 534,
+     "date": "2026-06-17",
+     "quote": "20% here (1R)...30% @ 67k...50% remaining at 68k"
+    }
+   ],
+   "frequency_note": "Not cleanly countable - any pattern broad enough to catch 'take 20-25% here' also catches ROI percentages; a broad match gives 69. Treat 40 as a directionally-right estimate."
+  },
+  {
+   "tactic": "Add to a position that is already green ('you don't add margin to a green trade unless you're confident')",
+   "detail": "BEHAVIOURAL AND EXPLICIT. Distinct from DCA-down: when a trade is working and he is confident he increases size, then targets the same level for a bigger result. He also converts a half-risk position to full risk once it is above breakeven.",
+   "frequency": 7,
+   "evidence": [
+    {
+     "msg": 163,
+     "date": "2026-05-20",
+     "quote": "The original entry was from 540 I saw strength and added alot at 582 hence the avg changed."
+    },
+    {
+     "msg": 508,
+     "date": "2026-06-16",
+     "quote": "Guys I have made BTC to full 1R, I was in 0.5R, full risk on it now, can still add if you want as it's above BE"
+    },
+    {
+     "msg": 569,
+     "date": "2026-06-22",
+     "quote": "you don't add margin to a green trade unless you're confident!"
+    },
+    {
+     "msg": 564,
+     "date": "2026-06-20",
+     "quote": "Added 25% here at 63.8k, new avg is 63k"
+    }
+   ]
+  }
+ ],
+ "entry_style": [
+  {
+   "pattern": "Market entry at CMP with an announced split (50/50, 70/30, 40/40/20)",
+   "detail": "EXPLICIT AND DOMINANT - 240 messages contain 'CMP', and a strict regex finds 139 signal-format posts (Long/Short TICKER + Entry). The template is fixed: Long/Short TICKER, Entry: X CMP, DCA: Y, TP, SL, @Paladin Notify. He states the split in percentages and tells people how to divide the funds. He uses genuine limit orders rarely and flags them ('It's a CMP order, if it's a limit I always write limit').",
+   "frequency": 139,
+   "evidence": [
+    {
+     "msg": 9,
+     "date": "2026-05-07",
+     "quote": "Entry: 50%...DCA: 50%"
+    },
+    {
+     "msg": 441,
+     "date": "2026-06-10",
+     "quote": "Entry: 62.2k CMP (40%)...DCA: 61k (40%)...DCA2: 60.7k (20%)"
+    },
+    {
+     "msg": 443,
+     "date": "2026-06-10",
+     "quote": "if you don't know how to divide easy way is to go to chatgpt and tell to divide the total amount into 40-40-20%"
+    },
+    {
+     "msg": 806,
+     "date": "2026-07-28",
+     "quote": "It's a CMP order, if it's a limit I always write limit"
+    }
+   ]
+  },
+  {
+   "pattern": "Reserves a DCA tranche below entry - a rescue tool on a minority of trades, not the engine of the win rate",
+   "detail": "AUDIT CORRECTION - the causal claim is DROPPED. The playbook said the reserved tranche 'is the mechanism that turns a losing entry into a winner'; the outcomes refute it. A DCA tranche is his standard tool for a bad entry, but not a standing feature of every trade: 53 of 139 signal posts (38%) publish a DCA level, 57 of the 200 positions he actually took plan one, and only 30 (14%) ever fill it. Decisively, positions where a DCA filled won 19 and lost 9 (68%), while positions with no DCA fill won 101, lost 26 and scratched 10 (74% including breakevens, 80% excluding) - the DCA cohort performs WORSE, so the reserved tranche cannot be what produces the headline win rate. It does genuinely rescue individual trades ('From almost an SL to a decent TP with a DCA in', msg 959; 'BTC TP hit with a DCA filled so good gains', msg 725), on roughly one trade in seven. The 162-message figure below is a count of DCA chatter, not of signals that reserve a tranche.",
+   "frequency": 162,
+   "evidence": [
+    {
+     "msg": 11,
+     "date": "2026-05-07",
+     "quote": "Keep 50-30% funds for DCA but optional you can go all in here"
+    },
+    {
+     "msg": 595,
+     "date": "2026-06-25",
+     "quote": "Entry: 61.3k CMP (50%)...Save DCA for 50%...For a safer entry just enter when I DCA"
+    },
+    {
+     "msg": 725,
+     "date": "2026-07-17",
+     "quote": "BTC TP hit with a DCA filled so good gains! Avg was 63.1k"
+    },
+    {
+     "msg": 941,
+     "date": "2026-08-13",
+     "quote": "BTW DCA is recommended entry, if you're entered at CMP like me 50-50% at least in profits"
+    },
+    {
+     "msg": 959,
+     "date": "2026-08-17",
+     "quote": "From almost an SL to a decent TP with a DCA in"
+    }
+   ],
+   "frequency_note": "162 messages mention DCA; 53 of 139 signal posts publish a DCA level; 57 of 200 taken positions plan one; 30 fill one."
+  },
+  {
+   "pattern": "Two parallel books on BTC: a 0.5R scalp and a 2-3R swing",
+   "detail": "EXPLICIT — he says so outright and often posts both at once with different SLs and TPs from nearly the same entry, letting followers pick. The scalp carries the win rate, the swing carries the R.",
+   "frequency": 12,
+   "evidence": [
+    {
+     "msg": 149,
+     "date": "2026-05-18",
+     "quote": "Sometimes I'll have 2 BTC setups, scalps that I do very often (high WR low RR) and swings (low WR high RR)"
+    },
+    {
+     "msg": 464,
+     "date": "2026-06-11",
+     "quote": "BTC scalps (High Win Rate low R)...High risk high reward trades (High R (+2 at least before any trim)...1R scalps (Mid risk)...That's how my trades are structured"
+    },
+    {
+     "msg": 540,
+     "date": "2026-06-17",
+     "quote": "Swing avg is 64.5k...Scalp entry @ 64260...TP for swing 67-68k...TP for scalp 65k (0.5R)"
+    },
+    {
+     "msg": 722,
+     "date": "2026-07-17",
+     "quote": "And if you want swing...Entry: 63323 CMP...TP: 65-66k...SL: 61.3k"
+    }
+   ]
+  },
+  {
+   "pattern": "Structural long bias — roughly 3 longs published for every short",
+   "detail": "BEHAVIOURAL AND SELF-ACKNOWLEDGED. AUDIT CORRECTION to the counts: a strict regex finds 139 signal-format posts split 106 long / 33 short (3.2:1); the reconstructed position log has 152 longs and 47 shorts among the 200 positions he actually took (3.2:1). The playbook's '113 longs and 39 shorts of 151' was a soft estimate. The 'roughly 3 longs per short' claim is solid. Longs won 78% of resolved outcomes excluding breakevens, shorts 74% - so the bias is not a handicap in this sample, but his worst stretch (five stops in two days, 19-21 Aug) came from shorting against his own bullish view. He admits 'Idk I'm usually always bullish' and 'I'm the most bullish guy here'.",
+   "frequency": 139,
+   "evidence": [
+    {
+     "msg": 478,
+     "date": "2026-06-13",
+     "quote": "Idk I'm usually always bullish."
+    },
+    {
+     "msg": 447,
+     "date": "2026-06-11",
+     "quote": "Nonetheless I have a 6 win streak on BTC going on, interestingly all longs"
+    },
+    {
+     "msg": 977,
+     "date": "2026-08-19",
+     "quote": "I'm the most bullish guy here and I'm getting fked in shorts"
+    },
+    {
+     "msg": 997,
+     "date": "2026-08-21",
+     "quote": "I counter traded myself by BTC short, pretty shitty feeling rn"
+    }
+   ]
+  },
+  {
+   "pattern": "Grades and labels every call before the entry ('risky', 'gamble', 'half risk', 'swing', 'scalp', 'shitcoin')",
+   "detail": "EXPLICIT AND SYSTEMATIC. Each signal carries a risk label that pre-commits the follower's sizing, and he leans on the label after a loss ('mentioned it was risky so hopefully risk was managed'). 'Gamble trade' is reserved for shitcoins and pre-event entries.",
+   "frequency": 44,
+   "evidence": [
+    {
+     "msg": 122,
+     "date": "2026-05-14",
+     "quote": "HALF MARGIN TRADE gambling here. Don't lose today's profits on it, go low!"
+    },
+    {
+     "msg": 593,
+     "date": "2026-06-25",
+     "quote": "Shitcoin, total gambling don't risk more than 2%"
+    },
+    {
+     "msg": 639,
+     "date": "2026-07-01",
+     "quote": "HYPE stopped mentioned it was risky so hopefully risk was managed."
+    },
+    {
+     "msg": 904,
+     "date": "2026-08-06",
+     "quote": "Gambe trade...Long TRADOOR...Risky, shitcoin, please go low or half!"
+    }
+   ],
+   "frequency_note": "59 messages contain risky/gamble/gambling/shitcoin alone; 174 if the full label set (incl. half risk, swing, scalp) is counted. The playbook's 44 is conservative."
+  },
+  {
+   "pattern": "Reduce-and-re-add to improve the average and the R",
+   "detail": "BEHAVIOURAL. When a position is green but the entry was poor, he tells followers to cut size in profit and add the rest lower, explicitly to 'improve R'. He applies the same logic to his own stop placement (tightening the SL to make the ratio better).",
+   "frequency": 7,
+   "evidence": [
+    {
+     "msg": 521,
+     "date": "2026-06-16",
+     "quote": "It's green rn so you can reduce size from 70% to 50% rn"
+    },
+    {
+     "msg": 557,
+     "date": "2026-06-19",
+     "quote": "You can reduce size to 50% in profits and add 50% at 61.5k this will improve R and a good entry"
+    },
+    {
+     "msg": 805,
+     "date": "2026-07-28",
+     "quote": "Can use 61.7k to improve R a bit but I just wanna play safe here."
+    },
+    {
+     "msg": 836,
+     "date": "2026-07-30",
+     "quote": "You can short using 66k as SL to improve R I'm using 66.5k"
+    }
+   ]
+  },
+  {
+   "pattern": "Trades ideas without official status when he does not want them in the record",
+   "detail": "BEHAVIOURAL. Ideas posted as 'not an official setup' / 'won't count TP or SL' let him publish calls whose outcomes never touch the monthly win-rate table — including gold, 5m entries, and coins he is not personally taking.",
+   "frequency": 10,
+   "evidence": [
+    {
+     "msg": 135,
+     "date": "2026-05-16",
+     "quote": "Just an idea won't count TP or SL, not an official trade."
+    },
+    {
+     "msg": 317,
+     "date": "2026-06-01",
+     "quote": "I'm not personally taking it but if anyone wants to try. Not a signal"
+    },
+    {
+     "msg": 405,
+     "date": "2026-06-09",
+     "quote": "Guys I won't count gold trades in crypto summary but will make separate summary for these trades"
+    },
+    {
+     "msg": 843,
+     "date": "2026-07-31",
+     "quote": "Not an official setup, had 40+ setups this month gonna chill rn"
+    }
+   ]
+  }
+ ],
+ "market_regime_views": [
+  {
+   "period": "2026-05 (early)",
+   "view": "Outright bullish on BTC in the 79-85k area; expected the 80s to hold and a push to previous daily highs, mostly long alts for a weekend pump.",
+   "evidence": [
+    {
+     "msg": 7,
+     "date": "2026-05-07",
+     "quote": "Risky trades because BTC could retrace more but I'm expecting 80s to hold, at least visit 82k+"
+    },
+    {
+     "msg": 58,
+     "date": "2026-05-11",
+     "quote": "Expecting 84-85k coming week, I'm bullish."
+    },
+    {
+     "msg": 69,
+     "date": "2026-05-11",
+     "quote": "80s hold, 84 we go this is what I see."
+    }
+   ]
+  },
+  {
+   "period": "2026-05 (mid-late)",
+   "view": "Turned two-sided as BTC broke down through 78k: identified 77.7-78.1k as the weekend reversal zone and the 4h 200 EMA as the make-or-break, then called 72-74k before 'high 80s'. Late May he issued his central macro call — a crypto bottom in June.",
+   "evidence": [
+    {
+     "msg": 133,
+     "date": "2026-05-16",
+     "quote": "Reversal zone for weekend should be 77.7-78.1k, will try a scalp there."
+    },
+    {
+     "msg": 199,
+     "date": "2026-05-23",
+     "quote": "I see 72-74k then high 80s"
+    },
+    {
+     "msg": 295,
+     "date": "2026-05-28",
+     "quote": "My prediction is crypto market bottoms in June for 2026...At least a local bottom for June-July"
+    }
+   ]
+  },
+  {
+   "period": "2026-06",
+   "view": "Bearish grind to ~58-62k that he traded almost entirely from the long side and repeatedly bought bottoms; declared the June bottom in mid-month and started a public spot accumulation plan (BTC/ETH/SOL with staged DCAs) plus a spot HYPE thesis from $60.",
+   "evidence": [
+    {
+     "msg": 384,
+     "date": "2026-06-06",
+     "quote": "If anyone's interested in spot accumulation...Entry: 61k CMP (40%)...DCA1: 56k (30%)...DCA2: 46k (30%)"
+    },
+    {
+     "msg": 489,
+     "date": "2026-06-15",
+     "quote": "June bottom's in for me."
+    },
+    {
+     "msg": 516,
+     "date": "2026-06-16",
+     "quote": "Apart from this one coin I recommend buying in spot is HYPE, I'm holding since 60"
+    },
+    {
+     "msg": 625,
+     "date": "2026-06-29",
+     "quote": "July will be a pumpy pumpy month, at least better than June I'm telling you, it's a relief month."
+    }
+   ]
+  },
+  {
+   "period": "2026-07",
+   "view": "'Pumpy relief month' — bullish BTC 63-67k with a published path (65k, pullback to 62-63k, then 66-67k) that he claims played out exactly; strongest month of the sample by his own stats (45 trades, 89% WR, 23.5R).",
+   "evidence": [
+    {
+     "msg": 663,
+     "date": "2026-07-03",
+     "quote": "64k this weekend, 66k by next week most probably. It's a pumpy relief month."
+    },
+    {
+     "msg": 736,
+     "date": "2026-07-20",
+     "quote": "Now tell me didn't BTC move exactly as I mentioned?"
+    },
+    {
+     "msg": 848,
+     "date": "2026-07-31",
+     "quote": "July Stats...45 Trades...40 Wins...5 SLs...23.5R (Without Partials)...89% Win Rate...93% Win Rate BTC"
+    }
+   ]
+  },
+  {
+   "period": "2026-08",
+   "view": "Publicly called a 62-65k chop range for most of August with a chance of 67-70k later — then, when BTC broke out to 69-77k, said the bull leg had started and pivoted to 73-80k. He was long spot into it but repeatedly shorted against his own bias and took five stops in two days.",
+   "evidence": [
+    {
+     "msg": 950,
+     "date": "2026-08-15",
+     "quote": "Spent the first half in the 62-65k range I mentioned, let's see if the 2nd half of this prediction becomes a reality!"
+    },
+    {
+     "msg": 973,
+     "date": "2026-08-19",
+     "quote": "BTC is bullish, rest of August is bullish BTC to 67-70k...Just got greedy with the short"
+    },
+    {
+     "msg": 983,
+     "date": "2026-08-20",
+     "quote": "Seeing 71-71.5k by tomorrow max by weekend...I don't think they'll give us low 60s before 73-75k"
+    },
+    {
+     "msg": 999,
+     "date": "2026-08-21",
+     "quote": "Well guys they are speed running my predictions, mentioned at 73k, 80k is next!"
+    }
+   ]
+  }
+ ],
+ "psychology_and_discipline": [
+  {
+   "theme": "Streak preservation as an explicit trading input",
+   "detail": "He counts consecutive wins publicly and admits closing trades early specifically to protect the streak. This is a direct incentive toward small, fast take-profits and breakeven exits.",
+   "evidence": [
+    {
+     "msg": 96,
+     "date": "2026-05-13",
+     "quote": "Closing SOL here personally, I want to be on the safe side and keep my streak."
+    },
+    {
+     "msg": 95,
+     "date": "2026-05-13",
+     "quote": "I swear if this coin breaks my streak I'm going on a break"
+    },
+    {
+     "msg": 473,
+     "date": "2026-06-12",
+     "quote": "And for your information, we have a 10 win streak on BTC scalps"
+    },
+    {
+     "msg": 957,
+     "date": "2026-08-17",
+     "quote": "what's nice is we survived a SL, the win streak continues!"
+    }
+   ]
+  },
+  {
+   "theme": "Public accountability, apology and promise cycle after losses",
+   "detail": "Losses are met with an apology to the group, an explanation, and a forward-looking numeric promise (10R this month, 3 wins before a break). 24 messages contain an apology.",
+   "evidence": [
+    {
+     "msg": 193,
+     "date": "2026-05-23",
+     "quote": "Guys we had a couple stop losses on the crash last night, I apologize...I was supposed to take a break this week but will get 3 wins before taking a break to make it back."
+    },
+    {
+     "msg": 341,
+     "date": "2026-06-03",
+     "quote": "Out of my longs, tough day today, 4 SLs back to back, rn at -3R. Will be +3R by the end of the week, 10R this month a promise, start counting!"
+    },
+    {
+     "msg": 978,
+     "date": "2026-08-19",
+     "quote": "3 SLs after a whole month of almost winning we will win again and alot, I promise."
+    }
+   ]
+  },
+  {
+   "theme": "Regret at not booking, and the round-trip aversion it produces",
+   "detail": "His worst experiences are trades that went 2-3R and came back. He repeatedly says this is why he takes one early full TP: 'usually trades round trip and you lose profits don't have to stress about that.'",
+   "evidence": [
+    {
+     "msg": 36,
+     "date": "2026-05-09",
+     "quote": "All trades running in good profits, take TP whenever you want, don't let them round trip."
+    },
+    {
+     "msg": 472,
+     "date": "2026-06-12",
+     "quote": "ALLO stopped after moving 1.8R for me, I didn't TP, no regrets wanted 2R whole or SL, round tripped big profits"
+    },
+    {
+     "msg": 802,
+     "date": "2026-07-27",
+     "quote": "Plus usually trades round trip and you lose profits don't have to stress about that."
+    },
+    {
+     "msg": 997,
+     "date": "2026-08-21",
+     "quote": "both the times I shorted BTC dropped 1000$+ and in good profits but didn't book"
+    }
+   ]
+  },
+  {
+   "theme": "Self-aware about greed and about counter-trading his own bias",
+   "detail": "He names greed as his specific failure mode (taking no partials, waiting for the extended target, shorting a market he says is bullish) and contrasts himself favourably with followers who behaved better.",
+   "evidence": [
+    {
+     "msg": 128,
+     "date": "2026-05-16",
+     "quote": "when we longed from 81.3k it immediately went to 82k, a good TP for scalp I could have exit there but was trying for 83k. My mistake on this one."
+    },
+    {
+     "msg": 827,
+     "date": "2026-07-29",
+     "quote": "Congrats you're not a greedy MF like me"
+    },
+    {
+     "msg": 650,
+     "date": "2026-07-02",
+     "quote": "That said, I simply counter trade myself mentioned 62k is incoming"
+    },
+    {
+     "msg": 997,
+     "date": "2026-08-21",
+     "quote": "no one knows shit, I counter traded myself by BTC short"
+    }
+   ]
+  },
+  {
+   "theme": "Selective record-keeping and heavy self-promotion of correct calls",
+   "detail": "He screenshots his own earlier messages to prove accuracy, excludes gold and 'unofficial' ideas from the tally, asks members to vote on whether a round-tripped trade counts as a win, and repeatedly asks for PnL screenshots in the showcase channel. AUDIT ADDITION - THE CLEANEST TELL: his pre-server journal recap reported three categories, '25 trades, 22 Wins, 3 BE, 0 loss' (msg 2). Every server-era monthly summary reports only Trades / Wins / Losses (msgs 315, 848). The breakeven bucket was dropped once there was an audience, and there are 10 breakeven positions in the reconstructed record. He also concedes that not every trade reaches the server: 'some of my personal or once in a while trades will be there [on X]' (msg 877).",
+   "evidence": [
+    {
+     "msg": 2,
+     "date": "2026-05-06",
+     "quote": "**25** trades\n**22** Wins\n**3** BE \n**0** loss"
+    },
+    {
+     "msg": 403,
+     "date": "2026-06-09",
+     "quote": "Just checking because I don't know if I should count it as a win or loss as it went to huge profits, I'll pick what the majority says please be honest!"
+    },
+    {
+     "msg": 877,
+     "date": "2026-08-03",
+     "quote": "Guys, I post all my trades in this server but since I wanna grow my X too some of my personal or once in a while trades will be there."
+    },
+    {
+     "msg": 243,
+     "date": "2026-05-24",
+     "quote": "C'mon guys at least post PNLs...today I gave you like 5R today"
+    },
+    {
+     "msg": 978,
+     "date": "2026-08-19",
+     "quote": "Meanwhile look HOW ACCURATE THIS WAS, everyone else said August is bearish, not me"
+    }
+   ]
+  },
+  {
+   "theme": "Faith and community framing",
+   "detail": "Trades and outcomes are framed with religious language (InshaAllah, MashaAllah, 'thank God'), and losses are shared as a group experience ('we', 'brothers'). This sustains follower loyalty through drawdowns.",
+   "evidence": [
+    {
+     "msg": 1,
+     "date": "2026-05-06",
+     "quote": "First I would like to thank God for everything"
+    },
+    {
+     "msg": 96,
+     "date": "2026-05-13",
+     "quote": "expect TPs soon InshaAllah!"
+    },
+    {
+     "msg": 743,
+     "date": "2026-07-21",
+     "quote": "MashaAllah brothers caught the whole 3k move and a 1.7R"
+    },
+    {
+     "msg": 284,
+     "date": "2026-05-27",
+     "quote": "Eid Mubarak to every Muslim brother of mine"
+    }
+   ]
+  },
+  {
+   "theme": "Avoids forcing trades once a periodic target is met",
+   "detail": "After a good run he explicitly steps back and stops posting setups until the next week, which mechanically protects the win rate. The same selection effect runs through his position-count limits: he repeatedly declines setups he rates highly because too many trades are already open (msgs 24, 48, 187, 706) and closes trades purely for clutter (msg 769) - and those clutter closures land in the manual-close bucket, which never loses. 16 of the 217 catalogued setups were posted but never taken by him.",
+   "evidence": [
+    {
+     "msg": 701,
+     "date": "2026-07-11",
+     "quote": "We had a nice win streak at the start of the month so not forcing any trades."
+    },
+    {
+     "msg": 875,
+     "date": "2026-08-03",
+     "quote": "My weekly goal has been done, so I'll take it slow until next week."
+    },
+    {
+     "msg": 878,
+     "date": "2026-08-04",
+     "quote": "My weekly target's been done so not rushing."
+    },
+    {
+     "msg": 843,
+     "date": "2026-07-31",
+     "quote": "had 40+ setups this month gonna chill rn"
+    }
+   ]
+  }
+ ],
+ "vocabulary": [
+  {
+   "term": "R",
+   "meaning": "Profit expressed as a multiple of the stop-loss distance, deliberately divorced from ROI%. He posted a dedicated explainer: 1R = a move equal to entry-to-SL, so a 150x card showing +150% ROI can still be well under 1R. His stated averages: ~0.64R per TP (May), 0.5-0.8R overall. MEASURED: of 120 wins only 27 carry a stated R, median 1.00R, mean 1.05R. THE DENOMINATOR MOVES: he publishes R against the ORIGINAL entry-to-stop distance, but 30 positions had a DCA fill that changed the average entry and 15 had the stop widened or removed. Msg 922 makes the elasticity explicit - 'TP taken for a 0.7R, 1R with soft SL' - the same exit is worth 0.7R or 1R depending on which stop you measure from.",
+   "evidence": [
+    {
+     "msg": 213,
+     "date": "2026-05-23",
+     "quote": "For those who don't know what is R, I tried explaining in the simplest way!"
+    },
+    {
+     "msg": 212,
+     "date": "2026-05-23",
+     "quote": "1R soon!"
+    },
+    {
+     "msg": 318,
+     "date": "2026-06-01",
+     "quote": "Avg TP R:** 0.64...Highest R Trade:** HYPE (5 R)"
+    },
+    {
+     "msg": 802,
+     "date": "2026-07-27",
+     "quote": "Yes my R is small 0.5-0.8R on avg"
+    },
+    {
+     "msg": 922,
+     "date": "2026-08-10",
+     "quote": "TP taken for a 0.7R, 1R with soft SL"
+    }
+   ]
+  },
+  {
+   "term": "CMP",
+   "meaning": "Current Market Price — a market-order entry taken right now, as opposed to a resting limit. Appears in 240 messages and is the default form of every signal.",
+   "evidence": [
+    {
+     "msg": 5,
+     "date": "2026-05-07",
+     "quote": "Entry: 3.46 CMP"
+    },
+    {
+     "msg": 806,
+     "date": "2026-07-28",
+     "quote": "It's a CMP order, if it's a limit I always write limit, you can still get in just 50$ away"
+    }
+   ]
+  },
+  {
+   "term": "DCA",
+   "meaning": "A pre-planned add lower (for longs) or higher (for shorts), sized as a percentage of the total intended position and reserved at entry. Functions as the mechanism to rescue a bad entry, not as an averaging-down accident.",
+   "evidence": [
+    {
+     "msg": 9,
+     "date": "2026-05-07",
+     "quote": "Entry: 50%...DCA: 50%"
+    },
+    {
+     "msg": 256,
+     "date": "2026-05-24",
+     "quote": "Guys do DCA 25% at 75.5k And save 25% for another DCA"
+    },
+    {
+     "msg": 941,
+     "date": "2026-08-13",
+     "quote": "BTW DCA is recommended entry"
+    }
+   ]
+  },
+  {
+   "term": "Soft SL / hard SL",
+   "meaning": "Soft SL is a discretionary exit on a candle close (usually 4h) beyond a level; hard SL is a resting order placed further away whose stated job is to prevent liquidation on a wick.",
+   "evidence": [
+    {
+     "msg": 343,
+     "date": "2026-06-03",
+     "quote": "SL: 4h manual close under 64.4"
+    },
+    {
+     "msg": 344,
+     "date": "2026-06-03",
+     "quote": "Bringing SL closer to improve R and avoid soft SL"
+    },
+    {
+     "msg": 922,
+     "date": "2026-08-10",
+     "quote": "TP taken for a 0.7R, 1R with soft SL"
+    }
+   ]
+  },
+  {
+   "term": "Sniped / snipe entry",
+   "meaning": "An entry that lands at or extremely near the exact turning point, usually the DCA fill at a wick low. Used as a badge of quality on an entry.",
+   "evidence": [
+    {
+     "msg": 81,
+     "date": "2026-05-12",
+     "quote": "And if you entered at DCA you sniped, otherwise DCA was a snipe!"
+    },
+    {
+     "msg": 532,
+     "date": "2026-06-17",
+     "quote": "Sniped it, also it came back to entry exactly once as I said"
+    },
+    {
+     "msg": 986,
+     "date": "2026-08-20",
+     "quote": "Closed my long scalp, snipe entry if you entered from 68.9k"
+    }
+   ]
+  },
+  {
+   "term": "Front ran",
+   "meaning": "Price reversing just short of his resting limit or take-profit, which he interprets as others pre-empting the obvious level. Drives his preference for market entries.",
+   "evidence": [
+    {
+     "msg": 352,
+     "date": "2026-06-03",
+     "quote": "Cancelled, up 2.5R already, missed by 4$ front ran"
+    },
+    {
+     "msg": 571,
+     "date": "2026-06-22",
+     "quote": "I have a feeling I'm being front run here, want to enter at 63.6k CMP"
+    }
+   ]
+  },
+  {
+   "term": "Half risk / weekend size / go low",
+   "meaning": "An instruction to halve (or more) the normal position size on a setup he considers lower-conviction: risky, pumped, a shitcoin, over a weekend, before an event, or against his own bias.",
+   "evidence": [
+    {
+     "msg": 291,
+     "date": "2026-05-28",
+     "quote": "SL @ 72k, half risk trade, go lower than usual"
+    },
+    {
+     "msg": 678,
+     "date": "2026-07-05",
+     "quote": "Just use the weekend size, don't go too heavy, good luck!"
+    },
+    {
+     "msg": 988,
+     "date": "2026-08-20",
+     "quote": "GO LOW GO LOW, SMALL MARGIN"
+    }
+   ]
+  },
+  {
+   "term": "Round trip",
+   "meaning": "A trade that goes deeply into profit and returns to entry or a stop. His stated reason for taking one early full TP.",
+   "evidence": [
+    {
+     "msg": 36,
+     "date": "2026-05-09",
+     "quote": "take TP whenever you want, don't let them round trip"
+    },
+    {
+     "msg": 438,
+     "date": "2026-06-10",
+     "quote": "Also fully out of BTC @ 62.7k don't want to round trip these gains"
+    }
+   ]
+  },
+  {
+   "term": "PA",
+   "meaning": "Price action — used loosely for how price is behaving, almost always when it is frustrating or random rather than as an analytical framework.",
+   "evidence": [
+    {
+     "msg": 499,
+     "date": "2026-06-15",
+     "quote": "closed the TP one and longed a dead PA coin"
+    },
+    {
+     "msg": 777,
+     "date": "2026-07-26",
+     "quote": "Got stopped on INJ, really bad PA"
+    },
+    {
+     "msg": 917,
+     "date": "2026-08-10",
+     "quote": "PA so random it's giving me headache in my kidneys"
+    }
+   ]
+  },
+  {
+   "term": "Gamble trade / shitcoin",
+   "meaning": "A low-conviction, high-variance position (memecoins, pre-event entries, pure momentum plays) explicitly flagged so it is sized small and, in some cases, kept out of the official record.",
+   "evidence": [
+    {
+     "msg": 122,
+     "date": "2026-05-14",
+     "quote": "Gambled long BTC ... HALF MARGIN TRADE gambling here"
+    },
+    {
+     "msg": 150,
+     "date": "2026-05-18",
+     "quote": "Trying a scalp on a shitcoin now"
+    },
+    {
+     "msg": 556,
+     "date": "2026-06-19",
+     "quote": "Bought some RE in spot, GAMBLE TRADE."
+    }
+   ]
+  },
+  {
+   "term": "BE (breakeven)",
+   "meaning": "Both the stop-to-entry action and an exit result. A BE exit is presented as a success ('better than red'), not a scratch, and appears in 106 messages.",
+   "evidence": [
+    {
+     "msg": 19,
+     "date": "2026-05-08",
+     "quote": "DCA filled and at BE (79590)"
+    },
+    {
+     "msg": 110,
+     "date": "2026-05-14",
+     "quote": "better to be disciplined and get out around BE, much better than SL at least?"
+    },
+    {
+     "msg": 597,
+     "date": "2026-06-25",
+     "quote": "Closed at BE for now, will look to long from lower or short from 62+"
+    }
+   ]
+  },
+  {
+   "term": "High WR low R vs low WR high R",
+   "meaning": "His explicit two-strategy taxonomy: BTC scalps at ~90% win rate for 0.5R, versus 'high risk high reward' alt trades targeting 2R+ with a lower hit rate. He tells followers to pick the one that suits them.",
+   "evidence": [
+    {
+     "msg": 1,
+     "date": "2026-05-06",
+     "quote": "I do all sorts of trades High R Low Wins and High Win rate and Low R trades"
+    },
+    {
+     "msg": 409,
+     "date": "2026-06-09",
+     "quote": "With low win rate I'll target at least 20+ R a month...With high win rate I'll target 10 RR a month"
+    },
+    {
+     "msg": 415,
+     "date": "2026-06-09",
+     "quote": "I personally prefer low win rate high RR but you have to have some strong psychology to go through losses to win big"
+    }
+   ]
+  }
+ ],
+ "instruments_and_venues": {
+  "assets_traded": [
+   "BTCUSDT",
+   "ETHUSDT",
+   "SOLUSDT",
+   "ZECUSDT",
+   "HYPEUSDT",
+   "XRPUSDT",
+   "BNBUSDT",
+   "WLDUSDT",
+   "SUIUSDT",
+   "TAOUSDT",
+   "NEARUSDT",
+   "INJUSDT",
+   "AVAXUSDT",
+   "LINKUSDT",
+   "UNIUSDT",
+   "ENSUSDT",
+   "ADAUSDT",
+   "XLMUSDT",
+   "OPUSDT",
+   "JUPUSDT",
+   "ARBUSDT",
+   "THETAUSDT",
+   "GRTUSDT",
+   "ENAUSDT",
+   "XMRUSDT",
+   "RENDERUSDT",
+   "FETUSDT",
+   "PYTHUSDT",
+   "LDOUSDT",
+   "SEIUSDT",
+   "RAYUSDT",
+   "FILUSDT",
+   "SNXUSDT",
+   "ZROUSDT",
+   "AVNTUSDT",
+   "KERNELUSDT",
+   "STABLEUSDT",
+   "HBARUSDT",
+   "XPLUSDT",
+   "DEXEUSDT",
+   "ALLOUSDT",
+   "BEATUSDT",
+   "JCTUSDT",
+   "BOMEUSDT",
+   "BONKUSDT",
+   "TOSHIUSDT",
+   "PARTIUSDT",
+   "PHAUSDT",
+   "EDUUSDT",
+   "EIGENUSDT",
+   "MEUSDT",
+   "GENIUSUSDT",
+   "TRIAUSDT",
+   "TRADOORUSDT",
+   "PORTALUSDT",
+   "ARKMUSDT",
+   "LABUSDT",
+   "BBUSDT",
+   "SYRUPUSDT",
+   "ASTERUSDT",
+   "BERA",
+   "HOLO",
+   "RE",
+   "BTW"
+  ],
+  "non_crypto": [
+   "GOLD / XAU (traded repeatedly, results kept in a separate tally)",
+   "OIL (WTI) — one documented short",
+   "SPCX — a listed-equity perp traded around earnings and called on X",
+   "INTC — appears as a short in one PnL recording"
+  ],
+  "exchanges": [
+   "Blofin (primary from mid-May onward; ~242 references and most share cards)",
+   "Bybit (dominant in the first two weeks, including a CFT-funded account that watermarks screenshots 'Demo')",
+   "MEXC (second live venue; source of the 250x/300x/500x cards)",
+   "Yubit (primary from late July/August)",
+   "Binance (charts and a few position cards)",
+   "Bitunix (appears in a member showcase recording)"
+  ],
+  "leverage_habits": "OBSERVED: extremely high nominal leverage. Where the reconstructed position log records a leverage figure, 150x is by far the most common (32 positions), then 100x (22), 75x (19), 50x (12) and 250x (9); across all share-card mentions 150x leads with 115, ahead of 100x (77), 75x (59), 50x (47) and 250x (45), with 200x, 300x and 500x all appearing. Median share-card ROI is 179.7% (n=115) - a leveraged card figure, never an account return. Low-leverage exceptions are his 10x set-and-forget SOL swing and a 3x FIL. TAUGHT: leverage is irrelevant if you size from a risk calculator - 'you can use even 500x as long as you're writing down the same amount' - and members should size by coin quantity, not by margin. He also once ran a deliberately reckless 10-20% risk 'for fun' account on BTC scalps only ($89.36 balance), and told members not to copy it. The tension is real but internally consistent: with a fixed dollar-risk position size, high leverage only reduces posted margin (and inflates the ROI% on the share cards he posts).",
+  "evidence": [
+   {
+    "msg": 218,
+    "date": "2026-05-23",
+    "quote": "you don't have to worry how much leverage to use, you can use even 500x as long as you're writing down the same amount!"
+   },
+   {
+    "msg": 217,
+    "date": "2026-05-23",
+    "quote": "Go to your exchanges and set by amount I'm doing this on blofin but every exchange has it the same."
+   },
+   {
+    "msg": 30,
+    "date": "2026-05-08",
+    "quote": "Btw not trading demo it's CFT funded account on Bybit just clarifying"
+   },
+   {
+    "msg": 86,
+    "date": "2026-05-12",
+    "quote": "It is CFT funded account so it shows demo, I trade on other exchanges with real money."
+   },
+   {
+    "msg": 604,
+    "date": "2026-06-25",
+    "quote": "Not available on BLOFIN so just cancelled"
+   },
+   {
+    "msg": 948,
+    "date": "2026-08-15",
+    "quote": "Hit on majority exchanges I booked manually @ 498 on YUBIT"
+   },
+   {
+    "msg": 221,
+    "date": "2026-05-23",
+    "quote": "I'll try to risk 10-20% which isn't healthy for your main wallet"
+   }
+  ],
+  "venue_migration_note": "Three primary venues in four months, the newest being the most obscure: Bybit dominates May (33 messages, including a CFT-funded account whose screenshots are watermarked 'Demo'), Blofin runs mid-May to July (43/37/39 messages), and Yubit takes over in August (23 messages against Blofin's 3). Worth reading alongside the leverage note: high-leverage share cards from rotating, low-tier venues are unverifiable by design."
+ },
+ "what_he_never_does": [
+  {
+   "claim": "Never reasons from an oscillator, volume, funding, open interest or orderbook data",
+   "basis": "In 1,005 messages he never once reasons from an oscillator, volume, funding, open interest or orderbook data. RSI, divergence, fibonacci, open interest, order flow, orderbook, CVD, delta, heatmap/liq map, FVG, order block, imbalance, smart money, Wyckoff, Elliott, supply-demand zone, trendline, head and shoulders, stochastic, MACD, bollinger, VWAP and OBV all return ZERO hits of any kind. AUDIT CORRECTION: the playbook's 'zero occurrences of ... volume, funding ...' was factually wrong as written. 'Volume' appears 4 times and 'funding' once - every single instance inside an [IMAGE] screenshot description of exchange UI on a chart he posted for another reason (a volume spike visible on a UNI chart, a funding figure on a TOSHI chart, his own account turnover statistic), never in his own words and never as a reason for a trade. His entire named toolkit is: EMA 20/50/200, the 4h (occasionally 1h) candle close, support/resistance, prior daily high/low, wicks, and round price levels."
+  },
+  {
+   "claim": "Never says 'liquidity' - though he trades the sweep concept in plain language",
+   "basis": "The word 'liquidity' and the term 'liq map'/'heatmap' never appear. But the concept does, in his own words: 'Okay lows are swept you can add around 25% margin if you want' (msg 382), 'as I said they'll make a new daily low then bounce it' (msg 589). AUDIT CORRECTION: the playbook listed 'liquidity' among concepts he never uses, contradicting its own signal #3, which is a liquidity-sweep pattern. He avoids the vocabulary, not the idea. Note 'swept' itself appears exactly once in 1,005 messages."
+  },
+  {
+   "claim": "Never publishes drawn chart analysis as the basis for a call - and treats that as a virtue",
+   "basis": "AUDIT-STRENGTHENED with a count rather than a single quote: of 320 attached images, 247 are PnL share cards and only 23 (7%) are charts - several of those after the fact - while 23 more are screenshots of his own earlier Discord messages, i.e. proof-of-call rather than analysis. His own framing, msg 736 (2026-07-20): 'Gave BTC prediction a week ago, no messy charts, no long explanation, just one line.'"
+  },
+  {
+   "claim": "Never counts partial exits toward his headline R",
+   "basis": "Msg 802 (2026-07-27): 'Since I don't take partials and take only 1TP so calculating my real R is very easy!... Otherwise you'll see traders say 5R banger when it's barely 1R because of how many partial TPs they took, I don't do that feels like cheating.' Note this is a claim about ACCOUNTING, and the record shows he does in fact take partials - 43 of 217 positions, 47 partial exits. His July stats line does carry the qualifier '23.5R (Without Partials)'."
+  },
+  {
+   "claim": "Never runs many highly-correlated positions at once by choice",
+   "basis": "Repeatedly declines setups he likes because of open-position count: msg 24 ('4 are enough for now'), msg 48 ('too many positions running at the moment I want at least 2 out'), msg 187, msg 706 ('Already 2 shitcoins running so not giving now'), msg 769 ('Too many trades running it's getting messy so closing this now'). This also acts as an unacknowledged filter on which trades reach the tally."
+  },
+  {
+   "claim": "Never trades on a fixed schedule or a mechanical entry trigger",
+   "basis": "Entries are announced ad hoc at CMP whenever he decides; there is no session, timeframe or signal condition that reliably precedes a call. TPs are 'manual', stops are frequently 'manual', and he repeatedly notes trades were taken or missed because he was asleep, in the shower, outside or busy (msgs 399, 451, 633, 684, 838)."
+  }
+ ],
+ "open_questions": [
+  "How he actually chooses the specific price levels (e.g. 64.1-64.2k as 'a wall', 77.7-78.1k as the 'reversal zone'). He states levels as conclusions and almost never shows the derivation. This is the single largest gap between what he does and what a reader could copy.",
+  "What his actual account size and realised P&L are. He posts leveraged ROI% share cards (median 179.7%) and R-multiples but never a verified equity curve; the only balances shown are an $89.36 novelty account and a 4-day +30.92% chart.",
+  "How many accounts and exchanges are running the same trade, and whether the 'sniper entry on my other exchange' fills are what he reports as the official entry. Three primary venues in four months - Bybit, Blofin, Yubit - makes independent verification impossible.",
+  "Whether the reported R accounts for the DCAs and stop moves that change its denominator. 30 positions had a DCA fill that moved the average entry and 15 had the stop widened or removed; msg 922 shows him quoting the same exit as either 0.7R or 1R depending on which stop he measures from.",
+  "What his June statistics were. It is the busiest month in the sample (63 positions taken), the month he promised to count ('10R this month a promise, start counting!', msg 341), and the only month between two published summaries with no summary of its own.",
+  "How trades he moves to a 'manual 4h SL' and then holds past are recorded when they eventually close red - msg 969 removes the stop specifically so as 'not gonna accept my SL here'.",
+  "How much of the book is missing. He concedes some trades go only to X (msg 877) and references a VIP tier (msg 238), so the Discord record is a subset of unknown size and unknown selection.",
+  "Whether the alt selections come from a screen, a chat suggestion, or discretion - he often names a coin because members asked about it (LAB, LTC, NEAR, ZEC) rather than from his own scan.",
+  "What happened after 2026-08-21. The sample ends mid-drawdown (5 stops in 2 days) with a BTC long closed at breakeven, which means the method has never been observed through a losing month. Whatever the true win rate is, it was measured entirely inside a market that recovered."
+ ],
+ "what_he_never_does_removed_by_audit": [
+  {
+   "removed_claim": "Never lets a public signal run without a stated stop for long",
+   "verdict": "REFUTED",
+   "why": "He ran the 1840 ETH short with no stop for at least a day AND publicly invited followers into it - 'I don't have a SL for this, maybe 2k? But I'm using 1% margin with Max Lev if anyone wants to join' (msg 853), 'I do not recommend trading without SL but if anyone wants to short with me you're more than welcome' (msg 860). Ring-fencing it as 'personal' while soliciting followers is not the same as not publishing it. He also removed a published BTC stop outright (msg 969). Restated under trade_management, 'Widening, making manual, or removing the stop'."
+  },
+  {
+   "removed_claim": "Never re-takes a setup he has just traded to a full target",
+   "verdict": "REFUTED",
+   "why": "Flatly contradicted by his own practice, catalogued in trade_management as 'Re-run the identical setup after it works': msg 179 'it's the same last setup playing again', msg 371 'Longed BTC again from 62.8k same setup', msg 764 'will use this setup again... TP SL same', msg 780 'Used same setup for both, won 6 out of 6 BTC trades last week!'. Msg 954 ('I just don't like taking same setups so didn't myself') is a one-off remark about a single alt he declined."
+  }
+ ],
+ "reconciliation": {
+  "summary": "His published scoreboard and the reconstructed record do not agree, and the gap is not explained by trade management. Reconstructing every position he posted gives 217 catalogued setups, 200 actually taken, 165 with a knowable outcome: 120 wins, 35 losses, 10 breakevens - 77% excluding breakevens, 73% including them. His own monthly summaries claim 85% (May) and 89% (July). The published figures run 8-13 points hot, and understate the loss count in both months he reported. The direction of travel in the record is real and favourable - monthly win rate rises 73% (May), 76% (June), 82% (July), 83% (August) - so this is a competent trader with a genuinely good hit rate whose accounting flatters an already-good number rather than inventing one. Three structural facts do most of the work: the breakeven bucket disappeared from his summaries once he had an audience, ambiguous outcomes are resolved at his discretion, and whole categories of trade are declared 'unofficial' before the fact.",
+  "claimed_vs_reconstructed": [
+   {
+    "period": "2026-05",
+    "he_claimed": "Msg 315, 2026-06-01: 'MAY Trade Summary - Total Trades: 60, Wins: 51, Losses: 9, Win Rate: 85.0% (51/60), Net Result: +159.60%, RR: 23.6'",
+    "reconstructed": "54 positions taken in May, 50 with a knowable outcome: 36 wins, 13 losses, 1 breakeven = 73% excluding breakeven, 72% including.",
+    "gap": "12 points of win rate. The trade count is in the same neighbourhood (54 taken vs 60 claimed) but the loss count is not: 13 found against 9 claimed. Four May positions have no recoverable outcome, so even a maximally generous reading (all four wins) gives 74%."
+   },
+   {
+    "period": "2026-06",
+    "he_claimed": "Nothing. No June summary was ever posted, despite msg 341 on 2026-06-03: 'Will be +3R by the end of the week, 10R this month a promise, start counting!' The May summary (msg 315) and the July summary (msg 848) both exist.",
+    "reconstructed": "63 positions taken in June - his busiest month - and only 49 with a knowable outcome: 34 wins, 11 losses, 4 breakevens = 76% excluding breakeven, 69% including. June also has the most unresolved positions of any month (14).",
+    "gap": "Unmeasurable, which is itself the finding: the one month he explicitly promised to count is the one month with no published scoreboard, and it sits between the two months he did publish."
+   },
+   {
+    "period": "2026-07",
+    "he_claimed": "Msg 848, 2026-07-31: 'July Stats - 45 Trades, 40 Wins, 5 SLs, 23.5R (Without Partials), 89% Win Rate, 93% Win Rate BTC'",
+    "reconstructed": "46 positions taken in July, 41 with a knowable outcome: 31 wins, 7 losses, 3 breakevens = 82% excluding breakeven, 76% including. BTC specifically: 13 wins, 2 losses = 87%.",
+    "gap": "7 points overall (89% vs 82%), 6 points on BTC (93% vs 87%). Here the trade count matches almost exactly - 46 reconstructed against 45 claimed - which isolates the divergence to the classification of outcomes, not to which trades were counted. Losses: 7 found against 5 claimed."
+   },
+   {
+    "period": "2026-05 to 2026-08 (whole sample)",
+    "he_claimed": "No cumulative figure was published, but the two monthly summaries and the constant streak-counting ('10 win streak on BTC scalps', '6 out of 6 BTC trades last week', '100% WR past week') set an 85-90% expectation.",
+    "reconstructed": "217 setups catalogued, 200 taken, 165 resolved: 120 wins, 35 losses, 10 breakevens = 77% excluding breakeven, 73% including. 35 positions have no recoverable outcome.",
+    "gap": "8-17 points depending on which claim you measure against. The reconstruction is also the more conservative document: 35 unresolved positions are excluded entirely rather than assumed to be wins."
+   }
+  ],
+  "why_the_gap": [
+   "The breakeven bucket disappeared. His pre-server journal recap reported three categories - '25 trades, 22 Wins, 3 BE, 0 loss' (msg 2, 2026-05-06). Every server-era summary reports only Trades / Wins / Losses (msgs 315, 848). With 10 breakeven positions in the reconstruction, folding that bucket into wins alone moves the headline by several points, and it is the single cleanest explanation of the gap.",
+   "Ambiguous outcomes are resolved at his discretion, sometimes literally by vote: 'Just checking because I don't know if I should count it as a win or loss as it went to huge profits, I'll pick what the majority says' (msg 403).",
+   "The loss count is understated in both published months - 9 claimed vs 13 reconstructed in May, 5 claimed vs 7 reconstructed in July. Losses are the denominator-sensitive term; two missing losses in a 45-trade month is worth about 4 points of win rate.",
+   "Whole categories of trade are declared unofficial BEFORE the fact and therefore cannot lose: gold and oil ('I won't count gold trades in crypto summary', msg 405), 5m entries ('Just an idea won't count TP or SL, not an official trade', msg 135), coins he posts but is not personally taking (msg 317), and late-month setups ('Not an official setup, had 40+ setups this month gonna chill rn', msg 843).",
+   "Not every trade reaches the server. He concedes it directly: 'I post all my trades in this server but since I wanna grow my X too some of my personal or once in a while trades will be there' (msg 877). Any reconstruction from Discord alone is therefore a subset, and the missing subset is self-selected.",
+   "Position-count limits and post-target coasting filter the sample upstream of the tally. He declines setups he rates highly because too many are open (msgs 24, 48, 187, 706), closes trades purely for clutter (msg 769), and stops posting after a good run ('My weekly goal has been done, so I'll take it slow until next week', msg 875). Clutter closures land in the manual-close bucket, which contains no losses.",
+   "The reconstruction and his tally are not counting quite the same universe. His May count of 60 exceeds the 54 positions recoverable from the channel; his July count of 45 is one fewer than the 46 recoverable. The two figures drift in opposite directions, which is what you would expect from a hand-kept tally rather than from a systematic bias in the reconstruction.",
+   "None of the above requires bad faith, and the reconstruction does not support a fraud reading. It supports a narrower one: the trading is better than average and the bookkeeping is generous, informal, and always generous in the same direction."
+  ]
+ },
+ "how_he_wins": [
+  {
+   "mechanic": "Discretionary early exit - he can always choose to book, and he only chooses when green",
+   "strength": "strongly supported",
+   "explanation": "This is the structural fact that produces the win rate. He does not usually leave a resting take-profit; he closes manually when he sees a rejection, a wick, a stall, or simply wants the slot. Because the decision to close is his and the decision to lose is the stop's, discretionary exits are one-directional: they convert unrealised green into a recorded win and never into a recorded loss. Losses can only arrive the one way he cannot veto - through a stop. The cost is that he leaves the tail of every winner on the table, which is exactly why his average R is small.",
+   "numbers": "Exit types across 217 positions: manual_close 62, take_profit 45, stop_loss 35, breakeven 11, unknown 43. Of the 62 manual closes, 61 are wins, 1 is breakeven, 0 are losses. All 35 losses closed at a stop. Only 45 of 120 wins (38%) reached a target he had published; at least 26 wins were manual closes booked short of the stated TP. There are more manual closes than take-profits.",
+   "evidence": [
+    {
+     "msg": 110,
+     "date": "2026-05-14",
+     "quote": "I exited early because it invalidated my setup, it almost touched my SL so better to be disciplined and get out around BE, much better than SL at least?"
+    },
+    {
+     "msg": 423,
+     "date": "2026-06-10",
+     "quote": "Exiting BTC in small profits @ 61.6k... Small win but better than red"
+    },
+    {
+     "msg": 718,
+     "date": "2026-07-16",
+     "quote": "Closed for a very small profit, I have a feeling BTC wants 66k today better close here than in red"
+    },
+    {
+     "msg": 957,
+     "date": "2026-08-17",
+     "quote": "Closing BTC here in some profits. Profits aren't much but what's nice is we survived a SL, the win streak continues!"
+    },
+    {
+     "msg": 937,
+     "date": "2026-08-12",
+     "quote": "I'm targeting 64.5-64.6k for now can pump upto 65, will exit when I see rejection"
+    }
+   ]
+  },
+  {
+   "mechanic": "Small targets held for a short time",
+   "strength": "supported",
+   "explanation": "He trades for a fraction of the stop distance and gets out fast. A 0.5R target on a scalp needs only a small favourable move, so a high proportion of entries reach it before the stop, and the median position is closed inside a day. He is explicit that this is a deliberate trade of R for hit rate, and that the arithmetic only works because of frequency. His own stated 0.5-0.8R average is lower than what the record shows on the wins where he published an R, so the honest version is 'roughly 1R targets on the wins he reports, with a genuine 0.5R scalp book underneath'.",
+   "numbers": "31 messages state a 0.5-0.8R figure. Of 120 wins, only 27 carry a stated R: median 1.00R, mean 1.05R; 11 of 27 are <=0.8R, 8 are exactly 0.5R, 2 are >=2R. Median hold 17.2 hours, mean 33.9, max 453. That stated-R sample is self-selected - he reports R when it flatters.",
+   "evidence": [
+    {
+     "msg": 802,
+     "date": "2026-07-27",
+     "quote": "Yes my R is small 0.5-0.8R on avg but there are so many TPs that 2 trades cover 1SL easily"
+    },
+    {
+     "msg": 410,
+     "date": "2026-06-09",
+     "quote": "Example is DEXE or BEAT trades (low win rate but minimum 2R TP)...BTC scalps (90% WR but 0.5R TPs)"
+    },
+    {
+     "msg": 929,
+     "date": "2026-08-10",
+     "quote": "I usually target 0.5R for scalps"
+    },
+    {
+     "msg": 318,
+     "date": "2026-06-01",
+     "quote": "RR:** 23.6...Avg TP R:** 0.64...Highest R Trade:** HYPE (5 R)"
+    }
+   ]
+  },
+  {
+   "mechanic": "A long-biased book in a market that mostly went up",
+   "strength": "supported",
+   "explanation": "Roughly three of every four positions are longs, and he says so plainly. Across the sample BTC fell from the high 70s to the high 50s and then recovered past its starting point, and his win rate rises monotonically through that recovery. A directional book with a small target does well when the direction is right; the same book is what produced his worst stretch, when he shorted against his own bullish view and took five stops in two days. The bias is a genuine edge in this regime and an unhedged exposure in another.",
+   "numbers": "152 longs vs 47 shorts among the 200 taken positions (3.2:1); 106 long vs 33 short among 139 signal posts. Longs won 78% of resolved outcomes excluding breakevens, shorts 74%. Monthly win rate excluding breakevens: May 73%, June 76%, July 82%, August 83%.",
+   "evidence": [
+    {
+     "msg": 478,
+     "date": "2026-06-13",
+     "quote": "Idk I'm usually always bullish."
+    },
+    {
+     "msg": 977,
+     "date": "2026-08-19",
+     "quote": "I'm the most bullish guy here and I'm getting fked in shorts"
+    },
+    {
+     "msg": 997,
+     "date": "2026-08-21",
+     "quote": "I counter traded myself by BTC short, pretty shitty feeling rn"
+    },
+    {
+     "msg": 447,
+     "date": "2026-06-11",
+     "quote": "Nonetheless I have a 6 win streak on BTC going on, interestingly all longs"
+    }
+   ]
+  },
+  {
+   "mechanic": "Every trade ships with a stop and a size before it is entered",
+   "strength": "supported",
+   "explanation": "Whatever happens afterwards, the setup is fully specified at the moment of entry: a price, a stop, usually a target, often a DCA level, and always a size instruction. He teaches position sizing off a risk calculator rather than off leverage, and he publishes a stop on nine out of ten trades. This is ordinary, unglamorous, and the most replicable thing in the entire record - and it is why the losses, when they come, are bounded and single.",
+   "numbers": "Of the 200 positions he took: 180 (90%) had a published stop, 118 (59%) a published target, 57 (29%) a published DCA level. 139 signal-format posts follow the same fixed template. Only 15 widen/remove/hard-to-manual stop events across 217 positions (7%).",
+   "evidence": [
+    {
+     "msg": 214,
+     "date": "2026-05-23",
+     "quote": "Learn to use risk calculator and I PROMISE YOU, YOU'LL END MONTHLY PROFITABLE WITH ME AND NEVER EVER GET LIQUIDATED."
+    },
+    {
+     "msg": 218,
+     "date": "2026-05-23",
+     "quote": "you don't have to worry how much leverage to use, you can use even 500x as long as you're writing down the same amount!"
+    },
+    {
+     "msg": 550,
+     "date": "2026-06-18",
+     "quote": "still believe I'll get my entry but don't want a trade running publicly without SL"
+    },
+    {
+     "msg": 777,
+     "date": "2026-07-26",
+     "quote": "Just risk 2-3% per setup please, use a risk calculator if you don't know how to."
+    }
+   ]
+  },
+  {
+   "mechanic": "Trade selection: he stops when he is ahead and caps concurrent risk",
+   "strength": "supported",
+   "explanation": "He refuses setups he rates highly when too many positions are already open, closes trades purely to reduce clutter, and stops posting entirely once a weekly or monthly target is met. Each of these is defensible risk behaviour and each also acts as a filter on which trades ever reach the scoreboard. The clutter closures in particular land in the manual-close bucket, which contains no losses.",
+   "numbers": "16 of the 217 catalogued setups were posted but never taken by him. He declines on position-count grounds in at least msgs 24, 48, 187, 706, and coasts after hitting a target in msgs 701, 843, 875, 878.",
+   "evidence": [
+    {
+     "msg": 769,
+     "date": "2026-07-25",
+     "quote": "Too many trades running it's getting messy so closing this now"
+    },
+    {
+     "msg": 875,
+     "date": "2026-08-03",
+     "quote": "My weekly goal has been done, so I'll take it slow until next week."
+    },
+    {
+     "msg": 701,
+     "date": "2026-07-11",
+     "quote": "We had a nice win streak at the start of the month so not forcing any trades."
+    },
+    {
+     "msg": 187,
+     "date": "2026-05-22",
+     "quote": "Ngl SUI looks too good on daily but I have 3 trades running here so imma hold myself"
+    }
+   ]
+  },
+  {
+   "mechanic": "The scoreboard is generous - part of the headline number is accounting, not trading",
+   "strength": "strongly supported",
+   "explanation": "The reconstructed record is good; the published record is better. His summaries dropped the breakeven category he used to keep, understate the loss count in both months he reported, resolve ambiguous outcomes at his discretion, and exclude entire classes of trade declared unofficial before the fact. This does not make the trading fake - a 77% reconstructed win rate is a real result - but a reader comparing himself to 85-90% is comparing himself to a number that was never audited.",
+   "numbers": "Claimed May 85% (51W/9L/60) vs reconstructed 73% (36W/13L/1BE). Claimed July 89% (40W/5SL/45) vs reconstructed 82% (31W/7L/3BE); claimed 93% on BTC vs 87% reconstructed. Whole sample: 120W/35L/10BE = 77% excluding breakevens. No June summary was ever posted.",
+   "evidence": [
+    {
+     "msg": 2,
+     "date": "2026-05-06",
+     "quote": "**25** trades\n**22** Wins\n**3** BE \n**0** loss"
+    },
+    {
+     "msg": 315,
+     "date": "2026-06-01",
+     "quote": "**MAY** Trade Summary"
+    },
+    {
+     "msg": 848,
+     "date": "2026-07-31",
+     "quote": "July Stats"
+    },
+    {
+     "msg": 403,
+     "date": "2026-06-09",
+     "quote": "Just checking because I don't know if I should count it as a win or loss as it went to huge profits, I'll pick what the majority says please be honest!"
+    },
+    {
+     "msg": 877,
+     "date": "2026-08-03",
+     "quote": "I post all my trades in this server but since I wanna grow my X too some of my personal or once in a while trades will be there."
+    }
+   ]
+  },
+  {
+   "mechanic": "A reserved DCA tranche as a rescue tool",
+   "strength": "weak",
+   "explanation": "AUDIT-DOWNGRADED. The draft called the reserved tranche 'the mechanism that turns a losing entry into a winner'. It does rescue individual trades, visibly and sometimes dramatically, but it is used on a minority of positions and the positions that use it perform WORSE than those that do not. It cannot be the engine of the win rate. The reason is not mysterious: a DCA fills precisely when the original entry was wrong, so the cohort is pre-selected for bad entries.",
+   "numbers": "53 of 139 signal posts (38%) publish a DCA level; 57 of 200 taken positions plan one; only 30 (14%) ever fill one. DCA-filled positions: 19W / 9L = 68%. Positions with no DCA fill: 101W / 26L / 10BE = 80% excluding breakevens.",
+   "evidence": [
+    {
+     "msg": 959,
+     "date": "2026-08-17",
+     "quote": "From almost an SL to a decent TP with a DCA in"
+    },
+    {
+     "msg": 725,
+     "date": "2026-07-17",
+     "quote": "BTC TP hit with a DCA filled so good gains! Avg was 63.1k"
+    },
+    {
+     "msg": 941,
+     "date": "2026-08-13",
+     "quote": "BTW DCA is recommended entry, if you're entered at CMP like me 50-50% at least in profits"
+    },
+    {
+     "msg": 595,
+     "date": "2026-06-25",
+     "quote": "Entry: 61.3k CMP (50%)...Save DCA for 50%...For a safer entry just enter when I DCA"
+    }
+   ]
+  },
+  {
+   "mechanic": "Soft and moveable stops",
+   "strength": "weak",
+   "explanation": "AUDIT-DOWNGRADED. Vividly real as behaviour and genuinely decisive on the handful of occasions it fires - removing a published BTC stop outright, holding past a stop he had told followers about, running a stopless ETH short - but far too rare to explain the headline win rate. Nine signals in ten carry a plain numeric stop, and all 35 of his losses closed at one. The right reading is that this is his biggest single risk to a follower, not his biggest single edge.",
+   "numbers": "Only 14 of 139 signal posts (10%) publish a candle-close soft SL; 10 publish the soft+hard pair. Across 217 positions there are 45 stop moves, of which 15 (7% of positions) are a widen, extend, remove or hard-to-manual switch. 22 positions carry a to-entry stop move against ~44 messages instructing it.",
+   "evidence": [
+    {
+     "msg": 969,
+     "date": "2026-08-18",
+     "quote": "Removing BTC SL for now will wait a 4h close above 65.2k...Reason is if I get stopped I'll short again so not gonna accept my SL here"
+    },
+    {
+     "msg": 368,
+     "date": "2026-06-04",
+     "quote": "Alright guys, BTC closed below the manual SL you guys can exit if you can't risk no more. I'LL PERSONALLY HOLD TILL 63K"
+    },
+    {
+     "msg": 381,
+     "date": "2026-06-05",
+     "quote": "I'm extending SL to 59k, I'll personally hold it till 58.5k"
+    },
+    {
+     "msg": 860,
+     "date": "2026-08-02",
+     "quote": "One thing ETH I'm holding without SL so it's more like a personal trade...I do not recommend trading without SL"
+    }
+   ]
+  }
+ ],
+ "audit_note": {
+  "quotes": "All 257 quotes in the draft playbook were machine-checked verbatim against the message corpus with matching dates; zero paraphrases, misattributions or misleading ellipsis splices were found. Every verified quote is retained. Five items carried evidence that was verbatim but mis-filed; those are corrected in place and the correction is stated on the item.",
+  "sources": "1,005 messages (messages_full.txt), 1,242 extracted events (events_all.json), 217 reconstructed positions (positions_all.json), 320 attached images. Period 2026-05-06 to 2026-08-21.",
+  "changes_applied": [
+   "signals: '4h close' renamed to 'Candle-close stops (almost always the 4h close)'; msg 902 promoted to lead evidence; msg 17 (a 1h close) demoted and labelled; msg 27 dropped as internally inconsistent; footprint softened to 14 of 139 signal posts.",
+   "signals: 'Daily high/low as stop placement' renamed to cover stops AND targets, so that msg 33 (a target quote) is correctly filed.",
+   "signals: gold/oil item recategorised from 'intermarket' to a separate book kept out of the tally; only msg 424 makes the gold->BTC inference and he hedges it.",
+   "signals: 'front run' frequency corrected 6 -> 4 (all four occurrences are the four cited).",
+   "signals: weekend seasonality frequency corrected 16 -> 14; 4h close frequency 32 -> 35.",
+   "risk_rules: the '1-2% preached vs 10-20% run' contradiction DROPPED as refuted - the 10-20% is a disclosed $89.36 novelty account he told members not to copy (msg 221).",
+   "risk_rules: soft/hard stop structure softened to a minority structure (10% of signal posts).",
+   "risk_rules: 'half risk' recounted at 54 and its retrospective, responsibility-shifting use named.",
+   "trade_management: 'breakeven exits framed as discipline' REPLACED with the stronger finding - 62 manual closes produce 61 wins and 0 losses, only 38% of wins reached a published target, 26 wins were booked short of the stated TP, and all 35 losses came through a stop.",
+   "trade_management: manual take-profit evidence msg 502 dropped (it is a stop-loss line) and replaced with msg 438.",
+   "trade_management: 'small targets 0.5-0.8R' downgraded - median stated R on wins is 1.00R (n=27), not 0.5-0.8R, though he himself says his R is small.",
+   "trade_management: stop-widening softened to 15 events across 217 positions (7%); the refuted 'never runs without a stop' claim folded in here.",
+   "trade_management: 'SL to entry' softened from 'diverge' to 'applies selectively (22 of 217) and announces the exceptions'.",
+   "trade_management: the partials contradiction KEPT unchanged and strengthened with timestamps (msg 457 at 15:59 vs msg 465 at 22:42 the same day) and 47 recorded partial exits.",
+   "entry_style: the causal claim that the reserved DCA tranche drives the win rate DROPPED - DCA-filled positions win 68% vs 80% without, and only 14% ever fill one.",
+   "entry_style: long-bias counts corrected to the verified 152/47 (taken positions) and 106/33 (signal posts).",
+   "what_he_never_does: the volume/funding negative claim reworded precisely - 'volume' appears 4x and 'funding' 1x, all inside screenshot descriptions of exchange UI, never in his own words; RSI, fibonacci, OI, orderbook, CVD, delta, heatmap, FVG, order block and Wyckoff are genuinely zero.",
+   "what_he_never_does: 'liquidity' entry restated - he never says the word but trades the sweep concept as 'lows are swept'.",
+   "what_he_never_does: the no-charts claim strengthened with a count - 23 of 320 images are charts, against 247 PnL share cards.",
+   "what_he_never_does: two entries removed as refuted (stopless public signals; never re-taking a setup) and preserved with their refutations under what_he_never_does_removed_by_audit.",
+   "NEW: 'reconciliation' - claimed vs reconstructed by month, and why the two diverge.",
+   "NEW: 'how_he_wins' - eight mechanics graded strongly supported / supported / weak, each with numbers and quotes."
+  ]
+ }
+}

@@ -1,0 +1,992 @@
+{
+ "meta": {
+  "source": "/tmp/paladin/extract/pos_nosymbol.txt (97 events with no symbol, cross-checked against events_all.json)",
+  "date_range": "2026-05-06 to 2026-08-21",
+  "event_type_counts": {
+   "chat": 24,
+   "education": 24,
+   "recap": 29,
+   "plan": 2,
+   "update": 4,
+   "view": 12,
+   "stopped_out": 2
+  },
+  "trade_actions_found": 2,
+  "trade_actions_attributed": 1,
+  "trade_actions_left_null": 1,
+  "bonus_trade_related_events": 1,
+  "notes": [
+   "Only 2 of the 97 no-symbol events carry a trade-action event_type (both 'stopped_out': msg 341 and msg 977). Verified against events_all.json - no other null-symbol event has a call/entry/dca/sl_set/sl_move/tp_set/tp_move/tp_hit/partial_close/close/stopped_out/breakeven/liquidated type.",
+   "msg 341 is a single event reporting FOUR stop-outs, so attributed_symbol is null by construction; the four symbols are given in attributed_symbols.",
+   "msg 604 ('Not available on BLOFIN so just cancelled') is typed 'update' so it falls outside the requested type list, but it is a trade action in substance and is included with a null symbol.",
+   "NO JUNE 2026 MONTH SUMMARY EXISTS anywhere in the 1,242-event log - he posted a MAY summary (msg 315) and a JULY summary (msg 848) but skipped June, his losing month, despite promising '10R this month' at msg 341 and msg 334.",
+   "The log ends 2026-08-21 18:55:59 (msg 1005), so there is no August summary either.",
+   "Largest internal contradiction: msg 87 (2026-05-12) claims '37/39 trades have hit TPs' while msg 78 (2026-05-11) claims 14 total trades and msg 119 (2026-05-14) claims 20 total trades.",
+   "Second contradiction: msg 800 (2026-07-27) 'calls it a month' at 30 TPs / 4 SLs / +11.9R, then msg 848 (2026-07-31) reports 45 trades / 40 wins / 5 SLs / +23.5R - 10 extra wins and +11.6R in the four days after he said he was done.",
+   "msg 465 and msg 802 both assert 'I don't take partials', which conflicts with numerous partial_close events in the log (e.g. msg 306, 326, 330, 589, 602, 619).",
+   "msg 877 states some personal / occasional trades are posted only on X and not in the server - the server record is self-declared incomplete."
+  ]
+ },
+ "attributions": [
+  {
+   "msg": 341,
+   "timestamp": "2026-06-03 01:56:21",
+   "event_type": "stopped_out",
+   "quote": "Out of my longs, tough day today, 4 SLs back to back, rn at -3R.",
+   "attributed_symbol": null,
+   "attributed_symbols": [
+    "BTCUSDT",
+    "BNBUSDT",
+    "FETUSDT",
+    "SEIUSDT"
+   ],
+   "reasoning": "This single event reports FOUR stop-outs at once, so no one symbol fits the `attributed_symbol` slot. Reconstructing the book from the log: at 2026-06-03 01:56 the longs still open and never otherwise closed were exactly four - BTCUSDT (msg 331 call @69.3k / msg 332 entry 69.4k, SL 66.5k), BNBUSDT (msg 317 call 680 / msg 319 entry, SL 652, runner still live after partials at msg 326 and msg 330 'I'll keep BNB running, till SL or TP'), FETUSDT (msg 328 call 0.276, SL 0.249) and SEIUSDT (msg 333 call 0.067, hard SL 0.0627 at msg 338). All four go completely silent from msg 341 onward - none is ever reported TP'd, closed or mentioned again in June - and he re-opens a brand new BTC long at 67.3k eight hours later (msg 343), consistent with the 69.4k long being gone. NEARUSDT was also open but was NOT stopped: msg 342 (06-03 09:11) shows his own Blofin card, NEAR 75x entry 2.643 at +574% open, and it TP'd at msg 347 - so 'Out of my longs' is loose/hyperbolic. SOLUSDT stopped earlier and was already booked separately at msg 335 (06-02 17:50, 'The month just started, 3 TPs (XPL, RAY, BNB), 1 SL (SOL) so far'), which is why it is listed as an alternative rather than one of the four. ETHUSDT (msg 296-302) had its SL at breakeven, so a stop there would be a BE not a loss; it is the other alternative. The -3R total for four stops (rather than -4R) fits this set: BNB had already banked ~1.2R of partials and SEI was near breakeven (msg 337 'I think we can easily get BE').",
+   "confidence": "medium",
+   "alternatives": [
+    "SOLUSDT",
+    "ETHUSDT"
+   ]
+  },
+  {
+   "msg": 977,
+   "timestamp": "2026-08-19 18:41:28",
+   "event_type": "stopped_out",
+   "quote": "Another SL, bad day\n\nI'm the most bullish guy here and I'm getting fked in shorts, no more shorting before white house summit",
+   "attributed_symbol": "HYPEUSDT",
+   "reasoning": "Three shorts were open on 2026-08-19: BTCUSDT (msg 960 entry 64.2k, DCA'd to 64.3k avg at msg 965, hard SL 65.8k per msg 972), ZECUSDT (msg 964 entry 505.2, SL 517.5) and HYPEUSDT (msg 974 at 18:05:47, entry 59.82, DCA'd @60.5 at msg 976 18:38:59, hard SL 61.5). Fifteen minutes after this message he posts msg 978 'we had ... 3 SLs' - so all three shorts stopped that day and this message is the last of the three ('Another SL'). The first two are already accounted for earlier in the evening: msg 971 (17:24) 'BTC and ZEC almost missed TP twice and pumped hard' and msg 973 (18:02, posted as a reply in the BTC short thread) 'Just got greedy with the short ... not a great feeling rn' read as the BTC/ZEC post-mortems. That leaves HYPE, and the timing is decisive: this message lands 2m29s after the HYPE DCA at 60.5 with the hard SL only 1.65% away at 61.5, and HYPE was in a vertical squeeze that evening - msg 981 at 22:37 shows his HYPE spot at +27.77% on a 56.23 average (~71.8 mark), i.e. HYPE ran roughly 60.5 -> 72 within four hours. The HYPE short is never mentioned again after msg 976, never closed and never TP'd. 'no more shorting before white house summit' also reads as a reaction to a short opened 35 minutes earlier blowing up. Not stated outright, hence medium rather than high.",
+   "confidence": "medium",
+   "alternatives": [
+    "BTCUSDT",
+    "ZECUSDT"
+   ]
+  },
+  {
+   "msg": 604,
+   "timestamp": "2026-06-25 17:21:57",
+   "event_type": "update",
+   "quote": "Not available on BLOFIN so just cancelled",
+   "attributed_symbol": null,
+   "reasoning": "OUT-OF-SCOPE TYPE (event_type is 'update', not one of the listed trade-action types) but it is a trade action in substance - an order cancellation - so it is recorded here. The symbol cannot be settled. Immediate context is BTCUSDT (msg 600-603 long from 58.2k, all closed at 59.1k three minutes earlier; msg 605 '60k hit' three minutes later) and BTC is obviously listed on Blofin, so it is not BTC. The only non-BTC instrument live in the window is TOSHIUSDT (msg 593, 06-25 15:12, 'Long TOSHI ... Shitcoin, total gambling'), which would be the natural 'not on Blofin' candidate - except he is demonstrably still in TOSHI afterwards (msg 613 'TOSHI running!', msg 617-619 with a 50x TOSHIUSDT card at +965%), so the cancelled order is not the TOSHI position either. No other instrument is named anywhere near this message. Left null.",
+   "confidence": "low",
+   "alternatives": []
+  }
+ ],
+ "self_reported_scoreboard": [
+  {
+   "msg": 2,
+   "date": "2026-05-06",
+   "period_claimed": "the month before joining the server (personal journals, pre-2026-05-06)",
+   "claim": "25 trades, 22 wins, 3 BE, 0 losses",
+   "wins": 22,
+   "losses": 0,
+   "breakeven": 3,
+   "total": 25,
+   "r_or_pct": null,
+   "quote": "I have been trading for the past month in journals and here's my progress so far\n\n**25** trades\n**22** Wins\n**3** BE \n**0** loss",
+   "note": "Pre-server and unverifiable from this log. Screenshot listed the tickers: ASTER, AXS, IRYS, BTC x many, ETH, HYPE, PEPE, SOL, ALGO."
+  },
+  {
+   "msg": 55,
+   "date": "2026-05-10",
+   "period_claimed": "streak since the 2026-05-07 start of posting",
+   "claim": "8 consecutive wins",
+   "wins": 8,
+   "losses": 0,
+   "breakeven": null,
+   "total": 8,
+   "r_or_pct": null,
+   "quote": "That's 8 wins in a row!",
+   "note": "Streak claim, no cumulative trade count."
+  },
+  {
+   "msg": 64,
+   "date": "2026-05-11",
+   "period_claimed": "streak since the 2026-05-07 start of posting",
+   "claim": "10 consecutive wins",
+   "wins": 10,
+   "losses": 0,
+   "breakeven": null,
+   "total": 10,
+   "r_or_pct": null,
+   "quote": "Guys that's a 10th streak win ^",
+   "note": "Streak claim; posted ~2 minutes before the itemised list in msg 65."
+  },
+  {
+   "msg": 65,
+   "date": "2026-05-11",
+   "period_claimed": "streak since the 2026-05-07 start of posting",
+   "claim": "10/10 win streak itemised: UNI, SNX, BTC, ASTER, KERNEL, ZRO, AVNT, SYRUP, ETH, BTC",
+   "wins": 10,
+   "losses": 0,
+   "breakeven": null,
+   "total": 10,
+   "r_or_pct": null,
+   "quote": "UNI\nSNX \nBTC\nASTER\nKERNEL\nZRO \nAVNT\nSYRUP \nETH\nBTC \n\n**10/10**",
+   "note": "ASTER was never actually called in this channel - it appears only as a market view (msg 32/34). The list is the streak, not the full trade count."
+  },
+  {
+   "msg": 77,
+   "date": "2026-05-11",
+   "period_claimed": "streak since the 2026-05-07 start of posting",
+   "claim": "12 consecutive wins",
+   "wins": 12,
+   "losses": 0,
+   "breakeven": null,
+   "total": 12,
+   "r_or_pct": null,
+   "quote": "12th streak.",
+   "note": "Streak claim."
+  },
+  {
+   "msg": 78,
+   "date": "2026-05-11",
+   "period_claimed": "since 2026-05-07 (all server trades to date)",
+   "claim": "14 trades, 12 wins (UNI, SNX, BTC, ASTER, KERNEL, ZRO, AVNT, SYRUP, ETH, BTC, ZRO, BTC), 2 losses (BTC, ETH)",
+   "wins": 12,
+   "losses": 2,
+   "breakeven": 0,
+   "total": 14,
+   "r_or_pct": "85.7% win rate implied",
+   "quote": "**14 Trades**\n\n**12 Wins** \n(UNI, SNX. BTC. ASTER, KERNEL, ZRO, AVNT, SYRUP, ETH, BTC, ZRO, BTC)\n\n**2 Losses**\n(BTC, ETH)",
+   "note": "First full cumulative scoreboard. Note it contradicts msg 87 one day later (37/39)."
+  },
+  {
+   "msg": 87,
+   "date": "2026-05-12",
+   "period_claimed": "since 2026-05-07 ('in this server')",
+   "claim": "37 of 39 trades hit TP, only 2 SLs out of nearly 40 trades",
+   "wins": 37,
+   "losses": 2,
+   "breakeven": null,
+   "total": 39,
+   "r_or_pct": "94.9% win rate implied",
+   "quote": "Demo or real what matters is the trades are hitting TPs, in this server my 37/39 trades have hit TPs, only 2 SLs out of nearly 40 trades.",
+   "note": "CONTRADICTION: msg 78 the previous day (2026-05-11) put the server total at 14 trades, and msg 119 two days later puts it at 20 trades. A 39-trade denominator is irreconcilable with both. Posted as a rebuttal to DMs about the DEMO watermark on his screenshots."
+  },
+  {
+   "msg": 114,
+   "date": "2026-05-14",
+   "period_claimed": "2026-05-14 (single day)",
+   "claim": "4/4 today - 2 small wins XRP/SOL, 1 decent win ENS, 1 major win BTC",
+   "wins": 4,
+   "losses": 0,
+   "breakeven": null,
+   "total": 4,
+   "r_or_pct": null,
+   "quote": "4/4 today\n\n2 small wins XRP/SOL\n1 decent win ENS\n1 MAJOR win BTC",
+   "note": "Day recap."
+  },
+  {
+   "msg": 119,
+   "date": "2026-05-14",
+   "period_claimed": "since 2026-05-07 (all server trades to date)",
+   "claim": "20 trades, 16 wins (UNI, SNX, BTC, ASTER, KERNEL, ZRO, AVNT, SYRUP, ETH, BTC, ZRO, BTC, SOL, XRP, BTC, ENS), 4 losses (BTC, ETH, BTC, ETH)",
+   "wins": 16,
+   "losses": 4,
+   "breakeven": 0,
+   "total": 20,
+   "r_or_pct": "80.0% win rate implied",
+   "quote": "**20 Trades**\n\n**16 Wins** \n(UNI, SNX. BTC. ASTER, KERNEL, ZRO, AVNT, SYRUP, ETH, BTC, ZRO, BTC, SOL, XRP, BTC, ENS)\n\n**4 Losses**\n(BTC, ETH, BTC, ETH)",
+   "note": "Consistent with msg 78 (adds SOL, XRP, BTC, ENS wins and 2 more losses); irreconcilable with msg 87."
+  },
+  {
+   "msg": 193,
+   "date": "2026-05-23",
+   "period_claimed": "overnight of 2026-05-22 into 2026-05-23",
+   "claim": "'a couple' of stop losses on the overnight crash; BTC missed TP by $200 many times; promises 3 wins before taking a planned break",
+   "wins": null,
+   "losses": null,
+   "breakeven": null,
+   "total": null,
+   "r_or_pct": null,
+   "quote": "Guys we had a couple stop losses on the crash last night, I apologize \n\nBTC hurt especially since it missed our TP by 200$ many times.\n\nI was supposed to take a break this week but will get 3 wins before taking a break to make it back.",
+   "note": "No count given ('a couple'); the losses referenced are AVAX and XPL per msg 210 the same day, plus BTC."
+  },
+  {
+   "msg": 210,
+   "date": "2026-05-23",
+   "period_claimed": "2026-05-23 (single day)",
+   "claim": "BEAT +1R (ran 2R then hit BE), HYPE +1.2R; recovers the previous day's AVAX + XPL losses; BTC loss still outstanding",
+   "wins": 2,
+   "losses": null,
+   "breakeven": 1,
+   "total": null,
+   "r_or_pct": "+2.2R day (BEAT 1R + HYPE 1.2R)",
+   "quote": "BEAT moved 2R then hit BE, we took 1R out of it\n\nHYPE 1.2 R\n\nRecovered yesterday's AVAX+XPL loss, BTC we do it soon with SUI",
+   "note": "BEAT is counted as a 1R win even though the position itself hit breakeven after running 2R."
+  },
+  {
+   "msg": 243,
+   "date": "2026-05-24",
+   "period_claimed": "2026-05-23 (single day)",
+   "claim": "gave roughly 5R on the day",
+   "wins": null,
+   "losses": null,
+   "breakeven": null,
+   "total": null,
+   "r_or_pct": "+5R day (superseded 1 minute later by msg 244)",
+   "quote": "C'mon guys at least post PNLs #💲｜profit-showcase today I gave you like 5R today",
+   "note": "Superseded by the 8R revision in msg 244."
+  },
+  {
+   "msg": 244,
+   "date": "2026-05-24",
+   "period_claimed": "2026-05-23 (single day)",
+   "claim": "revised: 8R on the day, including 3R on HYPE",
+   "wins": null,
+   "losses": null,
+   "breakeven": null,
+   "total": null,
+   "r_or_pct": "+8R day",
+   "quote": "Actually 8R, gave 3R on HYPE too",
+   "note": "Revises msg 243 upward from 5R to 8R one minute later. Note msg 210 the same morning had HYPE at 1.2R, not 3R."
+  },
+  {
+   "msg": 315,
+   "date": "2026-06-01",
+   "period_claimed": "May 2026 (full month)",
+   "claim": "MAY summary: 60 trades, 51 wins, 9 losses, 85.0% win rate, +159.60% net, RR 23.6",
+   "wins": 51,
+   "losses": 9,
+   "breakeven": null,
+   "total": 60,
+   "r_or_pct": "+159.60% net, RR 23.6",
+   "quote": "**MAY** Trade Summary\n\nTotal Trades: 60\nWins: 51\nLosses: 9\nWin Rate: 85.0% (51/60)\nNet Result: +159.60%\nRR: 23.6\n\nHad a great month, not my best, will try to play better in June!\n\nRunning trades or any TP SL after May will be counted in JUNE.",
+   "note": "His headline month. Explicitly states running trades or any TP/SL after May roll into June. Implies ~40 additional trades between 2026-05-14 (msg 119: 20 trades) and month end."
+  },
+  {
+   "msg": 318,
+   "date": "2026-06-01",
+   "period_claimed": "May 2026 (full month)",
+   "claim": "May R breakdown: RR 23.6, average TP 0.64R, highest R trade HYPE at 5R; rough model 0.5R per TP vs -1R per SL, with ZEC 3R and HYPE 5R as outliers",
+   "wins": 51,
+   "losses": 9,
+   "breakeven": null,
+   "total": 60,
+   "r_or_pct": "RR 23.6, avg TP 0.64R, best trade HYPE 5R",
+   "quote": "Btw some of you asking for RR which is valid\n\n**RR:** 23.6\n**Avg TP R:** 0.64\n**Highest R Trade:** HYPE (5 R)\n\nFor a rough calculation do 0.5R TP, -1R SL, it's not always like this as some TPs were a full 3R (ZEC), 5R (HYPE)",
+   "note": "Internally consistent with msg 315: 51 wins x 0.64R = 32.6R, minus 9 losses x 1R = 23.6R."
+  },
+  {
+   "msg": 335,
+   "date": "2026-06-02",
+   "period_claimed": "June 2026 month-to-date (2026-06-01 to 2026-06-02)",
+   "claim": "June so far: 3 TPs (XPL, RAY, BNB) vs 1 SL (SOL); restates May as 50+ wins and 20+ R",
+   "wins": 3,
+   "losses": 1,
+   "breakeven": null,
+   "total": 4,
+   "r_or_pct": null,
+   "quote": "Btw there's nothing to worry about, we had 50+ wins last month with a 20+ R, who alone gives so many trades?\n\nThe month just started, 3 TPs (XPL, RAY, BNB), 1 SL (SOL) so far.\n\nTPs will always be double if not triple : )",
+   "note": "Baseline for the four stop-outs 8 hours later at msg 341. Also the origin of the 'TPs will always be double if not triple' claim."
+  },
+  {
+   "msg": 341,
+   "date": "2026-06-03",
+   "period_claimed": "2026-06-03 (single day) plus forward promises",
+   "claim": "currently -3R on the day; promises +3R by the end of the week and 10R for the month",
+   "wins": null,
+   "losses": 4,
+   "breakeven": null,
+   "total": null,
+   "r_or_pct": "-3R day; promised +3R by week end and +10R for June",
+   "quote": "rn at -3R.\n\nWill be +3R by the end of the week, 10R this month a promise, start counting!",
+   "note": "Paired with the 4-SL stop-out event (msg 341). NO JUNE MONTH-END SUMMARY WAS EVER POSTED - the 10R June promise is never settled anywhere in the log."
+  },
+  {
+   "msg": 465,
+   "date": "2026-06-11",
+   "period_claimed": "2026-06-11 (single day)",
+   "claim": "3.2R realized on the day without partials; cards posted for BTC (250x +363.9%), SOL (125x +778.04%), ALLO (100x +762.19%), INJ (75x +216.11%)",
+   "wins": 4,
+   "losses": null,
+   "breakeven": null,
+   "total": 4,
+   "r_or_pct": "+3.2R day",
+   "quote": "All from today, GG's!\nMade 3.2R today, that's realized without any partials, I don't take partials!",
+   "note": "Also the source of the 'I don't take partials' claim, which conflicts with the many partial_close events in the log (e.g. msg 306, 326, 330, 589, 602, 619)."
+  },
+  {
+   "msg": 673,
+   "date": "2026-07-05",
+   "period_claimed": "early July 2026 (2026-07-03 to 2026-07-05)",
+   "claim": "back-to-back wins on XRP, TAO and ZEC",
+   "wins": 3,
+   "losses": 0,
+   "breakeven": null,
+   "total": 3,
+   "r_or_pct": null,
+   "quote": "Some good back to back wins on\n\nXRP, TAO, ZEC",
+   "note": "Streak claim, no R figure."
+  },
+  {
+   "msg": 680,
+   "date": "2026-07-06",
+   "period_claimed": "weekend of 2026-07-04 to 2026-07-06",
+   "claim": "consecutive wins: JUP, XRP, TAO, ZEC and now HYPE",
+   "wins": 5,
+   "losses": 0,
+   "breakeven": null,
+   "total": 5,
+   "r_or_pct": null,
+   "quote": "JUP, XRP. TAO, ZEC and now HYPE!",
+   "note": "JUP was actually closed manually for a small gain rather than a TP hit."
+  },
+  {
+   "msg": 686,
+   "date": "2026-07-06",
+   "period_claimed": "week of 2026-06-29 to 2026-07-06",
+   "claim": "100% win rate for the past week; exchange statistics panel shows 11 closed orders, 11 winners, 5,163.94 volume",
+   "wins": 11,
+   "losses": 0,
+   "breakeven": null,
+   "total": 11,
+   "r_or_pct": "100% win rate",
+   "quote": "What a start to July, 100% WR past week.",
+   "note": "Only scoreboard claim backed by an exchange-generated statistics panel rather than his own count."
+  },
+  {
+   "msg": 788,
+   "date": "2026-07-27",
+   "period_claimed": "2026-07-26 to 2026-07-27 batch",
+   "claim": "wanted to hold BNB longer; survived NEAR and BTC, lost only INJ (1 loss out of 3 at-risk positions)",
+   "wins": null,
+   "losses": 1,
+   "breakeven": null,
+   "total": null,
+   "r_or_pct": null,
+   "quote": "Wanted to hold BNB for longer but I'm really happy we survived NEAR and BTC, just lost INJ, better than losing all 3",
+   "note": "Qualitative; BNB TP'd at msg 785."
+  },
+  {
+   "msg": 800,
+   "date": "2026-07-27",
+   "period_claimed": "July 2026 to 2026-07-27 (calling the month early)",
+   "claim": "30 TPs, 4 SLs, +11.9R, 90% win rate, 11-win streak in the first half of the month",
+   "wins": 30,
+   "losses": 4,
+   "breakeven": null,
+   "total": 34,
+   "r_or_pct": "+11.9R, 90% win rate",
+   "quote": "I think I'll call it a month here 30 TPs 4 SLs +11.9R Winrate 90% Had a 11 win streak the first half month",
+   "note": "30/34 is 88.2%, not 90%. Superseded four days later by msg 848, which claims 45 trades and 23.5R - i.e. +10 wins, +1 SL and +11.6R added in the last four days of a month he had already 'called'."
+  },
+  {
+   "msg": 848,
+   "date": "2026-07-31",
+   "period_claimed": "July 2026 (full month)",
+   "claim": "July stats: 45 trades, 40 wins, 5 SLs, 23.5R without partials, 89% win rate, 93% win rate on BTC",
+   "wins": 40,
+   "losses": 5,
+   "breakeven": null,
+   "total": 45,
+   "r_or_pct": "+23.5R (without partials), 89% win rate, 93% win rate on BTC",
+   "quote": "July Stats  45 Trades  40 Wins  5 SLs  23.5R (Without Partials)  89% Win Rate  93% Win Rate BTC",
+   "note": "Second and last full month summary in the log. 40/45 = 88.9%, consistent. Contrast with msg 800 four days earlier (30 TPs / 4 SLs / 11.9R)."
+  },
+  {
+   "msg": 865,
+   "date": "2026-08-03",
+   "period_claimed": "2026-08-02 to 2026-08-03 (single day)",
+   "claim": "three winners in one day - BTC, ZEC, ETH - with HYPE still running green",
+   "wins": 3,
+   "losses": 0,
+   "breakeven": null,
+   "total": 3,
+   "r_or_pct": null,
+   "quote": "In a single day  BTC ✓ ZEC ✓ ETH ✓ HYPE green and going  Enjoy!",
+   "note": "Day recap."
+  },
+  {
+   "msg": 874,
+   "date": "2026-08-03",
+   "period_claimed": "2026-08-01 to 2026-08-03 (first days of August)",
+   "claim": "counting the TPs less than a week into August; cards posted for SPCX, ZEC, HYPE, ETH and BTC",
+   "wins": 5,
+   "losses": null,
+   "breakeven": null,
+   "total": null,
+   "r_or_pct": null,
+   "quote": "Haven't even been a week and start counting the TPs   And August is supposed to be a hard month right?",
+   "note": "Implied 5 TPs from the attached cards; no explicit count or R figure."
+  },
+  {
+   "msg": 923,
+   "date": "2026-08-10",
+   "period_claimed": "2026-08-10 (single day)",
+   "claim": "BTC, ETH and GRT all closed in profit, all with the DCA filled",
+   "wins": 3,
+   "losses": 0,
+   "breakeven": null,
+   "total": 3,
+   "r_or_pct": null,
+   "quote": "BTC\nETH\nGRT\n\nAll closed in profits with DCA",
+   "note": "Day recap."
+  },
+  {
+   "msg": 978,
+   "date": "2026-08-19",
+   "period_claimed": "2026-08-19 (single day, against the prior month)",
+   "claim": "3 SLs after a whole month of almost only winning",
+   "wins": null,
+   "losses": 3,
+   "breakeven": null,
+   "total": null,
+   "r_or_pct": null,
+   "quote": "I know we had SLs and it must be hurting rn but we win alot, 3 SLs after a whole month of almost winning we will win again and alot, I promise.",
+   "note": "Confirms three stop-outs on 2026-08-19 - the basis for attributing msg 977 to the last of the three open shorts."
+  },
+  {
+   "msg": 997,
+   "date": "2026-08-21",
+   "period_claimed": "2026-08-19 to 2026-08-21 (two days)",
+   "claim": "5 SLs in two days, which he says is a whole month's worth; counter-traded his own bullish view by shorting BTC twice, both times $1000+ in profit without booking",
+   "wins": null,
+   "losses": 5,
+   "breakeven": null,
+   "total": null,
+   "r_or_pct": null,
+   "quote": "I counter traded myself by BTC short, pretty shitty feeling rn.\n\nAnd I feel depressed because both the times I shorted BTC dropped 1000$+ and in good profits but didn't book.\n\nIf anyone used half risk as I mentioned I promise we will use full risk and quickly recover.\n\nSorry for the past 2 days, had 5 SLs, 5 SLs is how much u have monthly usually.",
+   "note": "Worst run in the log. The two BTC shorts are msg 960 (entry 64.2k) and msg 988 (entry 72.4k, stopped at msg 993). Log ends 2026-08-21 with no August summary."
+  }
+ ],
+ "market_views": [
+  {
+   "msg": 24,
+   "date": "2026-05-08",
+   "asset": "SLP, KERNEL (alts)",
+   "view": "Likes SLP and KERNEL as longs but is capping himself at four open positions until the current TPs land.",
+   "quote": "I like SLP and KERNEL too but I think 4 are enough for now, let's get these TPs first",
+   "market_context": null,
+   "event_type": "view"
+  },
+  {
+   "msg": 32,
+   "date": "2026-05-08",
+   "asset": "ASTER, NEAR, SOL (alts)",
+   "view": "Sees ASTER, NEAR and SOL as ready for a weekend alt pump but will not add them - five positions are enough.",
+   "quote": "I like many more ALTs that look ready for a weekend PUMP ASTER, NEAR, SOL but these are enough, please manage risk 1-2% per trade.",
+   "market_context": "expects a weekend alt pump",
+   "event_type": "view"
+  },
+  {
+   "msg": 238,
+   "date": "2026-05-23",
+   "asset": "market/macro (geopolitics)",
+   "view": "Attributes the pump to Trump announcing a ceasefire continuation at the Gulf states' request, which he says he had flagged to VIPs the evening before.",
+   "quote": "Mentioned this in the VIPs, expecting good news, trump just announced it, ceasefire continuation on the request of gulf stayed that's why we pumped",
+   "market_context": "Trump announced a ceasefire continuation at the Gulf states' request - the reason for the pump",
+   "event_type": "view"
+  },
+  {
+   "msg": 272,
+   "date": "2026-05-26",
+   "asset": "BTC and alts",
+   "view": "His alt longs only need BTC to stabilise or bounce, and then he expects them to pump hard.",
+   "quote": "Just need BTC to get stable or bounce, gonna pump hard.",
+   "market_context": "waiting for BTC to get stable or bounce",
+   "event_type": "view"
+  },
+  {
+   "msg": 295,
+   "date": "2026-05-28",
+   "asset": "crypto market (macro)",
+   "view": "Predicts the crypto market bottoms in June 2026, at least a local bottom for June-July.",
+   "quote": "My prediction is crypto market bottoms in June for 2026\n\nAt least a local bottom for June-July",
+   "market_context": "expects a market bottom in June 2026",
+   "event_type": "view"
+  },
+  {
+   "msg": 478,
+   "date": "2026-06-13",
+   "asset": "crypto market (macro)",
+   "view": "Expects pumpy days and a good weekend pump, possibly a mini alt season - while admitting he is usually always bullish.",
+   "quote": "Feels like we're gonna get some good pumpy days, a good pump this weekend probably, maybe even a mini alt season.\n\nIdk I'm usually always bullish.",
+   "market_context": "weekend pump expected, possible mini alt season",
+   "event_type": "view"
+  },
+  {
+   "msg": 489,
+   "date": "2026-06-15",
+   "asset": "market/macro (geopolitics)",
+   "view": "The peace deal he had flagged all week landed on the Sunday: free money, keep longing. Regrets not sharing the oil trade because he thought his entry was bad, and calls the June bottom in.",
+   "quote": "Kept mentioning the past full week a deal is coming this Sunday, free money, keep longing, I regret not giving oil here I thought I have a bad entry, June bottom's in for me.",
+   "market_context": "peace deal announced Sunday; he considers June's bottom in",
+   "event_type": "view"
+  },
+  {
+   "msg": 496,
+   "date": "2026-06-15",
+   "asset": "alts / crypto market",
+   "view": "The weekend pump he predicted on 2026-06-13 arrived; alts are flying and he thinks a mini alt season is forming.",
+   "quote": "Weekend pump came, ALTs flying, a mini alt season is in the make.",
+   "market_context": "weekend pump, alts flying, mini alt season",
+   "event_type": "view"
+  },
+  {
+   "msg": 515,
+   "date": "2026-06-16",
+   "asset": "crypto market (macro)",
+   "view": "Reposts his 2026-05-28 June-bottom prediction to see whether it holds.",
+   "quote": "Let's see if this prediction holds",
+   "market_context": "believes the June 2026 bottom is in",
+   "event_type": "view"
+  },
+  {
+   "msg": 625,
+   "date": "2026-06-29",
+   "asset": "crypto market (macro)",
+   "view": "July should be a pumpy relief month and better than June.",
+   "quote": "July will be a pumpy pumpy month, at least better than June I'm telling you, it's a relief month.",
+   "market_context": "expects July to be a pumpy relief month after a poor June",
+   "event_type": "view"
+  },
+  {
+   "msg": 626,
+   "date": "2026-06-29",
+   "asset": "crypto market (macro)",
+   "view": "Refines the July call: at most the first 7-10 days bearish, then a hard run up.",
+   "quote": "Maximum of the first 7-10 days bearish, then a hard run up!",
+   "market_context": "first 7-10 days of July bearish, then a hard run up",
+   "event_type": "view"
+  },
+  {
+   "msg": 705,
+   "date": "2026-07-14",
+   "asset": "crypto market (macro, news-driven)",
+   "view": "Market is very news-driven with war headlines, so halve normal size until it settles; expects Trump to say something bullish on Thursday.",
+   "quote": "Market's very news oriented rn, war news here and there so go half than usual on trades until things settle.\n\nAlso Trump speaks on Thursday probably says something bullish",
+   "market_context": "news-oriented market, war news, Trump speaks Thursday",
+   "event_type": "view"
+  },
+  {
+   "msg": 741,
+   "date": "2026-07-21",
+   "asset": "crypto market (short term)",
+   "view": "Price looks pumpy right after the SOL close, but he would rather wait for a new trade or a better entry than chase.",
+   "quote": "Looks pumpy now but I want to find a new trade or a better entry",
+   "market_context": "market looks pumpy",
+   "event_type": "plan"
+  }
+ ],
+ "education_and_rules": [
+  {
+   "msg": 1,
+   "date": "2026-05-06",
+   "topic": "trade types and risk management",
+   "lesson": "Posts both high-R/low-win-rate and high-win-rate/low-R trades and labels which is which so followers can match their own strategy; the one non-negotiable is risk management.",
+   "quote": "I do all sorts of trades High R Low Wins and High Win rate and Low R trades, I'll try to write what kind of trade it is so whatever your strategy is you can go with it, my only request from you guys would be never ever let go of risk management, hold onto risk management if you want to hold on your money long term.",
+   "risk_note": "never ever let go of risk management, hold onto risk management if you want to hold on your money long term"
+  },
+  {
+   "msg": 23,
+   "date": "2026-05-08",
+   "topic": "position sizing",
+   "lesson": "Risks 2% per normal trade and 1% on the trades he flags as risky.",
+   "quote": "I risk 2% on normal traders and 1% on risky ones!",
+   "risk_note": "I risk 2% on normal traders and 1% on risky ones"
+  },
+  {
+   "msg": 34,
+   "date": "2026-05-09",
+   "topic": "why he limits the number of calls",
+   "lesson": "Caps his own number of open calls because followers ignore risk management and go all in; tells them to do their own analysis on any coin he merely mentions.",
+   "quote": "Look at them go, every ALT I mentioned here just popping off even ASTER started moving\n\nUsually I'm already in too many trades and have to limit myself for giving positions because I feel like people don't care about risk management and jump in all in.\n\nBut if I ever mention a coin and you can do some analysis, check them out!",
+   "risk_note": "limits the number of calls because followers ignore risk management and go all in"
+  },
+  {
+   "msg": 39,
+   "date": "2026-05-09",
+   "topic": "trade management",
+   "lesson": "Standing rule: move the stop loss to entry once TP1 is taken.",
+   "quote": "Common knowledge but a reminder, SL to Entry after TP1",
+   "risk_note": "SL to Entry after TP1"
+  },
+  {
+   "msg": 174,
+   "date": "2026-05-21",
+   "topic": "partials",
+   "lesson": "Explains from a DM exchange that he does not take partials and exits 100% at TP1 - framed as his own style, not a rule others must follow.",
+   "quote": "Someone asked this in my DMs why I don't like taking partials so putting it here is my point of view, of course you don't have to agree just my style.",
+   "risk_note": null
+  },
+  {
+   "msg": 213,
+   "date": "2026-05-23",
+   "topic": "what R means, plus risk per trade",
+   "lesson": "Explains R in the simplest terms (1R = profit equal to the stop-loss distance; ROI% is irrelevant) using the closed BEAT short and the live SUI long, and states risk of 1-2% on alts and 3-5% on BTC.",
+   "quote": "For those who don't know what is R, I tried explaining in the simplest way! Also guys, I risk 1-2% on ALTs and 3-5% on BTC trades",
+   "risk_note": "I risk 1-2% on ALTs and 3-5% on BTC trades"
+  },
+  {
+   "msg": 214,
+   "date": "2026-05-23",
+   "topic": "position-size calculators",
+   "lesson": "Tells followers to size every trade with a position-size calculator and promises they will end every month profitable and never get liquidated; restates 1-2% alts, 3% BTC.",
+   "quote": "Also guys I take my trade using risk calculators such as https://infinityalgo.com/tools/calculators/position-size-calculator Learn to use risk calculator and I PROMISE YOU, YOU'LL END MONTHLY PROFITABLE WITH ME AND NEVER EVER GET LIQUIDATED. 1-2% ALTs 3% BTC",
+   "risk_note": "1-2% ALTs 3% BTC"
+  },
+  {
+   "msg": 216,
+   "date": "2026-05-23",
+   "topic": "how to use a position-size calculator",
+   "lesson": "Five-step walkthrough: wallet, risk %, entry and SL -> position size, then enter that size manually on the exchange. Demonstrated with the SUI trade at 1% risk, entry 1, SL 0.95.",
+   "quote": "How to use it? Step1: Write your wallet Step2: Write your risk % Step3: Write your Entry SL Step4: It gives you a position size, how much coins or margin to long Step5: Go to your exchange manually write down the coins or margin",
+   "risk_note": null
+  },
+  {
+   "msg": 217,
+   "date": "2026-05-23",
+   "topic": "order entry mechanics",
+   "lesson": "Set the order 'by amount' on the exchange; he demonstrates on Blofin but says every exchange has the same setting.",
+   "quote": "Go to your exchanges and set by amount I'm doing this on blofin but every exchange has it the same.",
+   "risk_note": null
+  },
+  {
+   "msg": 218,
+   "date": "2026-05-23",
+   "topic": "leverage vs risk",
+   "lesson": "If position size is fixed by the calculator, the leverage used is irrelevant to risk - even 500x is fine as long as the same amount is written down.",
+   "quote": "A bit if educational posts, simplest way to risk management it can't get any easier. If you use this way you don't have to worry how much leverage to use, you can use even 500x as long as you're writing down the same amount!",
+   "risk_note": "you don't have to worry how much leverage to use, you can use even 500x as long as you're writing down the same amount"
+  },
+  {
+   "msg": 316,
+   "date": "2026-06-01",
+   "topic": "risk management",
+   "lesson": "Stick to 1-2% risk per trade and he promises the month closes green every month.",
+   "quote": "Guys just hold onto your risk management 1-2% per trade I promise you'll close the month green every month!",
+   "risk_note": "1-2% per trade"
+  },
+  {
+   "msg": 334,
+   "date": "2026-06-02",
+   "topic": "risk management / reassurance",
+   "lesson": "Rough market, but he promises the month ends 10R+ green provided risk stays at 1-2% per trade.",
+   "quote": "Rough market but we will end in green with a 10+ R I promise, the key is to manage risk 1-2% per trade",
+   "risk_note": "manage risk 1-2% per trade"
+  },
+  {
+   "msg": 360,
+   "date": "2026-06-03",
+   "topic": "win rate vs RR trade-off",
+   "lesson": "Offers higher-RR trades if members stop fixating on win rate, but says he will still try to keep win rate at 70%+.",
+   "quote": "If you guys don't worry about win rate a bit too much I can share even higher RR trades but I'll try to keep it at least 70% above!",
+   "risk_note": null
+  },
+  {
+   "msg": 401,
+   "date": "2026-06-09",
+   "topic": "standing trade-management rule",
+   "lesson": "Book at least 25% at 2R and move the stop to breakeven whenever he has not posted an update.",
+   "quote": "Take at least 25% at 2R and move SL to BE if I don't update it's very good profits!",
+   "risk_note": "take at least 25% at 2R and move SL to BE if he doesn't update"
+  },
+  {
+   "msg": 409,
+   "date": "2026-06-09",
+   "topic": "monthly R targets by style",
+   "lesson": "Low win rate style targets 20+R a month; high win rate style targets 10R a month.",
+   "quote": "With low win rate I'll target at least 20+ R a month\nWith high win rate I'll target 10 RR a month",
+   "risk_note": null
+  },
+  {
+   "msg": 410,
+   "date": "2026-06-09",
+   "topic": "the two styles by example",
+   "lesson": "DEXE and BEAT are the low-win-rate trades with a 2R minimum target; BTC scalps are ~90% win rate with 0.5R targets.",
+   "quote": "Example is DEXE or BEAT trades (low win rate but minimum 2R TP)\nBTC scalps (90% WR but 0.5R TPs)",
+   "risk_note": null
+  },
+  {
+   "msg": 415,
+   "date": "2026-06-09",
+   "topic": "trading psychology",
+   "lesson": "He personally prefers low win rate / high RR, but it takes strong psychology to sit through the losses.",
+   "quote": "(I personally prefer low win rate high RR but you have to have some strong psychology to go through losses to win big)",
+   "risk_note": null
+  },
+  {
+   "msg": 426,
+   "date": "2026-06-10",
+   "topic": "expectancy of the high-risk book",
+   "lesson": "Acknowledges the high-risk/high-reward trades have been getting stopped, but says the winners will pay 3-5R.",
+   "quote": "Guys I know these high risk high reward trades are getting SLs but when I start getting TPs it'll be 3-5R",
+   "risk_note": null
+  },
+  {
+   "msg": 464,
+   "date": "2026-06-11",
+   "topic": "trade taxonomy",
+   "lesson": "Three categories: BTC scalps (high win rate, low R), high risk / high reward (at least +2R before any trim), and 1R scalps (mid risk).",
+   "quote": "BTC scalps (High Win Rate low R)\nHigh risk high reward trades (High R (+2 at least before any trim)\n1R scalps (Mid risk)\n\nThat's how my trades are structured just to be clear!",
+   "risk_note": null
+  },
+  {
+   "msg": 687,
+   "date": "2026-07-06",
+   "topic": "risk per trade",
+   "lesson": "Says the 100%-win-rate week came with only 3-5% risk per trade; the attached chart shows account PnL +30.92% from 07-02 to 07-06 against BTC +3.33%.",
+   "quote": "This is where I risk only 3-5% per trade",
+   "risk_note": "I risk only 3-5% per trade"
+  },
+  {
+   "msg": 777,
+   "date": "2026-07-26",
+   "topic": "risk per trade",
+   "lesson": "A single stop should only cost 2-3% of the account; use a risk calculator if you do not know how. Posted alongside the INJ loss.",
+   "quote": "Just risk 2-3% per setup please, use a risk calculator if you don't know how to. Risk 2% per trade",
+   "risk_note": "Just risk 2-3% per setup, use a risk calculator if you don't know how to; risk 2% per trade"
+  },
+  {
+   "msg": 802,
+   "date": "2026-07-27",
+   "topic": "how he accounts for R",
+   "lesson": "Claims his R is easy to calculate honestly because he takes no partials and only one TP; average is a small 0.5-0.8R but the TP count means two wins cover one stop, and holding for one TP avoids round-tripping profits.",
+   "quote": "Btw I'm very honest about my R Since I don't take partials and take only 1TP so calculating my real R is very easy! Yes my R is small 0.5-0.8R on avg but there are so many TPs that 2 trades cover 1SL easily.",
+   "risk_note": null
+  },
+  {
+   "msg": 895,
+   "date": "2026-08-05",
+   "topic": "mindset in chop",
+   "lesson": "While others complain about chop he still books gains - as long as it is green there is no problem.",
+   "quote": "When others complain about chop we gain even if it's little, as long as it's green I don't see a problem",
+   "risk_note": null
+  },
+  {
+   "msg": 997,
+   "date": "2026-08-21",
+   "topic": "epistemic humility",
+   "lesson": "Refuses to play the know-it-all: everything is a guess at the end of the day and nobody really knows.",
+   "quote": "Though I won't act as a Mr know it's all guesses by the end of the day, no one knows shit",
+   "risk_note": null
+  }
+ ],
+ "other_notable": [
+  {
+   "msg": 1,
+   "date": "2026-05-06",
+   "event_type": "chat",
+   "topic": "community",
+   "note": "Introduction post thanking God, Chento and john.scx for the place in the server.",
+   "quote": "Hello everyone, \n\nFirst I would like to thank God for everything then @Chento (Won’t DM first)  who has given me a place in his space, also @john.scx who had been very kind and patient with me!"
+  },
+  {
+   "msg": 4,
+   "date": "2026-05-07",
+   "event_type": "plan",
+   "topic": "trade intent",
+   "note": "Announces he is about to take 2 risky trades; wanted a safe start but could not resist.",
+   "quote": "Guys I'm out taking 2 risky trades here, I wanted a safe start but I can't resist."
+  },
+  {
+   "msg": 23,
+   "date": "2026-05-08",
+   "event_type": "update",
+   "topic": "position roll call",
+   "note": "Four positions running: UNI, ZRO, BTC, AVNT.",
+   "quote": "We have 4 positions running\n\nUNI\nZRO\nBTC\nAVNT\n\nManage risk."
+  },
+  {
+   "msg": 30,
+   "date": "2026-05-08",
+   "event_type": "chat",
+   "topic": "account transparency",
+   "note": "Clarifies the Demo Trading watermark on his screenshots - it is a CFT funded account on Bybit, not demo.",
+   "quote": "Btw not trading demo it's CFT funded account on Bybit just clarifying"
+  },
+  {
+   "msg": 32,
+   "date": "2026-05-08",
+   "event_type": "update",
+   "topic": "position roll call",
+   "note": "Five positions running: BTC, KERNEL, ZRO, AVNT, SNX.",
+   "quote": "Running\n\nBTC \nKERNEL \nZRO\nAVNT\nSNX"
+  },
+  {
+   "msg": 47,
+   "date": "2026-05-09",
+   "event_type": "update",
+   "topic": "position roll call",
+   "note": "Five trades running: ZRO, AVNT, STABLE, SNX, ETH.",
+   "quote": "Trades running\n\nZRO\nAVNT\nSTABLE\nSNX\nETH"
+  },
+  {
+   "msg": 66,
+   "date": "2026-05-11",
+   "event_type": "chat",
+   "topic": "community / PnL solicitation",
+   "note": "Asks followers who profited to post their PnLs in the profit-showcase channel.",
+   "quote": "If you made anything with me so far I would really appreciate the PNLs #💲｜profit-showcase \n\nThankyou!"
+  },
+  {
+   "msg": 86,
+   "date": "2026-05-12",
+   "event_type": "chat",
+   "topic": "account transparency",
+   "note": "Second clarification of the DEMO label after ~5 DMs: it is a CFT funded account, and he trades real money on other exchanges.",
+   "quote": "Guys I would like to clarify something since I shared this screenshot it says DEMO, I got like 5 DMs saying I'm trading on DEMO \n\nIt is CFT funded account so it shows demo, I trade on other exchanges with real money."
+  },
+  {
+   "msg": 117,
+   "date": "2026-05-14",
+   "event_type": "chat",
+   "topic": "community / PnL solicitation",
+   "note": "Asks members to post their PnLs in the profit-showcase channel.",
+   "quote": "Can I get some PNLs #💲｜profit-showcase 👉🏻👈🏻"
+  },
+  {
+   "msg": 118,
+   "date": "2026-05-14",
+   "event_type": "chat",
+   "topic": "community / PnL solicitation",
+   "note": "Thanks the community over a screen recording of the profit-showcase channel full of member PnL cards (BB, BTC, XRP, ENS, INTC) - members' results, not his own positions.",
+   "quote": "Thankyou guys!"
+  },
+  {
+   "msg": 175,
+   "date": "2026-05-21",
+   "event_type": "chat",
+   "topic": "community",
+   "note": "Thanks members for the DMs and kind words about his work.",
+   "quote": "Also guys I have received a dozen of DMs since last week about my work, I just wanted to say thank you very much for the sweet words, you all are too kind"
+  },
+  {
+   "msg": 184,
+   "date": "2026-05-22",
+   "event_type": "chat",
+   "topic": "server logistics",
+   "note": "Explains how members get his notification role (react in the get-notifications channel).",
+   "quote": "Also a couple of DMs regarding not getting my notifications , or how to get them, you go and take it from #🐐｜get-notifications"
+  },
+  {
+   "msg": 189,
+   "date": "2026-05-22",
+   "event_type": "chat",
+   "topic": "signal cadence",
+   "note": "Flags AVAX as probably the last signal of the week after a non-stop run of calls.",
+   "quote": "Probably last signal of the week, we have been on a non stop streak"
+  },
+  {
+   "msg": 215,
+   "date": "2026-05-23",
+   "event_type": "chat",
+   "topic": "disclaimer",
+   "note": "Disclaims any promotion of the linked position-size calculator - any calculator works.",
+   "quote": "Not promoting anything here there are many risk calculators on play store or website you can use whatever you want"
+  },
+  {
+   "msg": 219,
+   "date": "2026-05-23",
+   "event_type": "chat",
+   "topic": "server logistics",
+   "note": "Wants the risk-management posts pinned by John so new members can find them.",
+   "quote": "I'll ask John if he can pin these so new or those who missed can always check how to easily manage risk!"
+  },
+  {
+   "msg": 245,
+   "date": "2026-05-24",
+   "event_type": "chat",
+   "topic": "community / PnL solicitation",
+   "note": "Thanks the community while screen-recording the profit-showcase channel filled with followers' PnL cards from his calls (BTC, SUI, FIL, HYPE).",
+   "quote": "Thank you for your trust guys, lovely to see this"
+  },
+  {
+   "msg": 267,
+   "date": "2026-05-25",
+   "event_type": "chat",
+   "topic": "banter",
+   "note": "Joke correcting his typo in the WLD exit message.",
+   "quote": "Runners not rubbers, no one like rubbers"
+  },
+  {
+   "msg": 284,
+   "date": "2026-05-27",
+   "event_type": "chat",
+   "topic": "community",
+   "note": "Eid greetings to the community.",
+   "quote": "Eid Mubarak to every Muslim brother of mine, I hope you have a lovely Eid and time with your loved ones"
+  },
+  {
+   "msg": 408,
+   "date": "2026-06-09",
+   "event_type": "chat",
+   "topic": "poll",
+   "note": "Asks members to fill in the poll so he can post trades in the style they prefer; says he can do both.",
+   "quote": "Guys kindly fill this, I'll start posting trades accordingly, I can do both ^"
+  },
+  {
+   "msg": 412,
+   "date": "2026-06-09",
+   "event_type": "chat",
+   "topic": "poll",
+   "note": "One-word emphasis pointing back at the poll about trade style.",
+   "quote": "Important."
+  },
+  {
+   "msg": 476,
+   "date": "2026-06-13",
+   "event_type": "chat",
+   "topic": "personal",
+   "note": "Personal aside about being awake nearly 30 hours.",
+   "quote": "Haven't slept for nearly 30 hrs don't mind me"
+  },
+  {
+   "msg": 497,
+   "date": "2026-06-15",
+   "event_type": "chat",
+   "topic": "prediction bookkeeping",
+   "note": "Clarifies the screenshotted weekend-pump prediction was posted on June 13.",
+   "quote": "Posted on June 13 btw."
+  },
+  {
+   "msg": 499,
+   "date": "2026-06-15",
+   "event_type": "chat",
+   "topic": "trading frustration",
+   "note": "Unlucky day: closed the trade that hit TP, longed a dead price-action coin, and unusually is in only one long instead of several.",
+   "quote": "Unlucky day, closed the TP one and longed a dead PA coin and usually I'm in multiple longs and today only 1."
+  },
+  {
+   "msg": 693,
+   "date": "2026-07-08",
+   "event_type": "chat",
+   "topic": "community",
+   "note": "Rallies the group for a tenth win in the streak.",
+   "quote": "Who's ready to make it to the 10th streak?"
+  },
+  {
+   "msg": 849,
+   "date": "2026-07-31",
+   "event_type": "chat",
+   "topic": "self-promotion",
+   "note": "Promotes the X account he just created (x.com/Paladinccore).",
+   "quote": "Also guys many of you asked about my X so I just created one, would appreciate a follow  https://x.com/Paladinccore"
+  },
+  {
+   "msg": 877,
+   "date": "2026-08-03",
+   "event_type": "chat",
+   "topic": "disclosure caveat",
+   "note": "Says all his trades are posted in the server, but some personal or occasional trades will go to X only, since he wants to grow it. IMPORTANT for completeness of the reconstructed record.",
+   "quote": "Guys, I post all my trades in this server but since I wanna grow my X too some of my personal or once in a while trades will be there."
+  },
+  {
+   "msg": 917,
+   "date": "2026-08-10",
+   "event_type": "chat",
+   "topic": "trading frustration",
+   "note": "Frustration at random price action; no trade content.",
+   "quote": "PA so random it's giving me headache in my kidneys"
+  },
+  {
+   "msg": 980,
+   "date": "2026-08-19",
+   "event_type": "chat",
+   "topic": "no content",
+   "note": "Empty '.' reply bumping his earlier message about buying HYPE heavy since 60 and telling people to buy SOL and HYPE.",
+   "quote": "."
+  }
+ ]
+}

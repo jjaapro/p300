@@ -1,0 +1,88 @@
+//@version=6
+// ADX Pivot Top/Bottom Detector v2 — TradingView experiment (no prod code).
+// Swing pivots (ta.pivothigh/low + prominence) scored by VALIDATED confirms
+// (6.5y forward-accuracy test, pivot_accuracy.py + cvd_divergence_test.py):
+//   TOP confirms:    CVD bearish divergence (75% hit vs 59% without) | funding-hot | stretched above EMA
+//   BOTTOM confirms: ADX rolling over (74% hit) | CVD bullish divergence (78%) | funding-cold
+// ADX is a BOTTOM confirm only (it does NOT improve tops). minConfirm=1 by default
+// => fewer, higher-accuracy markers; unconfirmed pivots shown as small dots.
+// NOTE: CVD here = TV requestVolumeDelta PROXY (recent ~69d, tick-rule); the real
+// taker CVD that the 75% backtest used lives in cd_futures_15m (Python), not Pine.
+// Pivots confirm R bars late (markers drawn back at the pivot) = visual swing map.
+indicator("ADX Pivot Top/Bottom Detector", overlay=true, max_labels_count=500)
+import TradingView/ta/9 as tvta
+import TradingView/Request/3 as req
+
+L          = input.int(8,  "Pivot left bars", group="Pivot")
+R          = input.int(8,  "Pivot right bars (= confirmation lag)", group="Pivot")
+prom       = input.float(10.0,"Min swing prominence %", step=1, group="Pivot")/100.0
+emaLen     = input.int(150,"Trend EMA", group="Pivot")
+minConfirm = input.int(1,  "Min confirms for a marked signal (0=all pivots)", minval=0, maxval=3, group="Selectivity")
+useCVD     = input.bool(true, "CVD divergence confirm (proxy, ~69d)", group="Confirms")
+cvdK       = input.int(10, "CVD divergence lookback", group="Confirms")
+useFund    = input.bool(true, "Funding extreme confirm", group="Confirms")
+fundZth    = input.float(1.0,"Funding z extreme", step=0.25, group="Confirms")
+fundZlen   = input.int(30, "Funding z lookback", group="Confirms")
+useADX     = input.bool(true, "ADX-rolling-over confirm (BOTTOMS only)", group="Confirms")
+adxLen     = input.int(14, "ADX length", group="Confirms")
+extTopMin  = input.float(15.0,"TOP stretch: min % above EMA", group="Confirms")
+perpSym    = input.symbol("BINANCE:BTCUSDT.P","Perp symbol for funding", group="Confirms")
+
+ema = ta.ema(close, emaLen)
+ext = (close - ema) / ema * 100.0
+
+// ADX (Wilder)
+up = ta.change(high)
+dn = -ta.change(low)
+plusDM  = na(up) ? na : (up > dn and up > 0 ? up : 0)
+minusDM = na(dn) ? na : (dn > up and dn > 0 ? dn : 0)
+trr = ta.rma(ta.tr, adxLen)
+plusDI  = 100 * ta.rma(plusDM, adxLen) / trr
+minusDI = 100 * ta.rma(minusDM, adxLen) / trr
+dx = 100 * math.abs(plusDI - minusDI) / (plusDI + minusDI + 1e-9)
+adxVal = ta.rma(dx, adxLen)
+
+// funding z
+fund  = useFund ? req.cryptoDerivativeMetric(perpSym, "Funding Rate", timeframe.period) : na
+fStd  = ta.stdev(fund, fundZlen)
+fMean = ta.sma(fund, fundZlen)
+fz    = (not na(fund) and not na(fStd) and fStd > 0) ? (fund - fMean) / fStd : na
+
+// CVD (proxy) accumulation + divergence
+[cvo, cvh, cvl, cvDelta] = tvta.requestVolumeDelta("60", timeframe.period)
+var float cvd = 0.0
+cvd := cvd + (na(cvDelta) ? 0.0 : cvDelta)
+cvdReady = useCVD and bar_index > cvdK and not na(cvDelta)
+cvdBear = cvdReady and close > close[cvdK] and cvd < cvd[cvdK]
+cvdBull = cvdReady and close < close[cvdK] and cvd > cvd[cvdK]
+
+// pivots
+ph = ta.pivothigh(L, R)
+pl = ta.pivotlow(L, R)
+winLow  = ta.lowest(low,  L + R + 1)
+winHigh = ta.highest(high, L + R + 1)
+pivTop = not na(ph) and (ph - winLow) / winLow >= prom
+pivBot = not na(pl) and (winHigh - pl) / pl >= prom
+
+// confirms evaluated AT the pivot bar (R ago)
+fzP = fz[R]
+extP = ext[R]
+adxRollP = useADX and not na(adxVal[R]) and not na(adxVal[R+5]) and adxVal[R] < adxVal[R+5]
+fundHotP  = useFund and not na(fzP) and fzP >  fundZth
+fundColdP = useFund and not na(fzP) and fzP < -fundZth
+
+topConfirms = (cvdBear[R]?1:0) + (fundHotP?1:0)  + (extP >  extTopMin?1:0)
+botConfirms = (cvdBull[R]?1:0) + (fundColdP?1:0) + (adxRollP?1:0)
+markTop = pivTop and topConfirms >= minConfirm
+markBot = pivBot and botConfirms >= minConfirm
+
+plotshape(markTop, "TOP", shape.triangledown, location.abovebar, color=color.red,   size=size.small, offset=-R, text="T")
+plotshape(pivTop and topConfirms < minConfirm, "top(dot)", shape.circle, location.abovebar, color=color.new(color.red,60), size=size.tiny, offset=-R)
+plotshape(markBot, "BTM", shape.triangleup,   location.belowbar, color=color.green, size=size.small, offset=-R, text="B")
+plotshape(pivBot and botConfirms < minConfirm, "btm(dot)", shape.circle, location.belowbar, color=color.new(color.green,60), size=size.tiny, offset=-R)
+plot(ema, "EMA", color=color.new(color.gray, 50))
+
+if markTop
+    label.new(bar_index - R, high[R], "T"+str.tostring(topConfirms)+(cvdBear[R]?" cvd":"")+(fundHotP?" fz"+str.tostring(fzP,"#.0"):""), style=label.style_none, textcolor=color.red, size=size.tiny, yloc=yloc.abovebar)
+if markBot
+    label.new(bar_index - R, low[R], "B"+str.tostring(botConfirms)+(cvdBull[R]?" cvd":"")+(adxRollP?" adx":"")+(fundColdP?" fz"+str.tostring(fzP,"#.0"):""), style=label.style_none, textcolor=color.green, size=size.tiny, yloc=yloc.belowbar)

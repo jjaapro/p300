@@ -1,0 +1,982 @@
+time_utc,time_ms,symbol,observed_price,field,event_type,msg,note
+2026-05-06T23:34:43Z,1778110483759,UNIUSDT,3.46,price_ref,call,5.0,price he referenced as live/current
+2026-05-06T23:34:43Z,1778110483759,UNIUSDT,3.46,entry_price,call,5.0,stated entry
+2026-05-06T23:35:46Z,1778110546105,ETHUSDT,2348.0,price_ref,call,6.0,price he referenced as live/current
+2026-05-06T23:35:46Z,1778110546105,ETHUSDT,2348.0,entry_price,call,6.0,stated entry
+2026-05-07T08:06:57Z,1778141217506,BTCUSDT,81500.0,entry_price,call,8.0,stated entry
+2026-05-07T12:32:55Z,1778157175797,ZROUSDT,1.48,entry_price,call,11.0,stated entry
+2026-05-07T12:32:55Z,1778157175797,ZROUSDT,1.48,price_ref,call,11.0,price he referenced as live/current
+2026-05-07T12:35:12Z,1778157312649,ZROUSDT,1.486,entry_price,entry,12.0,stated entry
+2026-05-07T12:35:12Z,1778157312649,ZROUSDT,1.486,price_ref,entry,12.0,price he referenced as live/current
+2026-05-07T22:40:42Z,1778193642827,BTCUSDT,79700.0,entry_price,call,17.0,stated entry
+2026-05-07T22:40:42Z,1778193642827,BTCUSDT,79700.0,price_ref,call,17.0,price he referenced as live/current
+2026-05-08T03:24:00Z,1778210640166,BTCUSDT,79590.0,entry_price,dca,19.0,stated entry
+2026-05-08T03:24:00Z,1778210640166,BTCUSDT,79590.0,price_ref,partial_close,19.0,price he referenced as live/current
+2026-05-08T03:43:06Z,1778211786564,AVNTUSDT,0.158,price_ref,call,22.0,price he referenced as live/current
+2026-05-08T03:43:06Z,1778211786564,AVNTUSDT,0.158,entry_price,call,22.0,stated entry
+2026-05-08T10:48:41Z,1778237321639,BTCUSDT,79564.8,entry_price,partial_close,25.0,stated entry
+2026-05-08T15:44:20Z,1778255060823,UNIUSDT,3.46,entry_price,sl_move,26.0,stated entry
+2026-05-08T15:47:55Z,1778255275357,KERNELUSDT,0.064,entry_price,call,27.0,stated entry
+2026-05-08T15:48:07Z,1778255287983,KERNELUSDT,0.064,price_ref,update,28.0,price he referenced as live/current
+2026-05-08T16:41:13Z,1778258473533,UNIUSDT,3.7,price_ref,close,29.0,price he referenced as live/current
+2026-05-08T16:41:13Z,1778258473533,UNIUSDT,4.0,price_ref,view,29.0,price he referenced as live/current
+2026-05-08T16:49:28Z,1778258968177,SNXUSDT,0.354,price_ref,call,31.0,price he referenced as live/current
+2026-05-08T16:49:28Z,1778258968177,SNXUSDT,0.354,entry_price,call,31.0,stated entry
+2026-05-08T18:22:35Z,1778264555255,BTCUSDT,79500.0,entry_price,plan,33.0,stated entry
+2026-05-09T01:45:42Z,1778291142281,KERNELUSDT,0.06615,price_ref,tp_hit,35.0,price he referenced as live/current
+2026-05-09T01:45:42Z,1778291142281,KERNELUSDT,0.06615,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-09T01:45:42Z,1778291142281,KERNELUSDT,0.06454,entry_price,tp_hit,35.0,stated entry
+2026-05-09T01:48:32Z,1778291312851,ZROUSDT,1.4849,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-09T01:48:32Z,1778291312851,AVNTUSDT,0.16787,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-09T01:48:32Z,1778291312851,SNXUSDT,0.3727,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-09T01:48:32Z,1778291312851,BTCUSDT,80333.9,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-09T01:48:32Z,1778291312851,BTCUSDT,80333.9,price_ref,update,36.0,price he referenced as live/current
+2026-05-09T01:48:32Z,1778291312851,AVNTUSDT,0.16787,price_ref,update,36.0,price he referenced as live/current
+2026-05-09T01:48:32Z,1778291312851,AVNTUSDT,0.15851,entry_price,update,36.0,stated entry
+2026-05-09T01:48:32Z,1778291312851,KERNELUSDT,0.06615,price_ref,update,36.0,price he referenced as live/current
+2026-05-09T01:48:32Z,1778291312851,KERNELUSDT,0.06454,entry_price,update,36.0,stated entry
+2026-05-09T01:48:32Z,1778291312851,SNXUSDT,0.3545,entry_price,update,36.0,stated entry
+2026-05-09T01:48:32Z,1778291312851,SNXUSDT,0.3727,price_ref,update,36.0,price he referenced as live/current
+2026-05-09T01:48:32Z,1778291312851,BTCUSDT,79764.4,entry_price,update,36.0,stated entry
+2026-05-09T01:48:32Z,1778291312851,KERNELUSDT,0.06615,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-09T01:48:32Z,1778291312851,ZROUSDT,1.4744,entry_price,update,36.0,stated entry
+2026-05-09T01:48:32Z,1778291312851,UNIUSDT,3.528,price_ref,update,36.0,price he referenced as live/current
+2026-05-09T01:48:32Z,1778291312851,ZROUSDT,1.4849,price_ref,update,36.0,price he referenced as live/current
+2026-05-09T01:48:32Z,1778291312851,UNIUSDT,3.458,entry_price,update,36.0,stated entry
+2026-05-09T01:52:10Z,1778291530882,SYRUPUSDT,0.25328,entry_price,close,38.0,stated entry
+2026-05-09T01:52:10Z,1778291530882,SYRUPUSDT,0.26013,price_ref,close,38.0,price he referenced as live/current
+2026-05-09T03:06:56Z,1778296016774,BTCUSDT,79764.4,entry_price,close,40.0,stated entry
+2026-05-09T03:06:56Z,1778296016774,BTCUSDT,80400.0,price_ref,close,40.0,price he referenced as live/current
+2026-05-09T03:54:44Z,1778298884699,BTCUSDT,79500.0,entry_price,update,41.0,stated entry
+2026-05-09T04:10:34Z,1778299834450,BTCUSDT,80300.0,entry_price,plan,42.0,stated entry
+2026-05-09T06:53:50Z,1778309630576,BTCUSDT,79000.0,entry_price,plan,43.0,stated entry
+2026-05-09T08:51:05Z,1778316665057,STABLEUSDT,0.0346,price_ref,call,44.0,price he referenced as live/current
+2026-05-09T08:51:05Z,1778316665057,STABLEUSDT,0.0346,entry_price,call,44.0,stated entry
+2026-05-09T10:58:20Z,1778324300982,ETHUSDT,2310.0,price_ref,call,45.0,price he referenced as live/current
+2026-05-09T10:58:20Z,1778324300982,ETHUSDT,2310.0,entry_price,call,45.0,stated entry
+2026-05-10T15:45:44Z,1778427944212,ETHUSDT,2340.53,price_ref,close,49.0,price he referenced as live/current
+2026-05-10T15:45:44Z,1778427944212,ETHUSDT,2311.73,entry_price,close,49.0,stated entry
+2026-05-10T15:47:56Z,1778428076921,ETHUSDT,2350.0,price_ref,tp_hit,50.0,price he referenced as live/current
+2026-05-10T18:01:23Z,1778436083161,AVNTUSDT,0.15851,entry_price,partial_close,52.0,stated entry
+2026-05-10T18:01:23Z,1778436083161,AVNTUSDT,0.16709,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-10T18:01:23Z,1778436083161,AVNTUSDT,0.16709,price_ref,partial_close,52.0,price he referenced as live/current
+2026-05-10T19:10:30Z,1778440230676,ZROUSDT,1.4744,entry_price,partial_close,54.0,stated entry
+2026-05-10T19:10:30Z,1778440230676,ZROUSDT,1.53,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-10T19:10:30Z,1778440230676,ZROUSDT,1.53,price_ref,partial_close,54.0,price he referenced as live/current
+2026-05-10T20:33:31Z,1778445211407,SNXUSDT,0.3545,entry_price,close,56.0,stated entry
+2026-05-10T20:33:31Z,1778445211407,SNXUSDT,0.3626,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-10T20:33:31Z,1778445211407,SNXUSDT,0.3626,price_ref,close,56.0,price he referenced as live/current
+2026-05-10T21:40:45Z,1778449245500,ZROUSDT,1.486,entry_price,call,57.0,stated entry
+2026-05-10T23:30:48Z,1778455848098,BTCUSDT,82300.0,entry_price,call,59.0,stated entry
+2026-05-10T23:30:48Z,1778455848098,BTCUSDT,82300.0,price_ref,call,59.0,price he referenced as live/current
+2026-05-11T00:58:37Z,1778461117677,BTCUSDT,82202.8,entry_price,close,61.0,stated entry
+2026-05-11T00:58:37Z,1778461117677,BTCUSDT,81302.9,price_ref,close,61.0,price he referenced as live/current
+2026-05-11T00:59:09Z,1778461149461,BTCUSDT,80000.0,entry_price,plan,62.0,stated entry
+2026-05-11T06:12:24Z,1778479944480,ZROUSDT,1.5369,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-11T06:12:24Z,1778479944480,ZROUSDT,1.5369,price_ref,partial_close,67.0,price he referenced as live/current
+2026-05-11T06:12:24Z,1778479944480,ZROUSDT,1.4772,entry_price,partial_close,67.0,stated entry
+2026-05-11T06:13:29Z,1778480009890,BTCUSDT,80600.0,entry_price,entry,68.0,stated entry
+2026-05-11T06:23:32Z,1778480612674,BTCUSDT,80900.0,price_ref,call,70.0,price he referenced as live/current
+2026-05-11T06:23:32Z,1778480612674,BTCUSDT,80900.0,entry_price,call,70.0,stated entry
+2026-05-11T09:32:58Z,1778491978060,ZROUSDT,1.5457,price_ref,tp_hit,72.0,price he referenced as live/current
+2026-05-11T09:32:58Z,1778491978060,ZROUSDT,1.4772,entry_price,tp_hit,72.0,stated entry
+2026-05-11T09:32:58Z,1778491978060,ZROUSDT,1.5457,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-11T16:33:50Z,1778517230297,BTCUSDT,80914.2,entry_price,update,76.0,stated entry
+2026-05-11T16:33:50Z,1778517230297,BTCUSDT,81798.7,price_ref,update,76.0,price he referenced as live/current
+2026-05-12T01:30:58Z,1778549458575,BTCUSDT,81300.0,entry_price,call,79.0,stated entry
+2026-05-12T01:50:49Z,1778550649078,BTCUSDT,81000.0,entry_price,dca,80.0,stated entry
+2026-05-12T03:19:25Z,1778555965585,STABLEUSDT,0.03459,entry_price,tp_set,82.0,stated entry
+2026-05-12T03:19:25Z,1778555965585,STABLEUSDT,0.036652,price_ref,tp_set,82.0,price he referenced as live/current
+2026-05-12T03:19:25Z,1778555965585,STABLEUSDT,0.036652,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-12T03:49:52Z,1778557792425,STABLEUSDT,0.03737,price_ref,close,83.0,price he referenced as live/current
+2026-05-12T03:49:52Z,1778557792425,STABLEUSDT,0.03459,entry_price,close,83.0,stated entry
+2026-05-12T03:51:54Z,1778557914783,STABLEUSDT,0.037953,price_ref,update,84.0,price he referenced as live/current
+2026-05-12T12:01:26Z,1778587286656,XRPUSDT,1.448,entry_price,call,85.0,stated entry
+2026-05-12T12:11:23Z,1778587883200,STABLEUSDT,0.03886,price_ref,update,86.0,price he referenced as live/current
+2026-05-12T12:11:23Z,1778587883200,STABLEUSDT,0.03886,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-12T12:11:23Z,1778587883200,STABLEUSDT,0.03453,entry_price,update,86.0,stated entry
+2026-05-12T12:11:23Z,1778587883200,STABLEUSDT,0.03884,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-13T03:14:46Z,1778642086257,BTCUSDT,81100.0,price_ref,plan,90.0,price he referenced as live/current
+2026-05-13T03:41:20Z,1778643680884,ETHUSDT,2293.0,entry_price,call,91.0,stated entry
+2026-05-13T03:41:31Z,1778643691733,ETHUSDT,2298.0,price_ref,update,92.0,price he referenced as live/current
+2026-05-13T04:02:05Z,1778644925277,SOLUSDT,95.5,entry_price,call,94.0,stated entry
+2026-05-13T09:11:15Z,1778663475836,SOLUSDT,95.7,price_ref,close,96.0,price he referenced as live/current
+2026-05-13T09:11:15Z,1778663475836,SOLUSDT,95.53,entry_price,close,96.0,stated entry
+2026-05-13T15:16:30Z,1778685390019,BTCUSDT,79400.0,entry_price,call,100.0,stated entry
+2026-05-14T00:17:11Z,1778717831020,SOLUSDT,91.25,entry_price,call,103.0,stated entry
+2026-05-14T00:18:10Z,1778717890571,BBUSDT,0.03535,entry_price,call,104.0,stated entry
+2026-05-14T07:40:51Z,1778744451590,ENSUSDT,6.89,entry_price,call,107.0,stated entry
+2026-05-14T14:30:30Z,1778769030106,BTCUSDT,79200.0,entry_price,update,108.0,stated entry
+2026-05-14T14:30:30Z,1778769030106,SOLUSDT,91.46,price_ref,close,108.0,price he referenced as live/current
+2026-05-14T14:30:30Z,1778769030106,XRPUSDT,1.4497,entry_price,close,108.0,stated entry
+2026-05-14T14:30:30Z,1778769030106,SOLUSDT,91.05,entry_price,close,108.0,stated entry
+2026-05-14T14:30:30Z,1778769030106,XRPUSDT,1.4531,price_ref,close,108.0,price he referenced as live/current
+2026-05-14T14:38:18Z,1778769498813,BTCUSDT,80199.5,price_ref,update,109.0,price he referenced as live/current
+2026-05-14T14:38:18Z,1778769498813,ENSUSDT,6.9,entry_price,update,109.0,stated entry
+2026-05-14T14:38:18Z,1778769498813,BTCUSDT,79284.35,entry_price,update,109.0,stated entry
+2026-05-14T14:38:18Z,1778769498813,ENSUSDT,7.107,price_ref,update,109.0,price he referenced as live/current
+2026-05-14T14:38:18Z,1778769498813,ENSUSDT,7.107,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-14T14:38:18Z,1778769498813,BTCUSDT,80199.5,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-14T14:47:29Z,1778770049454,XRPUSDT,1.4654,price_ref,update,110.0,price he referenced as live/current
+2026-05-14T15:02:51Z,1778770971374,BTCUSDT,79284.35,entry_price,close,112.0,stated entry
+2026-05-14T15:02:51Z,1778770971374,BTCUSDT,80893.8,price_ref,close,112.0,price he referenced as live/current
+2026-05-14T15:03:36Z,1778771016963,ENSUSDT,7.171,price_ref,partial_close,113.0,price he referenced as live/current
+2026-05-14T15:03:36Z,1778771016963,ENSUSDT,6.9,entry_price,partial_close,113.0,stated entry
+2026-05-14T15:03:36Z,1778771016963,ENSUSDT,7.171,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-14T15:13:38Z,1778771618478,BTCUSDT,79313.4,entry_price,update,115.0,stated entry
+2026-05-14T15:13:38Z,1778771618478,BTCUSDT,80926.4,price_ref,update,115.0,price he referenced as live/current
+2026-05-14T16:03:51Z,1778774631715,BBUSDT,0.03709,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-14T16:19:52Z,1778775592109,ENSUSDT,7.135,price_ref,close,120.0,price he referenced as live/current
+2026-05-14T16:19:52Z,1778775592109,ENSUSDT,7.135,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-14T16:19:52Z,1778775592109,ENSUSDT,6.9,entry_price,close,120.0,stated entry
+2026-05-14T17:12:39Z,1778778759595,BTCUSDT,82000.0,price_ref,view,121.0,price he referenced as live/current
+2026-05-14T17:27:12Z,1778779632250,BTCUSDT,81300.0,entry_price,call,122.0,stated entry
+2026-05-14T18:54:01Z,1778784841026,XRPUSDT,1.5431,price_ref,tp_hit,124.0,price he referenced as live/current
+2026-05-14T23:59:36Z,1778803176285,HBARUSDT,0.0948,entry_price,call,125.0,stated entry
+2026-05-15T00:20:30Z,1778804430974,BBUSDT,0.03538,entry_price,close,127.0,stated entry
+2026-05-15T00:20:30Z,1778804430974,BBUSDT,0.0371,price_ref,close,127.0,price he referenced as live/current
+2026-05-15T00:20:30Z,1778804430974,BBUSDT,0.0371,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-16T01:15:48Z,1778894148255,BTCUSDT,81300.0,entry_price,stopped_out,128.0,stated entry
+2026-05-16T01:15:48Z,1778894148255,BTCUSDT,82000.0,price_ref,stopped_out,128.0,price he referenced as live/current
+2026-05-16T01:23:08Z,1778894588444,PARTIUSDT,0.0615,entry_price,call,129.0,stated entry
+2026-05-16T01:36:09Z,1778895369602,BTCUSDT,76850.0,entry_price,plan,131.0,stated entry
+2026-05-16T01:36:09Z,1778895369602,BTCUSDT,77700.0,price_ref,view,131.0,price he referenced as live/current
+2026-05-16T09:58:40Z,1778925520942,ETHUSDT,2170.0,entry_price,call,135.0,stated entry
+2026-05-16T09:58:40Z,1778925520942,BTCUSDT,78000.0,entry_price,call,135.0,stated entry
+2026-05-16T10:35:54Z,1778927754256,ETHUSDT,2172.0,entry_price,entry,136.0,stated entry
+2026-05-16T16:29:46Z,1778948986189,PARTIUSDT,0.606,entry_price,update,139.0,stated entry
+2026-05-17T10:34:36Z,1779014076402,ETHUSDT,2194.45,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-17T10:34:36Z,1779014076402,ETHUSDT,2194.45,price_ref,partial_close,140.0,price he referenced as live/current
+2026-05-17T10:34:36Z,1779014076402,ETHUSDT,2173.61,entry_price,partial_close,140.0,stated entry
+2026-05-17T10:37:15Z,1779014235008,BTCUSDT,78494.9,price_ref,update,141.0,price he referenced as live/current
+2026-05-17T10:37:15Z,1779014235008,BTCUSDT,78494.9,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-17T10:37:15Z,1779014235008,BTCUSDT,78041.3,entry_price,update,141.0,stated entry
+2026-05-18T00:50:36Z,1779065436705,BTCUSDT,77000.0,entry_price,call,145.0,stated entry
+2026-05-18T14:05:56Z,1779113156243,BOMEUSDT,0.000599,entry_price,call,150.0,stated entry
+2026-05-18T14:25:57Z,1779114357362,BTCUSDT,76700.0,entry_price,dca,152.0,stated entry
+2026-05-18T19:14:08Z,1779131648295,ZECUSDT,544.0,entry_price,call,153.0,stated entry
+2026-05-19T01:02:19Z,1779152539615,BOMEUSDT,0.0005998,entry_price,partial_close,154.0,stated entry
+2026-05-19T01:02:19Z,1779152539615,BOMEUSDT,0.0005998,entry_price,sl_move,154.0,stated entry
+2026-05-19T01:02:19Z,1779152539615,BOMEUSDT,0.0006203,price_ref,partial_close,154.0,price he referenced as live/current
+2026-05-19T01:02:19Z,1779152539615,BOMEUSDT,0.0006203,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-19T01:26:18Z,1779153978346,ZECUSDT,545.99,entry_price,sl_move,155.0,stated entry
+2026-05-19T01:26:18Z,1779153978346,ZECUSDT,545.99,entry_price,partial_close,155.0,stated entry
+2026-05-19T01:26:18Z,1779153978346,ZECUSDT,572.12,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-19T01:26:18Z,1779153978346,ZECUSDT,572.12,price_ref,partial_close,155.0,price he referenced as live/current
+2026-05-19T07:30:37Z,1779175837799,BOMEUSDT,0.0005998,entry_price,tp_hit,156.0,stated entry
+2026-05-19T07:30:37Z,1779175837799,BOMEUSDT,0.000643,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-19T07:30:37Z,1779175837799,BOMEUSDT,0.000643,price_ref,tp_hit,156.0,price he referenced as live/current
+2026-05-19T07:48:14Z,1779176894757,SUIUSDT,1.09,entry_price,call,157.0,stated entry
+2026-05-19T18:04:20Z,1779213860800,ZECUSDT,545.99,entry_price,tp_hit,158.0,stated entry
+2026-05-19T18:04:20Z,1779213860800,ZECUSDT,581.92,price_ref,tp_hit,158.0,price he referenced as live/current
+2026-05-20T01:16:21Z,1779239781722,BTCUSDT,76704.7,entry_price,update,160.0,stated entry
+2026-05-20T01:16:21Z,1779239781722,BTCUSDT,76853.8,price_ref,update,160.0,price he referenced as live/current
+2026-05-20T01:16:21Z,1779239781722,BTCUSDT,76853.8,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-20T05:33:19Z,1779255199502,SUIUSDT,1.076,entry_price,dca,161.0,stated entry
+2026-05-20T06:20:41Z,1779258041803,ZECUSDT,540.0,entry_price,dca,163.0,stated entry
+2026-05-20T06:20:47Z,1779258047685,ZECUSDT,592.0,price_ref,tp_hit,164.0,price he referenced as live/current
+2026-05-20T06:20:54Z,1779258054358,ZECUSDT,580.25,entry_price,update,165.0,stated entry
+2026-05-20T06:20:54Z,1779258054358,ZECUSDT,591.75,price_ref,update,165.0,price he referenced as live/current
+2026-05-20T13:23:21Z,1779283401095,BTCUSDT,77450.5,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-20T13:23:21Z,1779283401095,BTCUSDT,76704.7,entry_price,update,167.0,stated entry
+2026-05-20T13:23:21Z,1779283401095,BTCUSDT,77450.5,price_ref,update,167.0,price he referenced as live/current
+2026-05-20T17:35:41Z,1779298541262,BONKUSDT,0.614,entry_price,call,168.0,stated entry
+2026-05-21T01:30:48Z,1779327048709,BTCUSDT,77826.3,price_ref,close,170.0,price he referenced as live/current
+2026-05-21T01:30:48Z,1779327048709,BTCUSDT,76704.7,entry_price,close,170.0,stated entry
+2026-05-21T02:03:46Z,1779329026308,SUIUSDT,1.0738,entry_price,tp_set,171.0,stated entry
+2026-05-21T02:03:46Z,1779329026308,SUIUSDT,1.1127,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-21T02:03:46Z,1779329026308,SUIUSDT,1.1127,price_ref,tp_set,171.0,price he referenced as live/current
+2026-05-21T02:57:24Z,1779332244556,SUIUSDT,1.14,price_ref,tp_hit,172.0,price he referenced as live/current
+2026-05-21T02:57:24Z,1779332244556,SUIUSDT,1.0738,entry_price,tp_hit,172.0,stated entry
+2026-05-21T02:57:39Z,1779332259877,SUIUSDT,1.1401,price_ref,update,173.0,price he referenced as live/current
+2026-05-21T02:57:39Z,1779332259877,SUIUSDT,1.0481,entry_price,update,173.0,stated entry
+2026-05-21T12:31:36Z,1779366696898,BTCUSDT,77000.0,entry_price,call,177.0,stated entry
+2026-05-21T12:31:50Z,1779366710455,BTCUSDT,77000.0,price_ref,update,178.0,price he referenced as live/current
+2026-05-21T17:21:34Z,1779384094189,BTCUSDT,77065.1,entry_price,update,180.0,stated entry
+2026-05-21T17:21:34Z,1779384094189,BTCUSDT,77854.8,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-21T17:21:34Z,1779384094189,BTCUSDT,77854.8,price_ref,update,180.0,price he referenced as live/current
+2026-05-22T08:51:14Z,1779439874018,WLDUSDT,0.284,entry_price,call,183.0,stated entry
+2026-05-22T09:23:13Z,1779441793945,XPLUSDT,0.089,entry_price,call,185.0,stated entry
+2026-05-22T13:02:49Z,1779454969857,BONKUSDT,0.006323,price_ref,tp_hit,186.0,price he referenced as live/current
+2026-05-22T13:02:49Z,1779454969857,BONKUSDT,0.006158,entry_price,tp_hit,186.0,stated entry
+2026-05-22T13:19:59Z,1779455999630,AVAXUSDT,9.569,entry_price,call,188.0,stated entry
+2026-05-22T13:41:48Z,1779457308978,WLDUSDT,0.284,entry_price,sl_move,190.0,stated entry
+2026-05-22T13:41:48Z,1779457308978,WLDUSDT,0.2908,price_ref,partial_close,190.0,price he referenced as live/current
+2026-05-22T13:41:48Z,1779457308978,WLDUSDT,0.2908,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-22T13:41:48Z,1779457308978,WLDUSDT,0.284,entry_price,partial_close,190.0,stated entry
+2026-05-23T05:33:37Z,1779514417001,BEATUSDT,1.286,entry_price,call,194.0,stated entry
+2026-05-23T06:21:38Z,1779517298222,BEATUSDT,1.169,price_ref,partial_close,195.0,price he referenced as live/current
+2026-05-23T06:21:38Z,1779517298222,BEATUSDT,1.2875,entry_price,partial_close,195.0,stated entry
+2026-05-23T07:35:06Z,1779521706159,JCTUSDT,0.004,entry_price,call,197.0,stated entry
+2026-05-23T07:35:23Z,1779521723171,BTCUSDT,74000.0,entry_price,plan,198.0,stated entry
+2026-05-23T07:39:06Z,1779521946246,BTCUSDT,74000.0,price_ref,plan,200.0,price he referenced as live/current
+2026-05-23T07:45:52Z,1779522352769,HYPEUSDT,54.8,entry_price,call,202.0,stated entry
+2026-05-23T07:46:50Z,1779522410290,HYPEUSDT,54.8,price_ref,update,203.0,price he referenced as live/current
+2026-05-23T07:52:47Z,1779522767687,JCTUSDT,0.00387,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-23T07:52:47Z,1779522767687,JCTUSDT,0.00387,price_ref,partial_close,204.0,price he referenced as live/current
+2026-05-23T07:52:47Z,1779522767687,JCTUSDT,0.004,entry_price,sl_move,204.0,stated entry
+2026-05-23T07:52:47Z,1779522767687,JCTUSDT,0.004,entry_price,partial_close,204.0,stated entry
+2026-05-23T07:57:00Z,1779523020750,HYPEUSDT,55.507,price_ref,update,206.0,price he referenced as live/current
+2026-05-23T07:57:00Z,1779523020750,HYPEUSDT,55.507,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-23T07:57:00Z,1779523020750,HYPEUSDT,54.991,entry_price,update,206.0,stated entry
+2026-05-23T08:13:43Z,1779524023744,SUIUSDT,1.0,entry_price,call,208.0,stated entry
+2026-05-23T13:15:56Z,1779542156840,SUIUSDT,1.0165,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-23T13:15:56Z,1779542156840,SUIUSDT,1.0165,price_ref,update,212.0,price he referenced as live/current
+2026-05-23T13:15:56Z,1779542156840,SUIUSDT,1.0014,entry_price,update,212.0,stated entry
+2026-05-23T13:48:09Z,1779544089852,SUIUSDT,1.0,entry_price,update,220.0,stated entry
+2026-05-23T14:16:47Z,1779545807322,BTCUSDT,75159.2,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-23T14:16:47Z,1779545807322,BTCUSDT,75166.5,entry_price,entry,222.0,stated entry
+2026-05-23T14:16:47Z,1779545807322,BTCUSDT,75159.2,price_ref,entry,222.0,price he referenced as live/current
+2026-05-23T14:22:17Z,1779546137295,BTCUSDT,75100.0,entry_price,call,224.0,stated entry
+2026-05-23T15:13:54Z,1779549234727,FILUSDT,0.955,entry_price,call,227.0,stated entry
+2026-05-23T18:18:48Z,1779560328951,SUIUSDT,1.0014,entry_price,partial_close,232.0,stated entry
+2026-05-23T18:18:48Z,1779560328951,SUIUSDT,1.0539,price_ref,partial_close,232.0,price he referenced as live/current
+2026-05-23T18:18:48Z,1779560328951,SUIUSDT,1.0539,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-23T20:42:34Z,1779568954278,FILUSDT,0.955,entry_price,tp_hit,234.0,stated entry
+2026-05-23T20:42:51Z,1779568971332,BTCUSDT,75197.2,entry_price,update,235.0,stated entry
+2026-05-23T20:42:51Z,1779568971332,BTCUSDT,76903.8,price_ref,update,235.0,price he referenced as live/current
+2026-05-23T20:42:51Z,1779568971332,BTCUSDT,76903.8,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-23T20:43:25Z,1779569005996,SUIUSDT,1.0803,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-23T20:43:25Z,1779569005996,SUIUSDT,1.0014,entry_price,update,236.0,stated entry
+2026-05-23T20:43:25Z,1779569005996,SUIUSDT,1.0803,price_ref,update,236.0,price he referenced as live/current
+2026-05-23T20:57:10Z,1779569830821,BTCUSDT,77072.3,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-23T20:57:10Z,1779569830821,BTCUSDT,77072.3,price_ref,update,239.0,price he referenced as live/current
+2026-05-23T20:57:10Z,1779569830821,BTCUSDT,75166.5,entry_price,update,239.0,stated entry
+2026-05-23T21:01:23Z,1779570083556,BTCUSDT,75197.2,entry_price,update,240.0,stated entry
+2026-05-23T21:01:23Z,1779570083556,BTCUSDT,77348.4,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-23T21:01:23Z,1779570083556,BTCUSDT,77348.4,price_ref,update,240.0,price he referenced as live/current
+2026-05-23T21:09:16Z,1779570556477,SUIUSDT,1.0909,price_ref,tp_hit,241.0,price he referenced as live/current
+2026-05-23T21:09:16Z,1779570556477,SUIUSDT,1.0909,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-23T21:09:16Z,1779570556477,SUIUSDT,1.0006,entry_price,tp_hit,241.0,stated entry
+2026-05-23T21:09:23Z,1779570563188,SUIUSDT,1.089,price_ref,close,242.0,price he referenced as live/current
+2026-05-23T21:09:23Z,1779570563188,SUIUSDT,1.0014,entry_price,close,242.0,stated entry
+2026-05-23T21:12:10Z,1779570730652,BTCUSDT,77036.2,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-23T21:49:01Z,1779572941904,BTCUSDT,76799.9,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-23T21:49:01Z,1779572941904,HYPEUSDT,55.061,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-23T21:49:01Z,1779572941904,BTCUSDT,77032.7,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-23T21:49:01Z,1779572941904,SUIUSDT,1.0934,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-23T21:49:01Z,1779572941904,BTCUSDT,77140.7,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-23T23:33:55Z,1779579235746,BTCUSDT,75197.2,entry_price,close,246.0,stated entry
+2026-05-23T23:33:55Z,1779579235746,BTCUSDT,77000.0,price_ref,partial_close,246.0,price he referenced as live/current
+2026-05-23T23:33:55Z,1779579235746,BTCUSDT,76609.2,price_ref,close,246.0,price he referenced as live/current
+2026-05-23T23:33:55Z,1779579235746,BTCUSDT,75197.2,entry_price,partial_close,246.0,stated entry
+2026-05-23T23:34:56Z,1779579296497,BTCUSDT,76609.2,price_ref,close,247.0,price he referenced as live/current
+2026-05-23T23:35:41Z,1779579341589,BTCUSDT,75700.0,entry_price,plan,248.0,stated entry
+2026-05-24T04:56:03Z,1779598563021,BTCUSDT,76767.0,price_ref,entry,249.0,price he referenced as live/current
+2026-05-24T04:56:03Z,1779598563021,BTCUSDT,76767.0,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-24T04:56:03Z,1779598563021,BTCUSDT,76754.6,entry_price,entry,249.0,stated entry
+2026-05-24T04:57:06Z,1779598626967,BTCUSDT,76750.0,entry_price,call,250.0,stated entry
+2026-05-24T05:03:37Z,1779599017837,BTCUSDT,78300.0,price_ref,view,253.0,price he referenced as live/current
+2026-05-24T12:58:06Z,1779627486602,BTCUSDT,76754.6,entry_price,update,257.0,stated entry
+2026-05-24T12:58:06Z,1779627486602,BTCUSDT,77060.0,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-24T12:58:06Z,1779627486602,BTCUSDT,77060.0,price_ref,update,257.0,price he referenced as live/current
+2026-05-25T09:08:18Z,1779700098369,BTCUSDT,77416.5,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-25T09:08:18Z,1779700098369,BTCUSDT,77416.5,price_ref,update,258.0,price he referenced as live/current
+2026-05-25T09:08:18Z,1779700098369,BTCUSDT,76754.6,entry_price,update,258.0,stated entry
+2026-05-25T10:51:28Z,1779706288492,WLDUSDT,0.302,entry_price,entry,260.0,stated entry
+2026-05-25T17:49:52Z,1779731392060,WLDUSDT,0.3117,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-25T17:49:52Z,1779731392060,WLDUSDT,0.3117,price_ref,partial_close,262.0,price he referenced as live/current
+2026-05-25T17:49:52Z,1779731392060,WLDUSDT,0.3023,entry_price,partial_close,262.0,stated entry
+2026-05-25T18:35:21Z,1779734121520,WLDUSDT,0.3191,price_ref,close,265.0,price he referenced as live/current
+2026-05-25T18:35:21Z,1779734121520,WLDUSDT,0.3023,entry_price,close,265.0,stated entry
+2026-05-25T19:14:51Z,1779736491601,WLDUSDT,0.3321,price_ref,update,266.0,price he referenced as live/current
+2026-05-26T05:42:49Z,1779774169537,TAOUSDT,287.0,entry_price,call,268.0,stated entry
+2026-05-26T07:46:30Z,1779781590466,RENDERUSDT,2.33,entry_price,call,270.0,stated entry
+2026-05-26T10:49:37Z,1779792577617,RENDERUSDT,2.333,entry_price,partial_close,273.0,stated entry
+2026-05-26T10:49:37Z,1779792577617,RENDERUSDT,2.416,price_ref,partial_close,273.0,price he referenced as live/current
+2026-05-26T10:49:37Z,1779792577617,RENDERUSDT,2.416,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-26T14:32:51Z,1779805971858,BTCUSDT,77906.3,price_ref,close,276.0,price he referenced as live/current
+2026-05-26T14:32:51Z,1779805971858,BTCUSDT,76754.6,entry_price,close,276.0,stated entry
+2026-05-26T14:34:08Z,1779806048348,BTCUSDT,78012.9,price_ref,tp_hit,277.0,price he referenced as live/current
+2026-05-26T14:34:08Z,1779806048348,BTCUSDT,76754.6,entry_price,tp_hit,277.0,stated entry
+2026-05-26T14:45:39Z,1779806739494,BTCUSDT,78012.9,price_ref,close,279.0,price he referenced as live/current
+2026-05-26T14:46:05Z,1779806765195,BTCUSDT,78049.1,price_ref,update,280.0,price he referenced as live/current
+2026-05-27T00:18:30Z,1779841110582,BTCUSDT,75900.0,entry_price,call,281.0,stated entry
+2026-05-27T00:24:59Z,1779841499725,BTCUSDT,75900.0,entry_price,call,283.0,stated entry
+2026-05-27T06:51:56Z,1779864716953,TAOUSDT,276.92,price_ref,dca,286.0,price he referenced as live/current
+2026-05-27T06:51:56Z,1779864716953,TAOUSDT,276.92,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-27T06:51:56Z,1779864716953,TAOUSDT,276.63,entry_price,dca,286.0,stated entry
+2026-05-27T15:41:39Z,1779896499851,TAOUSDT,280.0,price_ref,partial_close,287.0,price he referenced as live/current
+2026-05-27T15:41:39Z,1779896499851,TAOUSDT,276.63,entry_price,partial_close,287.0,stated entry
+2026-05-28T04:44:12Z,1779943452553,BTCUSDT,73000.0,entry_price,call,291.0,stated entry
+2026-05-28T14:16:30Z,1779977790429,BTCUSDT,75000.0,price_ref,view,294.0,price he referenced as live/current
+2026-05-28T17:23:18Z,1779988998070,ADAUSDT,0.234,entry_price,call,297.0,stated entry
+2026-05-28T17:49:03Z,1779990543798,ETHUSDT,2021.86,price_ref,entry,298.0,price he referenced as live/current
+2026-05-28T17:49:03Z,1779990543798,ETHUSDT,2021.86,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-28T17:49:03Z,1779990543798,ETHUSDT,1988.23,entry_price,entry,298.0,stated entry
+2026-05-29T02:49:14Z,1780022954964,ETHUSDT,1988.23,entry_price,sl_move,300.0,stated entry
+2026-05-29T09:40:35Z,1780047635711,ETHUSDT,1988.23,entry_price,partial_close,302.0,stated entry
+2026-05-29T09:40:35Z,1780047635711,ETHUSDT,2015.08,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-29T09:40:35Z,1780047635711,ETHUSDT,2015.08,price_ref,partial_close,302.0,price he referenced as live/current
+2026-05-29T15:35:56Z,1780068956986,BTCUSDT,74036.0,price_ref,update,303.0,price he referenced as live/current
+2026-05-29T15:35:56Z,1780068956986,BTCUSDT,74036.0,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-05-29T15:35:56Z,1780068956986,BTCUSDT,73141.2,entry_price,update,303.0,stated entry
+2026-05-29T16:10:23Z,1780071023109,NEARUSDT,2.56,entry_price,call,304.0,stated entry
+2026-05-29T16:11:27Z,1780071087808,NEARUSDT,2.603,price_ref,update,305.0,price he referenced as live/current
+2026-05-29T16:11:27Z,1780071087808,NEARUSDT,2.565,entry_price,update,305.0,stated entry
+2026-05-29T19:15:55Z,1780082155018,BTCUSDT,74200.0,price_ref,partial_close,306.0,price he referenced as live/current
+2026-05-30T05:32:55Z,1780119175230,ADAUSDT,0.2385,price_ref,tp_hit,307.0,price he referenced as live/current
+2026-05-30T05:32:55Z,1780119175230,ADAUSDT,0.2343,entry_price,tp_hit,307.0,stated entry
+2026-05-30T05:46:54Z,1780120014026,XPLUSDT,0.0916,entry_price,call,308.0,stated entry
+2026-05-31T12:24:11Z,1780230251767,SOLUSDT,82.69,entry_price,call,310.0,stated entry
+2026-06-01T13:57:12Z,1780322232766,RAYUSDT,0.697,entry_price,call,314.0,stated entry
+2026-06-01T14:50:57Z,1780325457941,BNBUSDT,680.0,entry_price,call,317.0,stated entry
+2026-06-01T17:37:01Z,1780335421026,BTCUSDT,71500.0,entry_price,call,321.0,stated entry
+2026-06-01T18:12:12Z,1780337532634,BTCUSDT,71551.3,price_ref,close,322.0,price he referenced as live/current
+2026-06-01T18:12:12Z,1780337532634,BTCUSDT,71514.9,entry_price,close,322.0,stated entry
+2026-06-01T18:18:51Z,1780337931885,RAYUSDT,0.7005,entry_price,close,323.0,stated entry
+2026-06-01T18:18:51Z,1780337931885,RAYUSDT,0.7128,price_ref,close,323.0,price he referenced as live/current
+2026-06-01T18:18:51Z,1780337931885,RAYUSDT,0.7128,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-01T18:21:53Z,1780338113155,RAYUSDT,0.69,price_ref,update,324.0,price he referenced as live/current
+2026-06-01T19:21:47Z,1780341707490,BNBUSDT,693.96,price_ref,update,325.0,price he referenced as live/current
+2026-06-01T19:21:47Z,1780341707490,BNBUSDT,693.96,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-01T19:21:47Z,1780341707490,BNBUSDT,676.49,entry_price,update,325.0,stated entry
+2026-06-01T20:24:24Z,1780345464207,BNBUSDT,701.97,price_ref,partial_close,326.0,price he referenced as live/current
+2026-06-01T20:24:24Z,1780345464207,BNBUSDT,676.49,entry_price,partial_close,326.0,stated entry
+2026-06-01T20:24:24Z,1780345464207,BNBUSDT,701.97,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-02T04:06:26Z,1780373186060,XPLUSDT,0.0958,price_ref,tp_hit,327.0,price he referenced as live/current
+2026-06-02T04:06:26Z,1780373186060,XPLUSDT,0.0918,entry_price,tp_hit,327.0,stated entry
+2026-06-02T05:31:10Z,1780378270448,FETUSDT,0.276,entry_price,call,328.0,stated entry
+2026-06-02T08:51:30Z,1780390290970,BTCUSDT,69446.0,entry_price,plan,329.0,stated entry
+2026-06-02T10:04:58Z,1780394698304,BTCUSDT,69300.0,entry_price,call,331.0,stated entry
+2026-06-02T10:08:07Z,1780394887757,BTCUSDT,69400.0,entry_price,entry,332.0,stated entry
+2026-06-02T14:35:43Z,1780410943762,SEIUSDT,0.067,entry_price,call,333.0,stated entry
+2026-06-02T20:06:42Z,1780430802530,NEARUSDT,2.64,entry_price,call,339.0,stated entry
+2026-06-02T20:06:42Z,1780430802530,NEARUSDT,2.64,price_ref,call,339.0,price he referenced as live/current
+2026-06-03T06:11:21Z,1780467081547,NEARUSDT,2.845,price_ref,partial_close,342.0,price he referenced as live/current
+2026-06-03T06:11:21Z,1780467081547,NEARUSDT,2.643,entry_price,partial_close,342.0,stated entry
+2026-06-03T06:11:21Z,1780467081547,NEARUSDT,2.845,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-03T06:39:45Z,1780468785709,BTCUSDT,67300.0,entry_price,call,343.0,stated entry
+2026-06-03T10:55:38Z,1780484138967,NEARUSDT,2.897,price_ref,close,347.0,price he referenced as live/current
+2026-06-03T10:55:38Z,1780484138967,NEARUSDT,2.643,entry_price,close,347.0,stated entry
+2026-06-03T11:15:43Z,1780485343556,DEXEUSDT,21.53,entry_price,call,350.0,stated entry
+2026-06-03T12:59:26Z,1780491566618,GOLD,4474.0,entry_price,call,351.0,stated entry
+2026-06-03T14:22:07Z,1780496527759,GOLD,4452.0,entry_price,call,353.0,stated entry
+2026-06-03T15:11:49Z,1780499509927,DEXEUSDT,19.54,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-03T15:11:49Z,1780499509927,DEXEUSDT,19.54,price_ref,partial_close,354.0,price he referenced as live/current
+2026-06-03T15:11:49Z,1780499509927,DEXEUSDT,21.506,entry_price,partial_close,354.0,stated entry
+2026-06-03T16:06:17Z,1780502777582,DEXEUSDT,21.506,entry_price,tp_move,355.0,stated entry
+2026-06-03T16:06:17Z,1780502777582,DEXEUSDT,18.618,price_ref,tp_move,355.0,price he referenced as live/current
+2026-06-03T16:06:17Z,1780502777582,DEXEUSDT,18.618,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-03T16:47:24Z,1780505244549,DEXEUSDT,18.53,price_ref,close,356.0,price he referenced as live/current
+2026-06-03T16:47:24Z,1780505244549,DEXEUSDT,21.506,entry_price,close,356.0,stated entry
+2026-06-03T16:55:00Z,1780505700481,GOLD,4452.0,entry_price,sl_move,358.0,stated entry
+2026-06-03T17:41:29Z,1780508489017,DEXEUSDT,17.464,price_ref,tp_hit,360.0,price he referenced as live/current
+2026-06-03T18:05:13Z,1780509913223,PHAUSDT,0.038,entry_price,call,361.0,stated entry
+2026-06-03T19:05:38Z,1780513538818,PHAUSDT,0.04,price_ref,partial_close,362.0,price he referenced as live/current
+2026-06-04T01:33:47Z,1780536827931,BTCUSDT,62800.0,entry_price,entry,369.0,stated entry
+2026-06-04T05:52:37Z,1780552357168,BTCUSDT,64082.2,price_ref,close,370.0,price he referenced as live/current
+2026-06-04T05:52:37Z,1780552357168,BTCUSDT,63094.1,entry_price,close,370.0,stated entry
+2026-06-04T10:22:03Z,1780568523569,BTCUSDT,62800.0,entry_price,entry,371.0,stated entry
+2026-06-04T10:24:16Z,1780568656168,BTCUSDT,62800.0,entry_price,call,374.0,stated entry
+2026-06-04T11:43:21Z,1780573401074,BTCUSDT,62700.0,entry_price,dca,375.0,stated entry
+2026-06-04T12:33:44Z,1780576424900,BTCUSDT,63600.0,price_ref,close,376.0,price he referenced as live/current
+2026-06-04T12:54:49Z,1780577689419,BTCUSDT,63567.7,price_ref,update,377.0,price he referenced as live/current
+2026-06-04T12:54:49Z,1780577689419,BTCUSDT,62711.2,entry_price,update,377.0,stated entry
+2026-06-05T03:54:21Z,1780631661292,DEXEUSDT,20.63,entry_price,call,378.0,stated entry
+2026-06-05T08:56:04Z,1780649764007,BTCUSDT,62300.0,entry_price,call,380.0,stated entry
+2026-06-05T16:24:30Z,1780676670055,BTCUSDT,62300.0,entry_price,dca,382.0,stated entry
+2026-06-06T08:48:44Z,1780735724240,DEXEUSDT,20.63,entry_price,sl_move,383.0,stated entry
+2026-06-06T09:10:39Z,1780737039006,BTCUSDT,61000.0,entry_price,plan,384.0,stated entry
+2026-06-06T09:10:39Z,1780737039006,ETHUSDT,1578.0,entry_price,plan,384.0,stated entry
+2026-06-06T09:10:39Z,1780737039006,SOLUSDT,63.0,entry_price,plan,384.0,stated entry
+2026-06-07T22:22:14Z,1780870934200,BTCUSDT,64100.0,price_ref,close,387.0,price he referenced as live/current
+2026-06-07T22:24:15Z,1780871055820,BTCUSDT,64000.0,price_ref,update,388.0,price he referenced as live/current
+2026-06-08T02:39:15Z,1780886355290,DEXEUSDT,20.382,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-08T02:39:15Z,1780886355290,DEXEUSDT,20.382,price_ref,update,389.0,price he referenced as live/current
+2026-06-08T11:06:00Z,1780916760298,BTCUSDT,63123.0,entry_price,call,390.0,stated entry
+2026-06-09T00:22:25Z,1780964545759,GOLD,4325.0,entry_price,call,393.0,stated entry
+2026-06-09T05:08:31Z,1780981711511,BEATUSDT,4.25,entry_price,call,397.0,stated entry
+2026-06-09T08:14:10Z,1780992850169,BEATUSDT,3.7131,price_ref,update,399.0,price he referenced as live/current
+2026-06-09T08:14:10Z,1780992850169,BEATUSDT,4.2,entry_price,update,399.0,stated entry
+2026-06-09T08:14:10Z,1780992850169,BEATUSDT,3.7131,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-09T10:54:22Z,1781002462957,BTCUSDT,62600.0,price_ref,close,400.0,price he referenced as live/current
+2026-06-09T12:01:13Z,1781006473109,GOLD,4340.0,entry_price,call,404.0,stated entry
+2026-06-09T13:50:29Z,1781013029123,GOLD,4361.07,price_ref,update,411.0,price he referenced as live/current
+2026-06-09T14:31:10Z,1781015470513,BTCUSDT,61400.0,entry_price,call,413.0,stated entry
+2026-06-09T16:55:34Z,1781024134060,BEATUSDT,4.7,entry_price,call,416.0,stated entry
+2026-06-09T16:55:40Z,1781024140008,BEATUSDT,4.7,entry_price,update,417.0,stated entry
+2026-06-09T23:42:36Z,1781048556336,BTCUSDT,61600.0,price_ref,close,423.0,price he referenced as live/current
+2026-06-10T08:21:57Z,1781079717993,ALLOUSDT,0.425,entry_price,call,425.0,stated entry
+2026-06-10T08:49:46Z,1781081386221,BTCUSDT,61100.0,entry_price,call,427.0,stated entry
+2026-06-10T13:31:11Z,1781098271953,INJUSDT,5.14,entry_price,call,430.0,stated entry
+2026-06-10T13:31:17Z,1781098277598,INJUSDT,5.14,price_ref,update,431.0,price he referenced as live/current
+2026-06-10T13:33:14Z,1781098394852,WLDUSDT,0.515,entry_price,call,432.0,stated entry
+2026-06-10T15:42:30Z,1781106150799,WLDUSDT,0.49,entry_price,dca,436.0,stated entry
+2026-06-10T15:53:52Z,1781106832932,WLDUSDT,0.484,entry_price,dca,437.0,stated entry
+2026-06-10T15:56:57Z,1781107017907,BTCUSDT,62700.0,price_ref,close,438.0,price he referenced as live/current
+2026-06-10T16:03:48Z,1781107428947,BTCUSDT,61100.0,entry_price,update,439.0,stated entry
+2026-06-10T16:03:48Z,1781107428947,BTCUSDT,63200.0,entry_price,plan,439.0,stated entry
+2026-06-10T16:03:48Z,1781107428947,BTCUSDT,62668.4,price_ref,update,439.0,price he referenced as live/current
+2026-06-10T17:04:13Z,1781111053598,BTCUSDT,62200.0,entry_price,call,441.0,stated entry
+2026-06-11T00:10:39Z,1781136639202,SOLUSDT,63.2,entry_price,call,444.0,stated entry
+2026-06-11T04:01:21Z,1781150481503,INJUSDT,5.3,price_ref,partial_close,448.0,price he referenced as live/current
+2026-06-11T04:02:15Z,1781150535183,BTCUSDT,62900.0,price_ref,update,449.0,price he referenced as live/current
+2026-06-11T08:37:06Z,1781167026361,INJUSDT,5.28,price_ref,close,452.0,price he referenced as live/current
+2026-06-11T08:40:04Z,1781167204682,BTCUSDT,62946.0,price_ref,tp_hit,453.0,price he referenced as live/current
+2026-06-11T12:59:59Z,1781182799692,BTCUSDT,62200.0,entry_price,update,457.0,stated entry
+2026-06-11T13:00:57Z,1781182857344,BTCUSDT,62800.0,price_ref,plan,458.0,price he referenced as live/current
+2026-06-11T13:00:57Z,1781182857344,BTCUSDT,62800.0,entry_price,plan,458.0,stated entry
+2026-06-11T17:54:33Z,1781200473834,SOLUSDT,66.97,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-11T17:54:33Z,1781200473834,SOLUSDT,63.3,entry_price,sl_move,460.0,stated entry
+2026-06-11T17:54:33Z,1781200473834,SOLUSDT,63.3,entry_price,update,460.0,stated entry
+2026-06-11T17:54:33Z,1781200473834,SOLUSDT,66.97,price_ref,update,460.0,price he referenced as live/current
+2026-06-11T19:38:19Z,1781206699326,BTCUSDT,63800.0,price_ref,plan,463.0,price he referenced as live/current
+2026-06-11T19:38:19Z,1781206699326,BTCUSDT,63800.0,price_ref,close,463.0,price he referenced as live/current
+2026-06-11T19:42:56Z,1781206976283,SOLUSDT,67.24,price_ref,close,465.0,price he referenced as live/current
+2026-06-11T19:42:56Z,1781206976283,SOLUSDT,63.3,entry_price,close,465.0,stated entry
+2026-06-12T08:54:07Z,1781254447442,BTCUSDT,63400.0,entry_price,call,467.0,stated entry
+2026-06-12T15:33:06Z,1781278386567,BTCUSDT,63000.0,entry_price,plan,470.0,stated entry
+2026-06-12T15:33:06Z,1781278386567,BTCUSDT,66000.0,entry_price,plan,470.0,stated entry
+2026-06-13T00:24:26Z,1781310266646,BTCUSDT,63500.0,entry_price,call,474.0,stated entry
+2026-06-13T00:25:23Z,1781310323922,BTCUSDT,63500.0,price_ref,update,475.0,price he referenced as live/current
+2026-06-13T13:14:38Z,1781356478193,BTCUSDT,64200.0,price_ref,partial_close,479.0,price he referenced as live/current
+2026-06-13T18:25:11Z,1781375111459,BTCUSDT,64200.0,price_ref,close,482.0,price he referenced as live/current
+2026-06-13T18:25:11Z,1781375111459,BTCUSDT,63300.0,entry_price,plan,482.0,stated entry
+2026-06-14T07:20:26Z,1781421626279,RENDERUSDT,1.76,entry_price,call,484.0,stated entry
+2026-06-14T08:24:29Z,1781425469407,PYTHUSDT,0.039,entry_price,call,485.0,stated entry
+2026-06-14T08:24:34Z,1781425474553,PYTHUSDT,0.039,price_ref,update,486.0,price he referenced as live/current
+2026-06-14T21:29:25Z,1781472565846,BTCUSDT,63094.1,entry_price,update,487.0,stated entry
+2026-06-15T02:45:54Z,1781491554825,PYTHUSDT,0.392,price_ref,close,492.0,price he referenced as live/current
+2026-06-15T02:51:14Z,1781491874879,BTCUSDT,66000.0,entry_price,call,493.0,stated entry
+2026-06-15T11:36:32Z,1781523392555,PYTHUSDT,0.04062,price_ref,update,494.0,price he referenced as live/current
+2026-06-15T11:36:32Z,1781523392555,PYTHUSDT,0.0391,entry_price,update,494.0,stated entry
+2026-06-15T11:37:24Z,1781523444201,BTCUSDT,66000.0,entry_price,entry,495.0,stated entry
+2026-06-15T17:43:58Z,1781545438999,ZECUSDT,530.0,entry_price,call,500.0,stated entry
+2026-06-15T17:43:58Z,1781545438999,ZECUSDT,530.0,price_ref,call,500.0,price he referenced as live/current
+2026-06-15T19:08:50Z,1781550530121,XMRUSDT,357.0,entry_price,call,502.0,stated entry
+2026-06-15T19:08:50Z,1781550530121,XMRUSDT,357.0,price_ref,call,502.0,price he referenced as live/current
+2026-06-15T21:12:39Z,1781557959901,RENDERUSDT,1.761,entry_price,close,503.0,stated entry
+2026-06-15T21:12:39Z,1781557959901,RENDERUSDT,1.779,price_ref,close,503.0,price he referenced as live/current
+2026-06-16T11:14:23Z,1781608463190,WLDUSDT,0.653,entry_price,call,507.0,stated entry
+2026-06-16T11:14:23Z,1781608463190,WLDUSDT,0.653,price_ref,call,507.0,price he referenced as live/current
+2026-06-16T14:28:56Z,1781620136237,BTCUSDT,66200.0,entry_price,dca,511.0,stated entry
+2026-06-16T14:28:56Z,1781620136237,BTCUSDT,66200.0,entry_price,tp_move,511.0,stated entry
+2026-06-16T14:36:35Z,1781620595960,BTCUSDT,66200.0,entry_price,tp_hit,512.0,stated entry
+2026-06-16T14:54:03Z,1781621643486,BTCUSDT,65634.5,price_ref,update,513.0,price he referenced as live/current
+2026-06-16T14:54:03Z,1781621643486,BTCUSDT,67119.9,entry_price,update,513.0,stated entry
+2026-06-16T14:57:27Z,1781621847069,BTCUSDT,64000.0,entry_price,plan,514.0,stated entry
+2026-06-16T14:57:27Z,1781621847069,BTCUSDT,67000.0,entry_price,plan,514.0,stated entry
+2026-06-16T15:10:38Z,1781622638354,HYPEUSDT,60.0,entry_price,call,516.0,stated entry
+2026-06-16T15:37:22Z,1781624242192,BTCUSDT,66700.0,entry_price,plan,517.0,stated entry
+2026-06-16T16:48:15Z,1781628495555,PORTALUSDT,0.01635,price_ref,call,518.0,price he referenced as live/current
+2026-06-16T16:48:15Z,1781628495555,PORTALUSDT,0.01635,entry_price,call,518.0,stated entry
+2026-06-16T19:54:59Z,1781639699585,PORTALUSDT,0.01515,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-16T19:54:59Z,1781639699585,PORTALUSDT,0.01631,entry_price,sl_move,519.0,stated entry
+2026-06-16T19:54:59Z,1781639699585,PORTALUSDT,0.01515,price_ref,partial_close,519.0,price he referenced as live/current
+2026-06-16T19:54:59Z,1781639699585,PORTALUSDT,0.01515,price_ref,sl_move,519.0,price he referenced as live/current
+2026-06-16T19:54:59Z,1781639699585,PORTALUSDT,0.01631,entry_price,partial_close,519.0,stated entry
+2026-06-16T19:57:22Z,1781639842251,WLDUSDT,0.653,entry_price,dca,520.0,stated entry
+2026-06-16T19:57:22Z,1781639842251,WLDUSDT,0.653,entry_price,dca,520.0,stated entry
+2026-06-16T21:30:43Z,1781645443021,HBARUSDT,0.08123,entry_price,call,524.0,stated entry
+2026-06-16T21:30:43Z,1781645443021,HBARUSDT,0.08123,price_ref,call,524.0,price he referenced as live/current
+2026-06-17T01:40:49Z,1781660449596,WLDUSDT,0.7079,price_ref,update,525.0,price he referenced as live/current
+2026-06-17T01:40:49Z,1781660449596,WLDUSDT,0.6545,entry_price,update,525.0,stated entry
+2026-06-17T01:40:49Z,1781660449596,WLDUSDT,0.7079,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-17T12:18:38Z,1781698718234,BTCUSDT,64700.0,entry_price,call,526.0,stated entry
+2026-06-17T12:18:38Z,1781698718234,BTCUSDT,64700.0,price_ref,call,526.0,price he referenced as live/current
+2026-06-17T12:20:38Z,1781698838578,BTCUSDT,63900.0,entry_price,plan,527.0,stated entry
+2026-06-17T12:22:43Z,1781698963498,HBARUSDT,0.08123,entry_price,stopped_out,528.0,stated entry
+2026-06-17T13:15:46Z,1781702146648,LDOUSDT,0.288,price_ref,call,529.0,price he referenced as live/current
+2026-06-17T13:15:46Z,1781702146648,LDOUSDT,0.288,entry_price,call,529.0,stated entry
+2026-06-17T13:16:29Z,1781702189461,TAOUSDT,256.05,price_ref,entry,530.0,price he referenced as live/current
+2026-06-17T13:16:29Z,1781702189461,TAOUSDT,256.05,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-17T13:16:29Z,1781702189461,TAOUSDT,249.66,entry_price,entry,530.0,stated entry
+2026-06-17T13:53:16Z,1781704396884,BTCUSDT,65257.6,price_ref,update,531.0,price he referenced as live/current
+2026-06-17T13:53:16Z,1781704396884,BTCUSDT,64736.5,entry_price,update,531.0,stated entry
+2026-06-17T13:53:16Z,1781704396884,BTCUSDT,65257.6,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-17T16:28:07Z,1781713687267,BTCUSDT,66021.6,price_ref,update,532.0,price he referenced as live/current
+2026-06-17T16:29:48Z,1781713788342,BTCUSDT,64736.5,entry_price,partial_close,533.0,stated entry
+2026-06-17T16:29:48Z,1781713788342,BTCUSDT,66370.9,price_ref,partial_close,533.0,price he referenced as live/current
+2026-06-17T16:29:48Z,1781713788342,BTCUSDT,66370.9,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-17T16:56:33Z,1781715393528,BTCUSDT,64700.0,entry_price,sl_move,535.0,stated entry
+2026-06-17T18:10:27Z,1781719827142,BTCUSDT,64700.0,entry_price,breakeven,536.0,stated entry
+2026-06-17T19:54:34Z,1781726074716,BTCUSDT,63800.0,entry_price,plan,537.0,stated entry
+2026-06-17T20:00:41Z,1781726441101,BTCUSDT,64600.0,entry_price,dca,538.0,stated entry
+2026-06-17T20:04:20Z,1781726660926,BTCUSDT,64300.0,price_ref,call,539.0,price he referenced as live/current
+2026-06-17T20:04:20Z,1781726660926,BTCUSDT,64300.0,entry_price,call,539.0,stated entry
+2026-06-17T20:08:23Z,1781726903236,BTCUSDT,64500.0,entry_price,update,540.0,stated entry
+2026-06-17T20:08:23Z,1781726903236,BTCUSDT,64260.0,entry_price,tp_set,540.0,stated entry
+2026-06-18T08:40:04Z,1781772004013,ETHUSDT,1750.0,price_ref,call,541.0,price he referenced as live/current
+2026-06-18T08:40:04Z,1781772004013,ETHUSDT,1750.0,entry_price,call,541.0,stated entry
+2026-06-18T08:41:15Z,1781772075844,XAU,4299.0,entry_price,plan,542.0,stated entry
+2026-06-18T09:12:48Z,1781773968464,LABUSDT,20.0,entry_price,plan,543.0,stated entry
+2026-06-18T15:18:26Z,1781795906623,BTCUSDT,63900.0,entry_price,dca,545.0,stated entry
+2026-06-18T15:58:18Z,1781798298732,ETHUSDT,1750.0,entry_price,stopped_out,548.0,stated entry
+2026-06-18T18:24:32Z,1781807072282,LABUSDT,17.015,price_ref,update,551.0,price he referenced as live/current
+2026-06-18T18:24:32Z,1781807072282,LABUSDT,17.015,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-18T18:24:32Z,1781807072282,LABUSDT,15.679,entry_price,update,551.0,stated entry
+2026-06-18T18:26:47Z,1781807207454,BTCUSDT,63700.0,entry_price,update,552.0,stated entry
+2026-06-18T18:26:47Z,1781807207454,BTCUSDT,62800.0,entry_price,call,552.0,stated entry
+2026-06-18T18:26:47Z,1781807207454,BTCUSDT,62800.0,price_ref,call,552.0,price he referenced as live/current
+2026-06-18T18:36:31Z,1781807791958,LABUSDT,18.0,price_ref,close,553.0,price he referenced as live/current
+2026-06-19T00:14:39Z,1781828079610,LABUSDT,18.008,price_ref,close,554.0,price he referenced as live/current
+2026-06-19T00:14:39Z,1781828079610,LABUSDT,15.679,entry_price,close,554.0,stated entry
+2026-06-19T00:14:39Z,1781828079610,LABUSDT,18.008,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-19T01:06:43Z,1781831203940,BTCUSDT,62800.0,entry_price,entry,555.0,stated entry
+2026-06-19T01:06:43Z,1781831203940,BTCUSDT,63700.0,entry_price,update,555.0,stated entry
+2026-06-19T19:56:43Z,1781899003522,BTCUSDT,62800.0,entry_price,partial_close,557.0,stated entry
+2026-06-19T19:56:43Z,1781899003522,BTCUSDT,62800.0,entry_price,dca,557.0,stated entry
+2026-06-20T13:11:38Z,1781961098100,REUSDT,0.75,entry_price,partial_close,559.0,stated entry
+2026-06-20T14:53:47Z,1781967227292,BTCUSDT,63923.2,price_ref,update,560.0,price he referenced as live/current
+2026-06-20T14:53:47Z,1781967227292,BTCUSDT,63923.2,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-20T14:53:47Z,1781967227292,BTCUSDT,63667.3,entry_price,update,560.0,stated entry
+2026-06-20T14:54:21Z,1781967261915,BTCUSDT,62800.0,entry_price,sl_move,561.0,stated entry
+2026-06-20T15:38:04Z,1781969884590,BTCUSDT,63923.2,price_ref,close,562.0,price he referenced as live/current
+2026-06-20T15:38:04Z,1781969884590,BTCUSDT,63667.3,entry_price,close,562.0,stated entry
+2026-06-20T15:38:04Z,1781969884590,BTCUSDT,63923.2,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-20T15:38:55Z,1781969935790,BTCUSDT,62800.0,entry_price,partial_close,563.0,stated entry
+2026-06-20T15:38:55Z,1781969935790,BTCUSDT,62800.0,entry_price,tp_set,563.0,stated entry
+2026-06-20T19:22:58Z,1781983378544,BTCUSDT,62800.0,entry_price,partial_close,564.0,stated entry
+2026-06-20T19:22:58Z,1781983378544,BTCUSDT,63000.0,entry_price,dca,564.0,stated entry
+2026-06-20T19:22:58Z,1781983378544,BTCUSDT,64150.0,price_ref,partial_close,564.0,price he referenced as live/current
+2026-06-22T02:30:05Z,1782095405239,BTCUSDT,64594.2,price_ref,update,566.0,price he referenced as live/current
+2026-06-22T02:30:05Z,1782095405239,BTCUSDT,63044.0,entry_price,update,566.0,stated entry
+2026-06-22T02:30:05Z,1782095405239,BTCUSDT,64594.2,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-22T12:57:09Z,1782133029545,BTCUSDT,63044.0,entry_price,tp_hit,567.0,stated entry
+2026-06-22T12:57:09Z,1782133029545,BTCUSDT,64987.9,price_ref,tp_hit,567.0,price he referenced as live/current
+2026-06-22T16:21:41Z,1782145301257,BTCUSDT,64700.0,price_ref,plan,570.0,price he referenced as live/current
+2026-06-22T16:21:41Z,1782145301257,BTCUSDT,63900.0,entry_price,plan,570.0,stated entry
+2026-06-22T18:04:54Z,1782151494742,BTCUSDT,63600.0,entry_price,plan,571.0,stated entry
+2026-06-22T22:30:10Z,1782167410633,BTCUSDT,63940.0,entry_price,call,572.0,stated entry
+2026-06-23T14:39:50Z,1782225590305,BTCUSDT,62700.0,price_ref,dca,573.0,price he referenced as live/current
+2026-06-24T13:42:34Z,1782308554200,SPCXUSDT,155.0,entry_price,plan,575.0,stated entry
+2026-06-24T14:16:09Z,1782310569841,JUPUSDT,0.214,entry_price,call,576.0,stated entry
+2026-06-24T14:36:22Z,1782311782674,BTCUSDT,63300.0,entry_price,update,578.0,stated entry
+2026-06-24T17:34:12Z,1782322452799,BTCUSDT,59500.0,entry_price,entry,582.0,stated entry
+2026-06-24T17:41:28Z,1782322888538,BTCUSDT,59400.0,entry_price,call,585.0,stated entry
+2026-06-24T20:10:48Z,1782331848914,BTCUSDT,60649.7,price_ref,update,587.0,price he referenced as live/current
+2026-06-24T20:10:48Z,1782331848914,BTCUSDT,59214.3,entry_price,update,587.0,stated entry
+2026-06-24T20:10:48Z,1782331848914,BTCUSDT,60649.7,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-24T20:11:06Z,1782331866790,BTCUSDT,59595.1,entry_price,update,588.0,stated entry
+2026-06-24T20:11:06Z,1782331866790,BTCUSDT,60793.4,price_ref,update,588.0,price he referenced as live/current
+2026-06-24T20:11:06Z,1782331866790,BTCUSDT,60793.4,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-24T20:54:35Z,1782334475770,BTCUSDT,61117.2,price_ref,update,589.0,price he referenced as live/current
+2026-06-24T20:54:35Z,1782334475770,BTCUSDT,59595.1,entry_price,update,589.0,stated entry
+2026-06-24T20:54:35Z,1782334475770,BTCUSDT,61117.2,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-24T20:54:35Z,1782334475770,BTCUSDT,61117.2,price_ref,partial_close,589.0,price he referenced as live/current
+2026-06-24T20:55:14Z,1782334514037,BTCUSDT,61037.6,price_ref,update,590.0,price he referenced as live/current
+2026-06-24T20:55:14Z,1782334514037,BTCUSDT,61037.6,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-24T20:55:14Z,1782334514037,BTCUSDT,59214.3,entry_price,update,590.0,stated entry
+2026-06-24T23:59:21Z,1782345561166,BTCUSDT,61117.2,price_ref,tp_set,591.0,price he referenced as live/current
+2026-06-24T23:59:21Z,1782345561166,BTCUSDT,61117.2,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-24T23:59:21Z,1782345561166,BTCUSDT,61117.2,price_ref,close,591.0,price he referenced as live/current
+2026-06-24T23:59:21Z,1782345561166,BTCUSDT,59595.1,entry_price,close,591.0,stated entry
+2026-06-25T00:04:47Z,1782345887797,BTCUSDT,59214.3,entry_price,update,592.0,stated entry
+2026-06-25T00:04:47Z,1782345887797,BTCUSDT,61042.1,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-25T00:04:47Z,1782345887797,BTCUSDT,61042.1,price_ref,update,592.0,price he referenced as live/current
+2026-06-25T12:12:55Z,1782389575493,TOSHIUSDT,0.00011,entry_price,call,593.0,stated entry
+2026-06-25T12:35:07Z,1782390907989,BTCUSDT,61200.0,entry_price,entry,594.0,stated entry
+2026-06-25T12:35:07Z,1782390907989,BTCUSDT,60600.0,price_ref,plan,594.0,price he referenced as live/current
+2026-06-25T12:39:09Z,1782391149054,BTCUSDT,61300.0,entry_price,call,595.0,stated entry
+2026-06-25T13:02:26Z,1782392546368,BTCUSDT,61270.6,price_ref,breakeven,597.0,price he referenced as live/current
+2026-06-25T13:02:26Z,1782392546368,BTCUSDT,61253.1,entry_price,breakeven,597.0,stated entry
+2026-06-25T13:02:26Z,1782392546368,BTCUSDT,62000.0,entry_price,plan,597.0,stated entry
+2026-06-25T13:05:43Z,1782392743210,BTCUSDT,60000.0,entry_price,plan,598.0,stated entry
+2026-06-25T13:58:03Z,1782395883536,BTCUSDT,58200.0,entry_price,call,600.0,stated entry
+2026-06-25T13:58:43Z,1782395923630,BTCUSDT,58200.0,price_ref,entry,601.0,price he referenced as live/current
+2026-06-25T13:58:43Z,1782395923630,BTCUSDT,58500.0,entry_price,entry,601.0,stated entry
+2026-06-25T14:10:34Z,1782396634020,BTCUSDT,58616.4,entry_price,tp_set,602.0,stated entry
+2026-06-25T14:10:34Z,1782396634020,BTCUSDT,59502.9,price_ref,partial_close,602.0,price he referenced as live/current
+2026-06-25T14:10:34Z,1782396634020,BTCUSDT,58616.4,entry_price,partial_close,602.0,stated entry
+2026-06-25T14:10:34Z,1782396634020,BTCUSDT,59502.9,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-25T14:18:22Z,1782397102409,BTCUSDT,59100.0,price_ref,close,603.0,price he referenced as live/current
+2026-06-25T14:37:58Z,1782398278927,BTCUSDT,60008.6,price_ref,tp_hit,605.0,price he referenced as live/current
+2026-06-25T14:37:58Z,1782398278927,BTCUSDT,58305.1,entry_price,tp_hit,605.0,stated entry
+2026-06-25T15:39:49Z,1782401989973,BTCUSDT,58000.0,entry_price,plan,607.0,stated entry
+2026-06-25T15:39:49Z,1782401989973,BTCUSDT,62000.0,price_ref,view,607.0,price he referenced as live/current
+2026-06-26T05:28:49Z,1782451729375,BTCUSDT,59800.0,entry_price,call,608.0,stated entry
+2026-06-26T13:53:58Z,1782482038701,BTCUSDT,59800.0,entry_price,breakeven,609.0,stated entry
+2026-06-26T13:56:14Z,1782482174944,SOLUSDT,70.3,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-26T13:56:14Z,1782482174944,SOLUSDT,67.55,entry_price,update,611.0,stated entry
+2026-06-26T13:56:14Z,1782482174944,SOLUSDT,70.3,price_ref,update,611.0,price he referenced as live/current
+2026-06-26T15:39:27Z,1782488367578,BTCUSDT,62000.0,price_ref,plan,613.0,price he referenced as live/current
+2026-06-26T15:42:00Z,1782488520530,SOLUSDT,75.0,price_ref,view,614.0,price he referenced as live/current
+2026-06-27T03:16:37Z,1782530197592,BEATUSDT,2.6,entry_price,call,615.0,stated entry
+2026-06-27T03:20:08Z,1782530408214,BTCUSDT,60000.0,entry_price,call,616.0,stated entry
+2026-06-28T13:24:41Z,1782653081593,TOSHIUSDT,0.0001297,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-28T13:24:41Z,1782653081593,TOSHIUSDT,0.0001297,price_ref,update,617.0,price he referenced as live/current
+2026-06-28T13:24:41Z,1782653081593,TOSHIUSDT,0.0001101,entry_price,update,617.0,stated entry
+2026-06-28T13:24:44Z,1782653084407,TOSHIUSDT,0.0001314,price_ref,update,618.0,price he referenced as live/current
+2026-06-28T13:24:44Z,1782653084407,TOSHIUSDT,0.0001314,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-28T13:24:44Z,1782653084407,TOSHIUSDT,0.0001101,entry_price,update,618.0,stated entry
+2026-06-28T23:53:53Z,1782690833472,BTCUSDT,59700.0,entry_price,call,620.0,stated entry
+2026-06-29T02:42:18Z,1782700938893,BTCUSDT,59000.0,price_ref,update,622.0,price he referenced as live/current
+2026-06-29T03:12:13Z,1782702733177,BTCUSDT,60063.9,price_ref,update,623.0,price he referenced as live/current
+2026-06-29T03:12:13Z,1782702733177,BTCUSDT,59200.0,entry_price,update,623.0,stated entry
+2026-06-29T03:12:13Z,1782702733177,BTCUSDT,60063.9,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-29T17:22:36Z,1782753756728,SOLUSDT,76.02,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-06-29T17:22:36Z,1782753756728,SOLUSDT,76.02,price_ref,update,624.0,price he referenced as live/current
+2026-06-29T17:22:36Z,1782753756728,SOLUSDT,68.46,entry_price,update,624.0,stated entry
+2026-06-30T13:02:13Z,1782824533672,BTCUSDT,60000.0,entry_price,tp_move,627.0,stated entry
+2026-06-30T13:02:13Z,1782824533672,BTCUSDT,58300.0,entry_price,call,627.0,stated entry
+2026-06-30T13:44:44Z,1782827084095,BTCUSDT,58300.0,entry_price,tp_set,629.0,stated entry
+2026-06-30T13:46:29Z,1782827189530,HYPEUSDT,64.8,entry_price,call,630.0,stated entry
+2026-06-30T14:22:10Z,1782829330323,BTCUSDT,59104.4,price_ref,tp_hit,631.0,price he referenced as live/current
+2026-06-30T14:23:50Z,1782829430118,BTCUSDT,59300.0,price_ref,plan,633.0,price he referenced as live/current
+2026-06-30T14:58:28Z,1782831508112,BTCUSDT,58400.0,entry_price,call,634.0,stated entry
+2026-06-30T14:58:28Z,1782831508112,BTCUSDT,59200.0,price_ref,update,634.0,price he referenced as live/current
+2026-07-01T01:48:43Z,1782870523684,BTCUSDT,58372.7,entry_price,close,635.0,stated entry
+2026-07-01T01:48:43Z,1782870523684,BTCUSDT,58957.8,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-01T01:48:43Z,1782870523684,BTCUSDT,58957.8,price_ref,close,635.0,price he referenced as live/current
+2026-07-01T01:56:00Z,1782870960884,BTCUSDT,58950.3,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-01T01:56:00Z,1782870960884,BTCUSDT,58372.7,entry_price,update,636.0,stated entry
+2026-07-01T01:56:00Z,1782870960884,BTCUSDT,58957.8,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-01T01:56:00Z,1782870960884,BTCUSDT,58486.2,entry_price,update,636.0,stated entry
+2026-07-01T01:56:00Z,1782870960884,BTCUSDT,58950.3,price_ref,update,636.0,price he referenced as live/current
+2026-07-01T01:56:00Z,1782870960884,BTCUSDT,58957.8,price_ref,update,636.0,price he referenced as live/current
+2026-07-01T01:56:25Z,1782870985048,BTCUSDT,59318.1,price_ref,close,637.0,price he referenced as live/current
+2026-07-01T01:56:25Z,1782870985048,BTCUSDT,59972.9,entry_price,close,637.0,stated entry
+2026-07-01T01:58:53Z,1782871133438,BTCUSDT,59200.0,price_ref,close,638.0,price he referenced as live/current
+2026-07-01T01:58:53Z,1782871133438,BTCUSDT,59000.0,price_ref,close,638.0,price he referenced as live/current
+2026-07-01T14:03:13Z,1782914593205,JUPUSDT,0.239,entry_price,call,640.0,stated entry
+2026-07-01T14:17:49Z,1782915469356,BTCUSDT,59939.6,price_ref,close,641.0,price he referenced as live/current
+2026-07-01T14:17:49Z,1782915469356,BTCUSDT,58637.9,entry_price,close,641.0,stated entry
+2026-07-01T14:24:05Z,1782915845802,BEATUSDT,2.6,entry_price,close,642.0,stated entry
+2026-07-01T14:24:05Z,1782915845802,BEATUSDT,4.0,price_ref,view,642.0,price he referenced as live/current
+2026-07-01T15:09:03Z,1782918543578,BTCUSDT,59800.0,entry_price,call,644.0,stated entry
+2026-07-01T16:01:27Z,1782921687314,BTCUSDT,60050.0,entry_price,dca,647.0,stated entry
+2026-07-01T20:53:58Z,1782939238080,SOLUSDT,77.46,price_ref,update,648.0,price he referenced as live/current
+2026-07-01T20:53:58Z,1782939238080,SOLUSDT,77.46,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-01T20:53:58Z,1782939238080,SOLUSDT,68.53,entry_price,update,648.0,stated entry
+2026-07-01T22:23:16Z,1782944596976,BTCUSDT,62000.0,price_ref,view,650.0,price he referenced as live/current
+2026-07-02T11:13:48Z,1782990828796,SOLUSDT,68.53,entry_price,close,651.0,stated entry
+2026-07-02T11:13:48Z,1782990828796,SOLUSDT,82.0,price_ref,close,651.0,price he referenced as live/current
+2026-07-02T12:19:14Z,1782994754304,ETHUSDT,1660.0,entry_price,call,652.0,stated entry
+2026-07-02T12:19:14Z,1782994754304,ETHUSDT,1656.0,price_ref,call,652.0,price he referenced as live/current
+2026-07-02T12:22:21Z,1782994941944,ETHUSDT,1662.0,entry_price,call,653.0,stated entry
+2026-07-02T13:29:21Z,1782998961084,BTCUSDT,62000.0,price_ref,view,655.0,price he referenced as live/current
+2026-07-02T13:29:43Z,1782998983374,BTCUSDT,59000.0,price_ref,view,656.0,price he referenced as live/current
+2026-07-02T15:07:26Z,1783004846029,ETHUSDT,1697.0,price_ref,call,657.0,price he referenced as live/current
+2026-07-02T15:07:26Z,1783004846029,ETHUSDT,1702.0,entry_price,call,657.0,stated entry
+2026-07-02T23:54:22Z,1783036462539,ETHUSDT,1699.37,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-02T23:54:22Z,1783036462539,ETHUSDT,1702.0,entry_price,breakeven,658.0,stated entry
+2026-07-02T23:54:22Z,1783036462539,ETHUSDT,1699.37,price_ref,breakeven,658.0,price he referenced as live/current
+2026-07-02T23:57:25Z,1783036645023,XRPUSDT,1.086,entry_price,call,659.0,stated entry
+2026-07-03T06:25:45Z,1783059945351,XRPUSDT,1.1052,price_ref,tp_set,660.0,price he referenced as live/current
+2026-07-03T06:25:45Z,1783059945351,XRPUSDT,1.087,entry_price,tp_set,660.0,stated entry
+2026-07-03T06:25:45Z,1783059945351,XRPUSDT,1.1052,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-03T18:47:02Z,1783104422764,XRPUSDT,1.087,entry_price,tp_hit,662.0,stated entry
+2026-07-03T18:47:02Z,1783104422764,XRPUSDT,1.127,price_ref,tp_hit,662.0,price he referenced as live/current
+2026-07-03T20:53:23Z,1783112003317,BTCUSDT,64000.0,price_ref,view,663.0,price he referenced as live/current
+2026-07-04T01:13:31Z,1783127611284,ETHUSDT,1750.0,entry_price,call,664.0,stated entry
+2026-07-04T11:17:28Z,1783163848148,TAOUSDT,212.4,entry_price,call,665.0,stated entry
+2026-07-04T15:13:03Z,1783177983057,XRPUSDT,1.0868,entry_price,tp_hit,667.0,stated entry
+2026-07-04T15:13:03Z,1783177983057,XRPUSDT,1.162,price_ref,tp_hit,667.0,price he referenced as live/current
+2026-07-04T15:15:33Z,1783178133524,TAOUSDT,215.07,price_ref,tp_set,668.0,price he referenced as live/current
+2026-07-04T15:15:33Z,1783178133524,TAOUSDT,212.45,entry_price,tp_set,668.0,stated entry
+2026-07-04T15:15:33Z,1783178133524,TAOUSDT,215.07,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-04T17:36:59Z,1783186619806,TAOUSDT,218.36,price_ref,close,670.0,price he referenced as live/current
+2026-07-04T17:36:59Z,1783186619806,TAOUSDT,212.45,entry_price,close,670.0,stated entry
+2026-07-04T20:07:23Z,1783195643888,ZECUSDT,469.0,entry_price,call,671.0,stated entry
+2026-07-04T23:20:44Z,1783207244333,ZECUSDT,462.71,price_ref,tp_set,672.0,price he referenced as live/current
+2026-07-04T23:20:44Z,1783207244333,ZECUSDT,462.71,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-04T23:20:44Z,1783207244333,ZECUSDT,468.7,entry_price,sl_move,672.0,stated entry
+2026-07-04T23:20:44Z,1783207244333,ZECUSDT,468.7,entry_price,tp_set,672.0,stated entry
+2026-07-05T02:23:45Z,1783218225985,ZECUSDT,468.7,entry_price,tp_hit,673.0,stated entry
+2026-07-05T02:23:45Z,1783218225985,ZECUSDT,453.04,price_ref,tp_hit,673.0,price he referenced as live/current
+2026-07-05T03:38:05Z,1783222685703,JUPUSDT,0.2358,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-05T03:38:05Z,1783222685703,JUPUSDT,0.2358,price_ref,close,674.0,price he referenced as live/current
+2026-07-05T03:38:05Z,1783222685703,JUPUSDT,0.238,entry_price,close,674.0,stated entry
+2026-07-05T09:51:48Z,1783245108203,ETHUSDT,1753.36,price_ref,update,675.0,price he referenced as live/current
+2026-07-05T09:51:48Z,1783245108203,ETHUSDT,1753.36,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-05T09:51:48Z,1783245108203,ETHUSDT,1759.84,entry_price,update,675.0,stated entry
+2026-07-05T10:17:01Z,1783246621743,HYPEUSDT,68.8,entry_price,call,676.0,stated entry
+2026-07-05T21:34:37Z,1783287277363,HYPEUSDT,70.796,price_ref,tp_hit,680.0,price he referenced as live/current
+2026-07-05T21:34:37Z,1783287277363,HYPEUSDT,68.787,entry_price,tp_hit,680.0,stated entry
+2026-07-05T21:36:12Z,1783287372996,HYPEUSDT,60.0,price_ref,view,681.0,price he referenced as live/current
+2026-07-06T09:18:25Z,1783329505514,OPUSDT,0.1068,entry_price,call,682.0,stated entry
+2026-07-06T09:34:58Z,1783330498652,MEUSDT,0.0644,entry_price,call,683.0,stated entry
+2026-07-06T13:10:45Z,1783343445886,OPUSDT,0.1067,entry_price,tp_hit,684.0,stated entry
+2026-07-06T13:10:45Z,1783343445886,OPUSDT,0.1034,price_ref,tp_hit,684.0,price he referenced as live/current
+2026-07-06T13:12:02Z,1783343522273,ETHUSDT,1736.9,price_ref,update,685.0,price he referenced as live/current
+2026-07-06T13:12:02Z,1783343522273,ETHUSDT,1759.84,entry_price,update,685.0,stated entry
+2026-07-06T13:12:02Z,1783343522273,ETHUSDT,1736.9,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-06T14:25:28Z,1783347928579,XLMUSDT,0.1993,entry_price,call,688.0,stated entry
+2026-07-06T22:40:58Z,1783377658548,BTCUSDT,64000.0,price_ref,view,689.0,price he referenced as live/current
+2026-07-06T22:41:43Z,1783377703071,BTCUSDT,65000.0,price_ref,view,690.0,price he referenced as live/current
+2026-07-07T11:33:11Z,1783423991369,XLMUSDT,0.19789,entry_price,tp_hit,692.0,stated entry
+2026-07-07T11:33:11Z,1783423991369,XLMUSDT,0.19291,price_ref,tp_hit,692.0,price he referenced as live/current
+2026-07-08T14:42:46Z,1783521766225,AVAXUSDT,6.42,entry_price,call,694.0,stated entry
+2026-07-09T13:52:33Z,1783605153671,SOLUSDT,77.9,entry_price,call,696.0,stated entry
+2026-07-09T20:35:37Z,1783629337686,BTCUSDT,63200.0,entry_price,call,697.0,stated entry
+2026-07-10T02:53:30Z,1783652010571,BTCUSDT,63229.9,entry_price,tp_hit,698.0,stated entry
+2026-07-10T02:53:30Z,1783652010571,BTCUSDT,63998.4,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-10T02:53:30Z,1783652010571,BTCUSDT,63998.4,price_ref,tp_hit,698.0,price he referenced as live/current
+2026-07-10T18:10:51Z,1783707051765,GENIUSUSDT,0.359,entry_price,call,699.0,stated entry
+2026-07-10T18:10:51Z,1783707051765,GENIUSUSDT,0.364,price_ref,call,699.0,price he referenced as live/current
+2026-07-13T03:33:40Z,1783913620838,BTCUSDT,62800.0,entry_price,call,702.0,stated entry
+2026-07-13T03:33:45Z,1783913625970,BTCUSDT,62800.0,price_ref,entry,703.0,price he referenced as live/current
+2026-07-13T03:33:45Z,1783913625970,BTCUSDT,62800.0,entry_price,entry,703.0,stated entry
+2026-07-14T00:27:55Z,1783988875732,EIGENUSDT,0.241,price_ref,call,704.0,price he referenced as live/current
+2026-07-14T00:27:55Z,1783988875732,EIGENUSDT,0.241,entry_price,call,704.0,stated entry
+2026-07-14T03:24:47Z,1783999487435,TRIAUSDT,0.009649,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-14T03:24:47Z,1783999487435,TRIAUSDT,0.009649,price_ref,close,707.0,price he referenced as live/current
+2026-07-14T03:24:47Z,1783999487435,TRIAUSDT,0.008487,entry_price,close,707.0,stated entry
+2026-07-14T04:58:58Z,1784005138181,BTCUSDT,62700.0,entry_price,update,708.0,stated entry
+2026-07-14T13:12:22Z,1784034742385,BTCUSDT,63781.6,price_ref,close,709.0,price he referenced as live/current
+2026-07-14T13:12:22Z,1784034742385,BTCUSDT,62775.4,entry_price,close,709.0,stated entry
+2026-07-14T21:40:11Z,1784065211235,BTCUSDT,64850.0,price_ref,call,711.0,price he referenced as live/current
+2026-07-14T21:40:11Z,1784065211235,BTCUSDT,64850.0,entry_price,call,711.0,stated entry
+2026-07-14T21:42:23Z,1784065343575,BTCUSDT,64850.0,price_ref,update,712.0,price he referenced as live/current
+2026-07-16T06:01:24Z,1784181684476,BTCUSDT,64896.8,price_ref,close,718.0,price he referenced as live/current
+2026-07-16T06:01:24Z,1784181684476,BTCUSDT,64948.66,entry_price,close,718.0,stated entry
+2026-07-16T06:01:24Z,1784181684476,BTCUSDT,64896.8,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-17T02:03:10Z,1784253790917,BTCUSDT,63469.0,entry_price,call,721.0,stated entry
+2026-07-17T02:03:10Z,1784253790917,BTCUSDT,63469.0,price_ref,call,721.0,price he referenced as live/current
+2026-07-17T02:04:09Z,1784253849942,BTCUSDT,63323.0,price_ref,call,722.0,price he referenced as live/current
+2026-07-17T02:04:09Z,1784253849942,BTCUSDT,63323.0,entry_price,call,722.0,stated entry
+2026-07-17T18:30:23Z,1784313023240,BTCUSDT,63100.0,entry_price,tp_hit,725.0,stated entry
+2026-07-17T18:40:07Z,1784313607739,BTCUSDT,64100.0,price_ref,update,726.0,price he referenced as live/current
+2026-07-18T12:16:28Z,1784376988547,ZECUSDT,544.0,price_ref,call,728.0,price he referenced as live/current
+2026-07-18T12:16:28Z,1784376988547,ZECUSDT,544.0,entry_price,call,728.0,stated entry
+2026-07-18T14:55:56Z,1784386556623,ZECUSDT,560.0,price_ref,close,729.0,price he referenced as live/current
+2026-07-19T05:34:26Z,1784439266695,BTCUSDT,64900.0,price_ref,partial_close,733.0,price he referenced as live/current
+2026-07-20T00:23:14Z,1784506994747,BTCUSDT,63244.7,entry_price,tp_hit,735.0,stated entry
+2026-07-20T00:23:14Z,1784506994747,BTCUSDT,65024.1,price_ref,tp_hit,735.0,price he referenced as live/current
+2026-07-20T00:28:37Z,1784507317346,BTCUSDT,64883.9,price_ref,view,737.0,price he referenced as live/current
+2026-07-20T16:01:04Z,1784563264443,BTCUSDT,65578.6,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-20T16:01:04Z,1784563264443,BTCUSDT,65578.6,price_ref,partial_close,739.0,price he referenced as live/current
+2026-07-20T16:01:04Z,1784563264443,BTCUSDT,63244.7,entry_price,partial_close,739.0,stated entry
+2026-07-21T00:57:23Z,1784595443599,SOLUSDT,77.99,price_ref,breakeven,740.0,price he referenced as live/current
+2026-07-21T00:57:23Z,1784595443599,SOLUSDT,77.9,entry_price,breakeven,740.0,stated entry
+2026-07-21T07:53:23Z,1784620403200,BTCUSDT,66200.0,price_ref,tp_hit,743.0,price he referenced as live/current
+2026-07-21T07:54:47Z,1784620487916,BTCUSDT,66250.0,entry_price,call,744.0,stated entry
+2026-07-21T07:54:47Z,1784620487916,BTCUSDT,66250.0,price_ref,call,744.0,price he referenced as live/current
+2026-07-21T07:56:22Z,1784620582300,BTCUSDT,66500.0,entry_price,plan,745.0,stated entry
+2026-07-21T10:58:19Z,1784631499629,ZECUSDT,545.0,entry_price,call,747.0,stated entry
+2026-07-22T09:02:00Z,1784710920454,ZECUSDT,543.18,entry_price,tp_hit,749.0,stated entry
+2026-07-22T09:02:00Z,1784710920454,ZECUSDT,527.22,price_ref,tp_hit,749.0,price he referenced as live/current
+2026-07-22T10:42:58Z,1784716978008,ENAUSDT,0.08825,entry_price,call,750.0,stated entry
+2026-07-22T10:42:58Z,1784716978008,ENAUSDT,0.08825,price_ref,call,750.0,price he referenced as live/current
+2026-07-23T05:04:33Z,1784783073033,BTCUSDT,66137.7,entry_price,tp_set,752.0,stated entry
+2026-07-23T05:04:33Z,1784783073033,BTCUSDT,65552.1,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-23T05:04:33Z,1784783073033,BTCUSDT,65552.1,price_ref,tp_set,752.0,price he referenced as live/current
+2026-07-23T07:18:00Z,1784791080171,BTCUSDT,66137.7,entry_price,partial_close,754.0,stated entry
+2026-07-23T07:18:00Z,1784791080171,BTCUSDT,65120.0,price_ref,partial_close,754.0,price he referenced as live/current
+2026-07-23T09:25:04Z,1784798704159,NEARUSDT,1.871,entry_price,call,755.0,stated entry
+2026-07-23T09:25:04Z,1784798704159,NEARUSDT,1.871,price_ref,call,755.0,price he referenced as live/current
+2026-07-23T14:08:17Z,1784815697595,XRPUSDT,1.112,entry_price,call,757.0,stated entry
+2026-07-23T14:08:17Z,1784815697595,XRPUSDT,1.112,price_ref,call,757.0,price he referenced as live/current
+2026-07-23T18:10:11Z,1784830211146,BTCUSDT,64600.0,price_ref,plan,759.0,price he referenced as live/current
+2026-07-23T18:28:28Z,1784831308729,BTCUSDT,64700.0,entry_price,call,760.0,stated entry
+2026-07-23T18:28:28Z,1784831308729,BTCUSDT,64700.0,price_ref,call,760.0,price he referenced as live/current
+2026-07-24T07:16:44Z,1784877404589,BTCUSDT,64790.5,entry_price,tp_hit,762.0,stated entry
+2026-07-24T07:16:44Z,1784877404589,BTCUSDT,65700.0,price_ref,tp_hit,762.0,price he referenced as live/current
+2026-07-24T07:16:44Z,1784877404589,BTCUSDT,65716.4,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-24T07:26:56Z,1784878016652,INJUSDT,5.42,entry_price,call,763.0,stated entry
+2026-07-24T07:26:56Z,1784878016652,INJUSDT,5.42,price_ref,call,763.0,price he referenced as live/current
+2026-07-24T09:23:57Z,1784885037000,BTCUSDT,64700.0,entry_price,call,764.0,stated entry
+2026-07-24T13:39:45Z,1784900385403,INJUSDT,5.36,entry_price,dca,765.0,stated entry
+2026-07-24T15:03:42Z,1784905422718,GOLD,4065.0,entry_price,plan,767.0,stated entry
+2026-07-24T15:03:42Z,1784905422718,GOLD,4065.0,price_ref,plan,767.0,price he referenced as live/current
+2026-07-24T15:19:25Z,1784906365726,GOLD,4066.9,entry_price,sl_move,768.0,stated entry
+2026-07-24T15:19:25Z,1784906365726,GOLD,4080.98,price_ref,sl_move,768.0,price he referenced as live/current
+2026-07-24T15:19:25Z,1784906365726,XAUUSDT,4080.98,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-25T06:34:19Z,1784961259353,MEUSDT,0.06447,entry_price,close,769.0,stated entry
+2026-07-25T06:34:19Z,1784961259353,MEUSDT,0.0668,price_ref,close,769.0,price he referenced as live/current
+2026-07-25T06:39:02Z,1784961542143,GENIUSUSDT,0.3509,entry_price,close,770.0,stated entry
+2026-07-25T06:39:02Z,1784961542143,GENIUSUSDT,0.3816,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-25T06:39:02Z,1784961542143,GENIUSUSDT,0.3816,price_ref,close,770.0,price he referenced as live/current
+2026-07-25T08:55:37Z,1784969737073,BNBUSDT,565.0,entry_price,call,771.0,stated entry
+2026-07-25T10:36:06Z,1784975766587,EDUUSDT,0.0337,entry_price,call,772.0,stated entry
+2026-07-25T12:15:03Z,1784981703449,EDUUSDT,0.03375,entry_price,close,774.0,stated entry
+2026-07-25T12:15:03Z,1784981703449,EDUUSDT,0.03504,price_ref,close,774.0,price he referenced as live/current
+2026-07-26T03:40:00Z,1785037200819,BTCUSDT,64350.0,entry_price,plan,776.0,stated entry
+2026-07-26T10:05:19Z,1785060319742,BNBUSDT,571.95,price_ref,sl_move,778.0,price he referenced as live/current
+2026-07-26T10:05:19Z,1785060319742,BNBUSDT,571.95,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-26T10:05:19Z,1785060319742,BNBUSDT,565.35,entry_price,sl_move,778.0,stated entry
+2026-07-26T16:41:03Z,1785084063807,BTCUSDT,64800.0,price_ref,close,779.0,price he referenced as live/current
+2026-07-26T16:41:53Z,1785084113389,BTCUSDT,64489.7,entry_price,update,780.0,stated entry
+2026-07-26T16:41:53Z,1785084113389,BTCUSDT,64791.9,price_ref,update,780.0,price he referenced as live/current
+2026-07-26T16:41:53Z,1785084113389,BTCUSDT,65716.4,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-26T16:42:40Z,1785084160272,BTCUSDT,65500.0,price_ref,view,781.0,price he referenced as live/current
+2026-07-27T02:40:00Z,1785120000372,BTCUSDT,65555.0,price_ref,view,782.0,price he referenced as live/current
+2026-07-27T02:58:03Z,1785121083982,NEARUSDT,1.871,entry_price,plan,783.0,stated entry
+2026-07-27T03:16:35Z,1785122195699,BTCUSDT,66500.0,price_ref,view,784.0,price he referenced as live/current
+2026-07-27T06:17:52Z,1785133072119,BNBUSDT,577.3,price_ref,tp_hit,785.0,price he referenced as live/current
+2026-07-27T06:17:52Z,1785133072119,BNBUSDT,565.46,entry_price,tp_hit,785.0,stated entry
+2026-07-27T06:18:19Z,1785133099664,BNBUSDT,576.08,price_ref,update,786.0,price he referenced as live/current
+2026-07-27T06:18:19Z,1785133099664,BNBUSDT,565.35,entry_price,update,786.0,stated entry
+2026-07-27T06:24:31Z,1785133471207,ETHUSDT,2000.0,price_ref,view,789.0,price he referenced as live/current
+2026-07-27T06:24:31Z,1785133471207,BTCUSDT,66000.0,price_ref,view,789.0,price he referenced as live/current
+2026-07-27T08:50:11Z,1785142211988,BTCUSDT,65200.0,entry_price,call,790.0,stated entry
+2026-07-27T09:39:35Z,1785145175018,ZECUSDT,502.0,entry_price,call,792.0,stated entry
+2026-07-27T10:02:44Z,1785146564380,XRPUSDT,1.1081,price_ref,close,793.0,price he referenced as live/current
+2026-07-27T10:02:44Z,1785146564380,XRPUSDT,1.08,entry_price,plan,793.0,stated entry
+2026-07-27T10:02:44Z,1785146564380,XRPUSDT,1.1069,entry_price,close,793.0,stated entry
+2026-07-27T10:22:01Z,1785147721346,BTWUSDT,0.095,entry_price,entry,794.0,stated entry
+2026-07-27T15:43:56Z,1785167036170,ZECUSDT,483.0,price_ref,close,795.0,price he referenced as live/current
+2026-07-27T15:43:56Z,1785167036170,BTCUSDT,64500.0,price_ref,tp_hit,795.0,price he referenced as live/current
+2026-07-27T15:44:22Z,1785167062954,ZECUSDT,501.92,entry_price,update,796.0,stated entry
+2026-07-27T15:44:22Z,1785167062954,ZECUSDT,482.14,price_ref,update,796.0,price he referenced as live/current
+2026-07-27T15:44:26Z,1785167066261,BTCUSDT,65213.3,entry_price,update,797.0,stated entry
+2026-07-27T15:44:26Z,1785167066261,BTCUSDT,64551.1,price_ref,update,797.0,price he referenced as live/current
+2026-07-27T16:23:53Z,1785169433561,BTCUSDT,63500.0,entry_price,plan,803.0,stated entry
+2026-07-28T02:08:21Z,1785204501120,BTCUSDT,63100.0,entry_price,call,804.0,stated entry
+2026-07-28T11:40:46Z,1785238846681,SOLUSDT,73.18,entry_price,call,808.0,stated entry
+2026-07-28T16:14:04Z,1785255244937,SOLUSDT,74.1,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-28T16:14:04Z,1785255244937,SOLUSDT,73.19,entry_price,sl_move,812.0,stated entry
+2026-07-28T16:14:04Z,1785255244937,SOLUSDT,74.1,price_ref,sl_move,812.0,price he referenced as live/current
+2026-07-28T17:06:58Z,1785258418462,BTCUSDT,63939.0,price_ref,partial_close,814.0,price he referenced as live/current
+2026-07-28T17:06:58Z,1785258418462,BTCUSDT,63182.1,entry_price,partial_close,814.0,stated entry
+2026-07-28T17:06:58Z,1785258418462,BTCUSDT,63100.0,entry_price,plan,814.0,stated entry
+2026-07-28T17:10:41Z,1785258641839,BTCUSDT,64100.0,price_ref,plan,815.0,price he referenced as live/current
+2026-07-29T07:42:18Z,1785310938074,BTCUSDT,64160.0,entry_price,call,817.0,stated entry
+2026-07-29T07:45:11Z,1785311111144,BTCUSDT,64160.0,entry_price,update,818.0,stated entry
+2026-07-29T07:49:13Z,1785311353676,BTCUSDT,63700.0,entry_price,update,819.0,stated entry
+2026-07-29T08:07:06Z,1785312426637,BTCUSDT,66000.0,price_ref,view,821.0,price he referenced as live/current
+2026-07-29T08:07:06Z,1785312426637,ETHUSDT,2000.0,price_ref,view,821.0,price he referenced as live/current
+2026-07-29T10:12:16Z,1785319936990,BTCUSDT,64652.4,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-29T10:12:16Z,1785319936990,BTCUSDT,64652.4,price_ref,close,822.0,price he referenced as live/current
+2026-07-29T10:12:16Z,1785319936990,BTCUSDT,63182.1,entry_price,close,822.0,stated entry
+2026-07-29T13:27:22Z,1785331642219,BTCUSDT,64100.0,entry_price,call,824.0,stated entry
+2026-07-29T13:32:39Z,1785331959728,BTCUSDT,63700.0,entry_price,update,825.0,stated entry
+2026-07-30T09:40:20Z,1785404420260,BTCUSDT,63812.5,entry_price,partial_close,830.0,stated entry
+2026-07-30T09:40:20Z,1785404420260,BTCUSDT,64578.7,price_ref,partial_close,830.0,price he referenced as live/current
+2026-07-30T09:40:20Z,1785404420260,BTCUSDT,64578.7,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-07-30T11:39:57Z,1785411597346,BTCUSDT,67000.0,price_ref,view,832.0,price he referenced as live/current
+2026-07-30T11:56:43Z,1785412603933,BTCUSDT,64800.0,price_ref,tp_hit,833.0,price he referenced as live/current
+2026-07-30T11:56:43Z,1785412603933,BTCUSDT,63812.5,entry_price,tp_hit,833.0,stated entry
+2026-07-30T13:58:50Z,1785419930199,BTCUSDT,65200.0,entry_price,call,834.0,stated entry
+2026-07-30T14:04:20Z,1785420260099,BTCUSDT,65000.0,entry_price,entry,835.0,stated entry
+2026-07-31T05:17:01Z,1785475021177,BTCUSDT,64200.0,price_ref,tp_hit,839.0,price he referenced as live/current
+2026-07-31T07:23:26Z,1785482606193,BTCUSDT,63969.0,entry_price,call,840.0,stated entry
+2026-07-31T11:04:14Z,1785495854503,BNBUSDT,582.0,entry_price,plan,842.0,stated entry
+2026-07-31T14:08:19Z,1785506899569,BTCUSDT,62200.0,entry_price,plan,844.0,stated entry
+2026-07-31T14:22:19Z,1785507739261,BNBUSDT,586.6,entry_price,call,845.0,stated entry
+2026-07-31T14:22:19Z,1785507739261,BTCUSDT,63500.0,price_ref,plan,845.0,price he referenced as live/current
+2026-07-31T15:30:38Z,1785511838539,UNIUSDT,4.25,entry_price,call,846.0,stated entry
+2026-07-31T15:38:00Z,1785512280598,ARKMUSDT,0.096,entry_price,sl_move,847.0,stated entry
+2026-07-31T15:38:00Z,1785512280598,ARKMUSDT,0.096,entry_price,close,847.0,stated entry
+2026-08-01T06:35:00Z,1785566100898,UNIUSDT,4.088,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-08-01T06:35:00Z,1785566100898,UNIUSDT,4.088,price_ref,close,850.0,price he referenced as live/current
+2026-08-01T06:35:00Z,1785566100898,UNIUSDT,4.24,entry_price,close,850.0,stated entry
+2026-08-01T08:27:43Z,1785572863802,BTCUSDT,63000.0,entry_price,call,851.0,stated entry
+2026-08-01T08:50:34Z,1785574234667,HYPEUSDT,52.4,entry_price,call,852.0,stated entry
+2026-08-01T18:42:13Z,1785609733148,ETHUSDT,1840.0,entry_price,entry,853.0,stated entry
+2026-08-02T07:10:06Z,1785654606445,BTCUSDT,63500.0,price_ref,partial_close,856.0,price he referenced as live/current
+2026-08-02T07:10:06Z,1785654606445,BTCUSDT,62500.0,entry_price,partial_close,856.0,stated entry
+2026-08-02T11:07:13Z,1785668833294,ZECUSDT,473.5,entry_price,call,858.0,stated entry
+2026-08-02T15:58:34Z,1785686314591,BNBUSDT,587.0,price_ref,close,859.0,price he referenced as live/current
+2026-08-02T16:08:14Z,1785686894275,ETHUSDT,1840.0,entry_price,tp_set,860.0,stated entry
+2026-08-02T17:03:22Z,1785690202828,ETHUSDT,1862.0,entry_price,call,861.0,stated entry
+2026-08-02T20:36:35Z,1785702995810,ZECUSDT,490.0,price_ref,tp_hit,862.0,price he referenced as live/current
+2026-08-02T22:12:44Z,1785708764357,BTCUSDT,64000.0,price_ref,plan,866.0,price he referenced as live/current
+2026-08-03T08:25:55Z,1785745555530,BTCUSDT,61800.0,entry_price,plan,867.0,stated entry
+2026-08-03T12:32:50Z,1785760370375,ZECUSDT,480.0,entry_price,plan,868.0,stated entry
+2026-08-03T13:35:02Z,1785764102483,ZECUSDT,482.0,entry_price,call,869.0,stated entry
+2026-08-03T13:56:57Z,1785765417023,BTCUSDT,63220.0,price_ref,update,870.0,price he referenced as live/current
+2026-08-03T13:56:57Z,1785765417023,BTCUSDT,63220.0,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-08-03T13:56:57Z,1785765417023,BTCUSDT,62512.3,entry_price,update,870.0,stated entry
+2026-08-03T14:06:15Z,1785765975773,HYPEUSDT,53.5,price_ref,close,871.0,price he referenced as live/current
+2026-08-03T14:06:52Z,1785766012593,ZECUSDT,482.0,entry_price,sl_move,872.0,stated entry
+2026-08-03T14:44:38Z,1785768278096,HYPEUSDT,54.0,price_ref,tp_hit,873.0,price he referenced as live/current
+2026-08-03T14:49:14Z,1785768554135,SPCXUSDT,112.01,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-08-03T14:49:14Z,1785768554135,SPCXUSDT,107.82,entry_price,update,874.0,stated entry
+2026-08-03T14:49:14Z,1785768554135,SPCXUSDT,112.01,price_ref,update,874.0,price he referenced as live/current
+2026-08-03T14:51:18Z,1785768678268,BTCUSDT,64000.0,price_ref,plan,875.0,price he referenced as live/current
+2026-08-03T20:55:51Z,1785790551959,SPCXUSDT,107.83,entry_price,partial_close,876.0,stated entry
+2026-08-03T20:55:51Z,1785790551959,SPCXUSDT,115.0,price_ref,partial_close,876.0,price he referenced as live/current
+2026-08-04T11:44:56Z,1785843896841,BTCUSDT,64500.0,price_ref,plan,878.0,price he referenced as live/current
+2026-08-04T14:35:14Z,1785854114773,ETHUSDT,1867.0,entry_price,call,879.0,stated entry
+2026-08-04T14:40:44Z,1785854444915,BTCUSDT,64400.0,price_ref,view,880.0,price he referenced as live/current
+2026-08-04T16:23:53Z,1785860633902,SPCXUSDT,121.91,price_ref,update,881.0,price he referenced as live/current
+2026-08-04T16:23:53Z,1785860633902,SPCXUSDT,107.82,entry_price,update,881.0,stated entry
+2026-08-04T16:23:53Z,1785860633902,SPCXUSDT,121.91,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-08-04T19:19:33Z,1785871173958,SPCXUSDT,126.67,price_ref,partial_close,882.0,price he referenced as live/current
+2026-08-04T19:19:33Z,1785871173958,SPCXUSDT,126.67,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-08-04T19:19:33Z,1785871173958,SPCXUSDT,107.82,entry_price,partial_close,882.0,stated entry
+2026-08-05T00:18:55Z,1785889135668,BTCUSDT,64500.0,price_ref,update,883.0,price he referenced as live/current
+2026-08-05T10:24:45Z,1785925485262,GOLD,4162.0,entry_price,entry,884.0,stated entry
+2026-08-05T12:33:19Z,1785933199199,ETHUSDT,1882.0,price_ref,close,886.0,price he referenced as live/current
+2026-08-05T12:33:19Z,1785933199199,ETHUSDT,1867.0,entry_price,sl_move,886.0,stated entry
+2026-08-05T12:38:28Z,1785933508172,BTCUSDT,64500.0,price_ref,tp_hit,887.0,price he referenced as live/current
+2026-08-05T12:43:37Z,1785933817416,HYPEUSDT,57.3,price_ref,plan,888.0,price he referenced as live/current
+2026-08-05T12:43:37Z,1785933817416,GOLD,4182.0,entry_price,update,888.0,stated entry
+2026-08-05T12:43:37Z,1785933817416,HYPEUSDT,58.5,entry_price,plan,888.0,stated entry
+2026-08-05T13:04:08Z,1785935048632,ZECUSDT,482.0,entry_price,breakeven,889.0,stated entry
+2026-08-05T13:05:17Z,1785935117143,BNBUSDT,599.41,price_ref,update,890.0,price he referenced as live/current
+2026-08-05T13:51:42Z,1785937902173,ETHUSDT,1870.0,entry_price,call,891.0,stated entry
+2026-08-05T16:22:58Z,1785946978850,ETHUSDT,1890.27,price_ref,close,894.0,price he referenced as live/current
+2026-08-05T16:22:58Z,1785946978850,ETHUSDT,1890.27,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-08-05T16:22:58Z,1785946978850,ETHUSDT,1871.53,entry_price,close,894.0,stated entry
+2026-08-05T18:23:48Z,1785954228933,ETHUSDT,1920.0,entry_price,call,896.0,stated entry
+2026-08-05T23:39:43Z,1785973183223,GOLD,4350.0,price_ref,view,897.0,price he referenced as live/current
+2026-08-06T09:27:31Z,1786008451961,BTCUSDT,64823.0,entry_price,entry,898.0,stated entry
+2026-08-06T09:27:31Z,1786008451961,BTCUSDT,64774.6,price_ref,entry,898.0,price he referenced as live/current
+2026-08-06T09:27:31Z,1786008451961,BTCUSDT,64774.6,card_mark_price,screenshot,,mark price on an exchange share card — the tightest timestamp/price pair available
+2026-08-06T13:25:06Z,1786022706878,ETHUSDT,1892.0,price_ref,close,899.0,price he referenced as live/current
+2026-08-06T13:49:55Z,1786024195089,HYPEUSDT,58.0,entry_price,update,901.0,stated entry
+2026-08-06T13:49:55Z,1786024195089,GOLD,4350.0,entry_price,update,901.0,stated entry
+2026-08-06T13:49:55Z,1786024195089,HYPEUSDT,53.999,price_ref,update,901.0,price he referenced as live/current
+2026-08-06T15:12:03Z,1786029123286,BTCUSDT,64800.0,entry_price,call,902.0,stated entry
+2026-08-06T20:32:13Z,1786048333166,TRADOORUSDT,0.72,entry_price,call,904.0,stated entry
+2026-08-06T20:33:30Z,1786048410247,TRADOORUSDT,0.73,entry_price,dca,905.0,stated entry
+2026-08-07T09:11:09Z,1786093869951,BTCUSDT,65300.0,entry_price,plan,907.0,stated entry
+2026-08-07T09:32:02Z,1786095122863,BTCUSDT,64800.0,entry_price,call,908.0,stated entry
+2026-08-07T13:18:24Z,1786108704164,THETAUSDT,0.134,entry_price,call,909.0,stated entry
+2026-08-07T14:10:18Z,1786111818948,BTCUSDT,65300.0,entry_price,sl_move,910.0,stated entry
+2026-08-07T16:26:33Z,1786119993411,ETHUSDT,1920.0,entry_price,call,911.0,stated entry
+2026-08-07T16:27:16Z,1786120036485,ETHUSDT,1913.0,price_ref,dca,912.0,price he referenced as live/current
+2026-08-07T18:21:52Z,1786126912239,BTCUSDT,65300.0,entry_price,tp_set,914.0,stated entry
+2026-08-10T13:09:39Z,1786367379355,ETHUSDT,1907.31,price_ref,close,919.0,price he referenced as live/current
+2026-08-10T13:09:39Z,1786367379355,ETHUSDT,1922.78,entry_price,close,919.0,stated entry
+2026-08-10T13:34:31Z,1786368871929,GRTUSDT,0.0146,entry_price,call,920.0,stated entry
+2026-08-10T13:59:01Z,1786370341767,BTCUSDT,65024.1,entry_price,partial_close,921.0,stated entry
+2026-08-10T13:59:01Z,1786370341767,BTCUSDT,64504.5,price_ref,partial_close,921.0,price he referenced as live/current
+2026-08-10T15:02:51Z,1786374171934,GRTUSDT,0.01457,entry_price,tp_hit,922.0,stated entry
+2026-08-10T15:02:51Z,1786374171934,GRTUSDT,0.01443,price_ref,tp_hit,922.0,price he referenced as live/current
+2026-08-10T15:20:21Z,1786375221959,ETHUSDT,1905.0,price_ref,tp_hit,925.0,price he referenced as live/current
+2026-08-10T16:21:18Z,1786378878403,BTCUSDT,64060.0,price_ref,tp_hit,926.0,price he referenced as live/current
+2026-08-10T16:23:17Z,1786378997170,BTCUSDT,63960.0,entry_price,call,927.0,stated entry
+2026-08-10T19:00:57Z,1786388457076,ETHUSDT,1871.0,entry_price,call,930.0,stated entry
+2026-08-11T11:05:41Z,1786446341375,ETHUSDT,1890.16,price_ref,tp_hit,932.0,price he referenced as live/current
+2026-08-11T11:05:41Z,1786446341375,ETHUSDT,1872.74,entry_price,tp_hit,932.0,stated entry
+2026-08-11T15:07:19Z,1786460839324,SOLUSDT,75.23,price_ref,update,933.0,price he referenced as live/current
+2026-08-11T15:07:19Z,1786460839324,SOLUSDT,77.23,entry_price,update,933.0,stated entry
+2026-08-11T20:24:28Z,1786479868375,BTCUSDT,63500.0,entry_price,entry,934.0,stated entry
+2026-08-11T23:00:25Z,1786489225898,HOLOUSDT,0.084,entry_price,entry,935.0,stated entry
+2026-08-11T23:00:25Z,1786489225898,HOLOUSDT,0.088,price_ref,entry,935.0,price he referenced as live/current
+2026-08-12T12:15:55Z,1786536955752,BTCUSDT,63800.0,entry_price,dca,937.0,stated entry
+2026-08-13T15:29:53Z,1786634993260,HYPEUSDT,58.36,entry_price,call,939.0,stated entry
+2026-08-14T08:40:00Z,1786696800246,HYPEUSDT,58.35,entry_price,tp_hit,943.0,stated entry
+2026-08-14T08:40:00Z,1786696800246,HYPEUSDT,56.503,price_ref,tp_hit,943.0,price he referenced as live/current
+2026-08-14T16:08:35Z,1786723715781,ZECUSDT,486.0,entry_price,call,945.0,stated entry
+2026-08-14T16:21:01Z,1786724461983,ENSUSDT,4.036,entry_price,call,946.0,stated entry
+2026-08-15T01:43:45Z,1786758225903,ZECUSDT,498.0,price_ref,close,948.0,price he referenced as live/current
+2026-08-15T12:08:40Z,1786795720794,ZECUSDT,498.44,price_ref,view,949.0,price he referenced as live/current
+2026-08-16T01:38:20Z,1786844300357,SOLUSDT,75.3,entry_price,call,952.0,stated entry
+2026-08-17T10:36:07Z,1786962967539,SOLUSDT,75.6,price_ref,close,953.0,price he referenced as live/current
+2026-08-17T14:03:39Z,1786975419682,BTCUSDT,63800.0,entry_price,tp_move,954.0,stated entry
+2026-08-17T14:12:17Z,1786975937309,GPSUSDT,0.155,price_ref,view,955.0,price he referenced as live/current
+2026-08-17T14:18:33Z,1786976313875,WLDUSDT,0.355,entry_price,call,956.0,stated entry
+2026-08-17T15:49:32Z,1786981772584,BTCUSDT,63797.1,entry_price,update,958.0,stated entry
+2026-08-17T15:49:32Z,1786981772584,BTCUSDT,64144.9,price_ref,update,958.0,price he referenced as live/current
+2026-08-17T15:56:16Z,1786982176481,BTCUSDT,64200.0,entry_price,call,960.0,stated entry
+2026-08-17T19:52:29Z,1786996349627,WLDUSDT,0.3552,entry_price,close,963.0,stated entry
+2026-08-17T19:52:29Z,1786996349627,WLDUSDT,0.3493,price_ref,close,963.0,price he referenced as live/current
+2026-08-18T13:32:08Z,1787059928916,ZECUSDT,505.2,entry_price,call,964.0,stated entry
+2026-08-18T13:37:17Z,1787060237983,BTCUSDT,64300.0,entry_price,dca,965.0,stated entry
+2026-08-19T15:05:47Z,1787151947429,HYPEUSDT,59.82,entry_price,call,974.0,stated entry
+2026-08-19T15:38:59Z,1787153939447,HYPEUSDT,60.5,price_ref,dca,976.0,price he referenced as live/current
+2026-08-19T15:56:39Z,1787154999314,BTCUSDT,63000.0,price_ref,view,978.0,price he referenced as live/current
+2026-08-19T19:37:03Z,1787168223908,HYPEUSDT,56.23,entry_price,update,981.0,stated entry
+2026-08-20T01:34:21Z,1787189661274,BTCUSDT,69280.0,entry_price,call,982.0,stated entry
+2026-08-20T01:51:14Z,1787190674235,BTCUSDT,71000.0,price_ref,view,983.0,price he referenced as live/current
+2026-08-20T02:02:49Z,1787191369039,BTCUSDT,70000.0,price_ref,plan,984.0,price he referenced as live/current
+2026-08-20T07:13:39Z,1787210019069,BTCUSDT,69907.6,price_ref,close,986.0,price he referenced as live/current
+2026-08-20T07:13:39Z,1787210019069,BTCUSDT,69111.2,entry_price,close,986.0,stated entry
+2026-08-20T08:18:35Z,1787213915046,BTCUSDT,70999.5,price_ref,close,987.0,price he referenced as live/current
+2026-08-20T08:18:35Z,1787213915046,BTCUSDT,69220.4,entry_price,close,987.0,stated entry
+2026-08-20T10:19:46Z,1787221186943,BTCUSDT,72400.0,entry_price,call,988.0,stated entry
+2026-08-20T15:09:34Z,1787238574645,ARBUSDT,0.0889,entry_price,call,991.0,stated entry
+2026-08-20T17:07:05Z,1787245625198,SUIUSDT,0.74,entry_price,entry,994.0,stated entry
+2026-08-20T17:07:05Z,1787245625198,AVAXUSDT,7.2,entry_price,entry,994.0,stated entry
+2026-08-21T01:47:22Z,1787276842632,BTCUSDT,75000.0,price_ref,view,996.0,price he referenced as live/current
+2026-08-21T01:56:15Z,1787277375954,BTCUSDT,63000.0,entry_price,update,998.0,stated entry
+2026-08-21T10:32:36Z,1787308356564,BTCUSDT,80000.0,price_ref,view,999.0,price he referenced as live/current
+2026-08-21T10:51:59Z,1787309519829,BERAUSDT,0.19,entry_price,entry,1000.0,stated entry
+2026-08-21T13:50:53Z,1787320253505,SOLUSDT,80.0,entry_price,view,1002.0,stated entry
+2026-08-21T13:50:53Z,1787320253505,SOLUSDT,90.0,price_ref,view,1002.0,price he referenced as live/current
+2026-08-21T14:58:07Z,1787324287902,BTCUSDT,77300.0,entry_price,call,1004.0,stated entry

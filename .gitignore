@@ -42,3 +42,8 @@ data/archive/*.db
 studies/notebooks/paladin_study/paladin_ohlcv.db
 studies/notebooks/scanner_study/scanner_ohlcv.db
 studies/notebooks/scanner_study/results/trades_*.csv
+
+# Paladin material: text/data committed; screenshots + pack zip stay local
+studies/material/paladin/images/
+studies/material/paladin/paladin_analysis_pack.zip
+.claude/scheduled_tasks.lock
