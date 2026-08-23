@@ -75,6 +75,29 @@ the wick exit and the half-risk tag for this sleeve family. Next gate before any
 re-run this comparison on the backward-only trigger variant (the production-faithful pool)
 to confirm the tilt-policy ordering survives without the research lookahead.
 
+## Backward-only confirmation (2026-08-23, `results_backonly/`)
+
+Re-ran the full grid on the production-faithful pool (`intersect_triggers` patched to
+[-24h, 0] per the P3 audit pattern; BTC 101 / ETH 73 OKX-aligned trades). As expected the
+lookahead haircut is real: combined baseline mean R 1.66 → **0.81**, WR 59% → 42%.
+
+**Every structural conclusion survives:**
+
+- **Tilt ordering identical in all three scopes**: skip (MAR 15.7 combined) >
+  half-after-loss (14.5) > half-after-2-stops (12.7) > none (11.8). On ETH skip and half
+  are statistically tied (6.7 vs 6.7) with half keeping 64% more income — the per-asset
+  policy (BTC skip / ETH half-or-skip) stands.
+- **Multi-asset holds and strengthens**: combined 133.6R vs BTC-alone 77.8R (+72%) at
+  *lower* drawdown (−11.4 vs −13.0); MAR doubles (11.8 vs 6.0).
+- **Wick-exit still rejected**: below same-config base exits throughout.
+- **Half-risk tag is unstable across pools** (hurt bidirectional, helped backward-only —
+  e.g. skip+H MAR 23.7 vs 15.7 combined). Inconsistent direction on a 54%-fire-rate tag =
+  no reliable evidence; stays rejected pending a ≤15%-fire-rate respecification.
+
+OOS (2025+) totals are positive in all headline variants but thin on ETH (data ends
+2026-05). Production expectancy to underwrite any go-decision: **~+0.8R/trade, ~42% WR,
+~30 trades/yr/asset** at these gates — not the research-pool numbers.
+
 ## Files
 
 `gen_trades.py` (trade regeneration), `run_overlays.py` (engine + grid),

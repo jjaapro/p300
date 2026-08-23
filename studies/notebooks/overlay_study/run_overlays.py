@@ -30,7 +30,9 @@ import pandas as pd
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
 DB = ROOT / 'data' / 'databases' / 'prod.db'
-OUT = HERE / 'results'
+# optional argv[1]: results dir name (default 'results'; 'results_backonly'
+# runs the same grid on the production-faithful backward-only pool)
+OUT = HERE / (sys.argv[1] if len(sys.argv) > 1 else 'results')
 sys.stdout.reconfigure(encoding='utf-8', line_buffering=True)
 
 TABLES = {'BTC': 'cd_futures_15m', 'ETH': 'cd_futures_eth_15m'}
