@@ -247,6 +247,12 @@ def run(quiet: bool = False, summary: bool = False, deep: bool = False) -> int:
         elif b.get("status") != "ok":
             alerts.append(f"DEGRADED     {name}: {b.get('status')} — "
                           f"{b.get('note') or ''}")
+        elif "DUPLICATE INSTANCE" in (b.get("note") or ""):
+            # botlib.heartbeat writes this note when two pids share one row,
+            # but the runner's status stays "ok" — without this check the
+            # warning is invisible (2026-08-24 incident: four bots + feed ran
+            # doubled for 9 days, chento double-sized every signal).
+            alerts.append(f"DUPLICATE    {name}: {b.get('note')}")
         else:
             info.append(f"{name}: tick {_fmt_age(tick_age)} ago, ok")
         limit = BOT_EXPECTATIONS.get(name)
