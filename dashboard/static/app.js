@@ -16,6 +16,24 @@ const TF_S = { "15m": 900, "1h": 3600, "4h": 14400, "1d": 86400 };
 const OPEN_MARKER = "#3b82f6";
 const CLOSED_MARKER = "#5c6270";
 
+/* Flow panes (dashboard/market.py) — descriptive context under the
+   candles: what the bots see, not a signal. One measure family per pane,
+   never two scales on one axis: pane 1 CVD in base units (perp line, spot
+   line, spot−perp histogram); pane 2 ΔOI% histogram — bar direction is the
+   OI sign, bar color the CVD sign, so the quadrant reads from geometry (OI
+   level lives in the legend); pane 3 bp (funding per 8h as a histogram,
+   basis as a line). Palette validated with the dataviz validator on the
+   dark surface: #3987e5 / #d95926 categorical pair, #26a69a / #ef5350
+   polarity pair (the candle colors). */
+const FLOW_PRIMARY = "#3987e5";
+const FLOW_SECONDARY = "#d95926";
+const UP = "#26a69a";
+const DOWN = "#ef5350";
+const DIM = "#8a8f9c";
+const PANE_H = 110;
+const QUADRANT = { longs_opening: "longs opening", short_covering: "short covering",
+                   shorts_opening: "shorts opening", longs_closing: "longs closing" };
+
 const $ = (id) => document.getElementById(id);
 
 function el(tag, cls, text) {
@@ -178,14 +196,22 @@ function renderFeeds(fd) {
 let chart = null;
 let series = null;
 let markersPrim = null;
-let curAsset = "BTC";
-let curTf = "1h";
+// deep link: /#ETH or /#BTC-15m selects asset (and optionally timeframe)
+const _hash = /^#(BTC|ETH)(?:-(15m|1h|4h|1d))?$/.exec(location.hash) || [];
+let curAsset = _hash[1] || "BTC";
+let curTf = _hash[2] || "1h";
 let showClosed = false;
 let candleLast = null;
 let tradesCache = [];
 let markersByTime = new Map();   // barTime -> [{t, kind}]
 let priceLines = [];
 let selectedId = null;
+let loadToken = 0;
+let flowSeries = {};            // series name -> Lightweight Charts series
+let flowBars = [];
+let flowByTime = new Map();
+let flowLast = null;
+let flowMeta = null;            // last /api/flow payload (bars excluded)
 
 function initChart() {
   if (typeof LightweightCharts === "undefined") {
@@ -246,13 +272,24 @@ function markControls() {
 async function loadChart() {
   if (!chart) return;
   clearSelection();
-  const [cd, td] = await Promise.all([
+  const token = ++loadToken;
+  const [cd, td, fd] = await Promise.all([
     getJSON(`/api/candles?asset=${curAsset}&tf=${curTf}`),
     getJSON("/api/trades?scope=recent"),
+    getJSON(`/api/flow?asset=${curAsset}&tf=${curTf}`)
+      .catch((e) => ({ error: e.message })),
   ]);
+  if (token !== loadToken) return;            // user switched meanwhile
   tradesCache = td.trades;
   series.setData(cd.bars);
   candleLast = cd.last_time;
+  if (fd.error) {
+    $("flow-legend").replaceChildren(
+      el("span", "dim", `flow panes unavailable: ${fd.error}`));
+  } else {
+    rebuildPanes(fd);
+    setFlowData(fd);
+  }
   if (cd.bars.length > 160) {
     chart.timeScale().setVisibleLogicalRange(
       { from: cd.bars.length - 150, to: cd.bars.length + 5 });
@@ -264,17 +301,170 @@ async function loadChart() {
 
 async function refreshChart() {
   if (!chart || document.hidden) return;
+  const asset = curAsset, tf = curTf, token = loadToken;
   try {
-    const [cd, td] = await Promise.all([
-      getJSON(`/api/candles?asset=${curAsset}&tf=${curTf}` +
+    const [cd, td, fd] = await Promise.all([
+      getJSON(`/api/candles?asset=${asset}&tf=${tf}` +
               (candleLast ? `&after=${candleLast}` : "")),
       getJSON("/api/trades?scope=recent"),
+      Object.keys(flowSeries).length
+        ? getJSON(`/api/flow?asset=${asset}&tf=${tf}` +
+                  (flowLast ? `&after=${flowLast}` : ""))
+        : Promise.resolve(null),
     ]);
+    if (token !== loadToken || asset !== curAsset || tf !== curTf) return;
     for (const b of cd.bars) series.update(b);
     if (cd.last_time) candleLast = cd.last_time;
     tradesCache = td.trades;
+    if (fd) updateFlowData(fd);
     rebuildMarkers();
   } catch (e) { /* transient — health poll shows the stale banner */ }
+}
+
+/* ── flow panes ───────────────────────────────────────────────────────── */
+
+function flowPoint(name, b) {
+  const t = b.time;
+  switch (name) {
+    case "perp_cvd":
+      return b.perp_cvd === null ? { time: t } : { time: t, value: b.perp_cvd };
+    case "spot_cvd":
+      return b.spot_cvd === null ? { time: t } : { time: t, value: b.spot_cvd };
+    case "divergence":
+      return b.divergence === null ? { time: t }
+        : { time: t, value: b.divergence, color: b.divergence >= 0 ? UP : DOWN };
+    case "oi_delta_pct":
+      if (b.oi_delta_pct === null) return { time: t };
+      return { time: t, value: b.oi_delta_pct,
+               color: b.label === null ? DIM : (b.perp_cvd > 0 ? UP : DOWN) };
+    case "funding":
+      return b.funding === null ? { time: t }
+        : { time: t, value: b.funding * 1e4, color: b.funding >= 0 ? UP : DOWN };
+    case "basis_bp":
+      return b.basis_bp === null ? { time: t } : { time: t, value: b.basis_bp };
+  }
+  return { time: t };
+}
+
+function rebuildPanes(fd) {
+  for (const s of Object.values(flowSeries)) chart.removeSeries(s);
+  flowSeries = {};
+  if (chart.removePane) {
+    for (let i = chart.panes().length - 1; i >= 1; i--) chart.removePane(i);
+  }
+  const line = (color, pane) => chart.addSeries(LightweightCharts.LineSeries, {
+    color, lineWidth: 2, priceLineVisible: false, lastValueVisible: true,
+    crosshairMarkerRadius: 3,
+  }, pane);
+  const hist = (pane) => chart.addSeries(LightweightCharts.HistogramSeries, {
+    priceLineVisible: false, lastValueVisible: false, base: 0,
+  }, pane);
+  // histograms first so the lines draw on top of them
+  let p = 1;
+  if (fd.spot_source) flowSeries.divergence = hist(p);
+  flowSeries.perp_cvd = line(FLOW_PRIMARY, p);
+  if (fd.spot_source) flowSeries.spot_cvd = line(FLOW_SECONDARY, p);
+  p++;
+  if (fd.oi_source) { flowSeries.oi_delta_pct = hist(p); p++; }
+  flowSeries.funding = hist(p);
+  if (fd.spot_source) flowSeries.basis_bp = line(FLOW_SECONDARY, p);
+  $("chart").style.height = `${460 + PANE_H * p}px`;
+  const panes = chart.panes();
+  if (panes[0] && panes[0].setStretchFactor) {
+    panes[0].setStretchFactor(3.5);
+    for (let i = 1; i < panes.length; i++) panes[i].setStretchFactor(1);
+  }
+}
+
+function setFlowData(fd) {
+  flowBars = fd.bars;
+  flowByTime = new Map(fd.bars.map((b) => [b.time, b]));
+  flowLast = fd.last_time;
+  flowMeta = fd;
+  for (const [name, s] of Object.entries(flowSeries)) {
+    s.setData(fd.bars.map((b) => flowPoint(name, b)));
+  }
+  updateLegend(null);
+  renderTape(fd);
+}
+
+function updateFlowData(fd) {
+  for (const b of fd.bars) {
+    for (const [name, s] of Object.entries(flowSeries)) s.update(flowPoint(name, b));
+    const last = flowBars[flowBars.length - 1];
+    if (last && last.time === b.time) flowBars[flowBars.length - 1] = b;
+    else if (!last || b.time > last.time) flowBars.push(b);
+    flowByTime.set(b.time, b);
+  }
+  if (fd.last_time) flowLast = fd.last_time;
+  flowMeta = fd;
+  updateLegend(null);
+  renderTape(fd);
+}
+
+function fmtSigned(v, nd) {
+  if (v === null || v === undefined) return "—";
+  return (v > 0 ? "+" : "") + v.toFixed(nd);
+}
+
+/* Legend: one line per pane, values follow the crosshair (default: last
+   bar). Text wears text tokens; the swatch carries the series identity. */
+function updateLegend(time) {
+  const box = $("flow-legend");
+  if (!flowMeta) return;
+  const b = (time !== null && time !== undefined && flowByTime.get(time)) ||
+            flowBars[flowBars.length - 1];
+  box.replaceChildren();
+  if (!b) { box.appendChild(el("span", "dim", "no flow data")); return; }
+  const sw = (c) => { const s = el("span", "sw"); s.style.background = c; return s; };
+  const txt = (t) => el("span", null, t);
+  const val = (t) => el("span", "val", t);
+  const row = (parts) => {
+    const r = el("span", "lg");
+    for (const x of parts) r.appendChild(x);
+    box.appendChild(r);
+  };
+  const p1 = [txt("CVD "), sw(FLOW_PRIMARY), txt("perp "), val(fmtSigned(b.perp_cvd, 1))];
+  if (flowMeta.spot_source) {
+    p1.push(txt(" · "), sw(FLOW_SECONDARY), txt("spot "), val(fmtSigned(b.spot_cvd, 1)),
+            txt(" · spot−perp "), val(fmtSigned(b.divergence, 1)));
+  }
+  row(p1);
+  if (flowMeta.oi_source) {
+    row([txt("ΔOI "), val(b.oi_delta_pct === null ? "—" : fmtSigned(b.oi_delta_pct, 3) + "%"),
+         txt(" · OI "), val(b.oi_close === null ? "—" : fmtNum(b.oi_close)),
+         txt(" · quadrant "), val(b.label ? QUADRANT[b.label] : "—")]);
+  }
+  const p3 = [txt("funding "),
+              val(b.funding === null ? "—" : fmtSigned(b.funding * 1e4, 2) + " bp/8h")];
+  if (flowMeta.spot_source) {
+    p3.push(txt(" · "), sw(FLOW_SECONDARY), txt("basis "),
+            val(b.basis_bp === null ? "—" : fmtSigned(b.basis_bp, 1) + " bp"));
+  }
+  row(p3);
+  box.appendChild(el("span", "dim",
+    `bar ${fmtIso(new Date(b.time * 1000).toISOString())} · CVD in ${flowMeta.asset}` +
+    ` · quadrant needs |CVD| and |ΔOI| above their ${flowMeta.thresholds.pool_days}d p60`));
+}
+
+function renderTape(fd) {
+  const t = $("tape");
+  t.replaceChildren();
+  for (const w of ["4h", "24h"]) t.appendChild(el("div", null, fd.tape[w].text));
+  const s = $("ssq");
+  if (!fd.ssq) {
+    s.textContent = fd.asset === "BTC" ? "short_squeeze view: no closed 15m bar"
+                                       : "short_squeeze view: BTC only";
+    return;
+  }
+  const g = fd.ssq;
+  const pct = (x) => `${Math.round(x * 100)}th pct`;
+  s.textContent =
+    `short_squeeze sees (15m bar ${fmtIso(new Date(g.bar_ts * 1000).toISOString())}): ` +
+    `perp CVD ${pct(g.perp_cvd_pct)} (needs < ${Math.round(g.perp_cvd_pct_max * 100)}th) ` +
+    `${g.perp_ok ? "pass" : "fail"} · spot−perp divergence ${pct(g.divergence_pct)} ` +
+    `(needs > ${Math.round(g.divergence_pct_min * 100)}th) ${g.div_ok ? "pass" : "fail"}` +
+    ` · pool ${g.pool_n} London/NY bars over ${g.pool_days}d`;
 }
 
 function shownTrades() {
@@ -376,6 +566,7 @@ function tooltipContent(hits) {
 }
 
 function onCrosshair(param) {
+  updateLegend(param.time);
   const tip = $("tooltip");
   const hits = param.point ? hitsAt(param.time) : [];
   if (!hits.length) { tip.classList.add("hidden"); return; }
