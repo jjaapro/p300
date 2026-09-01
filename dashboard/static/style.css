@@ -1,17 +1,60 @@
-/* p300 dashboard — dark, compact, system fonts. State colors match the
-   repo's chart palette: green #2ca02c / amber #ffb000 / red #d62728. */
+/* p300 dashboard — compact, system fonts. Dark is the default look; light
+   is a SELECTED palette, not an inverted one: every token has a light value
+   chosen for contrast on its own surface (text/status ink ≥ 4:1 WCAG on
+   the panel; series colors validated in app.js). The theme is
+   data-theme="dark|light" on <html> — set before first paint by the inline
+   script in index.html, then owned by app.js (auto = light 07–19 local, or
+   a pinned choice in localStorage). State colors match the repo's chart
+   palette on dark: green #2ca02c / amber #ffb000 / red #d62728. */
 
 :root {
+  color-scheme: dark;
   --bg: #14161a;
   --panel: #1c1f26;
   --panel2: #232734;
   --ink: #d7dae0;
   --dim: #8a8f9c;
   --line: #2e3340;
+  --line2: #22252e;                 /* table row rules */
   --green: #2ca02c;
   --amber: #ffb000;
   --red: #d62728;
   --blue: #4a9eff;
+  --red-ink: #ff6b64;               /* red state text on dark panels */
+  --red-ink-soft: #ff9d97;
+  --dup-bg: #2d1210;
+  --banner-green-bg: #12351a; --banner-green-fg: #59d06b; --banner-green-line: #1d5a2a;
+  --banner-amber-bg: #3a2c07; --banner-amber-fg: #ffb000; --banner-amber-line: #6b5410;
+  --banner-red-bg: #3d1210;   --banner-red-fg: #ff6b64;   --banner-red-line: #7a2420;
+  --banner-stale-bg: #2a2c33;
+  --alert-red-bg: #2d1210;    --alert-red-fg: #ff9d97;
+  --alert-amber-bg: #2d2408;  --alert-amber-fg: #ffd479;
+  --tooltip-bg: #0e1013e8;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  --bg: #f4f4f2;
+  --panel: #ffffff;
+  --panel2: #e9e9e5;
+  --ink: #1b1d22;
+  --dim: #5b606c;                   /* 5.7:1 on the bg */
+  --line: #d3d5da;
+  --line2: #e4e5e8;
+  --green: #1e7f38;                 /* 4.6:1 */
+  --amber: #9a6700;                 /* 4.4:1 */
+  --red: #c62828;                   /* 5.1:1 */
+  --blue: #2a78d6;                  /* 4.0:1 */
+  --red-ink: #b71c1c;
+  --red-ink-soft: #b71c1c;
+  --dup-bg: #fde8e7;
+  --banner-green-bg: #e3f5e6; --banner-green-fg: #1e7f38; --banner-green-line: #b7e1bf;
+  --banner-amber-bg: #fff3d6; --banner-amber-fg: #7a5200; --banner-amber-line: #f0d48a;
+  --banner-red-bg: #fde8e7;   --banner-red-fg: #8f1d1d;   --banner-red-line: #f2b8b5;
+  --banner-stale-bg: #ececea;
+  --alert-red-bg: #fde8e7;    --alert-red-fg: #8f1d1d;
+  --alert-amber-bg: #fff3d6;  --alert-amber-fg: #7a5200;
+  --tooltip-bg: #ffffffee;
 }
 
 * { box-sizing: border-box; }
@@ -33,6 +76,14 @@ footer { padding: 10px 14px 16px; }
 .mono { font-family: Consolas, "Cascadia Mono", monospace; font-size: 12px; }
 .hidden { display: none; }
 
+/* theme toggle */
+#topbar { display: flex; justify-content: flex-end; margin-bottom: 6px; }
+.theme-btn {
+  background: var(--panel); color: var(--dim); border: 1px solid var(--line);
+  border-radius: 5px; padding: 2px 10px; font-size: 12px; cursor: pointer;
+}
+.theme-btn:hover { color: var(--ink); }
+
 /* banner + alerts */
 .banner {
   padding: 8px 12px;
@@ -41,10 +92,10 @@ footer { padding: 10px 14px 16px; }
   letter-spacing: .02em;
 }
 .banner-wait  { background: var(--panel); color: var(--dim); }
-.banner-green { background: #12351a; color: #59d06b; border: 1px solid #1d5a2a; }
-.banner-amber { background: #3a2c07; color: var(--amber); border: 1px solid #6b5410; }
-.banner-red   { background: #3d1210; color: #ff6b64; border: 1px solid #7a2420; }
-.banner-stale { background: #2a2c33; color: var(--dim); border: 1px dashed var(--dim); }
+.banner-green { background: var(--banner-green-bg); color: var(--banner-green-fg); border: 1px solid var(--banner-green-line); }
+.banner-amber { background: var(--banner-amber-bg); color: var(--banner-amber-fg); border: 1px solid var(--banner-amber-line); }
+.banner-red   { background: var(--banner-red-bg); color: var(--banner-red-fg); border: 1px solid var(--banner-red-line); }
+.banner-stale { background: var(--banner-stale-bg); color: var(--dim); border: 1px dashed var(--dim); }
 
 #alerts { margin-top: 6px; }
 .alert {
@@ -53,8 +104,8 @@ footer { padding: 10px 14px 16px; }
   border-radius: 4px;
   font-size: 13px;
 }
-.alert-red   { background: #2d1210; color: #ff9d97; border-left: 3px solid var(--red); }
-.alert-amber { background: #2d2408; color: #ffd479; border-left: 3px solid var(--amber); }
+.alert-red   { background: var(--alert-red-bg); color: var(--alert-red-fg); border-left: 3px solid var(--red); }
+.alert-amber { background: var(--alert-amber-bg); color: var(--alert-amber-fg); border-left: 3px solid var(--amber); }
 
 /* fleet tiles */
 .fleet {
@@ -77,10 +128,10 @@ footer { padding: 10px 14px 16px; }
 
 .state-ok            { border-left-color: var(--green); }
 .state-ok .tile-state { color: var(--green); }
-.state-duplicate     { border-left-color: var(--red); background: #2d1210; }
-.state-duplicate .tile-state { color: #ff6b64; }
+.state-duplicate     { border-left-color: var(--red); background: var(--dup-bg); }
+.state-duplicate .tile-state { color: var(--red-ink); }
 .state-dead, .state-missing { border-left-color: var(--red); }
-.state-dead .tile-state, .state-missing .tile-state { color: #ff6b64; }
+.state-dead .tile-state, .state-missing .tile-state { color: var(--red-ink); }
 .state-silent, .state-degraded, .state-writer_unseen { border-left-color: var(--amber); }
 .state-silent .tile-state, .state-degraded .tile-state,
 .state-writer_unseen .tile-state { color: var(--amber); }
@@ -91,8 +142,8 @@ table.grid th {
   text-align: left; font-size: 11px; color: var(--dim);
   font-weight: 600; padding: 2px 10px 4px 0; border-bottom: 1px solid var(--line);
 }
-table.grid td { padding: 3px 10px 3px 0; font-size: 13px; border-bottom: 1px solid #22252e; }
-tr.feed-stale td, tr.feed-missing td { color: #ff9d97; }
+table.grid td { padding: 3px 10px 3px 0; font-size: 13px; border-bottom: 1px solid var(--line2); }
+tr.feed-stale td, tr.feed-missing td { color: var(--red-ink-soft); }
 .barcell { width: 140px; }
 .bar { background: var(--panel2); border-radius: 3px; height: 8px; width: 130px; }
 .bar-fill { background: var(--green); border-radius: 3px; height: 8px; }
@@ -130,7 +181,8 @@ tr.feed-stale td, tr.feed-missing td { color: #ff9d97; }
 .bar-fill.bar-neutral { background: var(--blue); }
 #positioning .tile { min-width: 300px; }
 
-/* delta-by-price profile: centered diverging meter per price bucket */
+/* delta-by-price profile: centered diverging meter per price bucket.
+   The buy/sell pair is the candle polarity pair, validated on both surfaces. */
 #profile { margin-top: 10px; }
 table.grid.profile { max-width: 560px; margin-top: 4px; }
 table.grid.profile td { padding: 1px 10px 1px 0; font-size: 12px; border-bottom: none; }
@@ -146,7 +198,7 @@ tr.row-last td { background: var(--panel2); }
 tr.row-last td:first-child { color: var(--ink); font-weight: 600; }
 .tooltip {
   position: absolute; z-index: 20; pointer-events: none;
-  background: #0e1013e8; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--tooltip-bg); border: 1px solid var(--line); border-radius: 6px;
   padding: 8px 10px; font-size: 12px; max-width: 340px;
 }
 .tooltip h4 { margin: 0 0 4px; font-size: 12px; }
@@ -165,7 +217,7 @@ tr.row-last td:first-child { color: var(--ink); font-weight: 600; }
 #bot-info img { max-width: 100%; border-radius: 4px; cursor: zoom-in; }
 #bot-info table.params { border-collapse: collapse; margin: 6px 0 12px; }
 #bot-info table.params td {
-  padding: 2px 14px 2px 0; font-size: 13px; border-bottom: 1px solid #22252e;
+  padding: 2px 14px 2px 0; font-size: 13px; border-bottom: 1px solid var(--line2);
 }
 .md h1, .md h2, .md h3 { font-size: 14px; margin: 12px 0 4px; }
 .md p, .md li { font-size: 13px; }

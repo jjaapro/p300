@@ -357,3 +357,8 @@ dashboard cannot write the ledger. Safe to run alongside the fleet; safe
 to start twice (the second bind just fails). Run it as the bots'' user so
 the process scan can read their command lines. Optional always-on via Task
 Scheduler like the bots. Details: dashboard/server.py docstring.
+Theme: the header button cycles auto (light 07–19 local time, dark
+otherwise) → light → dark; the choice is remembered by the browser, and
+`/?theme=light|dark` forces one for a session. Both palettes are validated
+separately (dataviz six checks); the entry-context PNG is rendered per
+theme (`?theme=` on /api/entry_chart, cached as `SJ-n-light.png`).

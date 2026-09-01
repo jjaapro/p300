@@ -4,10 +4,25 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>p300 dashboard</title>
+<script>
+/* theme before first paint (no flash): ?theme= override, else the saved
+   choice, else auto = light 07–19 local. app.js owns it from then on. */
+(function () {
+  try {
+    var q = new URLSearchParams(location.search).get("theme");
+    var m = q || localStorage.getItem("p300.theme") || "auto";
+    var h = new Date().getHours();
+    var t = (m === "light" || m === "dark") ? m : ((h >= 7 && h < 19) ? "light" : "dark");
+    document.documentElement.setAttribute("data-theme", t);
+  } catch (e) { /* storage blocked: CSS default (dark) */ }
+})();
+</script>
 <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 <header>
+  <div id="topbar"><button id="theme-btn" class="theme-btn"
+    title="cycle: auto (light 07–19) → light → dark">theme</button></div>
   <div id="banner" class="banner banner-wait">connecting…</div>
   <div id="alerts"></div>
   <div id="fleet" class="fleet"></div>

@@ -47,3 +47,14 @@ def test_cache_reused_for_open_trade(fixture_db):
 
 def test_unknown_trade_returns_none(fixture_db):
     assert render.cached_entry_chart("SJ-99999") is None
+
+
+def test_light_theme_is_its_own_picture_and_cache_file(fixture_db):
+    dark = render.cached_entry_chart("SJ-3")
+    light = render.cached_entry_chart("SJ-3", "light")
+    assert light[:8] == PNG_MAGIC and light != dark
+    assert (render.CACHE_DIR / "SJ-3.png").exists()          # dark keeps its name
+    assert (render.CACHE_DIR / "SJ-3-light.png").exists()
+    assert render.cached_entry_chart("SJ-3", "light") == light   # cached
+    with pytest.raises(ValueError):
+        render.cached_entry_chart("SJ-3", "neon")

@@ -55,6 +55,7 @@ from dashboard import botinfo, market, queries  # noqa: E402
 log = logging.getLogger("dashboard")
 
 _TRADE_ID_RE = re.compile(r"^SJ-\d+$")
+_CHART_THEMES = ("dark", "light")           # render._STYLES keys
 
 STATIC_DIR = Path(__file__).resolve().parent / "static"
 
@@ -130,8 +131,12 @@ class _Handler(BaseHTTPRequestHandler):
             if not _TRADE_ID_RE.match(tid):
                 return self._send_json({"error": f"bad trade id: {tid}"},
                                        HTTPStatus.BAD_REQUEST)
+            theme = params.get("theme", "dark")
+            if theme not in _CHART_THEMES:
+                return self._send_json({"error": f"bad theme: {theme}"},
+                                       HTTPStatus.BAD_REQUEST)
             from dashboard import render     # lazy: matplotlib is heavy
-            png = render.cached_entry_chart(tid)
+            png = render.cached_entry_chart(tid, theme)
             if png is None:
                 return self._send_json({"error": f"unknown trade: {tid}"},
                                        HTTPStatus.NOT_FOUND)

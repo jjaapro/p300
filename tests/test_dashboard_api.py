@@ -86,6 +86,11 @@ def test_entry_chart_png_and_unknown(api):
     assert status == 200 and ctype == "image/png"
     assert body[:8] == b"\x89PNG\r\n\x1a\n"
     assert _get(api + "/api/entry_chart/SJ-424242.png")[0] == 404
+    # per-theme rendering: light is a different picture, unknown theme -> 400
+    status, ctype, light = _get(api + "/api/entry_chart/SJ-3.png?theme=light")
+    assert status == 200 and ctype == "image/png" and light[:8] == body[:8]
+    assert light != body
+    assert _get(api + "/api/entry_chart/SJ-3.png?theme=neon")[0] == 400
 
 
 def test_db_unavailable_is_500_not_crash(api, tmp_path, monkeypatch):

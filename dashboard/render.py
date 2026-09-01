@@ -46,6 +46,19 @@ _SL = "#d62728"
 _TP = "#2ca02c"
 _TIME = "#ffb000"
 
+# Per-theme figure styling, matching the page tokens in static/style.css.
+# dark keeps the original nightclouds look byte-for-byte; light gets the
+# page's candle pair explicitly (mplfinance's default style has its own).
+_STYLES = {
+    "dark": dict(base="nightclouds", face="#14161a", fig="#14161a",
+                 edge="#2e3340", grid="#22252e", tick="#8a8f9c",
+                 text="#d7dae0", box="#1c1f26", candles=None),
+    "light": dict(base="default", face="#ffffff", fig="#f4f4f2",
+                  edge="#d3d5da", grid="#e4e5e8", tick="#5b606c",
+                  text="#1b1d22", box="#ffffff",
+                  candles=("#26a69a", "#ef5350")),
+}
+
 
 def _load_frame(asset: str, start_s: int, end_s: int) -> pd.DataFrame:
     table = _TABLES.get(asset)
@@ -68,7 +81,7 @@ def _load_frame(asset: str, start_s: int, end_s: int) -> pd.DataFrame:
     return df
 
 
-def entry_chart_png(trade: dict) -> bytes:
+def entry_chart_png(trade: dict, theme: str = "dark") -> bytes:
     """Render the annotated entry-context chart for one trade dict (the
     shape queries._trade_dict returns)."""
     entry_ts = trade.get("entry_ts")
@@ -113,13 +126,19 @@ def entry_chart_png(trade: dict) -> bytes:
              f"{trade['direction']}  ·  entered "
              f"{(trade.get('entry_time') or '')[:16]}Z  ·  {trade['status']}")
 
+    st = _STYLES[theme]
     with _LOCK:
-        style = mpf.make_mpf_style(
-            base_mpf_style="nightclouds",
-            facecolor="#14161a", figcolor="#14161a", edgecolor="#2e3340",
-            gridcolor="#22252e", gridstyle=":",
-            rc={"axes.labelcolor": "#8a8f9c", "xtick.color": "#8a8f9c",
-                "ytick.color": "#8a8f9c", "text.color": "#d7dae0"})
+        style_kw: dict = dict(
+            base_mpf_style=st["base"],
+            facecolor=st["face"], figcolor=st["fig"], edgecolor=st["edge"],
+            gridcolor=st["grid"], gridstyle=":",
+            rc={"axes.labelcolor": st["tick"], "xtick.color": st["tick"],
+                "ytick.color": st["tick"], "text.color": st["text"]})
+        if st["candles"]:
+            style_kw["marketcolors"] = mpf.make_marketcolors(
+                up=st["candles"][0], down=st["candles"][1],
+                edge="inherit", wick="inherit")
+        style = mpf.make_mpf_style(**style_kw)
         kwargs: dict = dict(
             type="candle", style=style, returnfig=True, volume=False,
             figsize=(12, 6), title=dict(title=title, size=10),
@@ -174,8 +193,8 @@ def entry_chart_png(trade: dict) -> bytes:
             ax.text(0.008, 0.985, "\n".join(lines[:14]),
                     transform=ax.transAxes, fontsize=7.5,
                     fontfamily="monospace", va="top", ha="left",
-                    color="#d7dae0",
-                    bbox=dict(facecolor="#1c1f26", edgecolor="#2e3340",
+                    color=st["text"],
+                    bbox=dict(facecolor=st["box"], edgecolor=st["edge"],
                               alpha=0.92, boxstyle="round,pad=0.4"))
 
         buf = io.BytesIO()
@@ -184,19 +203,24 @@ def entry_chart_png(trade: dict) -> bytes:
     return buf.getvalue()
 
 
-def cached_entry_chart(trade_id: str) -> bytes | None:
-    """PNG for the trade, from cache when valid. None = unknown trade."""
+def cached_entry_chart(trade_id: str, theme: str = "dark") -> bytes | None:
+    """PNG for the trade, from cache when valid. None = unknown trade.
+    Dark keeps the historical `SJ-n.png` cache name; other themes get
+    `SJ-n-<theme>.png` so a theme switch never serves the wrong picture."""
+    if theme not in _STYLES:
+        raise ValueError(f"unknown chart theme: {theme}")
     trade = queries.trade_by_id(trade_id)
     if trade is None:
         return None
     CACHE_DIR.mkdir(exist_ok=True)
-    path = CACHE_DIR / f"{trade_id}.png"
+    path = CACHE_DIR / (f"{trade_id}.png" if theme == "dark"
+                        else f"{trade_id}-{theme}.png")
     if path.exists():
         if trade["status"] != "open":          # closed = final picture
             return path.read_bytes()
         if time.time() - path.stat().st_mtime < OPEN_RERENDER_S:
             return path.read_bytes()
-    png = entry_chart_png(trade)
+    png = entry_chart_png(trade, theme)
     try:
         path.write_bytes(png)
     except OSError:

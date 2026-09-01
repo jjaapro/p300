@@ -22,14 +22,21 @@ const CLOSED_MARKER = "#5c6270";
    line, spot−perp histogram); pane 2 ΔOI% histogram — bar direction is the
    OI sign, bar color the CVD sign, so the quadrant reads from geometry (OI
    level lives in the legend); pane 3 bp (funding per 8h as a histogram,
-   basis as a line). Palette validated with the dataviz validator on the
-   dark surface: #3987e5 / #d95926 categorical pair, #26a69a / #ef5350
-   polarity pair (the candle colors). */
-const FLOW_PRIMARY = "#3987e5";
-const FLOW_SECONDARY = "#d95926";
+   basis as a line). Palettes validated with the dataviz validator on their
+   own surfaces — dark #14161a: #3987e5 / #d95926; light #f4f4f2: #2a78d6 /
+   #eb6834 — plus the #26a69a / #ef5350 polarity pair (the candle colors),
+   which passes on both and so never needs re-coloring on a theme switch. */
+const THEMES = {
+  dark:  { primary: "#3987e5", secondary: "#d95926", dim: "#8a8f9c",
+           text: "#8a8f9c", grid: "#22252e", border: "#2e3340" },
+  light: { primary: "#2a78d6", secondary: "#eb6834", dim: "#9aa0ab",
+           text: "#5b606c", grid: "#e4e5e8", border: "#d3d5da" },
+};
 const UP = "#26a69a";
 const DOWN = "#ef5350";
-const DIM = "#8a8f9c";
+const THEME_KEY = "p300.theme";
+let themeMode = "auto";            // auto (light 07–19 local clock) | light | dark
+function TH() { return THEMES[currentTheme()]; }
 const PANE_H = 110;
 const QUADRANT = { longs_opening: "longs opening", short_covering: "short covering",
                    shorts_opening: "shorts opening", longs_closing: "longs closing" };
@@ -213,18 +220,23 @@ let flowByTime = new Map();
 let flowLast = null;
 let flowMeta = null;            // last /api/flow payload (bars excluded)
 
+function chartOptions() {
+  const t = TH();
+  return {
+    layout: { background: { color: "transparent" }, textColor: t.text },
+    grid: { vertLines: { color: t.grid }, horzLines: { color: t.grid } },
+    rightPriceScale: { borderColor: t.border },
+    timeScale: { borderColor: t.border, timeVisible: true, secondsVisible: false },
+  };
+}
+
 function initChart() {
   if (typeof LightweightCharts === "undefined") {
     $("chart").textContent = "chart library missing (static/vendor/)";
     return false;
   }
   chart = LightweightCharts.createChart($("chart"), {
-    autoSize: true,
-    layout: { background: { color: "transparent" }, textColor: "#8a8f9c" },
-    grid: { vertLines: { color: "#22252e" }, horzLines: { color: "#22252e" } },
-    rightPriceScale: { borderColor: "#2e3340" },
-    timeScale: { borderColor: "#2e3340", timeVisible: true,
-                 secondsVisible: false },
+    autoSize: true, ...chartOptions(),
     crosshair: { mode: LightweightCharts.CrosshairMode.Normal },
   });
   series = chart.addSeries(LightweightCharts.CandlestickSeries, {
@@ -337,7 +349,7 @@ function flowPoint(name, b) {
     case "oi_delta_pct":
       if (b.oi_delta_pct === null) return { time: t };
       return { time: t, value: b.oi_delta_pct,
-               color: b.label === null ? DIM : (b.perp_cvd > 0 ? UP : DOWN) };
+               color: b.label === null ? TH().dim : (b.perp_cvd > 0 ? UP : DOWN) };
     case "funding":
       return b.funding === null ? { time: t }
         : { time: t, value: b.funding * 1e4, color: b.funding >= 0 ? UP : DOWN };
@@ -363,12 +375,12 @@ function rebuildPanes(fd) {
   // histograms first so the lines draw on top of them
   let p = 1;
   if (fd.spot_source) flowSeries.divergence = hist(p);
-  flowSeries.perp_cvd = line(FLOW_PRIMARY, p);
-  if (fd.spot_source) flowSeries.spot_cvd = line(FLOW_SECONDARY, p);
+  flowSeries.perp_cvd = line(TH().primary, p);
+  if (fd.spot_source) flowSeries.spot_cvd = line(TH().secondary, p);
   p++;
   if (fd.oi_source) { flowSeries.oi_delta_pct = hist(p); p++; }
   flowSeries.funding = hist(p);
-  if (fd.spot_source) flowSeries.basis_bp = line(FLOW_SECONDARY, p);
+  if (fd.spot_source) flowSeries.basis_bp = line(TH().secondary, p);
   $("chart").style.height = `${460 + PANE_H * p}px`;
   const panes = chart.panes();
   if (panes[0] && panes[0].setStretchFactor) {
@@ -425,9 +437,9 @@ function updateLegend(time) {
     for (const x of parts) r.appendChild(x);
     box.appendChild(r);
   };
-  const p1 = [txt("CVD "), sw(FLOW_PRIMARY), txt("perp "), val(fmtSigned(b.perp_cvd, 1))];
+  const p1 = [txt("CVD "), sw(TH().primary), txt("perp "), val(fmtSigned(b.perp_cvd, 1))];
   if (flowMeta.spot_source) {
-    p1.push(txt(" · "), sw(FLOW_SECONDARY), txt("spot "), val(fmtSigned(b.spot_cvd, 1)),
+    p1.push(txt(" · "), sw(TH().secondary), txt("spot "), val(fmtSigned(b.spot_cvd, 1)),
             txt(" · spot−perp "), val(fmtSigned(b.divergence, 1)));
   }
   row(p1);
@@ -439,7 +451,7 @@ function updateLegend(time) {
   const p3 = [txt("funding "),
               val(b.funding === null ? "—" : fmtSigned(b.funding * 1e4, 2) + " bp/8h")];
   if (flowMeta.spot_source) {
-    p3.push(txt(" · "), sw(FLOW_SECONDARY), txt("basis "),
+    p3.push(txt(" · "), sw(TH().secondary), txt("basis "),
             val(b.basis_bp === null ? "—" : fmtSigned(b.basis_bp, 1) + " bp"));
   }
   row(p3);
@@ -832,9 +844,10 @@ async function showBot(name) {
         ? ` · ${t.r_multiple > 0 ? "+" : ""}${t.r_multiple}R` : "")));
     if (d.entry_chart_url) {
       const img = document.createElement("img");
-      img.src = d.entry_chart_url;
+      img.dataset.base = d.entry_chart_url;          // re-themed by applyTheme
+      img.src = `${d.entry_chart_url}?theme=${currentTheme()}`;
       img.alt = `entry context chart for ${t.id}`;
-      img.onclick = () => window.open(d.entry_chart_url, "_blank");
+      img.onclick = () => window.open(img.src, "_blank");
       info.appendChild(img);
     }
   } else {
@@ -868,6 +881,61 @@ async function showBot(name) {
   det.appendChild(sum);
   det.appendChild(mdDiv(d.calibration_md));
   info.appendChild(det);
+}
+
+/* ── theme ────────────────────────────────────────────────────────────── */
+
+function currentTheme() {
+  return document.documentElement.dataset.theme === "light" ? "light" : "dark";
+}
+
+function resolveTheme(mode) {
+  if (mode === "light" || mode === "dark") return mode;
+  const h = new Date().getHours();
+  return (h >= 7 && h < 19) ? "light" : "dark";   // auto: light in the daytime
+}
+
+function applyTheme() {
+  const t = resolveTheme(themeMode);
+  const changed = currentTheme() !== t;
+  document.documentElement.dataset.theme = t;
+  const btn = $("theme-btn");
+  if (btn) {
+    btn.textContent = themeMode === "auto"
+      ? `theme: auto (${t} now · light 07–19)` : `theme: ${themeMode}`;
+  }
+  if (!changed) return;
+  if (chart) {
+    chart.applyOptions(chartOptions());
+    const th = TH();
+    if (flowSeries.perp_cvd) flowSeries.perp_cvd.applyOptions({ color: th.primary });
+    if (flowSeries.spot_cvd) flowSeries.spot_cvd.applyOptions({ color: th.secondary });
+    if (flowSeries.basis_bp) flowSeries.basis_bp.applyOptions({ color: th.secondary });
+    if (flowSeries.oi_delta_pct) {              // unlabeled bars carry the dim color
+      flowSeries.oi_delta_pct.setData(flowBars.map((b) => flowPoint("oi_delta_pct", b)));
+    }
+    updateLegend(null);
+  }
+  for (const img of document.querySelectorAll("#bot-info img[data-base]")) {
+    img.src = `${img.dataset.base}?theme=${t}`;
+  }
+}
+
+function initTheme() {
+  try { themeMode = localStorage.getItem(THEME_KEY) || "auto"; }
+  catch (e) { /* storage blocked: stay on auto */ }
+  const q = new URLSearchParams(location.search).get("theme");
+  if (q === "light" || q === "dark" || q === "auto") themeMode = q;   // one-off
+  const btn = $("theme-btn");
+  if (btn) {
+    btn.onclick = () => {
+      themeMode = { auto: "light", light: "dark", dark: "auto" }[themeMode] || "auto";
+      try { localStorage.setItem(THEME_KEY, themeMode); } catch (e) { /* ignore */ }
+      applyTheme();
+    };
+  }
+  applyTheme();
+  setInterval(applyTheme, 60000);               // auto follows the clock
 }
 
 /* ── polling ──────────────────────────────────────────────────────────── */
@@ -906,6 +974,7 @@ document.addEventListener("visibilitychange", () => {
   if (!document.hidden) { pollHealth(); refreshChart(); pollPositioning(); }
 });
 
+initTheme();                                    // before the chart reads TH()
 pollHealth();
 setInterval(pollHealth, HEALTH_MS);
 pollPositioning();
