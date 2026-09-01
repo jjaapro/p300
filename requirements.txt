@@ -15,3 +15,9 @@ matplotlib>=3.8
 mplfinance>=0.12.10b0
 anthropic>=0.40
 feedparser>=6.0
+
+# dashboard/: psutil is the ground-truth process scan behind the fleet
+# panel's duplicate-instance detection (dashboard/procscan.py). The scan
+# collapses the Windows venv-shim parent/child pair — see that module's
+# docstring before touching anything process-count related.
+psutil>=7.0

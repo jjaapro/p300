@@ -327,3 +327,25 @@ Everything we know is in-repo:
 - Variant spec rationale: [strategies/p300_spec.py](strategies/p300_spec.py) header + build_spec
 - Look-ahead audit + fix history: [tests/test_jplus_lookahead.py](tests/test_jplus_lookahead.py)
 - Backtest results: run `studies/notebooks/backtest_report.ipynb` against any replay variant
+
+## 9. Dashboard (2026-08-24)
+
+Read-only local web UI over the live fleet:
+
+    python dashboard/server.py            # http://127.0.0.1:8300  (--open launches browser)
+
+Panels: fleet liveness with ground-truth duplicate detection (psutil scan;
+one green instance per unit — note a HEALTHY bot is two python.exe
+processes, venv shim + real interpreter with identical command line,
+collapsed by dashboard/procscan.py — never count raw cmdline matches),
+data-feed freshness vs botlib contracts, a live alert strip mirroring
+monitor.py's checks, the BTC/ETH trade chart (entry dots; hover shows
+planned TP / SL / timed stop; click pins the levels and the full decision
+data), and per-bot strategy explainers with an annotated picture of the
+latest entry.
+
+Strictly read-only: prod.db is opened mode=ro with PRAGMA query_only — the
+dashboard cannot write the ledger. Safe to run alongside the fleet; safe
+to start twice (the second bind just fails). Run it as the bots'' user so
+the process scan can read their command lines. Optional always-on via Task
+Scheduler like the bots. Details: dashboard/server.py docstring.

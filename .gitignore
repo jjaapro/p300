@@ -38,6 +38,9 @@ data/diagnostics/
 data/backups/
 data/archive/*.db
 
+# Dashboard entry-chart PNG cache (regenerated on demand)
+dashboard/cache/
+
 # Study-local OHLCV mirrors (regenerate with the study's fetch script)
 studies/notebooks/paladin_study/paladin_ohlcv.db
 studies/notebooks/scanner_study/scanner_ohlcv.db

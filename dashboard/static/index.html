@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>p300 dashboard</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header>
+  <div id="banner" class="banner banner-wait">connecting…</div>
+  <div id="alerts"></div>
+  <div id="fleet" class="fleet"></div>
+</header>
+<main>
+  <section id="feeds-section">
+    <h2>data feeds <span id="feeds-note" class="dim"></span></h2>
+    <div id="feeds"></div>
+    <div id="feeds-footer" class="dim"></div>
+  </section>
+  <section id="chart-section">
+    <h2>trades</h2>
+    <div id="chart-controls" class="controls"></div>
+    <div id="chart-wrap">
+      <div id="chart"></div>
+      <div id="tooltip" class="tooltip hidden"></div>
+    </div>
+    <div id="trade-detail" class="hidden"></div>
+  </section>
+  <section id="bots-section">
+    <h2>bots</h2>
+    <div id="bot-tabs" class="controls"></div>
+    <div id="bot-info"></div>
+  </section>
+</main>
+<footer class="dim" id="foot"></footer>
+<script src="/static/vendor/lightweight-charts.standalone.production.js"></script>
+<script src="/static/vendor/marked.min.js"></script>
+<script src="/static/app.js"></script>
+</body>
+</html>
