@@ -585,6 +585,29 @@ def latest_entry(variant_id: str) -> dict | None:
         con.close()
 
 
+def _candle_window(con: sqlite3.Connection, asset: str, tf: str, bars: int,
+                   after: int, now_s: int) -> int:
+    """Start timestamp of the chart window. Shared by candles() and
+    market.flow() so the two endpoints fetch the identical bar set (the
+    flow panes sit under the candles and must line up 1:1)."""
+    if after:
+        return int(after)               # re-fetch from the last known bar
+    start = now_s - (bars or _DEFAULT_BARS[tf]) * _TF_SECONDS[tf]
+    # every open-trade entry dot must be on-chart (carry's entry is
+    # weeks old) — extend the window past the oldest open entry.
+    try:
+        row = con.execute(
+            "SELECT MIN(entry_time) FROM trades WHERE status='open' "
+            "AND asset=? AND strategy_variant LIKE 'bot_%'",
+            (asset,)).fetchone()
+    except sqlite3.OperationalError:
+        row = None
+    oldest = _ts(row[0]) if row and row[0] else None
+    if oldest:
+        start = min(start, oldest - 2 * 86400)
+    return start
+
+
 def candles(asset: str = "BTC", tf: str = "1h", bars: int = 0,
             after: int = 0) -> dict:
     asset = (asset or "BTC").upper()
@@ -597,22 +620,7 @@ def candles(asset: str = "BTC", tf: str = "1h", bars: int = 0,
 
     con = _ro_con()
     try:
-        if after:
-            start = int(after)          # re-fetch from the last known bar
-        else:
-            start = now_s - bars * secs
-            # every open-trade entry dot must be on-chart (carry's entry is
-            # weeks old) — extend the window past the oldest open entry.
-            try:
-                row = con.execute(
-                    "SELECT MIN(entry_time) FROM trades WHERE status='open' "
-                    "AND asset=? AND strategy_variant LIKE 'bot_%'",
-                    (asset,)).fetchone()
-            except sqlite3.OperationalError:
-                row = None
-            oldest = _ts(row[0]) if row and row[0] else None
-            if oldest:
-                start = min(start, oldest - 2 * 86400)
+        start = _candle_window(con, asset, tf, bars, after, now_s)
         rows = con.execute(
             f"SELECT timestamp, open, high, low, close FROM {table} "
             f"WHERE timestamp >= ? ORDER BY timestamp", (start,)).fetchall()

@@ -43,7 +43,12 @@ def test_all_json_endpoints_respond(api):
     for path, key in [("/api/overview", "fleet"), ("/api/feeds", "tables"),
                       ("/api/trades?scope=open", "trades"),
                       ("/api/candles?asset=BTC&tf=1h", "bars"),
-                      ("/api/bots", "bots")]:
+                      ("/api/bots", "bots"),
+                      ("/api/flow?asset=BTC&tf=1h", "bars"),
+                      ("/api/flow?asset=ETH&tf=15m", "bars"),
+                      ("/api/positioning?asset=BTC", "latest"),
+                      ("/api/positioning?asset=ETH", "latest"),
+                      ("/api/profile?asset=BTC", "buckets")]:
         status, ctype, body = _get(api + path)
         assert status == 200, path
         assert "json" in ctype
@@ -70,6 +75,10 @@ def test_bad_params_are_400(api):
     assert _get(api + "/api/candles?asset=BTC&tf=5m")[0] == 400
     assert _get(api + "/api/trades?scope=weird")[0] == 400
     assert _get(api + "/api/entry_chart/evil.png")[0] == 400
+    assert _get(api + "/api/flow?asset=BTC&tf=5m")[0] == 400
+    assert _get(api + "/api/flow?asset=BTC&tf=1h&after=abc")[0] == 400
+    assert _get(api + "/api/positioning?asset=DOGE")[0] == 400
+    assert _get(api + "/api/profile?asset=BTC&buckets=1")[0] == 400
 
 
 def test_entry_chart_png_and_unknown(api):

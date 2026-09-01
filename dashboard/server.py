@@ -7,8 +7,12 @@ Usage:
 Panels: fleet liveness + duplicate detection (psutil ground truth with the
 venv-shim collapse, dashboard/procscan.py), data-feed freshness grid, an
 alert strip mirroring monitor.py's checks live, the trade chart with entry
-markers (planned TP/SL/timed stop on hover), and per-bot strategy
-explainers with an annotated picture of the latest entry.
+markers (planned TP/SL/timed stop on hover) with flow panes underneath
+(perp/spot CVD + divergence, OI + ΔOI quadrant label, funding + basis —
+dashboard/market.py, descriptive "what the bots see" context, not a
+signal), a daily positioning tile (L/S ratio 1y percentile, CPR gate,
+regime circuit breaker), a 24h delta-by-price profile, and per-bot
+strategy explainers with an annotated picture of the latest entry.
 
 Why it exists: the 2026-08-15→24 incident — every bot + feed ran doubled
 for 9 days (manual double-start; chento double-sized every signal:
@@ -44,7 +48,7 @@ from urllib.parse import parse_qsl, unquote, urlsplit
 REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
-from dashboard import botinfo, queries  # noqa: E402
+from dashboard import botinfo, market, queries  # noqa: E402
 # dashboard.render is imported lazily on the first entry-chart request —
 # it pulls in matplotlib/mplfinance, which server startup shouldn't pay for.
 
@@ -72,6 +76,13 @@ API_ROUTES = {
         p.get("asset", "BTC"), p.get("tf", "1h"),
         int(p.get("bars", 0)), int(p.get("after", 0))),
     "/api/bots": lambda p: botinfo.summary(),
+    "/api/flow": lambda p: market.flow(
+        p.get("asset", "BTC"), p.get("tf", "1h"),
+        int(p.get("bars", 0)), int(p.get("after", 0))),
+    "/api/positioning": lambda p: market.positioning(p.get("asset", "BTC")),
+    "/api/profile": lambda p: market.profile(
+        p.get("asset", "BTC"), int(p.get("hours", 24)),
+        int(p.get("buckets", 24))),
 }
 
 

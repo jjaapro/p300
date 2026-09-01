@@ -214,7 +214,7 @@ def test_feeds_grid_on_fixture(fixture_db):
     by_name = {t["table"]: t for t in fd["tables"]}
     assert by_name["cd_futures_15m"]["state"] == "fresh"
     assert by_name["btc_1m"]["state"] == "stale"
-    assert by_name["cd_open_interest"]["state"] == "missing"
+    assert by_name["okx_perp_1h"]["state"] == "missing"
     assert set(by_name) == set(__import__("botlib").FRESHNESS_CONTRACTS)
 
 
