@@ -290,6 +290,7 @@ async function loadChart() {
     rebuildPanes(fd);
     setFlowData(fd);
   }
+  loadProfile();
   if (cd.bars.length > 160) {
     chart.timeScale().setVisibleLogicalRange(
       { from: cd.bars.length - 150, to: cd.bars.length + 5 });
@@ -639,6 +640,127 @@ function onChartClick(param) {
   selectTrade(next);
 }
 
+/* ── positioning tiles (dashboard/market.py::positioning) ─────────────── */
+
+const POS_MS = 60000;
+
+function renderPositioning(list) {
+  const wrap = $("positioning");
+  wrap.replaceChildren();
+  for (const pz of list) {
+    const L = pz.latest;
+    const cb = pz.regime_cb;
+    const state = !L ? "missing" : L.stale ? "missing" : (cb && cb.active) ? "degraded" : "info";
+    const tile = el("div", `tile state-${state}`);
+    const head = el("div", "tile-head");
+    head.appendChild(el("span", "tile-name", `${pz.asset} long/short`));
+    head.appendChild(el("span", "tile-state",
+      !L ? "NO DATA" : L.stale ? "STALE" : (cb && cb.active) ? "CB ACTIVE"
+                                                             : (pz.decile_label || "—")));
+    tile.appendChild(head);
+    if (!L) {
+      tile.appendChild(el("div", "tile-row dim", "no rows in ca_long_short_ratio"));
+      wrap.appendChild(tile);
+      continue;
+    }
+    tile.appendChild(el("div", "tile-row mono",
+      `ratio ${L.ratio} · ${L.long_pct}% of accounts long · ${L.date}` +
+      (L.stale ? ` (${fmtAge(L.age_s)} old)` : "")));
+    const meter = el("div", "tile-row meter");
+    const bar = el("div", "bar");
+    const fill = el("div", "bar-fill bar-neutral");
+    const rk = pz.pct_rank_365;
+    fill.style.width = `${Math.max(2, (rk || 0) * 100)}%`;
+    bar.appendChild(fill);
+    meter.appendChild(bar);
+    meter.appendChild(el("span", null, rk === null ? "warming up (needs 365 rows)"
+      : `${Math.round(rk * 100)}th pct of its year — crowd ${rk < 0.5 ? "short" : "long"} vs usual`));
+    tile.appendChild(meter);
+    const ds = pz.decile_stats.find((d) => d.decile === pz.decile);
+    if (ds && ds.n && pz.uncond) {
+      tile.appendChild(el("div", "tile-row",
+        `20d fwd from ${pz.decile_label} (n=${ds.n}): mean ${fmtSigned(ds.mean_ret_pct, 1)}%` +
+        ` · hit ${ds.hit_pct}% · unconditional ${fmtSigned(pz.uncond.mean_ret_pct, 1)}%` +
+        ` / ${pz.uncond.hit_pct}%`));
+    }
+    const c = pz.cpr;
+    if (c.reason) {
+      tile.appendChild(el("div", "tile-row dim", `CPR gate (${c.date}): ${c.reason}`));
+    } else {
+      tile.appendChild(el("div", "tile-row",
+        `CPR gate (${c.date}): L/S ≤ p20 ${c.ls_ok ? "pass" : "fail"} (${c.ls_ratio} vs ${c.ls_p20})` +
+        ` · funding 3d ≤ p20 ${c.fund_ok ? "pass" : "fail"}` +
+        ` (${(c.fund_3d * 1e4).toFixed(2)} vs ${(c.fund_p20 * 1e4).toFixed(2)} bp, BTC funding)`));
+    }
+    if (cb) {
+      tile.appendChild(el("div", `tile-row${cb.active ? " warn" : " dim"}`,
+        cb.active
+          ? `J+ LS circuit breaker ACTIVE until ${cb.until} — forces 'uncertain' ` +
+            `(long% 7d shift ${fmtSigned(cb.shift, 1)}, arms below ${cb.threshold})`
+          : `J+ LS circuit breaker off (long% 7d shift ${fmtSigned(cb.shift, 1)}, arms below ${cb.threshold})`));
+    } else {
+      tile.appendChild(el("div", "tile-row dim", "J+ circuit breaker: BTC only"));
+    }
+    wrap.appendChild(tile);
+  }
+}
+
+async function pollPositioning() {
+  if (document.hidden) return;
+  try {
+    const list = await Promise.all([
+      getJSON("/api/positioning?asset=BTC"), getJSON("/api/positioning?asset=ETH"),
+    ]);
+    renderPositioning(list);
+  } catch (e) {
+    $("positioning").replaceChildren(
+      el("div", "dim", `positioning unavailable: ${e.message}`));
+  }
+  loadProfile();
+}
+
+/* ── delta by price (dashboard/market.py::profile) ────────────────────── */
+
+function renderProfile(pf) {
+  const wrap = $("profile");
+  wrap.replaceChildren();
+  wrap.appendChild(el("div", "dim",
+    `${pf.hours}h taker delta by price · ${pf.asset} · ${pf.buckets.length} buckets of ` +
+    `${fmtNum(pf.bucket_width)} · total ${fmtSigned(pf.total_delta, 0)} · bar-range ` +
+    `attribution from 15m bars (no live footprint table)`));
+  if (!pf.buckets.length) { wrap.appendChild(el("div", "dim", "no bars")); return; }
+  const table = el("table", "grid profile");
+  let marked = false;
+  for (const b of pf.buckets) {                       // high -> low
+    const isLast = !marked && pf.last_price !== null &&
+      (pf.last_price >= b.lo && (pf.last_price < b.hi || b === pf.buckets[0]));
+    if (isLast) marked = true;
+    const tr = el("tr", isLast ? "row-last" : "");
+    tr.appendChild(el("td", "mono", `${fmtPrice(b.lo)} – ${fmtPrice(b.hi)}`));
+    const cell = el("td", "barcell wide");
+    const bar = el("div", "bar bar-center");
+    const fill = el("div", `bar-fill ${b.delta >= 0 ? "bar-buy" : "bar-sell"}`);
+    const w = pf.max_abs ? Math.abs(b.delta) / pf.max_abs * 50 : 0;
+    fill.style.width = `${w}%`;
+    fill.style.marginLeft = b.delta >= 0 ? "50%" : `${50 - w}%`;
+    bar.appendChild(fill);
+    cell.appendChild(bar);
+    tr.appendChild(cell);
+    tr.appendChild(el("td", "mono", fmtSigned(b.delta, 1)));
+    tr.appendChild(el("td", "dim", isLast ? "◀ last" : ""));
+    table.appendChild(tr);
+  }
+  wrap.appendChild(table);
+}
+
+async function loadProfile() {
+  try {
+    renderProfile(await getJSON(`/api/profile?asset=${curAsset}`));
+  } catch (e) {
+    $("profile").replaceChildren(el("div", "dim", `profile unavailable: ${e.message}`));
+  }
+}
+
 /* ── bot info tabs ────────────────────────────────────────────────────── */
 
 let curBot = null;
@@ -773,11 +895,13 @@ async function pollHealth() {
 }
 
 document.addEventListener("visibilitychange", () => {
-  if (!document.hidden) { pollHealth(); refreshChart(); }
+  if (!document.hidden) { pollHealth(); refreshChart(); pollPositioning(); }
 });
 
 pollHealth();
 setInterval(pollHealth, HEALTH_MS);
+pollPositioning();
+setInterval(pollPositioning, POS_MS);
 if (initChart()) {
   loadChart().catch((e) => { $("chart").textContent = `chart: ${e.message}`; });
   setInterval(refreshChart, CHART_MS);
