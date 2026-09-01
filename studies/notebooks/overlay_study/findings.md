@@ -102,3 +102,27 @@ OOS (2025+) totals are positive in all headline variants but thin on ETH (data e
 
 `gen_trades.py` (trade regeneration), `run_overlays.py` (engine + grid),
 `results/trades_{BTC,ETH}.csv`, `results/overlay_summary.csv`, `overlay_study.ipynb`.
+
+## Re-check on complete ETH data (2026-09-01, `results_backonly/` regenerated)
+
+The 2026-08-23 backward-only pool was cut while `cd_futures_eth_15m` still ended
+2026-05-26 (ETH feed dead until revived that day, `5d9c4b3`); 5,376 15m + 1,344 OKX
+ETH rows were backfilled since (proven in `studies/notebooks/lsr_b5_study/results/
+parity_explained.md`). `gen_trades_backonly.py` + `run_overlays.py results_backonly`
+rerun on today's tables: BTC pool identical (211 trades; small metric shifts come
+from the last trades' 72h windows completing), ETH pool 182 → 191 trades, OKX-aligned
+73 → 77. ETH OOS is no longer thin (base OOS total 0.4R → 4.1R).
+
+| conclusion | 08-23 | 09-01 (complete ETH) | status |
+|---|---|---|---|
+| multi-asset: combined vs BTC-alone (base) | 133.6R vs 77.8R (+72 %), DD −11.4 vs −13.0, MAR 11.8 vs 6.0 | 134.6R vs 80.8R (+67 %), DD −11.4 vs −11.2, MAR 11.8 vs 7.2 | **holds** (income +67 %, MAR +64 %; the "lower drawdown" part is now a tie) |
+| tilt ordering, combined | skip 15.7 > half 14.5 > 2-stops 12.7 > none 11.8 | skip 15.7 > half 14.6 > 2-stops 12.9 > none 11.8 | **identical** |
+| tilt on ETH | skip 6.7 ≈ half 6.7 (tied), half +64 % income | **skip 8.4 > half 7.5**; half +47 % income (41.5 vs 28.2R) at DD −5.5 vs −3.4; OOS skip 8.1R vs half 6.1R | **changed**: no longer a tie — skip leads on MAR and OOS, half on total R |
+| wick exit | below base throughout | ETH base 6.0 vs wick p0.5/p1/p2/p3 = 1.3 / 3.6 / 4.5 / 3.7 | **still rejected** |
+| half-risk tag | unstable across pools; rejected | still helps the backward-only pool (ETH skip+H 8.6, half+H 9.4; combined skip+H 23.8) | unchanged verdict (the instability is vs the bidirectional pool) |
+
+Consequence: the per-asset tilt (BTC skip / ETH half-after-loss, shipped in
+`strategies/sleeves/chento_triple_v3/config.py`) was justified by an ETH tie that the
+complete data does not reproduce. Both remain defensible — half-after-loss for
+steady flow (+47 % ETH income), skip-after-loss for MAR and OOS — but it is now a
+trade-off, not a free lunch. Decision left to the operator; no config change made here.
