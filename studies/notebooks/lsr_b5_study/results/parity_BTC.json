@@ -1,0 +1,56 @@
+{
+  "shift_days": 0,
+  "summary": {
+    "V0_sym30": {
+      "b5_triggers": 639,
+      "triple_triggers": 361,
+      "trades": 211,
+      "long": 108,
+      "short": 103
+    },
+    "V1_long30": {
+      "b5_triggers": 639,
+      "triple_triggers": 790,
+      "trades": 413,
+      "long": 108,
+      "short": 305
+    },
+    "V2_noB5": {
+      "b5_triggers": null,
+      "triple_triggers": 1159,
+      "trades": 620,
+      "long": 315,
+      "short": 305
+    },
+    "V3_sym90": {
+      "b5_triggers": 593,
+      "triple_triggers": 314,
+      "trades": 172,
+      "long": 113,
+      "short": 59
+    },
+    "V4_sym365": {
+      "b5_triggers": 468,
+      "triple_triggers": 257,
+      "trades": 138,
+      "long": 92,
+      "short": 46
+    },
+    "V5_long365": {
+      "b5_triggers": 468,
+      "triple_triggers": 763,
+      "trades": 397,
+      "long": 92,
+      "short": 305
+    }
+  },
+  "parity": {
+    "ref_n": 204,
+    "new_n": 204,
+    "common": 204,
+    "only_ref": [],
+    "only_new": [],
+    "max_abs_r_diff": 4.440892098500626e-16,
+    "ok": true
+  }
+}

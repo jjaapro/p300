@@ -1,0 +1,64 @@
+{
+  "shift_days": 0,
+  "summary": {
+    "V0_sym30": {
+      "b5_triggers": 556,
+      "triple_triggers": 341,
+      "trades": 191,
+      "long": 93,
+      "short": 98
+    },
+    "V1_long30": {
+      "b5_triggers": 556,
+      "triple_triggers": 718,
+      "trades": 383,
+      "long": 93,
+      "short": 290
+    },
+    "V2_noB5": {
+      "b5_triggers": null,
+      "triple_triggers": 932,
+      "trades": 493,
+      "long": 203,
+      "short": 290
+    },
+    "V3_sym90": {
+      "b5_triggers": 554,
+      "triple_triggers": 322,
+      "trades": 172,
+      "long": 91,
+      "short": 81
+    },
+    "V4_sym365": {
+      "b5_triggers": 536,
+      "triple_triggers": 273,
+      "trades": 153,
+      "long": 91,
+      "short": 62
+    },
+    "V5_long365": {
+      "b5_triggers": 536,
+      "triple_triggers": 718,
+      "trades": 381,
+      "long": 91,
+      "short": 290
+    }
+  },
+  "parity": {
+    "ref_n": 182,
+    "new_n": 189,
+    "common": 182,
+    "only_ref": [],
+    "only_new": [
+      "2026-06-03T14:45|short",
+      "2026-06-15T17:00|long",
+      "2026-06-16T13:00|long",
+      "2026-06-16T19:45|long",
+      "2026-06-17T07:45|long",
+      "2026-07-15T05:00|long",
+      "2026-07-16T06:30|long"
+    ],
+    "max_abs_r_diff": 4.440892098500626e-16,
+    "ok": false
+  }
+}
