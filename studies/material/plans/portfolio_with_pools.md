@@ -368,7 +368,7 @@ Brief definitions of acronyms, sleeve-specific terms, and risk/research terminol
 | Term | Definition |
 |---|---|
 | **B1 — money-flow CVD-divergence** | Fires when 30d CVD z-score has opposite sign to short-term price velocity z-score (CVD says one thing, price hasn't moved). Source: [validation_B1_moneyflow_divergence.py](studies/notebooks/chento_journal/validation_B1_moneyflow_divergence.py). |
-| **B5 — LSR extreme** | Fires at LSR p10 (oversold longs → SHORT) or p90 (euphoric longs → LONG) over 30d rolling. Source: validation_B5_lsr_extremes.py. |
+| **B5 — LSR extreme** | Fires when long_pct < rolling-30d p10 (longs flushed → LONG) or > p90 (longs euphoric → SHORT) — contrarian, per `math.b5_fires`. Source: validation_B5_lsr_extremes.py. |
 | **B7 — multi-TF CVD aligned** | CVD z-score \|z\| ≥ 2 AND aligns same-sign across 1h/4h/1d/3d timeframes. Source: validation_B7_multitf_cvd.py. |
 | **Triple intersection** | Production trigger: B1 ∩ B5 ∩ B7 same-direction within the trailing 24h (backward-only window). |
 | **H_B (Hybrid adaptive sizing)** | Research design: T3 (150%) inside Value Area, T1 (50%) outside. **DISABLED in production** per [[chento-v3-p1-ladder-verdict]] — failed the backward-only Pareto test. Current sleeve uses T0 (uniform sizing). |

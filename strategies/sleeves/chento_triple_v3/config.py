@@ -47,9 +47,16 @@ B1_CVD_Z_THRESHOLD = 0.5            # |cvd_z| > 0.5 needed
 B1_VEL_Z_MAX = 1.0                  # |vel_z| < 1.0 (price not yet reacting)
 
 # ─── B5 LSR extremes ───────────────────────────────────────────────────────
-B5_ROLLING_DAYS = 30                # 30d percentile window
-B5_LO_PCTILE = 10                   # bottom 10% = oversold longs → SHORT trigger
-B5_HI_PCTILE = 90                   # top 10% = euphoric longs → no trigger
+# Contrarian on the Binance global long/short ACCOUNT ratio (long_pct, daily):
+#   long_pct < rolling p10  → longs flushed / crowd short  → LONG window
+#   long_pct > rolling p90  → longs euphoric / crowd long  → SHORT window
+# (see math.b5_fires). Only B5_ROLLING_DAYS is wired into the math; the two
+# percentile constants are DISPLAY-ONLY (dashboard/botinfo.py) —
+# math.compute_lsr_extremes hardcodes quantile(0.10) / quantile(0.90).
+# Comments corrected 2026-09-01 (previous text had the directions inverted).
+B5_ROLLING_DAYS = 30                # 30d percentile window (30 daily rows)
+B5_LO_PCTILE = 10                   # display-only: p10 → LONG window
+B5_HI_PCTILE = 90                   # display-only: p90 → SHORT window
 
 # ─── B7 multi-TF CVD alignment ─────────────────────────────────────────────
 B7_TIMEFRAMES = ("1h", "4h", "1d", "3d")

@@ -6,8 +6,9 @@ When the crowd is heavily one-sided, the contrarian read is to fade them:
   long_pct < p10 of trailing 30d  -> over-short crowd -> LONG
 
 Data source: ca_long_short_ratio (asset, timestamp, ratio, long_pct, short_pct).
-Resolution: 30-min snapshots from Binance topLongShortAccountRatio endpoint
-+ Coinalyze backfill, so per-day sample size is ~48.
+Resolution: DAILY rows (Binance globalLongShortAccountRatio period=1d refresh
++ Coinalyze daily backfill) — one sample per day, so a 30d window is 30 rows.
+(Docstring corrected 2026-09-01; it previously claimed 30-min snapshots.)
 
 Entry: next 15m close after the trigger timestamp.
 Stop: 2*ATR(14) on 15m bars.

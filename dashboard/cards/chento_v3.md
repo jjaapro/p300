@@ -14,8 +14,10 @@ A trade needs **three independent signals agreeing on direction** inside a trail
 
 - **B1 — money-flow divergence.** 30-day CVD z-score is stretched (|z| > 0.5) while
   1h price velocity is still quiet (|z| < 1.0): flow is moving, price hasn't reacted yet.
-- **B5 — positioning extreme.** The long/short ratio sits in the bottom decile of its
-  30-day range — the crowd is squeezed to one side.
+- **B5 — positioning extreme.** The share of long accounts (Binance global long/short
+  ratio, one value per day) sits outside its 30-day p10–p90 band: below p10 the crowd
+  has been flushed short → arms the **long** window; above p90 the crowd is euphorically
+  long → arms the **short** window. Contrarian by construction.
 - **B7 — multi-TF flow alignment.** CVD z-scores across 1h/4h/1d/3d all share the
   sign with median |z| > 2 — the flow pressure is broad, not one-timeframe noise.
 
