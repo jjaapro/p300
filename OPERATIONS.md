@@ -339,10 +339,18 @@ one green instance per unit — note a HEALTHY bot is two python.exe
 processes, venv shim + real interpreter with identical command line,
 collapsed by dashboard/procscan.py — never count raw cmdline matches),
 data-feed freshness vs botlib contracts, a live alert strip mirroring
-monitor.py's checks, the BTC/ETH trade chart (entry dots; hover shows
-planned TP / SL / timed stop; click pins the levels and the full decision
-data), and per-bot strategy explainers with an annotated picture of the
-latest entry.
+monitor.py's checks, a positioning strip (daily L/S account ratio vs its
+prior year, the decile's historical 20d forward stats, CPR's positioning
+conditions, the regime J+ LS circuit breaker), the BTC/ETH trade chart
+(entry dots; hover shows planned TP / SL / timed stop; click pins the
+levels and the full decision data) with flow panes underneath — perp/spot
+CVD + spot−perp divergence, ΔOI% with the CVD×ΔOI quadrant label, funding
++ basis — plus a 4h/24h tape read, short_squeeze's live percentile gauges,
+a 24h delta-by-price profile, and per-bot strategy explainers with an
+annotated picture of the latest entry. The flow/positioning panels are
+descriptive context ("what the bots see"), not signals: the gauges are
+computed with the sleeves' own SQL and constants and pinned to them by
+tests/test_dashboard_market.py (dashboard/market.py docstring).
 
 Strictly read-only: prod.db is opened mode=ro with PRAGMA query_only — the
 dashboard cannot write the ledger. Safe to run alongside the fleet; safe

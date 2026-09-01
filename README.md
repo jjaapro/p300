@@ -374,9 +374,9 @@ whether any specific backtest is trusted:
 
 - **No live order placement.** All trades are paper (write-only to the
   `trades` table); the bot has no exchange-side execution path yet.
-- **No dashboard UI.** Introspection is sqlite queries (examples above)
-  plus the research notebooks under
-  [`studies/notebooks/`](studies/notebooks/).
+- **Dashboard UI** — `python dashboard/server.py` (read-only, http://127.0.0.1:8300;
+  OPERATIONS.md §9). Deeper introspection is sqlite queries (examples above)
+  plus the research notebooks under [`studies/notebooks/`](studies/notebooks/).
 - **No backtest equity seed.** Any daily-returns panel present in older
   versions of this repo has been removed as compromised. Equity
   attribution starts from the first clean live paper fill.
