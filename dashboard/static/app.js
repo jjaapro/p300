@@ -848,6 +848,14 @@ async function showBot(name) {
     const counters = el("div", "mono dim",
       Object.entries(dg.counters).map(([k, v]) => `${k}=${v}`).join("  "));
     info.appendChild(counters);
+    if (dg.b5_last && dg.b5_last.long_pct !== undefined) {
+      const b = dg.b5_last;
+      const n = (v, nd) => (v === null || v === undefined) ? "—" : Number(v).toFixed(nd);
+      info.appendChild(el("div", "dim",
+        `B5 at ${fmtIso(b.bar_ts)}: long% ${n(b.long_pct, 2)} vs p10 ${n(b.lp_p10, 2)} / ` +
+        `p90 ${n(b.lp_p90, 2)} → same-bar ${b.b5_same_bar || "none"} · ` +
+        `windows long ${b.b5_long_w ? "armed" : "off"} / short ${b.b5_short_w ? "armed" : "off"}`));
+    }
     for (const nm of dg.near_misses) {
       info.appendChild(el("div", "dim",
         `near miss: ${JSON.stringify(nm)}`));

@@ -238,6 +238,7 @@ def diag_today(bot: str) -> dict | None:
         return None
     by_date: dict[str, dict] = {}
     misses: dict[str, list] = {}
+    b5_last: dict[str, dict] = {}       # date -> B5 state at the day's last bar
     for ln in lines:
         ln = ln.strip()
         if not ln or not ln.startswith("{"):
@@ -255,13 +256,16 @@ def diag_today(bot: str) -> dict | None:
                 agg[k] = agg.get(k, 0) + v
         if rec.get("near_misses"):
             misses.setdefault(d, []).extend(rec["near_misses"])
+        if rec.get("b5_last"):
+            b5_last[d] = rec["b5_last"]
     if not by_date:
         return None
     today = datetime.now(timezone.utc).date().isoformat()
     date = today if today in by_date else max(by_date)
     return {"date": date, "is_today": date == today,
             "counters": dict(sorted(by_date[date].items())),
-            "near_misses": (misses.get(date) or [])[-5:]}
+            "near_misses": (misses.get(date) or [])[-5:],
+            "b5_last": b5_last.get(date)}
 
 
 def summary() -> dict:

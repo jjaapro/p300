@@ -363,6 +363,47 @@ def test_diag_flush_accumulates_within_day(tmp_path, monkeypatch):
     assert rec["counters"] == {"bars_at_boundary": 2}
 
 
+def test_diag_b5_context_is_json_safe_and_flushed(tmp_path, monkeypatch):
+    """B5 state (long_pct / p10 / p90 / windows) rides the near-miss payload
+    and the daily line as b5_last so the short leg is observable live
+    (lsr_b5_study 2026-09-01). NaN must become null: the dashboard's
+    JSON.parse rejects a bare NaN and the whole bot card would fail."""
+    import pandas as pd
+    from strategies.sleeves.chento_triple_v3 import signal as ch_sig
+    diag_path = tmp_path / "diag.jsonl"
+    monkeypatch.setattr(ch_sig, "_DIAG_ENABLED", True)
+    monkeypatch.setattr(ch_sig, "_DIAG_PATH", diag_path)
+    monkeypatch.setattr(ch_sig, "_diag_current_day", None)
+    monkeypatch.setattr(ch_sig, "_diag_counters", {})
+    monkeypatch.setattr(ch_sig, "_diag_near_misses", [])
+    ch_sig._diag_b5_last.clear()
+
+    row = pd.Series({"long_pct": 56.2, "lp_p10": 47.9, "lp_p90": 55.1,
+                     "b5_long_w": False, "b5_short_w": True})
+    ctx = ch_sig._b5_context(row)
+    assert ctx == {"long_pct": 56.2, "lp_p10": 47.9, "lp_p90": 55.1,
+                   "b5_same_bar": "short", "b5_long_w": False, "b5_short_w": True}
+    nan_ctx = ch_sig._b5_context(
+        pd.Series({"long_pct": float("nan"), "lp_p10": 47.9, "lp_p90": 55.1}))
+    assert nan_ctx["long_pct"] is None and nan_ctx["b5_same_bar"] is None
+
+    ch_sig._diag_flush("2026-09-01")
+    ch_sig._diag_b5_last.update(ctx, bar_ts=T0.isoformat())
+    ch_sig._diag_near_miss(T0, direction="short", reason="resist_OB_too_close",
+                           entry=100.0, dist_R=float("nan"), b5=ctx)
+    ch_sig._diag_flush("2026-09-02")                      # rollover -> one line
+    strict = lambda c: pytest.fail(f"non-JSON constant {c} in diag line")  # noqa: E731
+    rec = json.loads(diag_path.read_text().strip().splitlines()[0],
+                     parse_constant=strict)
+    assert rec["b5_last"]["long_pct"] == 56.2
+    assert rec["b5_last"]["bar_ts"] == T0.isoformat()
+    nm = rec["near_misses"][0]
+    assert nm["b5"]["b5_same_bar"] == "short" and nm["b5"]["b5_short_w"] is True
+    assert nm["dist_R"] is None                            # NaN sanitised
+    assert nm["entry"] == 100.0 and nm["direction"] == "short"
+    assert ch_sig._diag_b5_last == {}                     # reset on rollover
+
+
 # ─── Forced-fire integration: execute → sleeve sweep closes on stop ──────────
 
 def test_execute_then_sweep_stop_hit(tmp_db):

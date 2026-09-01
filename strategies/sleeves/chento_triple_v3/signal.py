@@ -81,6 +81,7 @@ _DIAG_PATH: Path = Path(os.environ.get(
 _diag_current_day: str | None = None
 _diag_counters: dict[str, int] = {}
 _diag_near_misses: list[dict] = []
+_diag_b5_last: dict = {}        # B5 state at the last evaluated bar (flushed as b5_last)
 
 
 def _diag_inc(key: str, n: int = 1) -> None:
@@ -89,13 +90,42 @@ def _diag_inc(key: str, n: int = 1) -> None:
     _diag_counters[key] = _diag_counters.get(key, 0) + n
 
 
+def _diag_num(v):
+    """JSON-safe scalar: NaN -> None. json.dumps would emit a bare NaN, which
+    the dashboard's JSON.parse rejects (the whole bot card would fail)."""
+    if v is None or isinstance(v, (bool, np.bool_)):
+        return None if v is None else bool(v)
+    try:
+        f = float(v)
+    except (TypeError, ValueError):
+        return v
+    return None if np.isnan(f) else f
+
+
+def _b5_context(row) -> dict:
+    """B5 state at the evaluated bar — the LSR numbers behind b5_fires plus
+    the windowed flags. The counters only ever said b5_long/short/none; the
+    values make the short leg observable live (lsr_b5_study, 2026-09-01)."""
+    return {
+        "long_pct": _diag_num(row.get("long_pct")),
+        "lp_p10": _diag_num(row.get("lp_p10")),
+        "lp_p90": _diag_num(row.get("lp_p90")),
+        "b5_same_bar": ctm.b5_fires(row.get("long_pct"), row.get("lp_p10"),
+                                    row.get("lp_p90")),
+        "b5_long_w": bool(row.get("b5_long_w", False)),
+        "b5_short_w": bool(row.get("b5_short_w", False)),
+    }
+
+
 def _diag_near_miss(ts: datetime, **kwargs) -> None:
     """Record a bar where Triple fired but a downstream gate killed it.
-    Caller decides what context to record."""
+    Caller decides what context to record; scalars are made JSON-safe."""
     if not _DIAG_ENABLED:
         return
-    _diag_near_misses.append({"ts": ts.isoformat() if hasattr(ts, "isoformat") else str(ts),
-                              **kwargs})
+    rec = {"ts": ts.isoformat() if hasattr(ts, "isoformat") else str(ts)}
+    for k, v in kwargs.items():
+        rec[k] = v if isinstance(v, (dict, list, str)) else _diag_num(v)
+    _diag_near_misses.append(rec)
 
 
 def _diag_flush(new_day_iso: str) -> None:
@@ -118,11 +148,13 @@ def _diag_flush(new_day_iso: str) -> None:
                     "utc_date": _diag_current_day,
                     "counters": dict(_diag_counters),
                     "near_misses": list(_diag_near_misses),
+                    "b5_last": dict(_diag_b5_last),
                 }) + "\n")
         except Exception:
             log.exception(f"[{SLEEVE_NAME}] diag flush failed (path={_DIAG_PATH})")
     _diag_counters = {}
     _diag_near_misses = []
+    _diag_b5_last.clear()
     _diag_current_day = new_day_iso
 
 
@@ -713,6 +745,7 @@ def _evaluate_trigger(now: datetime, variant: dict,
 
     # Triple check via windowed columns (TRIPLE_WINDOW_HOURS backward).
     direction = _check_triple_at_idx(idx)
+    b5_ctx: dict = {}
     if _DIAG_ENABLED:
         row = df.iloc[idx]
         # Per-leg fires AT this bar (same-bar) — kept for backward comparison
@@ -727,6 +760,13 @@ def _evaluate_trigger(now: datetime, variant: dict,
         _diag_inc(f"b1_{b1_dir or 'none'}")
         _diag_inc(f"b5_{b5_dir or 'none'}")
         _diag_inc(f"b7_{b7_dir or 'none'}")
+        # B5 numbers at this bar: the daily line carries the last one
+        # (b5_last), near-misses carry their own (b5).
+        b5_ctx = _b5_context(row)
+        _diag_b5_last.clear()
+        _diag_b5_last.update(b5_ctx, bar_ts=(bar_ts.isoformat()
+                                             if hasattr(bar_ts, "isoformat")
+                                             else str(bar_ts)))
         # Windowed B1/B5/B7 — whether each gate had a same-direction fire in
         # the trailing TRIPLE_WINDOW_HOURS. These drive the triple decision.
         for gate, col_l, col_s in (("b1", "b1_long_w", "b1_short_w"),
@@ -777,7 +817,7 @@ def _evaluate_trigger(now: datetime, variant: dict,
         reason = filter_diag.get("reason", "unknown")
         _diag_inc(f"filter_{reason}")
         _diag_near_miss(bar_ts, direction=direction, reason=reason,
-                         entry=float(entry_price), **{
+                         entry=float(entry_price), b5=b5_ctx, **{
                              k: float(v) if isinstance(v, (int, float, np.floating)) else v
                              for k, v in filter_diag.items() if k != "reason"
                          })
