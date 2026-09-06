@@ -30,7 +30,7 @@ pip install -r requirements.txt
 
 # 1. Get a free Coinalyze API key (https://coinalyze.net/) and export it.
 #    Needed only for the initial LSR history fetch (~5 years from 2021-01-01).
-#    After that, binance_feed keeps the table fresh on its own.
+#    After that, feed.py keeps the table fresh on its own.
 export COINALYZE_API_KEY=...
 
 # 2. Build data/databases/prod.db from scratch:
@@ -63,7 +63,7 @@ Console noise from idle/heartbeat lines (no_signal, tick ok, [feed]…)
 is filtered out by default. Pass `--verbose` to disable the filter
 when you're debugging a sleeve.
 
-`binance_feed.py` runs a **gap-detection pass at startup** that scans every
+`feed.py` runs a **gap-detection pass at startup** that scans every
 cadence-based table (klines + funding) for missing rows and fetches them
 from Binance. The first startup after a sparse bootstrap can take ~20 min
 (e.g. filling 3M missing minutes for `btc_1m`); every subsequent startup
@@ -152,7 +152,7 @@ programmatic version of the query above.)
 ## 4. Troubleshooting
 
 ### `health.py` reports stale tables
-Run `python binance_feed.py --once` to refresh klines + funding. If
+Run `python feed.py --once` to refresh klines + funding. If
 `ca_long_short_ratio` shows a gap more than 30 days old, Binance's rolling
 30d window can't reach back that far — run `python fetch_coinalyze.py`
 (needs `COINALYZE_API_KEY`) to fill the gap from 2021-01-01 onward.
@@ -177,7 +177,7 @@ there isn't enough warmup data (regime classifier needs ~50 daily
 closes; vol-percentile gate needs 365 days of BTC daily history). On a
 cold DB or one whose `btc_1m` / `cd_spot_binance` table is more than 1
 day stale, J+ sub-sleeves exit with `status='no_inputs'`. Run
-`python binance_feed.py --once` to refresh, then next tick will succeed.
+`python feed.py --once` to refresh, then next tick will succeed.
 
 ### Sleeves report `margin_constrained` / `directional_conflict`
 Expected behaviour from the P2.4 coordination layer — see the

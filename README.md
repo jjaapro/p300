@@ -84,11 +84,11 @@ For a faster bootstrap that defers the slow kline backfill:
 ```bash
 python bootstrap.py --skip-klines     # CSVs + funding only (~1 min)
 # Run later, in the background, when convenient:
-python binance_feed.py --backfill-klines --since 2020-01-01
+python -m data.sources.binance --backfill-klines --since 2020-01-01
 ```
 
 For a no-Coinalyze bootstrap (CPR will be dormant for ~6 months while
-binance_feed accumulates the rolling 30d LS window):
+the feed accumulates the rolling 30d LS window):
 
 ```bash
 python bootstrap.py --skip-coinalyze
@@ -113,12 +113,12 @@ python bot.py --skip-gap-fix
 If you'd rather drive the feed as a separate process:
 
 ```bash
-python binance_feed.py                # gap-fix pass + loop every 60s
-python binance_feed.py --once         # gap-fix pass + one tick + exit
-python binance_feed.py --skip-gap-fix # skip the gap pass (faster restart)
+python feed.py                # gap-fix pass + loop every 60s
+python feed.py --once         # gap-fix pass + one tick + exit
+python feed.py --skip-gap-fix # skip the gap pass (faster restart)
 ```
 
-`binance_feed.py` self-heals at startup: it scans every cadence-based
+`feed.py` self-heals at startup: it scans every cadence-based
 table (klines + funding) for missing rows, then fetches each gap window
 from Binance. The first run on a sparse DB can take ~20 minutes; every
 subsequent run is sub-second.
@@ -326,12 +326,12 @@ All tables live in `data/databases/prod.db`. Refresh paths:
 
 | Table | Source | Refresh | Used by |
 |-------|--------|---------|---------|
-| `btc_1m`, `eth_1m` | Binance spot klines | `binance_feed.py` every 60s | pdo, cpr, price_feed (ETH) |
-| `cd_futures_ohlcv` | Binance BTCUSDT perp 1h | `binance_feed.py` every 60s | adx, carry, regime_tactical, price_feed (BTC) |
-| `cd_spot_binance` | Binance BTCUSDT spot 1h | `binance_feed.py` every 60s | carry |
-| `cd_funding_rate` | Binance BTC perp funding | `binance_feed.py` every 60s | strategies.support.funding (BTC sleeves) |
-| `cd_funding_rate_eth` | Binance ETH perp funding | `binance_feed.py` every 60s | strategies.support.funding (ETH sleeves) |
-| `ca_long_short_ratio` | Coinalyze (history) + Binance rolling 30d | `fetch_coinalyze.py` once + `binance_feed.py` every 60s | cpr, regime LS circuit breaker |
+| `btc_1m`, `eth_1m` | Binance spot klines | `feed.py` every 60s | pdo, cpr, price_feed (ETH) |
+| `cd_futures_ohlcv` | Binance BTCUSDT perp 1h | `feed.py` every 60s | adx, carry, regime_tactical, price_feed (BTC) |
+| `cd_spot_binance` | Binance BTCUSDT spot 1h | `feed.py` every 60s | carry |
+| `cd_funding_rate` | Binance BTC perp funding | `feed.py` every 60s | strategies.support.funding (BTC sleeves) |
+| `cd_funding_rate_eth` | Binance ETH perp funding | `feed.py` every 60s | strategies.support.funding (ETH sleeves) |
+| `ca_long_short_ratio` | Coinalyze (history) + Binance rolling 30d | `fetch_coinalyze.py` once + `feed.py` every 60s | cpr, regime LS circuit breaker |
 | `scheduled_events` | computed by `fetch_events.py` (FOMC/CPI hardcoded, NFP/OPEX rules) | annual: bump FOMC/CPI lists, re-run | S-096 V4 filter, regime no-FOMC rule |
 
 If `ca_long_short_ratio` shows a gap >30 days old, Binance can't reach back
@@ -360,9 +360,9 @@ whether any specific backtest is trusted:
   is family-level selection bias baked into the pick before we even evaluate it.
 - **`btc_1m` historical depth depends on whether you ran the kline backfill.**
   `bootstrap.py --skip-klines` produces a DB with only the rolling window
-  binance_feed has filled; full 5y of 1m bars requires either the
-  `bootstrap.py` kline backfill or `binance_feed.py --backfill-klines
-  --since 2020-01-01`. `binance_feed.py`'s startup gap-fix will also
+  the feed has filled; full 5y of 1m bars requires either the
+  `bootstrap.py` kline backfill or `python -m data.sources.binance
+  --backfill-klines --since 2020-01-01`. `feed.py`'s startup gap-fix will also
   fill internal gaps incrementally on every restart — but won't extend
   history below `MIN(open_time)` without an explicit `--since`. PDO
   hourly-touch and CPR intraday aggregation are coarser before the

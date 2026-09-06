@@ -1049,7 +1049,7 @@ def main(argv: list[str] | None = None) -> int:
                          "expect ~30-60 minutes for 5 years.")
     ap.add_argument("--backfill-klines-15m", action="store_true",
                     help="One-shot: backfill cd_futures_15m + cd_spot_15m from "
-                         "--since to present. ~3-5 min for full 2019-09-08 → now.")
+                         "--since to present. ~3-5 min for full 2019-09-08 -> now.")
     ap.add_argument("--since", default="2020-01-01",
                     help="Backfill start date (UTC, YYYY-MM-DD). Default 2020-01-01.")
     ap.add_argument("--skip-gap-fix", action="store_true",

@@ -757,13 +757,13 @@ dispatch logic — only the data source and clock differ:
 | | LIVE | SIM |
 |---|---|---|
 | Clock | wall clock | simulated, advanced deterministically |
-| Market data | `data/databases/prod.db` (kept fresh by `binance_feed`) | `--trader-db <path>` (built by `studies/simulation/build_sim_trader_db.py`) |
+| Market data | `data/databases/prod.db` (kept fresh by `feed.py`) | `--trader-db <path>` (built by `studies/simulation/build_sim_trader_db.py`) |
 | Trade ledger | `data/databases/prod.db` | `--dash-db <path>` (separate file) |
 | External APIs | NY Fed XML, Polymarket, F&G, news | all blocked — sim must be reproducible offline |
 | Loop | wall-clock 60s tick | `strategies.support.sim_loop.run_sim` (no sleep) |
 
 ```
-# Live (default; binance_feed runs in-process):
+# Live (default; bot.py runs the data feed in-process):
 python bot.py
 
 # Sim — build a sliced trader.db, then run the bot under a fake clock.
