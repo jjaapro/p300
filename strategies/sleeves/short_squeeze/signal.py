@@ -510,6 +510,10 @@ def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Intent) -> dict
         reason=reason,
         scheduled_exit_dt=intent.scheduled_exit_dt,
         regime_value="short_squeeze",
+        # Same trigger bar -> same row, however many seconds apart the
+        # executions land (see strategies.trades.open_paper_trade).
+        signal_time_iso=(str(reason["bar_ts"])
+                         if reason.get("bar_ts") is not None else None),
     )
     _last_trigger_ts[variant["id"]] = clock.now_utc()
     log.info(f"[short_squeeze {variant['id']}] opened {tid} BTC LONG @ "

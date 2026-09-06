@@ -71,8 +71,12 @@ _NO_SCHEDULED_EXIT_ISO = "2099-12-31T00:00:00+00:00"
 
 def _next_sj_id(con: sqlite3.Connection) -> str:
     """Mint the next sequential SJ-NNNN trade ID. Uses numeric MAX to avoid
-    text-ordering overflow at SJ-10000+. Race-safe under SQLite's
-    single-writer semantics; caller holds the connection through INSERT."""
+    text-ordering overflow at SJ-10000+.
+
+    Only race-safe when the caller already holds the write lock (an explicit
+    BEGIN IMMEDIATE, or an earlier write in the same transaction): reading
+    MAX(id) outside one lets two processes mint the same number, and the
+    second INSERT then fails on trades.id."""
     row = con.execute(
         "SELECT MAX(CAST(SUBSTR(id, 4) AS INTEGER)) FROM trades WHERE series='SJ'"
     ).fetchone()
@@ -132,7 +136,8 @@ def open_paper_trade(*, variant: dict, sleeve_name: str,
                       reason: dict,
                       scheduled_exit_dt: datetime | None = None,
                       regime_value: str | None = None,
-                      entry_dt: datetime | None = None) -> str:
+                      entry_dt: datetime | None = None,
+                      signal_time_iso: str | None = None) -> str:
     """Insert a new paper trade row and return its trade ID.
 
     Centralizes the per-sleeve open path: capital lookup, size_usdt math,
@@ -164,6 +169,14 @@ def open_paper_trade(*, variant: dict, sleeve_name: str,
                          to ``clock.now_utc()``. Used by the J+ trade-emitter
                          to backdate an OPEN event to the historical entry
                          moment (e.g. R4 BTC opens at 06:00 UTC, not "now").
+      signal_time_iso    logical trigger time for the idempotency key, in
+                         place of the fill timestamp — e.g. the open-time
+                         of the 15m bar that fired. Two executions of the
+                         same signal (a retry, a restart inside the eval
+                         window, a second bot instance) then collapse to
+                         one row however many seconds apart they land.
+                         Sleeves without a natural trigger key keep the
+                         fill-time default.
 
     Sizing:
       capital = variant.capital_usdt or paper_account_usdt config or $10k
@@ -182,10 +195,16 @@ def open_paper_trade(*, variant: dict, sleeve_name: str,
     if regime_value is None:
         regime_value = reason.get("regime", "unknown")
 
-    unique_key = _build_unique_key(variant["id"], sleeve_name, asset, now_iso)
+    unique_key = _build_unique_key(variant["id"], sleeve_name, asset,
+                                   signal_time_iso or now_iso)
 
     con = sqlite3.connect(str(db.DASH_DB))
     try:
+        # One write transaction for the pre-check, the ID mint and the
+        # INSERT. BEGIN IMMEDIATE takes SQLite's write lock up front, so two
+        # fleet processes cannot both read the same MAX(id) and then collide
+        # on trades.id — the second one waits here until the first commits.
+        con.execute("BEGIN IMMEDIATE")
         # Pre-check: if this logical trade already exists, return its SJ-ID
         # without re-inserting. Handles single-process retry idempotency.
         existing = con.execute(
