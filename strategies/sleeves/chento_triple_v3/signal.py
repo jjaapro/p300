@@ -67,6 +67,12 @@ _last_eval_bar_ts: dict[str, pd.Timestamp] = {}  # per-variant last live-evaluat
 # Not a strategy tunable — purely an ops window.
 LIVE_EVAL_GRACE_S = 180
 
+# Live position management reads a just-closed bar only once the feed has
+# had time to overwrite its in-progress row with the final candle (60s feed
+# cadence + margin). Replay is exempt — sim slices are final by construction
+# and the recorded baselines walk each bar at its close.
+LIVE_BAR_SETTLE_S = 90
+
 
 # ─── Diagnostics (opt-in via env CHENTO_V3_DIAG=1) ──────────────────────────
 # Per-day counters tracking which gate killed each candidate. Flushed to a
@@ -168,7 +174,7 @@ def _load_15m_btc(now: datetime, days_back: int) -> pd.DataFrame:
     That is safe because every feature is a TRAILING computation — a later
     row never changes an earlier row's values — and the live entry path
     explicitly selects the just-closed bar, never the forming one."""
-    con = sqlite3.connect(str(db.PROD_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     try:
         cutoff = int((now - timedelta(days=days_back)).timestamp())
         df = pd.read_sql(f"""
@@ -188,7 +194,7 @@ def _load_15m_btc(now: datetime, days_back: int) -> pd.DataFrame:
 
 def _load_lsr_btc(now: datetime, days_back: int) -> pd.DataFrame:
     """Load BTC long_short_ratio."""
-    con = sqlite3.connect(str(db.PROD_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     try:
         cutoff = int((now - timedelta(days=days_back)).timestamp())
         df = pd.read_sql("""
@@ -207,7 +213,7 @@ def _load_lsr_btc(now: datetime, days_back: int) -> pd.DataFrame:
 
 def _load_okx_1h(now: datetime, days_back: int) -> pd.Series:
     """Load OKX BTC-USDT-SWAP 1h close."""
-    con = sqlite3.connect(str(db.PROD_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     try:
         cutoff = int((now - timedelta(days=days_back)).timestamp())
         df = pd.read_sql(f"""
@@ -437,6 +443,25 @@ def _get_open_trades(variant_id: str) -> list[dict]:
     return [dict(r) for r in rows]
 
 
+def _last_entry_time_from_db(variant_id: str, now: datetime) -> datetime | None:
+    """Newest paper entry for this variant + sleeve strictly before `now`,
+    or None. Later entries are ignored so a replay re-run over a ledger
+    that already holds its own trades starts with no cooldown."""
+    con = sqlite3.connect(str(db.DASH_DB))
+    try:
+        row = con.execute("""
+            SELECT MAX(actual_entry_time) FROM trades
+            WHERE strategy_variant = ? AND strategy = ?
+              AND execution_mode = 'paper' AND actual_entry_time < ?
+        """, (variant_id, SLEEVE_NAME, now.isoformat())).fetchone()
+    finally:
+        con.close()
+    if row is None or row[0] is None:
+        return None
+    dt = datetime.fromisoformat(row[0])
+    return dt if dt.tzinfo is not None else dt.replace(tzinfo=timezone.utc)
+
+
 def _close_paper(trade_id: str, exit_price: float, reason: str) -> None:
     from strategies.trades import close_perp_trade
     close_perp_trade(trade_id, exit_price, reason, sleeve_name=SLEEVE_NAME,
@@ -487,18 +512,30 @@ def _just_closed_15m_ts(now: datetime) -> pd.Timestamp:
     return pd.Timestamp(floor)
 
 
+def _bar_final_by(ts: pd.Timestamp) -> pd.Timestamp:
+    """Earliest clock time at which the 15m bar opened at `ts` may be read
+    as final: its close, plus the live feed settle margin."""
+    settle = 0 if clock.is_simulated() else LIVE_BAR_SETTLE_S
+    return ts + pd.Timedelta(minutes=15, seconds=settle)
+
+
 def _bar_ohlc_for(ts: pd.Timestamp) -> tuple[float, float, float] | None:
     """Return (high, low, close) for the 15m bar with open_time `ts`.
-    Try the cached features first (cheap dict-hash lookup); fall back to a
-    single-row indexed SQLite read; return None on genuine data gap so the
-    caller can degrade to point-sample with a WARN log."""
+    Use the cached frame only when that bar was already final at build
+    time — the loader keeps the forming bar, so a row cached mid-bar holds
+    partial OHLC that would hide a later stop/target touch, and the walker
+    never revisits a bar. Otherwise a single-row indexed SQLite read;
+    None on a genuine data gap so the caller can degrade to point-sample
+    with a WARN log."""
     df = _cached_features.get("df")
-    if df is not None and ts in df.index:
+    cache_final = (_cache_built_at is not None
+                   and pd.Timestamp(_cache_built_at) >= _bar_final_by(ts))
+    if cache_final and df is not None and ts in df.index:
         row = df.loc[ts]
         h, l, c = float(row["high"]), float(row["low"]), float(row["close"])
         if not (pd.isna(h) or pd.isna(l) or pd.isna(c)):
             return h, l, c
-    con = sqlite3.connect(str(db.PROD_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     try:
         row = con.execute(
             f"SELECT high, low, close FROM {PERP_15M_TABLE} WHERE timestamp = ?",
@@ -566,7 +603,10 @@ def _sweep_open_positions(variant: dict, sleeve_cfg: dict) -> int:
         # Walk bars from (last_walked_ts, just_closed_ts] in chronological
         # order. Each bar's actual high/low feeds evaluate_position_step,
         # matching research's replay_with_mae bar-by-bar walking.
-        just_closed = _just_closed_15m_ts(now)
+        # Live: hold back by the feed settle margin so the bar's row has
+        # been overwritten with its final OHLC before it is walked.
+        settle = 0 if clock.is_simulated() else LIVE_BAR_SETTLE_S
+        just_closed = _just_closed_15m_ts(now - timedelta(seconds=settle))
         last_walked_iso = state.get("last_walked_ts")
         if last_walked_iso:
             walk_from = pd.Timestamp(last_walked_iso)
@@ -662,8 +702,14 @@ def _evaluate_trigger(now: datetime, variant: dict,
     variant_id = variant["id"]
     _diag_inc("eval_calls")
 
-    # Cooldown
+    # Cooldown. The in-memory stamp is seeded from the ledger on first use
+    # so a restart cannot forget an entry made moments earlier and re-fire
+    # inside the same eval window.
     last_trigger = _last_trigger_ts.get(variant_id)
+    if last_trigger is None:
+        last_trigger = _last_entry_time_from_db(variant_id, now)
+        if last_trigger is not None:
+            _last_trigger_ts[variant_id] = last_trigger
     if last_trigger is not None:
         if (now - last_trigger).total_seconds() < COOLDOWN_HOURS * 3600:
             _diag_inc("cooldown_blocked")
@@ -910,6 +956,10 @@ def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Intent) -> dict
         reason=reason,
         scheduled_exit_dt=intent.scheduled_exit_dt,
         regime_value="chento_triple_v3",
+        # Idempotency key on the trigger bar, not the fill second: the same
+        # signal executed again (retry, restart, second instance) is one row.
+        signal_time_iso=(str(reason["bar_ts"])
+                         if reason.get("bar_ts") is not None else None),
     )
     _last_trigger_ts[variant["id"]] = clock.now_utc()
     log.info(f"[{SLEEVE_NAME} {variant['id']}] opened {tid} BTC {intent.direction} "

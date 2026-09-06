@@ -406,6 +406,85 @@ def test_diag_b5_context_is_json_safe_and_flushed(tmp_path, monkeypatch):
 
 # ─── Forced-fire integration: execute → sleeve sweep closes on stop ──────────
 
+def test_live_sweep_reads_final_candle_not_partial_cache(tmp_db, live_clock):
+    """Review 2026-09-06 finding 2: a candle cached while still forming
+    must not be the walker's source of truth for that bar — the completed
+    DB row is, and only once the feed has had time to write it."""
+    ch_sig = live_clock
+    variant = botlib.ensure_bot_variant(
+        botcfg.VARIANT_ID, short_name="t", capital_usdt=10_000.0,
+        bot_name=botcfg.BOT_NAME)
+    # 41 closed bars up to T0 plus the forming T0+15m bar (low only -50)
+    _seed_15m_range(tmp_db, T0 - timedelta(minutes=15 * 40), 42)
+    clock.set_simulated_now(T0 + timedelta(minutes=15, seconds=33))
+    ch_sig.try_decide_for_variant(variant, {})      # cache holds partial T0+15m
+    assert ch_sig._cache_built_at is not None
+
+    # long from bar T0 whose stop the COMPLETED T0+15m bar pierces
+    intent = _mk_intent(entry=100_000.0, stop=99_000.0, target=106_000.0)
+    resized, _ = runner.size_intent(intent, float(variant["capital_usdt"]))
+    tid = ch_sig.execute_for_variant(variant, {}, resized)["trade_id"]
+    _seed_15m_bar(tmp_db, T0 + timedelta(minutes=15),
+                  high=100_100.0, low=98_500.0, close=99_800.0)
+
+    def _row():
+        con = sqlite3.connect(str(tmp_db))
+        try:
+            return con.execute(
+                "SELECT status, exit_price, notes FROM trades WHERE id=?",
+                (tid,)).fetchone()
+        finally:
+            con.close()
+
+    # 33s after the bar closed: inside the feed settle margin -> not walked
+    _seed_price(tmp_db, T0 + timedelta(minutes=29), 99_800.0)
+    clock.set_simulated_now(T0 + timedelta(minutes=30, seconds=33))
+    ch_sig._sweep_open_positions(variant, {})
+    status, _, notes = _row()
+    assert status == "open"
+    assert json.loads(notes)["_state"]["last_walked_ts"] == T0.isoformat()
+
+    # past the margin: the walker reads the final row (not the cached
+    # partial one) and closes at the stop
+    _seed_price(tmp_db, T0 + timedelta(minutes=30), 99_800.0)
+    clock.set_simulated_now(T0 + timedelta(minutes=31, seconds=33))
+    ch_sig._sweep_open_positions(variant, {})
+    status, exit_price, _ = _row()
+    assert status == "closed"
+    assert exit_price == pytest.approx(99_000.0)
+
+
+def test_execute_same_signal_twice_is_one_trade(tmp_db):
+    """Review 2026-09-06 finding 4: the same trigger bar executed again
+    seconds later (retry, restart inside the eval window, a second
+    instance) must not open a second position."""
+    from strategies.sleeves.chento_triple_v3 import signal as ch_sig
+    variant = botlib.ensure_bot_variant(
+        botcfg.VARIANT_ID, short_name="t", capital_usdt=10_000.0,
+        bot_name=botcfg.BOT_NAME)
+    resized, _ = runner.size_intent(_mk_intent(), float(variant["capital_usdt"]))
+    a = ch_sig.execute_for_variant(variant, {}, resized)["trade_id"]
+    clock.set_simulated_now(T0 + timedelta(seconds=7))
+    b = ch_sig.execute_for_variant(variant, {}, resized)["trade_id"]
+    assert a == b
+    assert botlib.count_open_trades(variant["id"]) == 1
+
+
+def test_cooldown_survives_restart(tmp_db, monkeypatch):
+    """Review 2026-09-06 finding 4: the cooldown is seeded from the
+    ledger, so a process restart right after an entry cannot re-fire."""
+    from strategies.sleeves.chento_triple_v3 import signal as ch_sig
+    variant = botlib.ensure_bot_variant(
+        botcfg.VARIANT_ID, short_name="t", capital_usdt=10_000.0,
+        bot_name=botcfg.BOT_NAME)
+    resized, _ = runner.size_intent(_mk_intent(), float(variant["capital_usdt"]))
+    ch_sig.execute_for_variant(variant, {}, resized)
+    monkeypatch.setattr(ch_sig, "_last_trigger_ts", {})       # "restart"
+    clock.set_simulated_now(T0 + timedelta(minutes=15))
+    _, status = ch_sig._evaluate_trigger(clock.now_utc(), variant, {})
+    assert status["status"] == "cooldown"
+
+
 def test_execute_then_sweep_stop_hit(tmp_db):
     from strategies.sleeves.chento_triple_v3 import signal as ch_sig
 
