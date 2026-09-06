@@ -208,7 +208,7 @@ def test_sim_and_backtest_runner_produce_identical_jplus_trades(
     import backtest_runner
     buf = io.StringIO()
     with contextlib.redirect_stdout(buf):
-        backtest_runner.run(start=start, end=end, interval_hours=1,
+        backtest_runner.run(start=start, end=end, interval_seconds=3600,
                               reset=True, tag="parity")
 
     con = sqlite3.connect(str(sim_dashboard_db))

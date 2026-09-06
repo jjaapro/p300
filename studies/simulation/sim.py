@@ -32,7 +32,7 @@ import signal
 import sys
 import threading
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -53,16 +53,26 @@ def _signal_handler(signum, frame):
     _stop.set()
 
 
-def _parse_iso_utc(s: str) -> datetime:
+def _parse_iso_utc(s: str, *, end_of_day: bool = False) -> datetime:
     """Parse an ISO-8601 datetime, defaulting to UTC if naive. Accepts
-    'YYYY-MM-DD' (treated as 00:00 UTC) and full ISO timestamps."""
+    'YYYY-MM-DD' and full ISO timestamps.
+
+    A date-only value means 00:00 UTC — except with ``end_of_day=True``
+    (used for ``--end``), where it means the last instant of that calendar
+    day, so the documented inclusive range really covers the whole final
+    day instead of stopping at its midnight tick. Explicit timestamps are
+    used as given."""
     s = s.strip()
-    if len(s) == 10 and s[4] == "-" and s[7] == "-":
+    date_only = len(s) == 10 and s[4] == "-" and s[7] == "-"
+    if date_only:
         s = s + "T00:00:00+00:00"
     dt = datetime.fromisoformat(s.replace("Z", "+00:00"))
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
-    return dt.astimezone(timezone.utc)
+    dt = dt.astimezone(timezone.utc)
+    if date_only and end_of_day:
+        dt = dt + timedelta(days=1) - timedelta(microseconds=1)
+    return dt
 
 
 def _ensure_variant_registered() -> None:
@@ -101,7 +111,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--start", required=True, type=str,
                     help="Sim start (UTC). 'YYYY-MM-DD' or full ISO-8601.")
     ap.add_argument("--end", required=True, type=str,
-                    help="Sim end (UTC, inclusive).")
+                    help="Sim end (UTC, inclusive). 'YYYY-MM-DD' covers the "
+                         "whole day; a full ISO-8601 timestamp is used as given.")
     ap.add_argument("--trader-db", required=True, type=str,
                     help="Path to the sim trader.db (market data source). "
                          "Build with studies/simulation/build_sim_trader_db.py.")
@@ -149,7 +160,7 @@ def main(argv: list[str] | None = None) -> int:
 
     from strategies.support import clock as _clock
     start = _parse_iso_utc(args.start)
-    end = _parse_iso_utc(args.end)
+    end = _parse_iso_utc(args.end, end_of_day=True)
     _clock.set_simulated_now(start)
 
     # Load .env so ANTHROPIC_API_KEY, COINALYZE_API_KEY etc. are available
