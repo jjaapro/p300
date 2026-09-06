@@ -202,30 +202,21 @@ def _fold(rows: list, spot: dict | None, secs: int, native: int,
 def _attach(bars: list[dict], ts_list: list[int], vals: list[float],
             secs: int, carry: int) -> list[float | None]:
     """Per bar: the last series value stamped inside [time, time+secs);
-    otherwise carry the previous value for at most `carry` bars, else
-    None. Seeds from the newest series row before the first bar so a
-    window starting between two hourly / 8h rows is not blank."""
+    otherwise the newest value stamped within the `carry` bars of time
+    before the bar (carry × secs seconds), else None.
+
+    Measured on the clock, not by counting bars: a value's validity is a
+    property of time (OI is hourly, funding settles 8-hourly). A window
+    that starts between two stamps, or a gap in the candle table, is then
+    handled by the same rule — the previous bar-counting version seeded
+    only the very first bar and went blank after any gap."""
     out: list[float | None] = []
-    last: float | None = None
-    left = 0
-    if bars and ts_list:
-        i = bisect.bisect_left(ts_list, bars[0]["time"]) - 1
-        if i >= 0:
-            elapsed = (bars[0]["time"] - (ts_list[i] // secs) * secs) // secs
-            seed_left = carry - (elapsed - 1)
-            if seed_left > 0:
-                last, left = vals[i], seed_left
     for b in bars:
         t = b["time"]
         j = bisect.bisect_right(ts_list, t + secs - 1) - 1
-        if j >= 0 and ts_list[j] >= t:
-            last, left = vals[j], carry
-            out.append(last)
-        elif last is not None and left > 0:
-            left -= 1
-            out.append(last)
+        if j >= 0 and ts_list[j] >= t - carry * secs:
+            out.append(vals[j])
         else:
-            last = None
             out.append(None)
     return out
 
