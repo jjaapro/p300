@@ -10,7 +10,7 @@ from __future__ import annotations
 import calendar
 import sqlite3
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
 import pytest
@@ -292,7 +292,10 @@ def test_refresh_throttle_blocks_within_hour(fixture_db):
 
 def test_refresh_persists_correct_row_shape(fixture_db):
     """Sanity: the row reaching SQL has the columns the schema requires."""
-    now = datetime(2026, 5, 8, 12, 0, tzinfo=timezone.utc)
+    # Relative to the wall clock: refresh() prunes rows older than
+    # RETENTION_DAYS against time.time(), so a fixed date silently vanishes
+    # once the calendar passes it.
+    now = (datetime.now(timezone.utc) - timedelta(days=1)).replace(microsecond=0)
     canned = {"a": [_entry(title="Bitcoin update", url="https://a/1", published=now)]}
     sources = ({"name": "a", "url": "x"},)
     news_fetcher.refresh(force=True, fetcher=_canned_fetcher(canned),
@@ -366,7 +369,10 @@ def test_query_filters_by_asset(fixture_db):
 
 
 def test_query_returns_newest_first_and_respects_limit(fixture_db):
-    base = datetime(2026, 5, 1, 0, 0, tzinfo=timezone.utc)
+    # Wall-clock relative for the same reason as
+    # test_refresh_persists_correct_row_shape (30-day retention prune).
+    base = (datetime.now(timezone.utc) - timedelta(days=2)).replace(
+        hour=0, minute=0, second=0, microsecond=0)
     canned = {
         "a": [
             _entry(title="A", url="https://x/a",
