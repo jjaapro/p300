@@ -10,13 +10,16 @@ All dashboard-only extras (fills, audit_log, heartbeat, recovery_log,
 chart markers/bands/hover helpers) are omitted — P-300 paper never calls
 them. Re-add on demand.
 
-``DB_PATH`` aliases ``strategies.support.db.PROD_DB`` so this module
-writes to the same consolidated DB as the rest of the bot (P2.6,
-2026-05-15). Before that fix the constant was hardcoded to
-``data/dashboard.db`` and ``init_db()`` silently wrote schema migrations
-to a stale file — caught 2026-05-16 when the M2a column failed to land
-on prod.db. Tests that monkeypatch ``trade_db.DB_PATH`` keep working;
-production callers get the live consolidated path.
+The ledger path is resolved at call time from
+``strategies.support.db.DASH_DB`` (the trade-ledger alias of the
+consolidated prod.db). It used to be captured at import as
+``DB_PATH = db.PROD_DB``, which sim mode's redirect of ``db.DASH_DB``
+could not reach — ``init_db()`` then built the schema in the live prod.db
+while the sim ledger went without a ``trades`` table (review 2026-09-06).
+Earlier still (pre P2.6) it was hardcoded to ``data/dashboard.db`` and
+silently wrote migrations to a stale file. ``DB_PATH`` remains as an
+explicit override for tests that monkeypatch it; leave it ``None`` in
+production so the live path is followed.
 """
 from __future__ import annotations
 
@@ -25,11 +28,17 @@ from pathlib import Path
 
 from strategies.support import db as _db_mod
 
-DB_PATH = _db_mod.PROD_DB
+DB_PATH: Path | None = None     # test override; None = follow db.DASH_DB
+
+
+def _path() -> Path:
+    """Ledger DB path, resolved at call time so sim mode's redirect of
+    ``db.DASH_DB`` (and test monkeypatches of it or of ``DB_PATH``) apply."""
+    return DB_PATH if DB_PATH is not None else _db_mod.DASH_DB
 
 
 def _con() -> sqlite3.Connection:
-    con = sqlite3.connect(str(DB_PATH))
+    con = sqlite3.connect(str(_path()))
     con.row_factory = sqlite3.Row
     con.execute("PRAGMA journal_mode=WAL")
     return con

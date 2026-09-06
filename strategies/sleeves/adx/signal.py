@@ -223,7 +223,7 @@ def _funding_z(candles: list[dict]) -> float | None:
     window = candles[-FUNDING_VETO_DAYS:]
     lo_ts = window[0]["ts"]
     hi_ts = window[-1]["ts"] + 86400
-    con = sqlite3.connect(str(db.PROD_DB))
+    con = sqlite3.connect(str(db.TRADER_DB))
     try:
         rows = con.execute(
             "SELECT timestamp, fr_close FROM cd_funding_rate "
