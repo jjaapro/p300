@@ -52,21 +52,24 @@ def _warn_stale_once(asset: str, age_s: float, clock_ts: int) -> None:
         else:
             log.warning(f"[price_feed] {asset} latest price is {age_s:.0f}s old "
                          f"(> {_MAX_STALE_SECS[asset]}s) — returning None. "
-                         f"Check binance_feed is running.")
+                         f"Check feed.py is running.")
         _last_stale_warn_ts[asset] = clock_ts
 
 
 def get_current_price(asset: str) -> float | None:
-    """Latest CLOSED 1m bar's close, strictly before sim/wall clock.
+    """Latest CLOSED 1m bar's close at the sim/wall clock.
 
-    Strict less-than (open_time < clock_ms, not <=) avoids look-ahead: at
-    sim T, the bar that opened at T is still in progress and its close is
-    a future observation. We want the bar that just CLOSED — the one that
-    opened at T-1m. Look-ahead exposure is therefore at most 1 minute.
+    A bar is admitted only when its close boundary (open_time + 60s) is at
+    or before the clock. At sim T on a minute boundary that is the bar that
+    opened at T-1m — the bar that opened at T is still in progress and its
+    close is a future observation. Between boundaries (live ticks carry
+    seconds) the same rule skips the forming bar that the feed upserts in
+    place, so a provisional price is never returned. Look-ahead exposure
+    is zero; staleness is at most one minute plus feed lag.
 
-    Live mode: behaves the same way. The latest 1m bar in trader.db is the
-    just-closed one (binance_feed writes it ~1s after close). Older bars
-    only mean binance_feed is lagging — the staleness guard catches that.
+    Live mode: the latest 1m bar in prod.db is the just-closed one (the
+    feed writes it ~1s after close). Older bars only mean the feed is
+    lagging — the staleness guard catches that.
     """
     asset = asset.upper()
     if asset not in _MAX_STALE_SECS:
@@ -76,11 +79,12 @@ def get_current_price(asset: str) -> float | None:
     table = {"BTC": "btc_1m", "ETH": "eth_1m"}[asset]
     con = sqlite3.connect(str(db.TRADER_DB))
     try:
+        # Closed at or before the clock: open_time + 60s <= clock.
         row = con.execute(
             f"SELECT open_time, close FROM {table} "
-            f"WHERE open_time < ? "
+            f"WHERE open_time <= ? "
             f"ORDER BY open_time DESC LIMIT 1",
-            (clock_ts_ms,),
+            (clock_ts_ms - 60_000,),
         ).fetchone()
         if row is None or row[1] is None:
             return None
