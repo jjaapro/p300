@@ -95,7 +95,7 @@ def test_compute_returns_none_with_no_history(monkeypatch):
     """No trade history -> trades_daily_returns returns < MIN_OBS_FOR_VOL
     rows -> None."""
     monkeypatch.setattr(
-        "strategies.support.strategy_health.trades_daily_returns",
+        "strategies.support.equity.marked_daily_returns",
         lambda *a, **kw: [],
     )
     assert portfolio_vol.compute_portfolio_vol_scalar("V", 10000.0) is None
@@ -110,7 +110,7 @@ def test_compute_returns_target_over_realized(monkeypatch):
     daily = [("2026-05-01", sigma_daily * 100.0 * (1 if i % 2 == 0 else -1))
               for i in range(30)]
     monkeypatch.setattr(
-        "strategies.support.strategy_health.trades_daily_returns",
+        "strategies.support.equity.marked_daily_returns",
         lambda *a, **kw: daily,
     )
     scalar = portfolio_vol.compute_portfolio_vol_scalar("V", 10000.0,
@@ -125,7 +125,7 @@ def test_compute_clamps_to_floor(monkeypatch):
     daily = [("2026-05-01", sigma_daily * 100.0 * (1 if i % 2 == 0 else -1))
               for i in range(30)]
     monkeypatch.setattr(
-        "strategies.support.strategy_health.trades_daily_returns",
+        "strategies.support.equity.marked_daily_returns",
         lambda *a, **kw: daily,
     )
     scalar = portfolio_vol.compute_portfolio_vol_scalar("V", 10000.0,
@@ -141,7 +141,7 @@ def test_compute_clamps_to_cap(monkeypatch):
     daily = [("2026-05-01", sigma_daily * 100.0 * (1 if i % 2 == 0 else -1))
               for i in range(30)]
     monkeypatch.setattr(
-        "strategies.support.strategy_health.trades_daily_returns",
+        "strategies.support.equity.marked_daily_returns",
         lambda *a, **kw: daily,
     )
     scalar = portfolio_vol.compute_portfolio_vol_scalar("V", 10000.0,
@@ -154,7 +154,7 @@ def test_compute_returns_none_when_zero_vol(monkeypatch):
     """All-zero returns -> pstdev == 0 -> None (caller falls back)."""
     daily = [("2026-05-01", 0.0)] * 30
     monkeypatch.setattr(
-        "strategies.support.strategy_health.trades_daily_returns",
+        "strategies.support.equity.marked_daily_returns",
         lambda *a, **kw: daily,
     )
     assert portfolio_vol.compute_portfolio_vol_scalar("V", 10000.0) is None
@@ -169,7 +169,7 @@ def test_current_vol_scalar_opt_in_uses_portfolio_vol(monkeypatch):
     daily = [("2026-05-01", sigma_daily * 100.0 * (1 if i % 2 == 0 else -1))
               for i in range(30)]
     monkeypatch.setattr(
-        "strategies.support.strategy_health.trades_daily_returns",
+        "strategies.support.equity.marked_daily_returns",
         lambda *a, **kw: daily,
     )
     from strategies.support import jplus_inputs as ji
@@ -185,7 +185,7 @@ def test_current_vol_scalar_falls_back_when_no_history(monkeypatch):
     """Flag is on but no NAV history -> portfolio-vol returns None; fall
     back to legacy (J+ -> today_inputs()['lev'], tactical -> None)."""
     monkeypatch.setattr(
-        "strategies.support.strategy_health.trades_daily_returns",
+        "strategies.support.equity.marked_daily_returns",
         lambda *a, **kw: [],  # no history
     )
     from strategies.support import jplus_inputs as ji
@@ -198,7 +198,7 @@ def test_current_vol_scalar_falls_back_when_no_history(monkeypatch):
 def test_current_vol_scalar_flag_off_keeps_legacy(monkeypatch):
     """Flag absent / False -> legacy semantics regardless of NAV history."""
     monkeypatch.setattr(
-        "strategies.support.strategy_health.trades_daily_returns",
+        "strategies.support.equity.marked_daily_returns",
         lambda *a, **kw: [("2026-05-01", 1.0)] * 30,  # would yield a scalar
     )
     from strategies.support import jplus_inputs as ji

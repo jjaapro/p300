@@ -17,7 +17,7 @@ Output:
   - Closed trades in dashboard.db tagged strategy_variant='p300..._replay'
     (NEVER contaminates the live variant's data).
   - NAV is computed from the trade ledger via
-    strategies.support.strategy_health.trades_daily_returns. No variant_daily_returns
+    strategies.support.equity.daily_equity. No variant_daily_returns
     rows are written — Phase 5 made reporting tools trades-based.
   - Console report: total / annualized / Sharpe / MDD / trade count / per-sleeve PnL.
 """
@@ -277,33 +277,25 @@ def tick_replay_variant(variant: dict) -> None:
 
 def build_daily_nav(variant_id: str, capital: float, start: datetime,
                     end: datetime) -> list[dict]:
-    """Calendar-complete daily NAV series from the trades ledger.
+    """Daily marked equity, including open-position risk before its close.
 
-    Uses the canonical trades-based realized-PnL path
-    (strategies.support.strategy_health.trades_daily_returns). Equity is rebuilt
-    here as ``capital + cumulative daily PnL`` so the per-row equity_usdt
-    matches the user's mental model of "starting bankroll plus what the
-    bot earned by date d." Empty days are zero-filled."""
-    daily = strategy_health.trades_daily_returns(
+    The last observation is capped at the replay end, even for a partial day.
+    Missing historical marks fail the report explicitly.
+    """
+    from strategies.support.equity import daily_equity
+    return daily_equity(
         variant_id, start.date().isoformat(), end.date().isoformat(),
-        capital, zero_fill=True,
+        capital, as_of=end,
     )
-    out: list[dict] = []
-    equity = capital
-    for date_iso, ret_pct in daily:
-        # ret_pct from trades_daily_returns is (sum closed pnl_usdt that
-        # day / capital × 100). Convert back to dollars and accumulate.
-        pnl = ret_pct / 100.0 * capital
-        equity += pnl
-        out.append({"date": date_iso, "equity_usdt": equity,
-                    "daily_pnl": pnl, "return_pct": ret_pct})
-    return out
 
 
 def compute_metrics(nav_rows: list[dict], capital: float) -> dict:
     if not nav_rows:
         return {}
-    rets = [r["return_pct"] / 100.0 for r in nav_rows]
+    if any(r.get("nav_return_pct", r["return_pct"]) is None for r in nav_rows):
+        raise ValueError("Daily risk metrics undefined after non-positive equity")
+    rets = [r.get("nav_return_pct", r["return_pct"]) / 100.0 for r in nav_rows]
+    capital = nav_rows[0].get("opening_equity_usdt", capital)
     final_equity = nav_rows[-1]["equity_usdt"]
     total_return = (final_equity / capital) - 1
     n_days = len(nav_rows)
@@ -425,7 +417,7 @@ def run(start: datetime, end: datetime, interval_seconds: int,
              f"{n_final} marked-to-end-of-window (open at final tick, "
              f"closed at end clock price).")
 
-    # Build NAV from realized trades and report. No variant_daily_returns
+    # Build daily marked NAV from execution history and report. No variant_daily_returns
     # write — Phase 5 made reporting tools trades-based, so VDR rows for
     # replay variants are no longer read by anything.
     nav = build_daily_nav(variant["id"], capital, start, end)

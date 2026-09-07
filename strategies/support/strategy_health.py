@@ -2,7 +2,7 @@
 
 Computes Sharpe, win rate, and max drawdown over three windows (YTD, 30D,
 90D) for the live variant, plus a per-sleeve breakdown of closed trades.
-Pure read-side over `variant_daily_returns` and `trades`; no side effects.
+Pure read-side over execution history and market observations; no side effects.
 
 Intended uses:
   - Standalone CLI: `python -m strategies.support.strategy_health --variant <id>`
@@ -238,10 +238,11 @@ class PortfolioMetrics:
     """Read-only snapshot of portfolio metrics for a single window."""
     window: str
     n_days: int
-    total_return_pct: float
+    total_return_pct: float | None
     sharpe: float | None
     win_rate_pct: float | None       # % of days with return > 0
     max_drawdown_pct: float | None
+    data_error: str | None = None
 
 
 def portfolio_metrics(variant_id: str, window: Window,
@@ -250,18 +251,34 @@ def portfolio_metrics(variant_id: str, window: Window,
                       w_core: float = W_CORE) -> PortfolioMetrics:
     """Portfolio metrics for one window.
 
-    For ``source='live_computed'`` with ``capital_usdt`` supplied, returns
-    are derived from realized closed trades via ``trades_daily_returns``
-    (closed-trade pnl_usdt summed by exit date / capital × 100). This is
-    the canonical PnL path; ``variant_daily_returns`` is no longer
-    written for live variants since the daily-return accrual was
-    removed.
+    ``source='live_computed'`` with capital uses daily marked equity,
+    including open positions. Missing marks make risk unavailable with an
+    explicit ``data_error``; they never become zero-volatility observations.
+    ``source='realized'`` retains the old closed-trade accounting report.
 
     For ``source='replay'`` (or live without capital), reads any
     pre-existing ``variant_daily_returns`` rows directly. Mostly
     historical at this point — newer replay runs also emit trades and
     can use the trades-only path."""
     if source == "live_computed" and capital_usdt is not None:
+        from strategies.support.equity import daily_equity, EquityDataError
+        try:
+            rows = daily_equity(variant_id, window.start, window.end, capital_usdt)
+            if not rows:
+                return PortfolioMetrics(window.name, 0, 0.0, None, None, None)
+            opening = rows[0]["opening_equity_usdt"]
+            if opening <= 0 or any(row["nav_return_pct"] is None for row in rows):
+                raise EquityDataError("Daily risk undefined after non-positive equity")
+            rets = [row["nav_return_pct"] for row in rows]
+            pnls = [row["daily_pnl"] for row in rows]
+            return PortfolioMetrics(
+                window.name, len(rows), sum(pnls) / opening * 100,
+                annualized_sharpe(rets), sum(r > 0 for r in rets) / len(rets) * 100,
+                max_drawdown_from_pnl_curve(pnls, opening),
+            )
+        except EquityDataError as exc:
+            return PortfolioMetrics(window.name, 0, None, None, None, None, str(exc))
+    elif source == "realized" and capital_usdt is not None:
         rets = _trades_daily_returns(variant_id, window.start, window.end,
                                        capital_usdt)
     else:
@@ -502,9 +519,9 @@ def build_report(variant_id: str, capital_usdt: float | None = None,
     """Compute portfolio metrics across YTD/90D/30D and per-sleeve metrics
     for every strategy the variant has traded.
 
-    ``source`` controls which ``variant_daily_returns`` rows feed the
-    portfolio block. Default ``'live_computed'`` for the live bot;
-    ``'replay'`` lets the same tool inspect a backtest variant."""
+    ``source='live_computed'`` reconstructs daily marked equity;
+    ``'realized'`` requests closed-trade accounting and ``'replay'``
+    reads legacy stored daily returns."""
     if capital_usdt is None:
         from strategies.support import trade_db
         capital_usdt = float(trade_db.get_config("paper_account_usdt") or 10000)
@@ -594,13 +611,13 @@ def format_report(report: HealthReport) -> str:
     lines.append("=" * 78)
     lines.append("")
 
-    # Portfolio block — for the live variant this is REALIZED P&L from
-    # closed trades (sum pnl_usdt grouped by exit date, all sleeves
-    # included since their per-trade size_usdt already reflects sleeve
-    # weight × leverage). Open positions are not marked-to-market here.
-    # For replay variants, reads VDR rows as-is (no scaling).
+    # Live risk includes daily unrealized price moves; accounting remains
+    # available through the explicitly realized API/source.
     win_names = [w.name for w in report.windows]
-    lines.append("  Portfolio  (realized P&L from closed trades only)")
+    lines.append("  Portfolio  (daily equity risk)")
+    for metrics in report.portfolio:
+        if metrics.data_error:
+            lines.append(f"  {metrics.window}: risk unavailable — {metrics.data_error}")
     header = f"  {'metric':<22} | " + " | ".join(f"{n:>10}" for n in win_names)
     lines.append(header)
     lines.append("  " + "-" * (len(header) - 2))
@@ -780,10 +797,10 @@ def _main() -> None:
     p.add_argument("--capital", type=float, default=None,
                    help="Override capital (default: paper_account_usdt config).")
     p.add_argument("--source", default="live_computed",
-                   choices=("live_computed", "replay"),
-                   help="variant_daily_returns.source filter for the "
-                        "portfolio block. Pass 'replay' to inspect a "
-                        "backtest variant.")
+                   choices=("live_computed", "realized", "replay"),
+                   help="Portfolio basis: marked equity (live_computed), "
+                        "closed-trade accounting (realized), or legacy "
+                        "stored daily returns (replay).")
     args = p.parse_args()
     report = build_report(args.variant, capital_usdt=args.capital,
                            source=args.source)

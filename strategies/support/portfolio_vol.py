@@ -8,8 +8,8 @@ Two implementations of "today's vol-target leverage":
     recent 1x-equivalent BTC returns. Only the six J+ sub-sleeves
     consume it. Tactical sleeves don't vol-target at all.
 
-  - **Portfolio-vol (P2.4c).** Compute realized vol from the variant's
-    NAV (the trades ledger's daily-return sum, all sleeves combined),
+  - **Portfolio-vol (P2.4c).** Compute volatility from the variant's
+    daily marked NAV (all sleeves combined),
     scalar = ``target_vol / realized_vol``, clamped to ``[FLOOR, CAP]``.
     Applied uniformly to every sleeve. This is the proper way to
     target a portfolio-level risk number: correlation < 1 between
@@ -33,6 +33,7 @@ the new scalar's behaviour on J+ before extending to tactical.
 """
 from __future__ import annotations
 
+import logging
 import math
 import statistics
 from datetime import timedelta
@@ -59,27 +60,34 @@ def compute_portfolio_vol_scalar(
     target_vol_annual: float = TARGET_VOL_ANNUAL_DEFAULT,
     window_days: int = WINDOW_DAYS,
 ) -> Optional[float]:
-    """Compute a portfolio-vol scalar from the variant's realized NAV.
+    """Compute a portfolio-vol scalar from daily marked NAV.
 
-    Reads the last ``window_days`` of daily realized returns from the
-    trades ledger via :func:`strategies.support.strategy_health.trades_daily_returns`.
+    Reads the last ``window_days`` of completed daily NAV returns, including
+    held-position price risk. Never uses today's partial return to size today.
     Annualized stdev × √365 -> ``target_vol_annual / realized_vol``,
     clamped to ``[LEV_FLOOR, LEV_CAP]``.
 
     Returns ``None`` when there's not enough data to estimate (fewer
-    than :data:`MIN_OBS_FOR_VOL` non-zero observations, or realized
+    than :data:`MIN_OBS_FOR_VOL` calendar observations, or measured
     vol of zero). The caller should fall back to the legacy J+ scalar
-    or to ``None`` for tactical sleeves.
+    or to ``None`` for tactical sleeves. Missing marks/funding instead
+    log an error and return the conservative leverage floor.
     """
     from strategies.support import clock
-    from strategies.support.strategy_health import trades_daily_returns
+    from strategies.support.equity import marked_daily_returns, EquityDataError
 
     today = clock.now_utc().date()
-    start = today - timedelta(days=window_days + 1)
-    daily = trades_daily_returns(
-        variant_id, start.isoformat(), today.isoformat(),
-        capital_usdt, zero_fill=True,
-    )
+    end = today - timedelta(days=1)
+    start = end - timedelta(days=window_days - 1)
+    try:
+        daily = marked_daily_returns(
+            variant_id, start.isoformat(), end.isoformat(), capital_usdt,
+        )
+    except EquityDataError as exc:
+        # A data gap is not low volatility and must not produce maximum
+        # leverage or fall through to a more aggressive legacy multiplier.
+        logging.getLogger(__name__).error("Portfolio risk unavailable for %s: %s; scalar floor %.2f", variant_id, exc, LEV_FLOOR)
+        return LEV_FLOOR
     if len(daily) < MIN_OBS_FOR_VOL:
         return None
     # daily is list of (date_iso, return_pct). Convert to fractions.

@@ -269,7 +269,7 @@ def test_portfolio_metrics_raw_mode_no_capital(synthetic_db):
 
 
 def test_portfolio_metrics_trades_only_realized(synthetic_db):
-    """With capital_usdt and source='live_computed', portfolio_metrics
+    """With capital_usdt and source='realized', portfolio_metrics
     aggregates closed-trade pnl_usdt by exit date and divides by capital.
     The synthetic fixture has 3 ADX trades on 2024-06-01..03 with
     pnl [+50, -20, +30] → daily returns [+0.5%, -0.2%, +0.3%].
@@ -277,7 +277,7 @@ def test_portfolio_metrics_trades_only_realized(synthetic_db):
     The 6 daily-returns rows in variant_daily_returns are NOT consulted
     in the live path (Path B: trades are source of truth)."""
     window = sh.Window("ALL", "2024-01-01", "2024-12-31")
-    p = sh.portfolio_metrics("syn_v", window, source="live_computed",
+    p = sh.portfolio_metrics("syn_v", window, source="realized",
                               capital_usdt=10000.0)
     assert p.n_days == 3  # only days with closed trades, not the 6 VDR rows
     # Summed: 0.5 + (-0.2) + 0.3 = +0.6%. Arithmetic-on-fixed-capital

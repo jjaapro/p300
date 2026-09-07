@@ -26,6 +26,28 @@ Validation: **186 targeted tests passed**, plus an independent **86-test** stop/
 
 Remaining market-data granularity is explicit: OHLC cannot identify the exact time of a wick or whether a partially held entry-minute wick happened before entry. The partially held minute is excluded from path extremes; normal wick fills use the completed minute's time and configured transaction costs. Missing historical minutes are retried when supplied, rather than invented.
 
+### Daily equity and risk
+
+Added `strategies/support/equity.py` to reconstruct daily equity from entry and adjustment events, contemporaneous completed minute closes, quantities, cost basis and funding settlements. Open positions contribute daily gains/losses. Changing a trade's eventual result cannot change earlier equity; its final recorded net P&L is recognized only at close. Scaling, flips, recorded fees, pre-window positions and leverage-related funding-notional changes are covered.
+
+Backtest NAV, the full portfolio report notebook, live strategy-health risk and the opt-in portfolio-volatility allocator now use daily marked equity. The explicitly realized `trades_daily_returns` accounting API remains available. Missing/stale/unfinalized marks or missing funding produce an explicit unavailable result; the volatility allocator uses its conservative floor rather than treating missing observations as low risk. Sizing uses completed days only.
+
+The recovered-winner regression retains a **−20% daily drawdown** and still ends at **+12% total P&L**. Costs retain their existing ledger booking dates and carry retains the current synthetic zero-basis model. Daily marks measure daily risk, not every intraday equity fluctuation.
+
+### Final validation and deployment scope
+
+Final broad run: **1,202 passed, 19 deselected** in 78 seconds, using a fresh temporary test directory and no pytest cache:
+
+```text
+python -B -m pytest -q -p no:cacheprovider --basetemp=<fresh-directory>
+  -m "not slow" --ignore=tests/test_sim_mode.py
+  --deselect=tests/test_build_sim_trader_db.py::test_plan_covers_every_live_table
+```
+
+The excluded table-plan test failed in the preceding broad run: five tables from existing local feed work (`deribit_dvol_daily`, `deribit_options_daily`, `deribit_options_instruments`, `macro_daily`, `paxg_spot_1h`) are absent from the unchanged simulation manifest. Both that manifest and its test are unchanged by these fixes. Eighteen slow tests and the separate database-copy simulation module were not run. This is not a full-suite pass.
+
+Each fix has a separate git commit. Existing unrelated working-tree changes were preserved. Production minute rows were repaired with recovery data retained; existing historical reports/trade ledgers were not regenerated, and running bot processes were not restarted to load the new code. The historical carry multiplier bug already had a fix and passing regressions; no duplicate funding fix was introduced.
+
 ## Initial audit findings
 
 | Reported issue | Verdict in this checkout |
