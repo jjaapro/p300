@@ -13,7 +13,7 @@ Checks:
   6. Data coverage is sufficient for Core J+ regime classifier (≥ 80d of BTC
      daily closes from cd_futures_ohlcv).
   7. CPR warmup OK (≥ 210d of ca_long_short_ratio rows).
-  8. Data continuity — no gaps in cadence-based tables (klines, funding, LSR).
+  8. Data continuity and candle resolution (klines, funding, LSR).
   9. No anomalously-open tactical trades (more than 1 per (variant, sleeve,
      asset) is a single-open-invariant violation — the bug we fixed).
 
@@ -24,7 +24,7 @@ Non-zero exit codes:
   4  Dispatch not wired
   5  Data too stale / insufficient
   6  Invariant violation (multi-open trades)
-  7  Data continuity violation (gaps in time-series tables)
+  7  Data continuity / candle resolution violation
   99 Unknown error
 """
 from __future__ import annotations
@@ -488,7 +488,9 @@ def check_data_continuity() -> None:
     _check_1m_table(con, "btc_1m", "btc_1m", failures,
                      unfillable=unfillable_map.get(("btc_1m", ""), []))
     _check_1m_table(con, "eth_1m", "eth_1m", failures,
-                     unfillable=unfillable_map.get(("eth_1m", ""), []))
+                      unfillable=unfillable_map.get(("eth_1m", ""), []))
+
+    check_minute_resolution(con, failures)
 
     # Long-short ratio -- daily per asset, strict. Honors known_unfillable.json
     # for source-side holes that Coinalyze doesn't serve.
@@ -506,7 +508,25 @@ def check_data_continuity() -> None:
     con.close()
     if failures:
         raise HealthError(7,
-                          f"{len(failures)} continuity violation(s) -- see above")
+                           f"{len(failures)} continuity violation(s) -- see above")
+
+
+def check_minute_resolution(con: sqlite3.Connection, failures: list[str]) -> None:
+    """Cadence alone cannot detect fifteen-minute rows renamed as minutes."""
+    from data.repair_minute_candles import (
+        ComparisonUnavailable, find_mislabeled_minutes,
+    )
+    try:
+        rows = find_mislabeled_minutes(con)
+    except ComparisonUnavailable as exc:
+        _warn("btc_1m resolution", f"comparison unavailable: {exc}")
+        return
+    if rows:
+        _fail_soft("btc_1m resolution",
+                   f"{len(rows):,} fifteen-minute candles stored as minutes; "
+                   "run python -m data.repair_minute_candles", failures)
+    else:
+        _ok("btc_1m resolution", "no proven fifteen-minute clones in reference overlap")
 
 
 def check_single_open_invariant() -> None:
