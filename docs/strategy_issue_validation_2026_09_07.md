@@ -16,6 +16,16 @@ The new `data.repair_minute_candles` command defaults to a read-only audit. Prep
 
 Validation: **45 tests passed** across minute repair, price feed and existing funding tests. The repair tests cover milliseconds/microseconds, early halt closes, invalid inputs, incomplete downloads, checksum errors, rollback, concurrent edits, preserved original/unrelated rows and idempotence. Existing research outputs and historical trade ledgers have not been regenerated; rerun affected studies against the corrected data.
 
+### ADX and Thursday stop paths
+
+Implemented chronological completed-minute OHLC checks in `strategies/support/stop_path.py` and integrated them with ADX, enhanced Thursday and the shared close pipeline. Recovered wick breaches now close at the stop; gap-through opens retain the worse price. Stops use their entry-recorded threshold, and ADX daily trailing levels become available only after that day's candle completes. Progress and missing ranges survive restarts.
+
+The shared close pipeline also checks the path before scheduled exits, generic live backstops and end-of-window closes. Overdue Thursday exits are bounded at their scheduled time. A provisional newest live candle cannot be recorded as fully processed or used to finalize a recovered scheduled winner. Historical event times govern exit accounting and funding; closes across later recorded adjustments are refused. Position state and close persistence share a write transaction to prevent a concurrent resize changing the booked basis.
+
+Validation: **186 targeted tests passed**, plus an independent **86-test** stop/trade/concurrency/equity review. Coverage includes recovered breaches, gap fills, coarse/minute replay parity, entry/finalization boundaries, restarts, delayed data, trailing-level chronology, frozen thresholds, scheduled and end-window exits, real generic live backstops, and concurrent resizing.
+
+Remaining market-data granularity is explicit: OHLC cannot identify the exact time of a wick or whether a partially held entry-minute wick happened before entry. The partially held minute is excluded from path extremes; normal wick fills use the completed minute's time and configured transaction costs. Missing historical minutes are retried when supplied, rather than invented.
+
 ## Initial audit findings
 
 | Reported issue | Verdict in this checkout |

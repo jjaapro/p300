@@ -22,7 +22,8 @@ import json
 import logging
 import math
 import sqlite3
-from datetime import datetime, timezone
+from bisect import bisect_right
+from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 from strategies.support import clock
@@ -287,6 +288,53 @@ def _atr_trail_level(candles: list[dict], entry_time_iso: str,
     return level
 
 
+def _stop_levels_at(candles: list[dict], trade: dict, fixed_pct: float):
+    """Build time-indexed stops without applying tomorrow's trail backwards.
+
+    The daily close/ATR can ratchet the stop only at that daily candle's
+    completion. A coarse replay tick may walk several days of minute bars.
+    Computing the latest trail once and using it on all those bars would
+    introduce look-ahead and false historical stop fills.
+    """
+    direction = trade["direction"].upper()
+    entry_price = float(trade["entry_price"])
+    fixed = entry_price * (1 - fixed_pct / 100 if direction == "LONG"
+                           else 1 + fixed_pct / 100)
+    entry_dt = datetime.fromisoformat(trade["actual_entry_time"])
+    if entry_dt.tzinfo is None:
+        entry_dt = entry_dt.replace(tzinfo=timezone.utc)
+    entry_dt = entry_dt.astimezone(timezone.utc)
+    anchor = next((i for i in range(len(candles) - 1, -1, -1)
+                   if candles[i]["dt"] < entry_dt.date().isoformat()), None)
+    times: list[float] = []
+    levels: list[float] = []
+    if ATR_TRAIL_MULT > 0 and anchor is not None:
+        from strategies.support.indicators import atr
+        atr_values = atr(candles, ATR_TRAIL_PERIOD)
+        level = None
+        for i in range(anchor, len(candles)):
+            if not math.isfinite(atr_values[i]):
+                continue
+            candidate = (candles[i]["close"] - ATR_TRAIL_MULT * atr_values[i]
+                         if direction == "LONG" else
+                         candles[i]["close"] + ATR_TRAIL_MULT * atr_values[i])
+            level = candidate if level is None else (
+                max(level, candidate) if direction == "LONG"
+                else min(level, candidate))
+            final_at = (datetime.fromisoformat(candles[i]["dt"])
+                        .replace(tzinfo=timezone.utc) + timedelta(days=1))
+            times.append(final_at.timestamp())
+            levels.append(level)
+
+    def at(when: datetime):
+        result = [("stop_loss", fixed)]
+        i = bisect_right(times, when.timestamp()) - 1
+        if i >= 0:
+            result.append(("ATR_trail", levels[i]))
+        return result
+    return at
+
+
 # ─── DB helpers (variant-scoped) ─────────────────────────────────────────────
 
 def _get_open_adx_trades(variant_id: str) -> list[dict]:
@@ -321,13 +369,12 @@ def _open_adx_paper(variant: dict, direction: str, entry_price: float,
     )
 
 
-def _close_adx_paper(trade_id: str, exit_price: float, reason: str) -> None:
-    """Sleeve close — delegates to strategies.trades.close_perp_trade. Kept as a
-    thin wrapper so ``strategies.support.margin_check._load_close_fn`` can
-    resolve it by sleeve."""
+def _close_adx_paper(trade_id: str, exit_price: float, reason: str, *,
+                     exit_dt: datetime | None = None) -> None:
+    """Close with sleeve costs; central accounting resolves any earlier stop."""
     from strategies.trades import close_perp_trade
     close_perp_trade(trade_id, exit_price, reason, sleeve_name="ADX",
-                     cost_bp_rt=COST_BP_RT, apply_funding=True)
+                     cost_bp_rt=COST_BP_RT, apply_funding=True, exit_dt=exit_dt)
 
 
 # ─── Public tick ─────────────────────────────────────────────────────────────
@@ -378,38 +425,31 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
 
     candles = _load_btc_daily_candles()
     sig = _current_signal(candles)
-    if sig is None:
-        return [], {"status": "warmup", "reason": "insufficient history"}
-
-    today = clock.now_utc().strftime("%Y-%m-%d")
+    now = clock.now_utc()
+    today = now.strftime("%Y-%m-%d")
     open_trades = _get_open_adx_trades(variant["id"])
 
-    # Step 1: stop-loss sweep (fixed SL, then T2b ATR trail).
-    from strategies.support.sleeves import is_sl_hit
-    current_price = _get_current_price("BTC") or sig["close"]
+    # Sweep the completed minute path even if today's signal/quote is missing.
+    # The latest quote is a fallback, not a substitute for intraminute extremes.
+    from strategies.support.stop_path import check_stop_path, entry_stop_pct
+    current_price = _get_current_price("BTC")
     still_open: list[dict] = []
     for tr in open_trades:
-        hit, pnl_pct = is_sl_hit(tr["direction"], float(tr["entry_price"]),
-                                 current_price, sl_price_thresh)
-        if hit:
-            _close_adx_paper(tr["id"], current_price,
-                              f"stop_loss {pnl_pct:.2f}%")
-            log.info(f"[adx {variant['id']}] SL hit: closed {tr['id']} "
-                     f"{tr['direction']} at {current_price:.2f} "
-                     f"({pnl_pct:.2f}% px, threshold={sl_price_thresh:.2f}%)")
-            continue
-        trail = _atr_trail_level(candles, tr.get("actual_entry_time") or "",
-                                 tr["direction"])
-        if trail is not None and (
-                (tr["direction"] == "LONG" and current_price <= trail)
-                or (tr["direction"] == "SHORT" and current_price >= trail)):
-            _close_adx_paper(tr["id"], current_price, "ATR_trail")
-            log.info(f"[adx {variant['id']}] ATR trail hit: closed {tr['id']} "
-                     f"{tr['direction']} at {current_price:.2f} "
-                     f"(trail={trail:.2f}, x{ATR_TRAIL_MULT})")
+        hit = check_stop_path(tr, "BTC", _stop_levels_at(candles, tr,
+                                                       entry_stop_pct(tr, stop_loss_pct)),
+                              now=now, current_price=current_price)
+        if hit is not None:
+            _close_adx_paper(tr["id"], hit.price, hit.reason, exit_dt=hit.at)
+            log.info(f"[adx {variant['id']}] {hit.reason}: closed {tr['id']} "
+                     f"at {hit.price:.2f}, event={hit.at.isoformat()}")
             continue
         still_open.append(tr)
     open_trades = still_open
+
+    if sig is None:
+        return [], {"status": "warmup", "reason": "insufficient history"}
+    if current_price is None:
+        return [], {"status": "price_missing", "date": today}
 
     # Step 2: once-per-day idempotency.
     if _adx_trade_exists_today(variant["id"], today):

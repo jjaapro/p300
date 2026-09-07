@@ -354,7 +354,8 @@ def persist_close(trade_id: str, exit_price: float, exit_time_iso: str,
                   pnl_usdt: float, pnl_pct: float,
                   notes_suffix: str,
                   *,
-                  fee_usdt: float = 0.0) -> sqlite3.Row | None:
+                  fee_usdt: float = 0.0,
+                  con: sqlite3.Connection | None = None) -> sqlite3.Row | None:
     """UPDATE the trade row with close fields. Returns the row as it was
     BEFORE the close (so callers can log entry-side details), or None if
     no row matched the trade_id.
@@ -372,7 +373,9 @@ def persist_close(trade_id: str, exit_price: float, exit_time_iso: str,
       ``realized_pnl_delta_usdt`` on the CLOSE adjustment row records
                       just this event's realization (= pnl_usdt arg).
     """
-    con = sqlite3.connect(str(db.DASH_DB))
+    own_con = con is None
+    if own_con:
+        con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     try:
         row = con.execute(
@@ -413,10 +416,12 @@ def persist_close(trade_id: str, exit_price: float, exit_time_iso: str,
             notes={"reason": (notes_suffix or "").strip()[:200]},
             con=con,
         )
-        con.commit()
+        if own_con:
+            con.commit()
         return row
     finally:
-        con.close()
+        if own_con:
+            con.close()
 
 
 def _format_perp_notes(sleeve_name: str, reason: str,
@@ -434,57 +439,90 @@ def close_perp_trade(trade_id: str, exit_price: float, reason: str,
                      sleeve_name: str, *,
                      cost_bp_rt: float = DEFAULT_COST_BP_RT,
                      slippage_bp_rt: float = DEFAULT_SLIPPAGE_BP_RT,
-                     apply_funding: bool = True) -> None:
+                     apply_funding: bool = True,
+                     exit_dt: datetime | None = None) -> None:
     """End-to-end close for ADX / THU_BEAR / FOMC / CPR / PDO.
 
     Reads the trade row, computes PnL via ``compute_perp_close``, persists,
     and logs a one-line close summary tagged with the sleeve_name.
+    ``exit_dt`` records a historical stop crossing found during a later tick;
+    it also bounds funding accrual and must lie between entry and the clock.
+    ADX/Thursday closes without an explicit event time first replay their stop
+    path, including calls from generic scheduled-exit and end-window backstops.
+    The position snapshot, adjustment-time guard and persistence share one
+    write transaction, so a concurrent resize cannot change the booked basis.
     """
     con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
     try:
+        con.execute("BEGIN IMMEDIATE")
         row = con.execute(
-            "SELECT asset, direction, entry_price, "
+            "SELECT id, strategy, asset, direction, entry_price, notes, leverage, exit_time, "
             "       COALESCE(avg_entry_price, entry_price) AS basis_price, "
             "       COALESCE(current_qty, qty) AS qty, "
             "       COALESCE(current_size_usdt, size_usdt) AS size_usdt, "
-            "       actual_entry_time FROM trades WHERE id=?",
+            "       actual_entry_time FROM trades WHERE id=? AND status='open'",
             (trade_id,),
         ).fetchone()
+        if row is None:
+            return
+        later_events = con.execute(
+            "SELECT event_time FROM trade_adjustments WHERE trade_id=?",
+            (trade_id,),
+        ).fetchall()
+
+        observed_now = clock.now_utc()
+        now = exit_dt if exit_dt is not None else observed_now
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=timezone.utc)
+        now = now.astimezone(timezone.utc)
+        entry_dt = datetime.fromisoformat(row["actual_entry_time"])
+        if entry_dt.tzinfo is None:
+            entry_dt = entry_dt.replace(tzinfo=timezone.utc)
+
+        def validate_event_time(at: datetime) -> None:
+            if not entry_dt <= at <= observed_now:
+                raise ValueError("Trade exit must be between entry and the current clock")
+            for event in later_events:
+                adjusted_at = datetime.fromisoformat(event[0])
+                if adjusted_at.tzinfo is None:
+                    adjusted_at = adjusted_at.replace(tzinfo=timezone.utc)
+                if adjusted_at > at:
+                    raise ValueError("Cannot backdate a close across a later trade adjustment")
+
+        validate_event_time(now)
+        if exit_dt is None and row["strategy"].upper() in {"ADX", "THU_BEAR"}:
+            from strategies.support.stop_path import resolve_sleeve_close
+            earlier = resolve_sleeve_close(dict(row), exit_price, now)
+            if earlier is not None:
+                exit_price, now, reason = earlier.price, earlier.at, earlier.reason
+                validate_event_time(now)
+
+        # Running weighted-average basis and quantity remain locked until the
+        # same transaction persists both the trade and its CLOSE adjustment.
+        components = compute_perp_close(
+            direction=row["direction"],
+            entry_price=float(row["basis_price"]),
+            exit_price=float(exit_price),
+            qty=float(row["qty"]),
+            size_usdt=float(row["size_usdt"]),
+            asset=row["asset"],
+            entry_dt=entry_dt,
+            exit_dt=now,
+            cost_bp_rt=cost_bp_rt,
+            slippage_bp_rt=slippage_bp_rt,
+            apply_funding=apply_funding,
+        )
+        notes = _format_perp_notes(
+            sleeve_name, reason, cost_bp_rt, slippage_bp_rt,
+            components.funding_pct if apply_funding else None,
+        )
+        persist_close(trade_id, exit_price, now.isoformat(),
+                      components.pnl_usdt, components.pnl_pct, notes,
+                      fee_usdt=components.cost_usdt, con=con)
+        con.commit()
     finally:
         con.close()
-    if row is None:
-        return
-
-    now = clock.now_utc()
-    entry_dt = datetime.fromisoformat(row["actual_entry_time"])
-    if entry_dt.tzinfo is None:
-        entry_dt = entry_dt.replace(tzinfo=timezone.utc)
-
-    # basis_price is the running weighted-average for trades that have
-    # scaled up; falls back to the immutable entry_price for the legacy
-    # tactical-sleeve path.
-    components = compute_perp_close(
-        direction=row["direction"],
-        entry_price=float(row["basis_price"]),
-        exit_price=float(exit_price),
-        qty=float(row["qty"]),
-        size_usdt=float(row["size_usdt"]),
-        asset=row["asset"],
-        entry_dt=entry_dt,
-        exit_dt=now,
-        cost_bp_rt=cost_bp_rt,
-        slippage_bp_rt=slippage_bp_rt,
-        apply_funding=apply_funding,
-    )
-
-    notes = _format_perp_notes(
-        sleeve_name, reason, cost_bp_rt, slippage_bp_rt,
-        components.funding_pct if apply_funding else None,
-    )
-    persist_close(trade_id, exit_price, now.isoformat(),
-                  components.pnl_usdt, components.pnl_pct, notes,
-                  fee_usdt=components.cost_usdt)
 
     from strategies.support.trade_db import format_close_summary
     log.info(f"[{sleeve_name.lower()}] " + format_close_summary(

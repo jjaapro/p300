@@ -173,11 +173,12 @@ def _open_thu_bear_paper(variant: dict, asset: str, entry_price: float,
     )
 
 
-def _close_thu_bear_paper(trade_id: str, exit_price: float, reason: str) -> None:
-    """Sleeve close — delegates to strategies.trades.close_perp_trade."""
+def _close_thu_bear_paper(trade_id: str, exit_price: float, reason: str, *,
+                          exit_dt: datetime | None = None) -> None:
+    """Close with sleeve costs; central accounting resolves any earlier stop."""
     from strategies.trades import close_perp_trade
     close_perp_trade(trade_id, exit_price, reason, sleeve_name="THU_BEAR",
-                     cost_bp_rt=COST_BP_RT, apply_funding=True)
+                     cost_bp_rt=COST_BP_RT, apply_funding=True, exit_dt=exit_dt)
 
 
 # ─── Public tick ─────────────────────────────────────────────────────────────
@@ -243,20 +244,25 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
     open_by_asset: dict[str, list[dict]] = {
         asset: _get_open_thu_bear_trades(variant["id"], asset) for asset in assets
     }
-    from strategies.support.sleeves import is_sl_hit
+    from strategies.support.stop_path import check_stop_path, entry_stop_pct, scheduled_close_bound
+    from strategies.support.sleeves import live_pnl_pct
     for asset, opens in open_by_asset.items():
         if not opens:
             continue
         current = _get_current_price(asset)
-        if current is None:
-            continue
         still_open: list[dict] = []
         for tr in opens:
-            hit, pnl = is_sl_hit(tr["direction"], float(tr["entry_price"]),
-                                 current, sl_price_thresh)
-            if hit:
-                _close_thu_bear_paper(tr["id"], current,
-                                        f"stop_loss {pnl:.2f}%")
+            ep = float(tr["entry_price"])
+            trade_sl_pct = entry_stop_pct(tr, stop_loss_pct)
+            stop = ep * (1 - trade_sl_pct / 100 if tr["direction"] == "LONG"
+                         else 1 + trade_sl_pct / 100)
+            bound = scheduled_close_bound(tr, now)
+            hit = check_stop_path(tr, asset, lambda _: [("stop_loss", stop)],
+                                  now=bound, current_price=current if bound == now else None)
+            if hit is not None:
+                pnl = live_pnl_pct(tr["direction"], ep, hit.price)
+                _close_thu_bear_paper(tr["id"], hit.price,
+                                     f"stop_loss {pnl:.2f}%", exit_dt=hit.at)
                 actions.append({"status": "sl_closed", "asset": asset,
                                  "trade_id": tr["id"], "pnl_pct": pnl})
             else:
