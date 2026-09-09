@@ -392,10 +392,42 @@
       "PowerShell(python bots\\\\carry\\\\runner.py --once --verbose 2>&1 | Select-Object -Last 4; ''; python monitor.py --quiet; \"monitor exit: $LASTEXITCODE\")",
       "Bash(python monitor.py)",
       "Bash(python -m pytest tests/test_chento_bot.py tests/test_chento_parity.py -q)",
-      "Bash(curl -sS -m 25 -w \"\\\\nHTTP %{http_code} in %{time_total}s\\\\n\" \"https://api.alternative.me/fng/?limit=1&format=json\")"
+      "Bash(curl -sS -m 25 -w \"\\\\nHTTP %{http_code} in %{time_total}s\\\\n\" \"https://api.alternative.me/fng/?limit=1&format=json\")",
+      "PowerShell(& \"C:\\\\Source\\\\Repos\\\\p300\\\\venv\\\\Scripts\\\\python.exe\" -m pytest tests/test_dashboard_procscan.py tests/test_dashboard_queries.py -q 2>&1)",
+      "PowerShell(& \"C:\\\\Source\\\\Repos\\\\p300\\\\venv\\\\Scripts\\\\python.exe\" \"C:\\\\Source\\\\Repos\\\\p300\\\\dashboard\\\\server.py\" --port 8300)",
+      "PowerShell(& \"C:\\\\Source\\\\Repos\\\\p300\\\\venv\\\\Scripts\\\\python.exe\" -c \"import sys; sys.path.insert\\(0, r'C:\\\\Source\\\\Repos\\\\p300'\\); import monitor; monitor._notify = lambda t: True; sys.exit\\(monitor.run\\(\\)\\)\")",
+      "Bash(\"/c/Source/Repos/p300/venv/Scripts/python.exe\" -c \"import time; time.sleep\\(45\\)\" bots/adx/runner.py)",
+      "Bash(curl -s http://127.0.0.1:8300/api/overview)",
+      "Bash(/c/Source/Repos/p300/venv/Scripts/python.exe -c ' *)",
+      "PowerShell(try { $n = \\(Get-Command node -ErrorAction Stop\\).Source; node --version; node \"C:\\\\Users\\\\TJ5\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\bundled-skills\\\\2.1.227\\\\afcdf31cb88afe8180f093361c27b639\\\\dataviz\\\\scripts\\\\validate_palette.js\" \"#4a9eff,#26a69a,#ef5350,#8a8f9c\" --mode dark --surface \"#14161a\" 2>&1 | Select-Object -Last 15 } catch { \"node not available: $\\($_.Exception.Message\\)\" })",
+      "PowerShell(node \"C:\\\\Users\\\\TJ5\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\bundled-skills\\\\2.1.227\\\\afcdf31cb88afe8180f093361c27b639\\\\dataviz\\\\scripts\\\\validate_palette.js\" \"#3b82f6,#26a69a,#ef5350\" --mode dark --surface \"#14161a\" 2>&1)",
+      "PowerShell(& \"C:\\\\Source\\\\Repos\\\\p300\\\\venv\\\\Scripts\\\\python.exe\" -m pytest \"C:\\\\Source\\\\Repos\\\\p300\\\\tests\\\\test_dashboard_procscan.py\" \"C:\\\\Source\\\\Repos\\\\p300\\\\tests\\\\test_dashboard_queries.py\" \"C:\\\\Source\\\\Repos\\\\p300\\\\tests\\\\test_dashboard_notesparse.py\" -q 2>&1)",
+      "Bash(export PYTHONIOENCODING=utf-8)",
+      "Bash(curl -s \"http://127.0.0.1:8300/api/trades?scope=open\")",
+      "Bash(curl -s \"http://127.0.0.1:8300/api/candles?asset=BTC&tf=15m\")",
+      "Bash(curl -s \"http://127.0.0.1:8300/api/candles?asset=ETH&tf=4h\")",
+      "Bash(curl -s -o /dev/null -w '%{http_code}\\\\n' \"http://127.0.0.1:8300/api/candles?asset=BTC&tf=5m\")",
+      "Bash(curl -s -o /dev/null -w 'index: %{http_code}\\\\n' \"http://127.0.0.1:8300/\")",
+      "Bash(curl -s -o /dev/null -w 'lwc: %{http_code}\\\\n' \"http://127.0.0.1:8300/static/vendor/lightweight-charts.standalone.production.js\")",
+      "Bash(curl -s -o /dev/null -w 'traversal: %{http_code}\\\\n' \"http://127.0.0.1:8300/static/../server.py\")",
+      "Bash(curl -s \"http://127.0.0.1:8300/api/trades?scope=recent\")",
+      "PowerShell(& \"C:\\\\Source\\\\Repos\\\\p300\\\\venv\\\\Scripts\\\\python.exe\" -m pytest \"C:\\\\Source\\\\Repos\\\\p300\\\\tests\" -q -k \"dashboard\" 2>&1)",
+      "PowerShell(& \"C:\\\\Source\\\\Repos\\\\p300\\\\venv\\\\Scripts\\\\python.exe\" -m pytest \"C:\\\\Source\\\\Repos\\\\p300\\\\tests\\\\test_sim_mode.py::test_sim_does_not_touch_live_dashboard_db\" -q 2>&1)",
+      "Bash(curl -s \"http://127.0.0.1:8300/api/bots\")",
+      "Bash(curl -s \"http://127.0.0.1:8300/api/bots/chento_v3\")",
+      "Bash(curl -s -o /tmp/entry.png -w 'status=%{http_code} bytes=%{size_download} type=%{content_type}\\\\n' \"http://127.0.0.1:8300/api/entry_chart/SJ-4246.png\")",
+      "Bash(curl -s \"http://127.0.0.1:8300/api/bots/chento_v3_eth\")",
+      "Bash(curl -s -o \"/c/Users/TJ5/AppData/Local/Temp/claude/c--Source-Repos-p300/8cbf21a2-a765-4fe1-9eab-903f01f6ebbf/scratchpad/entry_SJ-4246.png\" \"http://127.0.0.1:8300/api/entry_chart/SJ-4246.png\")",
+      "PowerShell(& \"C:\\\\Source\\\\Repos\\\\p300\\\\venv\\\\Scripts\\\\python.exe\" -m pytest \"C:\\\\Source\\\\Repos\\\\p300\\\\tests\" -q 2>&1)",
+      "Bash(curl -s \"http://127.0.0.1:8300/api/overview\")",
+      "Bash(curl -s -o \"/c/Users/TJ5/AppData/Local/Temp/claude/c--Source-Repos-p300/8cbf21a2-a765-4fe1-9eab-903f01f6ebbf/scratchpad/entry_final.png\" -w 'entry PNG: %{http_code} %{size_download}b\\\\n' \"http://127.0.0.1:8300/api/entry_chart/SJ-4246.png\")",
+      "Bash(curl -s \"http://127.0.0.1:8300/api/bots/carry\")",
+      "Bash(curl -s -o /dev/null -w 'carry entry PNG: %{http_code}\\\\n' \"http://127.0.0.1:8300/api/entry_chart/SJ-4242.png\")",
+      "Bash(python -m pytest tests/test_dashboard_api.py tests/test_dashboard_botinfo.py tests/test_dashboard_notesparse.py tests/test_dashboard_procscan.py tests/test_dashboard_queries.py tests/test_dashboard_render.py -q)"
     ],
     "additionalDirectories": [
-      "\\tmp"
+      "\\tmp",
+      "C:\\Source\\Repos\\p300\\dashboard\\cache"
     ]
   }
 }
