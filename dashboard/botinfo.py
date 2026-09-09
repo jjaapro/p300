@@ -73,6 +73,17 @@ BOTS: dict[str, dict] = {
         "diag": None,
         "cadence_note": "daily funding decision; positions held for weeks",
     },
+    "r4": {
+        "display": "R4 calendar (BTC+ETH)",
+        "variant_id": "bot_r4_v1",
+        "asset": "BTC/ETH",
+        "card": "r4.md",
+        "calibration": "r4.md",
+        "diag": REPO / "bots" / "r4" / "logs" / "diag.jsonl",
+        "cadence_note": ("fires only inside the Mon/Tue/Wed/Fri windows of "
+                         "days 1-14; 0-3 positions/day, ~12 fires/month max; "
+                         "silence on other days is designed behavior"),
+    },
 }
 
 
@@ -215,6 +226,40 @@ def params(bot: str) -> list[dict]:
                ssrc),
         ]
 
+    if bot == "r4":
+        from bots.r4 import config as b
+        from strategies import trades as t
+        from strategies.sleeves.timing_anomalies.internal.r4 import config as s
+        bsrc = "bots/r4/config.py"
+        ssrc = "strategies/sleeves/timing_anomalies/internal/r4/config.py"
+        weight = next(iter(b.VARIANT_WEIGHT.values()))
+        enabled = ", ".join(k.replace("JPLUS_", "") for k, v in b.ENABLED.items() if v)
+        return [
+            _p("Sizing", "weight per variant", weight, "x capital x sleeve lev", bsrc),
+            _p("Sizing", "sleeve leverage cap", b.LEV_CAP, "x (inner 2.5 x vol-target)", bsrc),
+            _p("Sizing", "co-fire gross cap", b.GROSS_MAX_X, "x capital", bsrc),
+            _p("Sizing", "min notional", b.MIN_NOTIONAL_USDT, "USDT", bsrc),
+            _p("Sizing", "paper capital", b.CAPITAL_USDT, "USDT", bsrc),
+            _p("Cadence", "tick", b.TICK_SECONDS, "s", bsrc),
+            _p("Cadence", "late-entry grace", b.LATE_ENTRY_MAX_S, "s after open", bsrc),
+            _p("Cadence", "enabled variants", enabled, "", bsrc),
+            _p("Windows", "R4_BTC", f"Mon {s.R4_BTC_ENTRY_HOUR:02d}-{s.R4_BTC_EXIT_HOUR:02d} UTC",
+               "day <= 14", ssrc),
+            _p("Windows", "R4_ETH", f"Tue {s.R4_ETH_ENTRY_HOUR:02d} -> Wed {s.R4_ETH_EXIT_HOUR:02d} UTC",
+               "Wed day <= 14", ssrc),
+            _p("Windows", "R4_BTC_V2 / R4_ETH_V2",
+               f"Wed+Fri {s.R4_V2_ENTRY_HOUR:02d}-{s.R4_V2_EXIT_HOUR:02d} UTC", "day <= 14", ssrc),
+            _p("Signal", "inner leverage", f"{s.R4_INNER_LEV_UNGATED} / {s.R4_INNER_LEV_GATED}",
+               "ungated / vol-gated", ssrc),
+            _p("Exits", "exit", "scheduled window close", "no target", ssrc),
+            _p("Exits", "stop-loss", b.STOP_LOSS_PCT if b.STOP_LOSS_PCT is not None
+               else "none (r4_bot_prep sweep)", "", bsrc),
+            _p("Costs", "round trip + slippage",
+               f"{t.DEFAULT_COST_BP_RT:g} + {t.DEFAULT_SLIPPAGE_BP_RT:g}", "bp", "strategies/trades.py"),
+            _p("Data", "mgmt / entry tables",
+               " + ".join(b.MGMT_TABLES) + " / " + " + ".join(b.ENTRY_TABLES), "", bsrc),
+        ]
+
     raise ValueError(f"unknown bot: {bot}")
 
 
@@ -324,4 +369,35 @@ def detail(bot: str) -> dict:
         "diag_today": diag_today(bot),
         "no_trades_note": (None if latest else
                            f"never traded — {meta['cadence_note']}"),
+        "upcoming_windows": _upcoming_windows(bot),
     }
+
+
+def _upcoming_windows(bot: str) -> list[dict] | None:
+    """Read-only calendar for the R4 bot: the next windows from the same
+    predicates the sleeve uses (bots/r4/windows.py), plus whether each
+    variant already fired today. Other bots return None."""
+    if bot != "r4":
+        return None
+    import sqlite3
+    from bots.r4 import windows as r4cal
+    from strategies.support import clock, db
+    now = clock.now_utc()
+    fired: set[str] = set()
+    try:
+        con = sqlite3.connect(str(db.PROD_DB))
+        try:
+            fired = {r[0] for r in con.execute(
+                "SELECT DISTINCT strategy FROM trades WHERE strategy_variant=? "
+                "AND date(actual_entry_time)=date(?)",
+                (BOTS["r4"]["variant_id"], now.isoformat())).fetchall()}
+        finally:
+            con.close()
+    except sqlite3.OperationalError:
+        pass
+    return [{"strategy": w["strategy"], "asset": w["asset"],
+             "open_utc": w["open_utc"].isoformat(),
+             "close_utc": w["close_utc"].isoformat(),
+             "fired_today": (w["strategy"] in fired
+                             and w["open_utc"].date() == now.date())}
+            for w in r4cal.next_windows(now, 8)]

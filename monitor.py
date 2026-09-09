@@ -62,6 +62,7 @@ BOT_EXPECTATIONS: dict[str, int] = {
     "short_squeeze": 14 * 3600,
     "adx": 26 * 3600,          # daily entry decision + continuous sweep
     "carry": 26 * 3600,        # daily funding decision
+    "r4": 2 * 3600,            # evaluates every tick when inputs exist
 }
 
 OVERDUE_GRACE_S = 2 * 3600
@@ -272,7 +273,7 @@ def run(quiet: bool = False, summary: bool = False, deep: bool = False) -> int:
         rows = con.execute(
             "SELECT t.id, t.strategy, t.strategy_variant, t.exit_time "
             "FROM trades t JOIN variants v ON t.strategy_variant = v.id "
-            "WHERE t.execution_mode='paper' AND t.status='open' AND v.enabled=1"
+            "WHERE t.execution_mode='paper' AND t.status='open' AND COALESCE(v.enabled,1)=1"
         ).fetchall()
     except sqlite3.OperationalError:
         rows = []

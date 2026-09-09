@@ -362,3 +362,38 @@ otherwise) → light → dark; the choice is remembered by the browser, and
 `/?theme=light|dark` forces one for a session. Both palettes are validated
 separately (dataviz six checks); the entry-context PNG is rendered per
 theme (`?theme=` on /api/entry_chart, cached as `SJ-n-light.png`).
+
+## 10. Fleet units and adding a bot (2026-09-06)
+
+The operated fleet is what `start_fleet.ps1` launches (feed first, dashboard last):
+
+| unit | script | what it is |
+|---|---|---|
+| feed | feed.py | the only process that fetches; every bot reads prod.db |
+| chento_v3 | bots/chento_v3/runner.py | Chento Triple v3, BTC |
+| chento_v3_eth | bots/chento_v3_eth/runner.py | Chento Triple v3, ETH |
+| short_squeeze | bots/short_squeeze/runner.py | S-105 sweep + CVD-divergence long |
+| adx | bots/adx/runner.py | S-003 ADX regime flip |
+| carry | bots/carry/runner.py | S-078 delta-neutral funding harvest |
+| r4 | bots/r4/runner.py | R4 calendar family, four windows, BTC+ETH (added 2026-09-06) |
+| dashboard | dashboard/server.py | read-only UI on :8300 |
+| monitor | monitor.py | hourly checks (optional unit, `-Monitor`) |
+
+Legacy `bot.py` / `strategies/orchestrator.py` are not units: a running `bot.py`
+double-fetches against feed.py and is flagged as a fault by the fleet script and the
+dashboard.
+
+Adding a bot means touching exactly five places, in one commit:
+
+1. `bots/<name>/{__init__,config,runner}.py` — copy the skeleton of `bots/adx/runner.py`
+   (`bots/r4/runner.py` for a multi-window bot); strategy parameters stay in the sleeve.
+2. `start_fleet.ps1` — the `$Units` default array and the `$Fleet` entry.
+3. `dashboard/procscan.py` `UNIT_SCRIPTS` — the argv token the process scan matches.
+4. `monitor.py` `BOT_EXPECTATIONS[name]` — max seconds between signal evaluations before
+   the bot counts as silent (a missing entry means silence is never alerted).
+5. `dashboard/botinfo.py` `BOTS[name]` + its `params()` branch, plus
+   `docs/calibration/<name>.md` and `dashboard/cards/<name>.md`
+   (`tests/test_dashboard_botinfo.py` fails if either file is missing).
+
+Every table the new bot reads must already be in `botlib.FRESHNESS_CONTRACTS`; list the
+management tables in the bot's `MGMT_TABLES` and the entry-only tables in `ENTRY_TABLES`.

@@ -875,6 +875,20 @@ async function showBot(name) {
     }
   }
 
+  if (d.upcoming_windows && d.upcoming_windows.length) {
+    info.appendChild(el("h3", null, "Upcoming windows (UTC)"));
+    const wt = el("table", "params");
+    for (const w of d.upcoming_windows) {
+      const tr = el("tr");
+      tr.appendChild(el("td", null, w.strategy.replace("JPLUS_", "")));
+      tr.appendChild(el("td", "dim", w.asset));
+      tr.appendChild(el("td", "mono", `${fmtIso(w.open_utc)} → ${fmtIso(w.close_utc)}`));
+      tr.appendChild(el("td", "dim", w.fired_today ? "fired today" : ""));
+      wt.appendChild(tr);
+    }
+    info.appendChild(wt);
+  }
+
   const det = document.createElement("details");
   const sum = document.createElement("summary");
   sum.textContent = `calibration log (${d.calibration_path})`;

@@ -180,3 +180,55 @@ def test_close_due_trades_closes_only_overdue(tmp_db):
     con.close()
     assert rows[overdue] == "closed"
     assert rows[fresh] == "open"
+
+
+# ─── open_gross_usdt + enabled backfill (R4 bot, 2026-09-06) ──────────────────
+
+def test_open_gross_usdt_sums_open_paper_notional(tmp_db):
+    from strategies import trades
+    v = {"id": "bot_gross_v1", "capital_usdt": 10_000.0}
+    trades.open_paper_trade(variant=v, sleeve_name="X", asset="BTC",
+                            direction="LONG", entry_price=100.0,
+                            allocation_pct=20.0, leverage=5.0, reason={},
+                            scheduled_exit_dt=NOW + timedelta(hours=1))
+    trades.open_paper_trade(variant=v, sleeve_name="Y", asset="ETH",
+                            direction="LONG", entry_price=10.0,
+                            allocation_pct=10.0, leverage=2.0, reason={},
+                            scheduled_exit_dt=NOW + timedelta(hours=2))
+    assert botlib.open_gross_usdt("bot_gross_v1") == pytest.approx(10_000 + 2_000)
+    assert botlib.open_gross_usdt("nobody") == 0.0
+
+
+def test_ensure_bot_variant_backfills_enabled_null(tmp_path, monkeypatch):
+    """Live prod.db predates the `enabled NOT NULL DEFAULT 1` DDL, so bot rows
+    registered there carry NULL. Recreate that legacy shape (registry DDL
+    with the constraint stripped) and check ensure_bot_variant heals it."""
+    scratch = (tmp_path / "scratch.db").resolve()
+    for name in ("PROD_DB", "DASH_DB", "TRADER_DB"):
+        monkeypatch.setattr(_db_mod, name, scratch)
+    monkeypatch.setattr(trade_db, "DB_PATH", scratch)
+    variant_registry.init_schema()
+    con = sqlite3.connect(str(scratch))
+    ddl = con.execute("SELECT sql FROM sqlite_master WHERE name='variants'").fetchone()[0]
+    con.close()
+    assert "enabled INTEGER NOT NULL DEFAULT 1" in ddl
+    legacy = (tmp_path / "legacy.db").resolve()
+    for name in ("PROD_DB", "DASH_DB", "TRADER_DB"):
+        monkeypatch.setattr(_db_mod, name, legacy)
+    monkeypatch.setattr(trade_db, "DB_PATH", legacy)
+    con = sqlite3.connect(str(legacy))
+    con.execute(ddl.replace("enabled INTEGER NOT NULL DEFAULT 1", "enabled INTEGER"))
+    con.commit(); con.close()
+    trade_db.init_db()
+    variant_registry.init_schema()          # CREATE IF NOT EXISTS: legacy shape stays
+    botlib.ensure_bot_variant("bot_null_v1", short_name="n", capital_usdt=1.0,
+                              bot_name="null")
+    con = sqlite3.connect(str(legacy))
+    con.execute("UPDATE variants SET enabled=NULL WHERE id='bot_null_v1'")
+    con.commit(); con.close()
+    v = botlib.ensure_bot_variant("bot_null_v1", short_name="n", capital_usdt=1.0,
+                                  bot_name="null")
+    assert v["enabled"] is True
+    con = sqlite3.connect(str(legacy))
+    assert con.execute("SELECT enabled FROM variants WHERE id='bot_null_v1'").fetchone()[0] == 1
+    con.close()

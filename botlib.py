@@ -50,6 +50,32 @@ FRESHNESS_CONTRACTS: dict[str, tuple[str, float, int]] = {
     # cadence/limits as their BTC twins)
     "cd_futures_eth_15m":  ("timestamp", 1.0,   45 * 60),
     "okx_perp_eth_1h":     ("timestamp", 1.0,   3 * 3600),
+    # Track D feeds (2026-09-06): gold leg, macro context, Deribit options.
+    "paxg_spot_1h":        ("timestamp", 1.0,   2 * 3600 + 900),
+    # Weekday cadence, and `date` is parsed as UTC midnight of the bar's own
+    # day, so a row is already ~24h old when written. Fri bar + holiday Monday
+    # reaches 120h, so 5 days left zero headroom for one missed poll: 6.
+    "macro_daily":         ("date",      1.0,   6 * 86400),
+    "deribit_dvol_daily":  ("timestamp", 1.0,   2 * 86400 + 3600),
+    # Snapshots run at 00:05 and 08:05 UTC but rows are stamped at the floored
+    # hour, so the long leg of the cycle (08:00 row -> next 00:05 write) is
+    # 16h05m. 14h could never be satisfied; 18h clears it with poll slack.
+    "deribit_options_daily": ("timestamp", 1.0, 18 * 3600),
+    "deribit_options_instruments": ("last_seen_ts", 1.0, 2 * 86400),
+    # Track D4 (2026-09-08): Coinbase US-venue spot, the premium study's leg.
+    "coinbase_spot_1h":    ("timestamp", 1.0,   2 * 3600 + 900),
+    # Track D6 (2026-09-08): OKX + Bybit funding settlements, the
+    # funding-dispersion study's cross-venue legs. Settlements are 8-hourly
+    # and the feed polls hourly, so the newest row is at most 8h + 1h old;
+    # 10h leaves room for one missed poll before the alert fires.
+    "okx_funding":         ("timestamp", 1.0,   10 * 3600),
+    "bybit_funding":       ("timestamp", 1.0,   10 * 3600),
+    # Track D5 (2026-09-08): Binance USDⓈ-M quarterly futures, the
+    # perp-vs-quarterly basis study's leg. Klines are hourly (same limit as
+    # the other 1h kline tables); the contracts table is refreshed once per
+    # UTC day from exchangeInfo, so 2 days leaves room for one missed pull.
+    "binance_quarterly_1h":        ("timestamp",    1.0, 2 * 3600 + 900),
+    "binance_quarterly_contracts": ("last_seen_ts", 1.0, 2 * 86400),
 }
 
 # ─── Table classification ─────────────────────────────────────────────────────
@@ -306,6 +332,20 @@ def ensure_bot_variant(variant_id: str, *, short_name: str,
         )
         v = variant_registry.get_variant(variant_id)
         log.info(f"registered bot variant {variant_id}")
+    # Rows registered before `enabled` got its DEFAULT carry NULL, which the
+    # monitor's overdue-trade join (v.enabled=1) silently excludes. A bot
+    # that is running is enabled by definition — backfill on every start.
+    con = sqlite3.connect(str(db.PROD_DB))
+    try:
+        cur = con.execute(
+            "UPDATE variants SET enabled=1 WHERE id=? AND enabled IS NULL",
+            (variant_id,))
+        con.commit()
+        if cur.rowcount:
+            log.info(f"variant {variant_id}: enabled NULL -> 1")
+            v = variant_registry.get_variant(variant_id)
+    finally:
+        con.close()
     return v
 
 
@@ -395,5 +435,22 @@ def count_open_trades(variant_id: str) -> int:
             "AND execution_mode = 'paper' AND status = 'open'",
             (variant_id,),
         ).fetchone()[0]
+    finally:
+        con.close()
+
+
+def open_gross_usdt(variant_id: str) -> float:
+    """Sum of open paper notional for the variant (current size after any
+    partial adjustments, else the entry size). Bots with several windows use
+    it as the co-fire budget input."""
+    con = sqlite3.connect(str(db.PROD_DB))
+    try:
+        row = con.execute(
+            "SELECT COALESCE(SUM(COALESCE(current_size_usdt, size_usdt)), 0) "
+            "FROM trades WHERE strategy_variant = ? "
+            "AND execution_mode = 'paper' AND status = 'open'",
+            (variant_id,),
+        ).fetchone()
+        return float(row[0] or 0.0)
     finally:
         con.close()
