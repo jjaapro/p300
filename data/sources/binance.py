@@ -162,6 +162,35 @@ def fetch_spot_klines_1h() -> int:
     return fetch_klines_1h(SPOT_API, "BTCUSDT", "cd_spot_binance")
 
 
+PAXG_TABLE = "paxg_spot_1h"
+
+
+def _ensure_kline_1h_table(con: sqlite3.Connection, table: str) -> None:
+    """Create a 14-column 1h kline table (cd_spot_binance shape) if missing.
+    feed.py never runs bootstrap, so feeds added after bootstrap create
+    their own table on first refresh."""
+    con.execute(
+        f"CREATE TABLE IF NOT EXISTS {table} ("
+        " timestamp INTEGER PRIMARY KEY, open REAL, high REAL, low REAL, close REAL,"
+        " volume REAL, quote_volume REAL, volume_buy REAL, quote_volume_buy REAL,"
+        " volume_sell REAL, quote_volume_sell REAL, total_trades INTEGER,"
+        " trades_buy INTEGER, trades_sell INTEGER)")
+    con.commit()
+
+
+def fetch_paxg_spot_klines_1h() -> int:
+    """PAXGUSDT spot 1h → paxg_spot_1h (tokenised gold; Track D2 2026-09-06,
+    the anchor-allocator study's GOLD leg). Every refresh cycle like
+    cd_spot_binance -- one request, and the partial-bar re-fetch keeps the
+    latest bar honest."""
+    con = sqlite3.connect(str(DB_PATH))
+    try:
+        _ensure_kline_1h_table(con, PAXG_TABLE)
+    finally:
+        con.close()
+    return fetch_klines_1h(SPOT_API, "PAXGUSDT", PAXG_TABLE)
+
+
 def fetch_klines_interval(api_base: str, symbol: str, table: str,
                           interval: str) -> int:
     """Generic version of fetch_klines_1h — fetch latest klines at the given
@@ -883,6 +912,11 @@ def refresh_all() -> dict[str, int]:
         log.warning(f"cd_spot_binance fetch failed: {e}")
         results["cd_spot_binance"] = -1
     try:
+        results[PAXG_TABLE] = fetch_paxg_spot_klines_1h()
+    except Exception as e:
+        log.warning(f"{PAXG_TABLE} fetch failed: {e}")
+        results[PAXG_TABLE] = -1
+    try:
         results["cd_futures_15m"] = fetch_futures_klines_15m()
     except Exception as e:
         log.warning(f"cd_futures_15m fetch failed: {e}")
@@ -961,6 +995,59 @@ def refresh_all() -> dict[str, int]:
     except Exception as e:
         log.warning(f"polymarket_fed refresh failed: {e}")
         results["polymarket_fed"] = -1
+    # macro_daily -- Yahoo daily series (SPX/DXY/VIX/TNX/GOLD/IEF/TLT), once
+    # per UTC day; anchor-allocator study + regime context (Track D3).
+    try:
+        results["macro_daily"] = 1 if _refresh_daily_external(
+            "macro_yahoo",
+            lambda: __import__("data.sources.macro_yahoo",
+                                fromlist=["refresh"]).refresh()) else 0
+    except Exception as e:
+        log.warning(f"macro_yahoo refresh failed: {e}")
+        results["macro_daily"] = -1
+    # Deribit public feed (DVOL daily + option instruments + twice-daily book
+    # snapshots). Self-throttled inside; supersedes the gated CoinDesk cd_dvol.
+    try:
+        dr = __import__("data.sources.deribit", fromlist=["refresh"]).refresh()
+        for k, v in dr.items():
+            results[f"deribit_{k}"] = v
+    except Exception as e:
+        log.warning(f"deribit refresh failed: {e}")
+        results["deribit"] = -1
+    # Coinbase Exchange hourly spot (BTC-USD / ETH-USD) — Track D4 (2026-09-08),
+    # the US-venue leg of the Coinbase-premium study. Self-throttled to one
+    # pull per asset per UTC hour inside coinbase.refresh().
+    try:
+        cb = __import__("data.sources.coinbase", fromlist=["refresh"]).refresh()
+        for k, v in cb.items():
+            results[f"coinbase_{k}"] = v
+    except Exception as e:
+        log.warning(f"coinbase refresh failed: {e}")
+        results["coinbase_spot_1h"] = -1
+    # OKX + Bybit funding settlements — Track D6 (2026-09-08), the
+    # funding-dispersion study's cross-venue legs against cd_funding_rate.
+    # Self-throttled to one pull per instrument per UTC hour inside
+    # venue_funding.refresh(); settlements themselves are 8-hourly.
+    try:
+        vf = __import__("data.sources.venue_funding", fromlist=["refresh"]).refresh()
+        for k, v in vf.items():
+            results[f"funding_{k}"] = v
+    except Exception as e:
+        log.warning(f"venue_funding refresh failed: {e}")
+        results["venue_funding"] = -1
+    # Binance USDⓈ-M quarterly futures 1h (CURRENT_QUARTER + NEXT_QUARTER for
+    # BTCUSDT/ETHUSDT) plus the listed-contract calendar — Track D5
+    # (2026-09-08), the perp-vs-quarterly basis study's leg. Self-throttled to
+    # one pull per slot per UTC hour (contracts once per UTC day) inside
+    # binance_quarterly.refresh().
+    try:
+        bq = __import__("data.sources.binance_quarterly",
+                        fromlist=["refresh"]).refresh()
+        for k, v in bq.items():
+            results[f"quarterly_{k}"] = v
+    except Exception as e:
+        log.warning(f"binance_quarterly refresh failed: {e}")
+        results["binance_quarterly_1h"] = -1
     # AI_QUANT-only feeds (news headlines + CoinDesk liquidations/DVOL). These
     # exclusively feed strategies.sleeves.ai_quant.context, so we skip them
     # entirely when the sleeve is disabled — no point spending CryptoPanic /
@@ -1050,6 +1137,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--backfill-klines-15m", action="store_true",
                     help="One-shot: backfill cd_futures_15m + cd_spot_15m from "
                          "--since to present. ~3-5 min for full 2019-09-08 -> now.")
+    ap.add_argument("--backfill-paxg", action="store_true",
+                    help="One-shot: backfill paxg_spot_1h (PAXGUSDT spot 1h) "
+                         "from --since to present (~1 min for 2019-11 -> now).")
     ap.add_argument("--since", default="2020-01-01",
                     help="Backfill start date (UTC, YYYY-MM-DD). Default 2020-01-01.")
     ap.add_argument("--skip-gap-fix", action="store_true",
@@ -1077,6 +1167,16 @@ def main(argv: list[str] | None = None) -> int:
 
     if args.backfill_klines:
         backfill_all_klines(since=args.since)
+        return 0
+
+    if args.backfill_paxg:
+        con = sqlite3.connect(str(DB_PATH))
+        try:
+            _ensure_kline_1h_table(con, PAXG_TABLE)
+        finally:
+            con.close()
+        n = backfill_klines_1h(SPOT_API, "PAXGUSDT", PAXG_TABLE, since=args.since)
+        log.info(f"backfilled {PAXG_TABLE}: {n} rows since {args.since}")
         return 0
 
     if args.backfill_klines_15m:

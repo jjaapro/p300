@@ -57,6 +57,20 @@ SPECS: tuple[Spec, ...] = (
     Spec("cd_funding_rate_eth", "timestamp",  None,    28800),
     Spec("cd_dvol",             "timestamp",  "asset", 86400),
     Spec("ca_long_short_ratio", "timestamp",  "asset", 86400),
+    Spec("paxg_spot_1h",        "timestamp",  None,    3600),
+    Spec("deribit_dvol_daily",  "timestamp",  "asset", 86400),
+    Spec("coinbase_spot_1h",    "timestamp",  "asset", 3600),
+    # OKX/Bybit funding settle on a uniform 8h grid on both venues (unlike the
+    # Binance table above, which straddles the 2026-04-13 cadence cutover).
+    Spec("okx_funding",         "timestamp",  "inst_id", 28800),
+    Spec("bybit_funding",       "timestamp",  "symbol",  28800),
+    # binance_quarterly_1h groups by (pair, contract_type). Spec carries a
+    # single group column, so the table declares a VIRTUAL generated column
+    # `series` = pair || '-' || contract_type purely so this spec can exist.
+    Spec("binance_quarterly_1h", "timestamp", "series",  3600),
+    # macro_daily (weekday cadence), the Deribit option tables (per-instrument,
+    # non-uniform) and binance_quarterly_contracts (one row per listed contract,
+    # no cadence at all) carry freshness contracts only -- no uniform-gap spec.
 )
 
 

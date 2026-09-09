@@ -326,13 +326,39 @@ All tables live in `data/databases/prod.db`. Refresh paths:
 
 | Table | Source | Refresh | Used by |
 |-------|--------|---------|---------|
-| `btc_1m`, `eth_1m` | Binance spot klines | `feed.py` every 60s | pdo, cpr, price_feed (ETH) |
+| `btc_1m`, `eth_1m` | Binance spot klines | `feed.py` every 60s | pdo, cpr, r4, price_feed (BTC+ETH) |
 | `cd_futures_ohlcv` | Binance BTCUSDT perp 1h | `feed.py` every 60s | adx, carry, regime_tactical, price_feed (BTC) |
-| `cd_spot_binance` | Binance BTCUSDT spot 1h | `feed.py` every 60s | carry |
+| `cd_spot_binance` | Binance BTCUSDT spot 1h | `feed.py` every 60s | carry, r4 (regime + gate inputs) |
 | `cd_funding_rate` | Binance BTC perp funding | `feed.py` every 60s | strategies.support.funding (BTC sleeves) |
 | `cd_funding_rate_eth` | Binance ETH perp funding | `feed.py` every 60s | strategies.support.funding (ETH sleeves) |
-| `ca_long_short_ratio` | Coinalyze (history) + Binance rolling 30d | `fetch_coinalyze.py` once + `feed.py` every 60s | cpr, regime LS circuit breaker |
+| `ca_long_short_ratio` | Coinalyze (history) + Binance rolling 30d | `fetch_coinalyze.py` once + `feed.py` every 60s | cpr, r4 (regime), regime LS circuit breaker |
+| `paxg_spot_1h` | Binance PAXGUSDT spot 1h (tokenised gold, since 2020-08) | `feed.py` every 60s; backfill `data/sources/binance.py --backfill-paxg` | anchor-allocator study (GOLD leg) |
+| `macro_daily` | Yahoo daily SPX/DXY/VIX/TNX/GOLD/IEF/TLT (since 2000) | `feed.py` once per UTC day via `data/sources/macro_yahoo.py`; seed `--seed-from`, deep pull `--backfill` | anchor-allocator study, regime context |
+| `deribit_dvol_daily`, `deribit_options_instruments`, `deribit_options_daily` | Deribit public API: DVOL daily (since 2022-09), option instruments, liquid-subset book snapshots 00:05/08:05 UTC; history seeded from the trader-repo CoinDesk snapshot (2023-12→2026-04, `source='coindesk_seed'`) | `feed.py` via `data/sources/deribit.py` (self-throttled); CLI `--seed-from`, `--backfill-dvol`, `--snapshot` | VRP study; supersedes gated `cd_dvol` |
+| `coinbase_spot_1h` | Coinbase Exchange BTC-USD/ETH-USD spot 1h (since 2020-01), one row per (asset, hour); history seeded from the trader-repo snapshot (→2026-04-14), live API onwards | `feed.py` via `data/sources/coinbase.py` (one pull per asset per UTC hour); CLI `--seed-from`, `--backfill [--since]` | Coinbase-premium study (US-venue spot basis vs `cd_spot_binance`) |
+| `okx_funding`, `bybit_funding` | OKX (`BTC-USDT-SWAP`, `ETH-USDT-SWAP`) and Bybit (`BTCUSDT`, `ETHUSDT`) funding settlements on the 8h grid, epoch-second timestamps that join straight onto `cd_funding_rate` / `cd_funding_rate_eth`. OKX serves a rolling ~3 months only (from 2026-06-08); Bybit reaches back to 2020-03-25 (BTC) / 2020-10-21 (ETH). No predecessor seed exists — the OKX series grows forward from 2026-06-08 | `feed.py` via `data/sources/venue_funding.py` (one pull per instrument per UTC hour); CLI `--backfill [--since]` | funding-dispersion (delta-neutral) study |
+| `binance_quarterly_1h` | Binance USDⓈ-M quarterly futures 1h, continuous-contract slots (`CURRENT_QUARTER`, `NEXT_QUARTER`) for BTCUSDT + ETHUSDT, one row per (pair, contract_type, hour). CURRENT_QUARTER runs unbroken from 2021-02-03 (BTC) / 2021-02-04 (ETH); NEXT_QUARTER from 2021-03-16 with five structural holes in 2022-04→2023-08 when Binance listed no far quarterly (recorded in `known_unfillable.json`). No predecessor seed. `series` is a virtual generated column (`pair-contract_type`) so `check_gaps` can group on one column | `feed.py` via `data/sources/binance_quarterly.py` (one pull per slot per UTC hour); CLI `--backfill [--since]` | perp-vs-quarterly basis study |
+| `binance_quarterly_contracts` | The listed quarterly contracts from `/fapi/v1/exchangeInfo` (symbol, pair, contract_type, deliveryDate, onboardDate) with first/last-seen stamps — the roll calendar for the slots above. Only ever shows contracts listed *now*, so it accumulates forward from 2026-09-08 | `feed.py` via `data/sources/binance_quarterly.py` (once per UTC day); CLI `--contracts` | perp-vs-quarterly basis study (roll dating) |
 | `scheduled_events` | computed by `fetch_events.py` (FOMC/CPI hardcoded, NFP/OPEX rules) | annual: bump FOMC/CPI lists, re-run | S-096 V4 filter, regime no-FOMC rule |
+
+Three read-path caveats on the 2026-09 feeds, verified 2026-09-08:
+
+- **`deribit_options_daily` is mostly marks and nothing else.** 495,419 of its
+  496,429 rows are the CoinDesk seed, and in those `mark_price`, `mark_iv`,
+  `bid_price`, `ask_price`, `underlying_price` and `open_interest` are 100 %
+  NULL — only `mark_price_usd` (and `volume`) survive the seed. Implied vol,
+  open interest, spreads and the underlying exist for the 1,010 live rows
+  only, i.e. from 2026-09-06 onward. Filter on the column you need, not on
+  the row count.
+- **The newest hourly row is the forming bar.** `coinbase_spot_1h` and
+  `binance_quarterly_1h` both store the current, incomplete hour and overwrite
+  it when the hour closes. Anything reading to `MAX(timestamp)` must drop the
+  final bar, the same rule the rest of the read path already follows.
+- **One malformed listing bar.** `binance_quarterly_1h` BTCUSDT
+  CURRENT_QUARTER at 2021-02-03 08:00 (the series' first bar) violates the
+  OHLC invariant at source: `high` 35,999.4 below `open` 36,054.1, `close`
+  39,550.0 above `high`, on 4.48 of volume. Exclude it. No other row in the
+  table breaks the invariant.
 
 If `ca_long_short_ratio` shows a gap >30 days old, Binance can't reach back
 that far — run `python fetch_coinalyze.py` to fill it. If `scheduled_events`

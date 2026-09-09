@@ -112,6 +112,79 @@ SCHEMAS: dict[str, str] = {
 }
 
 
+# PAXG (tokenised gold) spot 1h -- the anchor-allocator study's GOLD leg
+# (Track D2, 2026-09-06). Same 14-column kline shape as cd_spot_binance so
+# binance.fetch_klines_1h / backfill_klines_1h work unchanged.
+SCHEMAS["paxg_spot_1h"] = SCHEMAS["cd_spot_binance"].replace(
+    "cd_spot_binance", "paxg_spot_1h")
+
+# Coinbase Exchange hourly spot, BTC + ETH in one table (Track D4, 2026-09-08).
+# data/sources/coinbase.py owns the identical DDL (it creates the table on
+# first refresh, since feed.py never runs bootstrap); tests/test_feed_coinbase.py
+# asserts the two stay byte-equivalent modulo whitespace.
+SCHEMAS["coinbase_spot_1h"] = """
+    CREATE TABLE IF NOT EXISTS coinbase_spot_1h (
+        asset     TEXT NOT NULL,
+        timestamp INTEGER NOT NULL,
+        open REAL, high REAL, low REAL, close REAL, volume REAL,
+        PRIMARY KEY (asset, timestamp)
+    )
+"""
+
+# OKX + Bybit funding settlements, 8h grid (Track D6, 2026-09-08).
+# data/sources/venue_funding.py owns the identical DDL (it creates the tables
+# on first refresh, since feed.py never runs bootstrap);
+# tests/test_feed_venue_funding.py asserts the two stay equivalent.
+SCHEMAS["okx_funding"] = """
+    CREATE TABLE IF NOT EXISTS okx_funding (
+        inst_id       TEXT NOT NULL,
+        timestamp     INTEGER NOT NULL,
+        funding_rate  REAL,
+        realized_rate REAL,
+        PRIMARY KEY (inst_id, timestamp)
+    )
+"""
+SCHEMAS["bybit_funding"] = """
+    CREATE TABLE IF NOT EXISTS bybit_funding (
+        symbol       TEXT NOT NULL,
+        timestamp    INTEGER NOT NULL,
+        funding_rate REAL,
+        PRIMARY KEY (symbol, timestamp)
+    )
+"""
+
+# Binance USDⓈ-M quarterly futures, hourly continuous-contract klines plus the
+# listed-contract calendar (Track D5, 2026-09-08).
+# data/sources/binance_quarterly.py owns the identical DDL (it creates the
+# tables on first refresh, since feed.py never runs bootstrap);
+# tests/test_feed_binance_quarterly.py asserts the two stay equivalent.
+# `series` is a VIRTUAL generated column so data/check_gaps.py -- which groups
+# by a single column -- can have a spec for a table whose natural group is the
+# (pair, contract_type) composite.
+SCHEMAS["binance_quarterly_1h"] = """
+    CREATE TABLE IF NOT EXISTS binance_quarterly_1h (
+        pair          TEXT NOT NULL,
+        contract_type TEXT NOT NULL,
+        timestamp     INTEGER NOT NULL,
+        open REAL, high REAL, low REAL, close REAL, volume REAL,
+        series TEXT GENERATED ALWAYS AS (pair || '-' || contract_type) VIRTUAL,
+        PRIMARY KEY (pair, contract_type, timestamp)
+    )
+"""
+SCHEMAS["binance_quarterly_contracts"] = """
+    CREATE TABLE IF NOT EXISTS binance_quarterly_contracts (
+        symbol        TEXT NOT NULL,
+        pair          TEXT NOT NULL,
+        contract_type TEXT NOT NULL,
+        delivery_ts   INTEGER,
+        onboard_ts    INTEGER,
+        first_seen_ts INTEGER,
+        last_seen_ts  INTEGER,
+        PRIMARY KEY (symbol)
+    )
+"""
+
+
 def ensure_db_and_schemas() -> None:
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     con = sqlite3.connect(str(DB_PATH))
