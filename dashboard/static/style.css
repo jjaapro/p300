@@ -106,6 +106,7 @@ footer { padding: 10px 14px 16px; }
 }
 .alert-red   { background: var(--alert-red-bg); color: var(--alert-red-fg); border-left: 3px solid var(--red); }
 .alert-amber { background: var(--alert-amber-bg); color: var(--alert-amber-fg); border-left: 3px solid var(--amber); }
+.alert-info  { background: var(--panel); color: var(--dim); border-left: 3px dashed var(--dim); }
 
 /* fleet tiles */
 .fleet {
@@ -132,6 +133,8 @@ footer { padding: 10px 14px 16px; }
 .state-duplicate .tile-state { color: var(--red-ink); }
 .state-dead, .state-missing { border-left-color: var(--red); }
 .state-dead .tile-state, .state-missing .tile-state { color: var(--red-ink); }
+.state-held          { border-left-color: var(--dim); border-left-style: dashed; }
+.state-held .tile-state { color: var(--dim); }
 .state-silent, .state-degraded, .state-writer_unseen { border-left-color: var(--amber); }
 .state-silent .tile-state, .state-degraded .tile-state,
 .state-writer_unseen .tile-state { color: var(--amber); }

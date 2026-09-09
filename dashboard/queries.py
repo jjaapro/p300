@@ -111,6 +111,15 @@ def _fleet(scanres: procscan.ScanResult, beats: dict[str, dict],
                 "red", "DUPLICATE",
                 f"DUPLICATE {unit}: {n} instances running [{pid_desc}] — "
                 f"kill all but one (oldest listed first){force}"))
+        elif n == 0 and unit in monitor.HELD_UNITS:
+            # Deliberately parked: built and wired, intentionally not running.
+            # Reached before MISSING/DEAD so a held unit never shows red. The
+            # guard is `n == 0`: if a process IS running, every normal check
+            # applies and a held unit can still go DEAD or DEGRADED.
+            state = "HELD"
+            alerts.append(_alert(
+                "info", "HELD",
+                f"HELD {unit}: {monitor.HELD_UNITS[unit]}"))
         elif hb is None:
             state = "MISSING"
             extra = f" ({n} process(es) visible, none has written yet)" if n else ""

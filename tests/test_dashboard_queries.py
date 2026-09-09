@@ -106,6 +106,51 @@ def test_dead_process_even_with_process_present():
     assert "DEAD" in _codes_for(alerts, "adx")
 
 
+def test_held_unit_is_not_dead_or_missing(monkeypatch):
+    """A deliberately parked unit reads HELD, in info severity, whether it has
+    a stale heartbeat from an earlier run or no heartbeat row at all."""
+    import monitor
+    monkeypatch.setitem(monitor.HELD_UNITS, "adx", "held for a reason")
+
+    # stale heartbeat, no process: parked, not dead
+    beats = {"adx": _beat("adx", tick_age=99999)}
+    rows, alerts = queries._fleet(_scanres(), beats, NOW)
+    assert _row(rows, "adx")["state"] == "HELD"
+    a = next(a for a in alerts if a["code"] == "HELD")
+    assert a["severity"] == "info"
+    assert "held for a reason" in a["text"]
+    assert "DEAD" not in _codes_for(alerts, "adx")
+
+    # never started at all: still parked, not missing
+    rows, alerts = queries._fleet(_scanres(), {}, NOW)
+    assert _row(rows, "adx")["state"] == "HELD"
+    assert "MISSING" not in _codes_for(alerts, "adx")
+
+
+def test_held_unit_that_is_actually_running_is_checked_normally(monkeypatch):
+    """Holding suppresses "it should be running", never "it is misbehaving":
+    once a process exists, every normal check applies again."""
+    import monitor
+    monkeypatch.setitem(monitor.HELD_UNITS, "adx", "held for a reason")
+    beats = {"adx": _beat("adx", tick_age=600)}      # ticking too slowly
+    rows, alerts = queries._fleet(
+        _scanres({"adx": [_inst(10, 11)]}), beats, NOW)
+    assert _row(rows, "adx")["state"] == "DEAD"
+    assert "DEAD" in _codes_for(alerts, "adx")
+
+
+def test_r4_is_the_held_unit_and_squeeze_bull_is_not():
+    """The live registry, so removing r4 from the fleet defaults without
+    declaring the hold (or vice versa) fails here."""
+    import monitor
+    import dashboard.procscan as procscan
+    assert "r4" in monitor.HELD_UNITS
+    assert "squeeze_bull" not in monitor.HELD_UNITS
+    # a held unit must still be a known unit, or nothing would render it
+    for unit in monitor.HELD_UNITS:
+        assert unit in procscan.UNIT_SCRIPTS
+
+
 def test_writer_unseen_when_fresh_but_no_process():
     beats = {"adx": _beat("adx")}
     rows, alerts = queries._fleet(_scanres(), beats, NOW)

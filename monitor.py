@@ -52,6 +52,18 @@ sys.path.insert(0, str(REPO))
 import botlib  # noqa: E402
 from strategies.support import db  # noqa: E402
 
+# Units that are built and wired but DELIBERATELY not running. A held unit is
+# not a fault: it must not raise DEAD or MISSING, and the dashboard renders it
+# as HELD. The moment a process for it IS seen, every normal check applies
+# again — holding suppresses "it should be running", never "it is misbehaving".
+#
+# Keep the reason here rather than in a comment: it is what the dashboard shows.
+HELD_UNITS: dict[str, str] = {
+    "r4": ("held 2026-09-09 pending a mechanism — a calendar anomaly with no "
+           "explanation for why it works or decays. Built, wired and tested; "
+           "start with .\\start_fleet.ps1 -Units r4"),
+}
+
 # bot name -> max seconds since last_eval_utc before it counts as silent.
 # Chento evaluates every 15m bar; Short Squeeze evaluates 15m bars inside
 # London/NY sessions (07-21 UTC), so its longest legitimate eval gap is the
@@ -240,12 +252,19 @@ def run(quiet: bool = False, summary: bool = False, deep: bool = False) -> int:
         alerts.append("NO HEARTBEATS — feed/bots not running (or schema absent)")
     seen = {b["name"] for b in beats}
     for name in sorted(set(BOT_EXPECTATIONS) - seen):
+        if name in HELD_UNITS:
+            info.append(f"{name}: HELD — {HELD_UNITS[name]}")
+            continue
         alerts.append(f"MISSING BOT  {name}: no heartbeat row — never started")
     for b in beats:
         name = b["name"]
         tick_age = _age_s(b.get("last_tick_utc"), now)
         interval = b.get("interval_s") or 60
         if tick_age is None or tick_age > 3 * interval:
+            if name in HELD_UNITS:
+                info.append(f"{name}: HELD (stale heartbeat from its last run, "
+                            f"{_fmt_age(tick_age)} ago) — {HELD_UNITS[name]}")
+                continue
             alerts.append(f"DEAD PROCESS {name}: last tick {_fmt_age(tick_age)} "
                           f"(interval {interval}s)")
         elif b.get("status") != "ok":

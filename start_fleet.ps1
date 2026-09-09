@@ -64,7 +64,7 @@ param(
     # explanation for why it works or decays, so it is opt-in only until that call
     # is made. Start it with:  .\start_fleet.ps1 -Units r4
     [string[]]$Units = @("feed", "chento_v3", "chento_v3_eth", "short_squeeze",
-                         "adx", "carry", "dashboard"),
+                         "adx", "carry", "squeeze_bull", "dashboard"),
     [switch]$Monitor,
     [switch]$SkipGapFix,
     [switch]$ForceFeed,
