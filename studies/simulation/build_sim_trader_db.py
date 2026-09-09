@@ -75,6 +75,9 @@ TABLE_PLAN: list[tuple[str, str]] = [
     ("cd_spot_15m",            "unix_s"),
     ("cd_futures_ohlcv",       "unix_s"),
     ("cd_spot_binance",        "unix_s"),
+    ("coinbase_spot_1h",       "unix_s"),   # Track D4: (asset, timestamp) in s
+    ("paxg_spot_1h",           "unix_s"),   # Track D2: tokenised gold, kline shape
+    ("binance_quarterly_1h",   "unix_s"),   # Track D5: (pair, contract_type, timestamp) in s
     ("okx_perp_1h",            "unix_s"),
     ("okx_perp_eth_1h",        "unix_s"),
     ("okx_perp_op_1h",         "unix_s"),
@@ -90,10 +93,20 @@ TABLE_PLAN: list[tuple[str, str]] = [
     # Derivatives / positioning series (timestamp in s).
     ("cd_funding_rate",        "unix_s"),
     ("cd_funding_rate_eth",    "unix_s"),
+    ("okx_funding",            "unix_s"),   # Track D6: (inst_id, timestamp) in s
+    ("bybit_funding",          "unix_s"),   # Track D6: (symbol,  timestamp) in s
     ("ca_long_short_ratio",    "unix_s"),
     ("ca_liquidations",        "unix_s"),
+    # Options chain (Track D1). Marks are per (instrument, timestamp) in s and
+    # bulky, so they are windowed; the instrument dictionary has no `timestamp`
+    # column at all (expiry_ts / last_seen_ts), so it copies whole.
+    ("deribit_options_daily",  "unix_s"),
+    ("deribit_options_instruments", "all"),
     # Small or calendar tables — no filter.
     ("cd_dvol",                "all"),
+    ("deribit_dvol_daily",     "all"),      # Track D1: 2 assets × daily
+    ("macro_daily",            "all"),      # Track D3: TEXT `date`, no unix filter
+    ("binance_quarterly_contracts", "all"),  # Track D5: contract dictionary
     ("cd_liquidations",        "all"),
     ("cd_open_interest",       "all"),
     ("scheduled_events",       "all"),
@@ -160,22 +173,33 @@ def _output_problem(src: Path, out: Path) -> str | None:
     return None
 
 
+def _column_list(con: sqlite3.Connection, name: str) -> str:
+    """`"a", "b", ...` for the columns that can actually be written.
+
+    `SELECT *` includes GENERATED columns but INSERT rejects them, so a table
+    with one (binance_quarterly_1h.series) fails with "N columns but N+1
+    values". PRAGMA table_xinfo's last field is 0 for a real column and 2/3
+    for a VIRTUAL/STORED generated one; table_info would not list them at all.
+    """
+    cols = [r[1] for r in con.execute(f'PRAGMA table_xinfo("{name}")') if not r[6]]
+    return ", ".join(f'"{c}"' for c in cols)
+
+
 def _copy_one(dest: sqlite3.Connection, name: str, mode: str,
               lo_s: int, hi_s: int) -> int:
     """Run the INSERT for one table. Returns rowcount."""
+    cols = _column_list(dest, name)
+    head = f'INSERT INTO "{name}" ({cols}) SELECT {cols} FROM src."{name}"'
     if mode == "all":
-        sql, params = f'INSERT INTO "{name}" SELECT * FROM src."{name}"', ()
+        sql, params = head, ()
     elif mode == "unix_ms":
-        sql = (f'INSERT INTO "{name}" SELECT * FROM src."{name}" '
-               f'WHERE open_time >= ? AND open_time <= ?')
+        sql = f'{head} WHERE open_time >= ? AND open_time <= ?'
         params = (lo_s * 1000, hi_s * 1000)
     elif mode == "unix_s":
-        sql = (f'INSERT INTO "{name}" SELECT * FROM src."{name}" '
-               f'WHERE timestamp >= ? AND timestamp <= ?')
+        sql = f'{head} WHERE timestamp >= ? AND timestamp <= ?'
         params = (lo_s, hi_s)
     elif mode == "news":
-        sql = (f'INSERT INTO "{name}" SELECT * FROM src."{name}" '
-               f'WHERE published_utc >= ? AND published_utc <= ?')
+        sql = f'{head} WHERE published_utc >= ? AND published_utc <= ?'
         params = (lo_s, hi_s)
     else:
         raise ValueError(f"unknown mode: {mode!r}")
