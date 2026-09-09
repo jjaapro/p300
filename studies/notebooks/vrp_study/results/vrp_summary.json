@@ -1,0 +1,195 @@
+{
+  "generated_utc": "2026-09-07T04:36:04+00:00",
+  "spec": {
+    "asset": "BTC",
+    "strike_offset": 0.1,
+    "entry_days": 21,
+    "hedge_days": 7,
+    "terminal": "mark",
+    "costs": {
+      "bid_haircut": 0.03,
+      "option_fee_rate": 0.0003,
+      "hedge_fee_rate": 0.0005
+    },
+    "train": [
+      "2024-11-01",
+      "2025-09-30"
+    ],
+    "test": [
+      "2025-10-01",
+      "2026-04-30"
+    ]
+  },
+  "statuses": {
+    "no_pair": 93,
+    "ok": 66,
+    "no_spot": 3
+  },
+  "stats": {
+    "PRE": {
+      "n": 0,
+      "mean_pct": null
+    },
+    "TRAIN": {
+      "n": 43,
+      "mean_pct": 1.493233789298499,
+      "sd_pct": 2.6653097191825728,
+      "sharpe_ann": 1.9407551565427923,
+      "win_pct": 83.72093023255815,
+      "worst_pct": -7.075476767564831,
+      "best_pct": 4.555946937245255,
+      "median_pct": 2.1967138422564996
+    },
+    "TEST": {
+      "n": 23,
+      "mean_pct": 1.7714645415531027,
+      "sd_pct": 3.2999290354185304,
+      "sharpe_ann": 1.8595954984756413,
+      "win_pct": 78.26086956521739,
+      "worst_pct": -5.207255275362456,
+      "best_pct": 6.586592774348205,
+      "median_pct": 2.0445728578174616
+    },
+    "OOS": {
+      "n": 0,
+      "mean_pct": null
+    },
+    "TRAIN+TEST": {
+      "n": 66,
+      "mean_pct": 1.59019299084177,
+      "sd_pct": 2.8798838015467787,
+      "sharpe_ann": 1.9127820730117866,
+      "win_pct": 81.81818181818181,
+      "worst_pct": -7.075476767564831,
+      "best_pct": 6.586592774348205,
+      "median_pct": 2.1967138422564996
+    }
+  },
+  "parity": {
+    "pass": true,
+    "checks": {
+      "n": true,
+      "mean_pct": true,
+      "worst_pct": true,
+      "sharpe_ann": true
+    },
+    "reference": {
+      "n": 66,
+      "mean_pct": 1.53,
+      "worst_pct": -7.08,
+      "sharpe_ann": 1.88,
+      "dsr_168": 0.89
+    },
+    "tolerance": {
+      "n": 3,
+      "mean_pct": 0.2,
+      "worst_pct": 0.5,
+      "sharpe_ann": 0.2
+    }
+  },
+  "dsr": [
+    {
+      "scenario": "single spec",
+      "n_trials": 1,
+      "dsr": 0.9995090956948685,
+      "dsr_z": 3.2956883603013556,
+      "dsr_toolkit": 0.9995090956948685
+    },
+    {
+      "scenario": "strikes\u00d7cadence",
+      "n_trials": 42,
+      "dsr": 0.9515997596952198,
+      "dsr_z": 1.6605668042200286,
+      "dsr_toolkit": 0.9515997596951749
+    },
+    {
+      "scenario": "realistic (\u00d7entry timings)",
+      "n_trials": 168,
+      "dsr": 0.9016312610319444,
+      "dsr_z": 1.2909025302347004,
+      "dsr_toolkit": 0.9016312610318786
+    },
+    {
+      "scenario": "aggressive (full sweep)",
+      "n_trials": 672,
+      "dsr": 0.8341938623189196,
+      "dsr_z": 0.9708714931381334,
+      "dsr_toolkit": 0.8341938623188361
+    }
+  ],
+  "dsr_168": 0.9016312610319444,
+  "per_year": {
+    "2024": {
+      "n": 8,
+      "mean_pct": 0.772866842510801,
+      "sd_pct": 4.583826514379878,
+      "sharpe_ann": 0.5840729942612757,
+      "win_pct": 75.0,
+      "worst_pct": -7.075476767564831,
+      "best_pct": 4.510168264967458,
+      "median_pct": 2.945713360316797
+    },
+    "2025": {
+      "n": 47,
+      "mean_pct": 1.2518360186195292,
+      "sd_pct": 2.558601939041,
+      "sharpe_ann": 1.6948658983713987,
+      "win_pct": 78.72340425531915,
+      "worst_pct": -5.207255275362456,
+      "best_pct": 5.712848246143808,
+      "median_pct": 2.0208346884950763
+    },
+    "2026": {
+      "n": 11,
+      "mean_pct": 3.6303190709411406,
+      "sd_pct": 1.8538491946101365,
+      "sharpe_ann": 6.783612277457811,
+      "win_pct": 100.0,
+      "worst_pct": 0.6475451323565911,
+      "best_pct": 6.586592774348205,
+      "median_pct": 4.418788486490328
+    }
+  },
+  "oos": {
+    "n_oos_expiries": 0,
+    "first_live_snapshot": "2026-09-06",
+    "seed_last_mark_day": "2026-04-03",
+    "first_evaluable_expiry": "2026-10-30",
+    "n_future_expiries_listed": 9
+  },
+  "dvol_premium": {
+    "yearly": {
+      "2022": {
+        "n": 116,
+        "mean": 21.00820685135542,
+        "share_positive": 0.75
+      },
+      "2023": {
+        "n": 365,
+        "mean": 6.511772887386065,
+        "share_positive": 0.726027397260274
+      },
+      "2024": {
+        "n": 366,
+        "mean": 7.123076186644228,
+        "share_positive": 0.73224043715847
+      },
+      "2025": {
+        "n": 365,
+        "mean": 6.387131804784989,
+        "share_positive": 0.7068493150684931
+      },
+      "2026": {
+        "n": 220,
+        "mean": 0.20579968876652174,
+        "share_positive": 0.6318181818181818
+      }
+    },
+    "latest_date": "2026-09-06",
+    "latest_dvol": 38.95,
+    "trailing_rv30": 45.790276198909865,
+    "n_dvol_days": 1461
+  },
+  "kill_clauses_hit": [],
+  "verdict": "SURVIVES the seeded-sample clauses; OOS clause not yet evaluable"
+}

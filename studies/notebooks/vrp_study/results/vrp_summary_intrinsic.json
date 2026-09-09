@@ -1,0 +1,197 @@
+{
+  "generated_utc": "2026-09-07T04:39:01+00:00",
+  "spec": {
+    "asset": "BTC",
+    "strike_offset": 0.1,
+    "entry_days": 21,
+    "hedge_days": 7,
+    "terminal": "intrinsic",
+    "costs": {
+      "bid_haircut": 0.03,
+      "option_fee_rate": 0.0003,
+      "hedge_fee_rate": 0.0005
+    },
+    "train": [
+      "2024-11-01",
+      "2025-09-30"
+    ],
+    "test": [
+      "2025-10-01",
+      "2026-04-30"
+    ]
+  },
+  "statuses": {
+    "no_pair": 86,
+    "ok": 73,
+    "no_spot": 3
+  },
+  "stats": {
+    "PRE": {
+      "n": 0,
+      "mean_pct": null
+    },
+    "TRAIN": {
+      "n": 43,
+      "mean_pct": 1.0498468599064117,
+      "sd_pct": 2.5942868698217305,
+      "sharpe_ann": 1.4018404230288557,
+      "win_pct": 76.74418604651163,
+      "worst_pct": -7.676896451550211,
+      "best_pct": 4.546908586427721,
+      "median_pct": 1.3732335773850657
+    },
+    "TEST": {
+      "n": 30,
+      "mean_pct": -0.10016055923405036,
+      "sd_pct": 3.1330720463786803,
+      "sharpe_ann": -0.11074317790323751,
+      "win_pct": 63.333333333333336,
+      "worst_pct": -7.833467682141521,
+      "best_pct": 3.8779257162891123,
+      "median_pct": 0.6106783675259206
+    },
+    "OOS": {
+      "n": 0,
+      "mean_pct": null
+    },
+    "TRAIN+TEST": {
+      "n": 73,
+      "mean_pct": 0.5772410712185506,
+      "sd_pct": 2.8643212383176198,
+      "sharpe_ann": 0.6981136404611242,
+      "win_pct": 71.23287671232876,
+      "worst_pct": -7.833467682141521,
+      "best_pct": 4.546908586427721,
+      "median_pct": 1.2486693575772232
+    }
+  },
+  "parity": {
+    "pass": false,
+    "checks": {
+      "n": false,
+      "mean_pct": false,
+      "worst_pct": false,
+      "sharpe_ann": false
+    },
+    "reference": {
+      "n": 66,
+      "mean_pct": 1.53,
+      "worst_pct": -7.08,
+      "sharpe_ann": 1.88,
+      "dsr_168": 0.89
+    },
+    "tolerance": {
+      "n": 3,
+      "mean_pct": 0.2,
+      "worst_pct": 0.5,
+      "sharpe_ann": 0.2
+    }
+  },
+  "dsr": [
+    {
+      "scenario": "single spec",
+      "n_trials": 1,
+      "dsr": 0.9343051898337178,
+      "dsr_z": 1.5086446381821934,
+      "dsr_toolkit": 0.9343051898337178
+    },
+    {
+      "scenario": "strikes\u00d7cadence",
+      "n_trials": 42,
+      "dsr": 0.3299880330559998,
+      "dsr_z": -0.4399462101944662,
+      "dsr_toolkit": 0.32998803305580643
+    },
+    {
+      "scenario": "realistic (\u00d7entry timings)",
+      "n_trials": 168,
+      "dsr": 0.18929997793949255,
+      "dsr_z": -0.8804788535203342,
+      "dsr_toolkit": 0.18929997793936998
+    },
+    {
+      "scenario": "aggressive (full sweep)",
+      "n_trials": 672,
+      "dsr": 0.10349903170798003,
+      "dsr_z": -1.2618630679009342,
+      "dsr_toolkit": 0.1034990317079083
+    }
+  ],
+  "dsr_168": 0.18929997793949255,
+  "per_year": {
+    "2024": {
+      "n": 8,
+      "mean_pct": 0.08437387432299637,
+      "sd_pct": 4.8118095103651815,
+      "sharpe_ann": 0.06074215400425104,
+      "win_pct": 62.5,
+      "worst_pct": -7.676896451550211,
+      "best_pct": 4.153953751719972,
+      "median_pct": 2.9546452335694147
+    },
+    "2025": {
+      "n": 48,
+      "mean_pct": 0.8566119086985237,
+      "sd_pct": 2.078590355683083,
+      "sharpe_ann": 1.4275976448921908,
+      "win_pct": 70.83333333333333,
+      "worst_pct": -4.700956222209017,
+      "best_pct": 4.546908586427721,
+      "median_pct": 1.107151981580798
+    },
+    "2026": {
+      "n": 17,
+      "mean_pct": 0.020366799225946086,
+      "sd_pct": 3.6624005467127683,
+      "sharpe_ann": 0.019264048591602467,
+      "win_pct": 76.47058823529412,
+      "worst_pct": -7.833467682141521,
+      "best_pct": 3.752986236494464,
+      "median_pct": 1.4176198506693625
+    }
+  },
+  "oos": {
+    "n_oos_expiries": 0,
+    "first_live_snapshot": "2026-09-06",
+    "seed_last_mark_day": "2026-04-24",
+    "first_evaluable_expiry": "2026-10-30",
+    "n_future_expiries_listed": 9
+  },
+  "dvol_premium": {
+    "yearly": {
+      "2022": {
+        "n": 116,
+        "mean": 21.00820685135542,
+        "share_positive": 0.75
+      },
+      "2023": {
+        "n": 365,
+        "mean": 6.511772887386065,
+        "share_positive": 0.726027397260274
+      },
+      "2024": {
+        "n": 366,
+        "mean": 7.123076186644228,
+        "share_positive": 0.73224043715847
+      },
+      "2025": {
+        "n": 365,
+        "mean": 6.387131804784989,
+        "share_positive": 0.7068493150684931
+      },
+      "2026": {
+        "n": 220,
+        "mean": 0.20601034492337195,
+        "share_positive": 0.6318181818181818
+      }
+    },
+    "latest_date": "2026-09-06",
+    "latest_dvol": 38.95,
+    "trailing_rv30": 45.74531776437814,
+    "n_dvol_days": 1461
+  },
+  "kill_clauses_hit": [
+    "DSR@168 0.189 < 0.90"
+  ],
+  "verdict": "SENSITIVITY (terminal=intrinsic, not pre-registered) \u2014 kill clauses hit: ['DSR@168 0.189 < 0.90']"
+}
