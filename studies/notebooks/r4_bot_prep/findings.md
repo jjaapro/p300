@@ -68,3 +68,37 @@ than 5 min into the window logs `missed_window` and waits for the next day.
 
 10 trials against the R4 family (4 stop levels + 6 lateness points), tagged calibration.
 No parameter was changed after seeing results.
+
+---
+
+## Addendum (2026-09-09) — stops make the drawdown worse, not just the expectancy
+
+The pre-registered rule tested expectancy and the worst *single* fire. Re-reading
+the same `results/sl_fires.csv` on portfolio metrics answers the obvious follow-up
+("would a stop at least cut the drawdown?") and the answer is no.
+
+Post-ETF, all four windows, 380 fires:
+
+| stop | win % | profit factor | mean %/fire | ann % | max DD % | MAR | fires stopped | worst fire |
+|---|---|---|---|---|---|---|---|---|
+| **none (shipped)** | 56.8 | **1.76** | **+0.482** | 69.1 | **31.6** | **2.19** | 0 % | −6.78 % |
+| 5 % | 55.8 | 1.47 | +0.339 | 48.5 | 46.1 | 1.05 | 3.9 % | −5.15 % |
+| 3 % | 54.7 | 1.52 | +0.356 | 51.0 | 46.2 | 1.11 | 10.8 % | −3.15 % |
+| 2 % | 52.6 | 1.45 | +0.311 | 44.6 | 48.1 | 0.93 | 25.3 % | −2.15 % |
+
+Full sample is the same shape: no stop reaches MAR 0.89 against 0.51 to 0.71 for
+every stop level.
+
+A stop does exactly what it is supposed to do to the tail — the worst fire goes
+from −6.78 % to −2.15 % at a 2 % stop — and still leaves the book *deeper* in
+drawdown, by about 15 percentage points post-ETF. The mechanism is that these are
+scheduled-exit drift harvests on 10 to 24 hour windows: the price routinely dips
+through the stop and recovers before the window closes, so the stop converts
+recoverable excursions into realised losses and forfeits the recovery. Stop-hit
+rates of 25 % at the 2 % level against a 57 % win rate say the same thing.
+
+This does not reopen the pre-registered decision, which already said no stop. It
+removes the one argument that could have overturned it, and it means the
+overlapping-cluster exposure recorded above cannot be managed with a per-fire
+stop. If that exposure needs managing, the dials are the sizing ones
+(`VARIANT_WEIGHT`, `LEV_CAP`, `GROSS_MAX_X`), not a stop.

@@ -1,0 +1,14 @@
+SqueezeBull bull-gated fires: 114   ShortSqueeze macro gate met on 1 of them (0.9%)
+Base rate of the ShortSqueeze macro gate over the same span: 3.6% of days (n=1654)
+
+individual gate legs on SqueezeBull fire days vs base rate:
+  Asia OI up >= 0.5%         fires  50.9%   base  41.2%
+  Asia mean funding < 0      fires   7.0%   base  15.5%
+  Asia closed below open     fires  36.0%   base  47.6%
+
+Asia OI change on SqueezeBull fire days: mean +0.62%  median +0.54%
+                        all days in span: mean +0.34%  median +0.27%
+
+outcome split by whether the ShortSqueeze macro gate also held:
+  gate did NOT hold    n=113  mean R +0.263  win 60%  PF 1.71
+  gate ALSO held       n=  1  mean R +1.410  win 100%  PF inf
