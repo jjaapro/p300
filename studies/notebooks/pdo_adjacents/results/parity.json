@@ -1,0 +1,23 @@
+{
+  "assets": {
+    "BTC": {
+      "n_entry_timestamps": 88,
+      "n_random_timestamps": 2000,
+      "n_tested": 2086,
+      "n_failed": 0
+    },
+    "ETH": {
+      "n_entry_timestamps": 141,
+      "n_random_timestamps": 2000,
+      "n_tested": 2140,
+      "n_failed": 0
+    }
+  },
+  "n_random": 2000,
+  "seed": 42,
+  "sleeve_db_connections": 1,
+  "total_checks": 4226,
+  "failures_sample": [],
+  "passed": true,
+  "db_path": "C:\\Source\\Repos\\p300\\data\\databases\\prod.db"
+}

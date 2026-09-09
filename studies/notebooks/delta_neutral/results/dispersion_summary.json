@@ -1,0 +1,689 @@
+{
+  "overall_verdict": "KILL (from arm S, the adequately-powered 2-venue arm); arm P INCONCLUSIVE on power",
+  "arm_verdicts": {
+    "P": "KILL",
+    "P-ETH": "KILL",
+    "S": "KILL",
+    "S-ETH": "KILL"
+  },
+  "clauses": {
+    "P": {
+      "I-0": {
+        "desc": "< 365 usable settlements",
+        "value": 279,
+        "threshold": 365,
+        "fired": true
+      },
+      "I-1": {
+        "desc": "net annualised return < 5%",
+        "value": 0.0,
+        "threshold": 5.0,
+        "fired": true
+      },
+      "I-2": {
+        "desc": "net annualised return < realised Carry benchmark",
+        "value": 0.0,
+        "threshold": 4.140703670212766,
+        "fired": true
+      },
+      "I-3": {
+        "desc": "90% iid-bootstrap CI of mean per-settlement net includes 0",
+        "value": [
+          0.0,
+          0.0
+        ],
+        "threshold": 0.0,
+        "fired": true
+      },
+      "I-4": {
+        "desc": "DSR at n_trials=20 < 0.95",
+        "value": null,
+        "threshold": 0.95,
+        "fired": true
+      },
+      "_bootstrap_mean_bp": {
+        "point": 0.0,
+        "p05": 0.0,
+        "p50": 0.0,
+        "p95": 0.0,
+        "p_gt_0": 0.0,
+        "n_iter": 10000
+      },
+      "_block_bootstrap_sharpe": {
+        "n": 279,
+        "block": 9,
+        "n_iter": 5000,
+        "periods_per_year": 1095,
+        "sr_point": 0.0,
+        "sr_p05": 0.0,
+        "sr_p50": 0.0,
+        "sr_p95": 0.0,
+        "sr_mean": 0.0,
+        "sr_sd": 0.0,
+        "p_sr_gt_0": 0.0
+      },
+      "_dsr_n1": null,
+      "_dsr_n20": null,
+      "_sharpe_ann": 0.0,
+      "_max_dd_pct": 0.0
+    },
+    "P-ETH": {
+      "I-0": {
+        "desc": "< 365 usable settlements",
+        "value": 279,
+        "threshold": 365,
+        "fired": true
+      },
+      "I-1": {
+        "desc": "net annualised return < 5%",
+        "value": 0.0,
+        "threshold": 5.0,
+        "fired": true
+      },
+      "I-2": {
+        "desc": "net annualised return < realised Carry benchmark",
+        "value": 0.0,
+        "threshold": 4.140703670212766,
+        "fired": true
+      },
+      "I-3": {
+        "desc": "90% iid-bootstrap CI of mean per-settlement net includes 0",
+        "value": [
+          0.0,
+          0.0
+        ],
+        "threshold": 0.0,
+        "fired": true
+      },
+      "I-4": {
+        "desc": "DSR at n_trials=20 < 0.95",
+        "value": null,
+        "threshold": 0.95,
+        "fired": true
+      },
+      "_bootstrap_mean_bp": {
+        "point": 0.0,
+        "p05": 0.0,
+        "p50": 0.0,
+        "p95": 0.0,
+        "p_gt_0": 0.0,
+        "n_iter": 10000
+      },
+      "_block_bootstrap_sharpe": {
+        "n": 279,
+        "block": 9,
+        "n_iter": 5000,
+        "periods_per_year": 1095,
+        "sr_point": 0.0,
+        "sr_p05": 0.0,
+        "sr_p50": 0.0,
+        "sr_p95": 0.0,
+        "sr_mean": 0.0,
+        "sr_sd": 0.0,
+        "p_sr_gt_0": 0.0
+      },
+      "_dsr_n1": null,
+      "_dsr_n20": null,
+      "_sharpe_ann": 0.0,
+      "_max_dd_pct": 0.0
+    },
+    "S": {
+      "I-0": {
+        "desc": "< 365 usable settlements",
+        "value": 7076,
+        "threshold": 365,
+        "fired": false
+      },
+      "I-1": {
+        "desc": "net annualised return < 5%",
+        "value": -11.788343049039005,
+        "threshold": 5.0,
+        "fired": true
+      },
+      "I-2": {
+        "desc": "net annualised return < realised Carry benchmark",
+        "value": -11.788343049039005,
+        "threshold": 10.258377584745762,
+        "fired": true
+      },
+      "I-3": {
+        "desc": "90% iid-bootstrap CI of mean per-settlement net includes 0",
+        "value": [
+          -1.1720097427925382,
+          -0.9783035500282645
+        ],
+        "threshold": 0.0,
+        "fired": false
+      },
+      "I-4": {
+        "desc": "DSR at n_trials=20 < 0.95",
+        "value": 0.0,
+        "threshold": 0.95,
+        "fired": true
+      },
+      "_bootstrap_mean_bp": {
+        "point": -1.076561009044658,
+        "p05": -1.1720097427925382,
+        "p50": -1.075291153193895,
+        "p95": -0.9783035500282645,
+        "p_gt_0": 0.0,
+        "n_iter": 10000
+      },
+      "_block_bootstrap_sharpe": {
+        "n": 7076,
+        "block": 9,
+        "n_iter": 5000,
+        "periods_per_year": 1095,
+        "sr_point": -7.151815871180162,
+        "sr_p05": -7.919008578724626,
+        "sr_p50": -7.151709002321059,
+        "sr_p95": -6.330491888559757,
+        "sr_mean": -7.146653561305764,
+        "sr_sd": 0.4803445477426942,
+        "p_sr_gt_0": 0.0
+      },
+      "_dsr_n1": {
+        "sr_per_obs": -0.21612711939959672,
+        "sr_expected": 0.0,
+        "sr_variance": 0.0001413427561837456,
+        "skew": -2.9014350470282873,
+        "kurt": 14.308777750058587,
+        "n": 7076,
+        "n_trials": 1,
+        "dsr": 0.0,
+        "dsr_z": -25.01017593633715,
+        "sr_ann": -7.151815871180162,
+        "sr_expected_ann": 0.0
+      },
+      "_dsr_n20": {
+        "sr_per_obs": -0.21612711939959672,
+        "sr_expected": 0.022597071976119803,
+        "sr_variance": 0.0001413427561837456,
+        "skew": -2.9014350470282873,
+        "kurt": 14.308777750058587,
+        "n": 7076,
+        "n_trials": 20,
+        "dsr": 0.0,
+        "dsr_z": -27.62510342594993,
+        "sr_ann": -7.151815871180162,
+        "sr_expected_ann": 0.7477548326650006
+      },
+      "_sharpe_ann": -7.151815871180162,
+      "_max_dd_pct": 76.51119700000037
+    },
+    "S-ETH": {
+      "I-0": {
+        "desc": "< 365 usable settlements",
+        "value": 6447,
+        "threshold": 365,
+        "fired": false
+      },
+      "I-1": {
+        "desc": "net annualised return < 5%",
+        "value": -10.887826351791533,
+        "threshold": 5.0,
+        "fired": true
+      },
+      "I-2": {
+        "desc": "net annualised return < realised Carry benchmark",
+        "value": -10.887826351791533,
+        "threshold": 10.207624123255815,
+        "fired": true
+      },
+      "I-3": {
+        "desc": "90% iid-bootstrap CI of mean per-settlement net includes 0",
+        "value": [
+          -1.0879472909880565,
+          -0.9010769574996121
+        ],
+        "threshold": 0.0,
+        "fired": false
+      },
+      "I-4": {
+        "desc": "DSR at n_trials=20 < 0.95",
+        "value": 0.0,
+        "threshold": 0.95,
+        "fired": true
+      },
+      "_bootstrap_mean_bp": {
+        "point": -0.9943220412595006,
+        "p05": -1.0879472909880565,
+        "p50": -0.9934448580735226,
+        "p95": -0.9010769574996121,
+        "p_gt_0": 0.0,
+        "n_iter": 10000
+      },
+      "_block_bootstrap_sharpe": {
+        "n": 6447,
+        "block": 9,
+        "n_iter": 5000,
+        "periods_per_year": 1095,
+        "sr_point": -7.115975601639996,
+        "sr_p05": -7.838152473150662,
+        "sr_p50": -7.099131752642476,
+        "sr_p95": -6.348508370043632,
+        "sr_mean": -7.099393050580031,
+        "sr_sd": 0.44942949670210236,
+        "p_sr_gt_0": 0.0
+      },
+      "_dsr_n1": {
+        "sr_per_obs": -0.21504403024381524,
+        "sr_expected": 0.0,
+        "sr_variance": 0.00015513496742165683,
+        "skew": -3.841548382206118,
+        "kurt": 19.645799181161014,
+        "n": 6447,
+        "n_trials": 1,
+        "dsr": 0.0,
+        "dsr_z": -27.665603249950653,
+        "sr_ann": -7.115975601639996,
+        "sr_expected_ann": 0.0
+      },
+      "_dsr_n20": {
+        "sr_per_obs": -0.21504403024381524,
+        "sr_expected": 0.0236739235293715,
+        "sr_variance": 0.00015513496742165683,
+        "skew": -3.841548382206118,
+        "kurt": 19.645799181161014,
+        "n": 6447,
+        "n_trials": 20,
+        "dsr": 0.0,
+        "dsr_z": -30.711274292251534,
+        "sr_ann": -7.115975601639996,
+        "sr_expected_ann": 0.783388695045831
+      },
+      "_sharpe_ann": -7.115975601639996,
+      "_max_dd_pct": 64.10394200000015
+    }
+  },
+  "dispersion": {
+    "P": {
+      "n": 280,
+      "first": "2026-06-08 08:00",
+      "last": "2026-09-09 08:00",
+      "span_days": 93.0,
+      "mean_spread_bp": 0.4467752457834357,
+      "sd_spread_bp": 0.2595597837337598,
+      "max_spread_bp": 1.559339409731,
+      "p50": 0.43255052830099994,
+      "p75": 0.61102408763025,
+      "p90": 0.8017581958056,
+      "p95": 0.911625,
+      "p99": 1.0629459999999997,
+      "p99.9": 1.4382107506907076,
+      "gt_1bp": 0.02142857142857143,
+      "gt_2bp": 0.0,
+      "gt_3bp": 0.0,
+      "gt_5bp": 0.0,
+      "gt_10bp": 0.0,
+      "n_gt_1bp": 6,
+      "n_gt_2bp": 0,
+      "n_gt_3bp": 0,
+      "n_gt_5bp": 0,
+      "n_gt_10bp": 0,
+      "n_exceed_days_3bp": 0,
+      "n_calendar_days": 94,
+      "top5_days_share_of_3bp_exceedances": NaN,
+      "top5pct_days_share_of_3bp_exceedances": NaN,
+      "stress_concentrated": false,
+      "max_venue_share": {
+        "binance": 0.5178571428571429,
+        "okx": 0.26785714285714285,
+        "bybit": 0.21428571428571427
+      },
+      "min_venue_share": {
+        "binance": 0.18214285714285713,
+        "okx": 0.3892857142857143,
+        "bybit": 0.42857142857142855
+      },
+      "pair_flip_rate_all": 0.7096774193548387,
+      "pair_flip_rate_on_exceedance": 0.0,
+      "mean_abs_rate_bp": 0.4942930139970928
+    },
+    "P-ETH": {
+      "n": 280,
+      "first": "2026-06-08 08:00",
+      "last": "2026-09-09 08:00",
+      "span_days": 93.0,
+      "mean_spread_bp": 0.42116825153274995,
+      "sd_spread_bp": 0.2628719228708322,
+      "max_spread_bp": 1.5887844339,
+      "p50": 0.3811844730065,
+      "p75": 0.5950579668054998,
+      "p90": 0.7560794348129,
+      "p95": 0.86805665557115,
+      "p99": 1.064907188316949,
+      "p99.9": 1.5487140759325624,
+      "gt_1bp": 0.02142857142857143,
+      "gt_2bp": 0.0,
+      "gt_3bp": 0.0,
+      "gt_5bp": 0.0,
+      "gt_10bp": 0.0,
+      "n_gt_1bp": 6,
+      "n_gt_2bp": 0,
+      "n_gt_3bp": 0,
+      "n_gt_5bp": 0,
+      "n_gt_10bp": 0,
+      "n_exceed_days_3bp": 0,
+      "n_calendar_days": 94,
+      "top5_days_share_of_3bp_exceedances": NaN,
+      "top5pct_days_share_of_3bp_exceedances": NaN,
+      "stress_concentrated": false,
+      "max_venue_share": {
+        "binance": 0.375,
+        "okx": 0.3392857142857143,
+        "bybit": 0.2857142857142857
+      },
+      "min_venue_share": {
+        "binance": 0.275,
+        "okx": 0.4107142857142857,
+        "bybit": 0.3142857142857143
+      },
+      "pair_flip_rate_all": 0.7168458781362007,
+      "pair_flip_rate_on_exceedance": 0.0,
+      "mean_abs_rate_bp": 0.4207014132912476
+    },
+    "S": {
+      "n": 7077,
+      "first": "2020-03-25 16:00",
+      "last": "2026-09-09 08:00",
+      "span_days": 2358.6666666666665,
+      "mean_spread_bp": 0.9251215345485374,
+      "sd_spread_bp": 2.0921088940881503,
+      "max_spread_bp": 37.5079,
+      "p50": 0.33009999999999995,
+      "p75": 0.8470999999999999,
+      "p90": 2.144600000000006,
+      "p95": 3.976699999999999,
+      "p99": 10.847951999999918,
+      "p99.9": 21.638528800000003,
+      "gt_1bp": 0.21054118976967642,
+      "gt_2bp": 0.1079553483114314,
+      "gt_3bp": 0.0702274975272008,
+      "gt_5bp": 0.0357496114172672,
+      "gt_10bp": 0.011304224954076587,
+      "n_gt_1bp": 1490,
+      "n_gt_2bp": 764,
+      "n_gt_3bp": 497,
+      "n_gt_5bp": 253,
+      "n_gt_10bp": 80,
+      "n_exceed_days_3bp": 292,
+      "n_calendar_days": 2360,
+      "top5_days_share_of_3bp_exceedances": 0.030181086519114688,
+      "top5pct_days_share_of_3bp_exceedances": 0.5875251509054326,
+      "stress_concentrated": true,
+      "max_venue_share": {
+        "binance": 0.5899392397908718,
+        "bybit": 0.4100607602091282
+      },
+      "min_venue_share": {
+        "binance": 0.6471668786208845,
+        "bybit": 0.35283312137911543
+      },
+      "pair_flip_rate_all": 0.35599208592425097,
+      "pair_flip_rate_on_exceedance": 0.2560483870967742,
+      "mean_abs_rate_bp": 1.3450914299844567
+    },
+    "S-ETH": {
+      "n": 6448,
+      "first": "2020-10-21 08:00",
+      "last": "2026-09-09 08:00",
+      "span_days": 2149.0,
+      "mean_spread_bp": 0.7974891439205954,
+      "sd_spread_bp": 1.9131534416656788,
+      "max_spread_bp": 41.0648,
+      "p50": 0.3049,
+      "p75": 0.7491,
+      "p90": 1.7193100000000008,
+      "p95": 3.110349999999996,
+      "p99": 9.167218999999967,
+      "p99.9": 21.30061480000064,
+      "gt_1bp": 0.1797456575682382,
+      "gt_2bp": 0.08622828784119106,
+      "gt_3bp": 0.05195409429280397,
+      "gt_5bp": 0.027450372208436723,
+      "gt_10bp": 0.008219602977667493,
+      "n_gt_1bp": 1159,
+      "n_gt_2bp": 556,
+      "n_gt_3bp": 335,
+      "n_gt_5bp": 177,
+      "n_gt_10bp": 53,
+      "n_exceed_days_3bp": 202,
+      "n_calendar_days": 2150,
+      "top5_days_share_of_3bp_exceedances": 0.04477611940298507,
+      "top5pct_days_share_of_3bp_exceedances": 0.7194029850746269,
+      "stress_concentrated": true,
+      "max_venue_share": {
+        "binance": 0.5764578163771712,
+        "bybit": 0.4235421836228288
+      },
+      "min_venue_share": {
+        "binance": 0.6529156327543424,
+        "bybit": 0.34708436724565755
+      },
+      "pair_flip_rate_all": 0.3545835272219637,
+      "pair_flip_rate_on_exceedance": 0.3413173652694611,
+      "mean_abs_rate_bp": 1.4368387251861041
+    }
+  },
+  "carry_benchmark": {
+    "P": {
+      "sleeve_faithful": {
+        "n_days": 94,
+        "total_pct": 1.0663730000000002,
+        "ann_return_pct": 4.140703670212766,
+        "max_dd_pct": 0.24719400000000002,
+        "mar": 16.75082595132878,
+        "sharpe_ann": 8.765688397706558,
+        "mean_daily_pct": 0.011344393617021279,
+        "sd_daily_pct": 0.024725306889913194
+      },
+      "raw_funding_ann_pct": 5.698886290322581,
+      "raw_funding_total_pct": 1.452045,
+      "window": [
+        "2026-06-08",
+        "2026-09-09"
+      ],
+      "window_days": 93.0
+    },
+    "P-ETH": {
+      "sleeve_faithful": {
+        "n_days": 94,
+        "total_pct": 1.0663730000000002,
+        "ann_return_pct": 4.140703670212766,
+        "max_dd_pct": 0.24719400000000002,
+        "mar": 16.75082595132878,
+        "sharpe_ann": 8.765688397706558,
+        "mean_daily_pct": 0.011344393617021279,
+        "sd_daily_pct": 0.024725306889913194
+      },
+      "raw_funding_ann_pct": 5.698886290322581,
+      "raw_funding_total_pct": 1.452045,
+      "window": [
+        "2026-06-08",
+        "2026-09-09"
+      ],
+      "window_days": 93.0
+    },
+    "S": {
+      "sleeve_faithful": {
+        "n_days": 2360,
+        "total_pct": 66.32814,
+        "ann_return_pct": 10.258377584745762,
+        "max_dd_pct": 1.0532149999999803,
+        "mar": 9.740060277100074,
+        "sharpe_ann": 9.186834806663326,
+        "mean_daily_pct": 0.02810514406779661,
+        "sd_daily_pct": 0.05844755400330698
+      },
+      "raw_funding_ann_pct": 11.258148258196721,
+      "raw_funding_total_pct": 72.751285,
+      "window": [
+        "2020-03-25",
+        "2026-09-09"
+      ],
+      "window_days": 2358.6666666666665
+    },
+    "S-ETH": {
+      "sleeve_faithful": {
+        "n_days": 2150,
+        "total_pct": 60.12710100000001,
+        "ann_return_pct": 10.207624123255815,
+        "max_dd_pct": 1.0532150000000016,
+        "mar": 9.691871197481806,
+        "sharpe_ann": 9.139247831952268,
+        "mean_daily_pct": 0.027966093488372097,
+        "sd_daily_pct": 0.058461207718225654
+      },
+      "raw_funding_ann_pct": 11.172470472312703,
+      "raw_funding_total_pct": 65.779833,
+      "window": [
+        "2020-10-21",
+        "2026-09-09"
+      ],
+      "window_days": 2149.0
+    }
+  },
+  "era_split_arm_S": {
+    "S_pre_cutover": {
+      "n_intervals": 6627,
+      "n_on": 497,
+      "first": "2020-03-25 16:00",
+      "last": "2026-04-12 16:00",
+      "ann_return_pct": -12.587040201448621,
+      "mean_spread_bp": 0.9669347465298732,
+      "exceed_3bp_rate": 0.07498491249245624
+    },
+    "S_post_cutover": {
+      "n_intervals": 448,
+      "n_on": 0,
+      "first": "2026-04-13 00:00",
+      "last": "2026-09-09 08:00",
+      "ann_return_pct": 0.0,
+      "mean_spread_bp": 0.3078877505567929,
+      "exceed_3bp_rate": 0.0
+    },
+    "S-ETH_pre_cutover": {
+      "n_intervals": 5998,
+      "n_on": 335,
+      "first": "2020-10-21 08:00",
+      "last": "2026-04-12 16:00",
+      "ann_return_pct": -11.702870371790596,
+      "mean_spread_bp": 0.8364415235872646,
+      "exceed_3bp_rate": 0.055842640440073345
+    },
+    "S-ETH_post_cutover": {
+      "n_intervals": 448,
+      "n_on": 0,
+      "first": "2026-04-13 00:00",
+      "last": "2026-09-09 08:00",
+      "ann_return_pct": 0.0,
+      "mean_spread_bp": 0.27705412026726056,
+      "exceed_3bp_rate": 0.0
+    }
+  },
+  "basis_leakage": {
+    "BTC binance(cd_futures_ohlcv 1h) vs okx(okx_perp_1h) \u2014 3-venue window": {
+      "n": 279,
+      "first": "2026-06-08 08:00",
+      "last": "2026-09-09 08:00",
+      "sd_bp_per_8h": 1.0402282902817124,
+      "mean_abs_bp_per_8h": 0.8148454781808586,
+      "p95_abs_bp_per_8h": 2.0653088998513796,
+      "mean_level_bp": -0.09003635136410536
+    },
+    "BTC binance vs bybit(bybit_perp_1h) \u2014 2-venue window (bybit prices end 2026-05-26)": {
+      "n": 5912,
+      "first": "2021-01-01 08:00",
+      "last": "2026-05-26 00:00",
+      "sd_bp_per_8h": 4.952862755186609,
+      "mean_abs_bp_per_8h": 2.74720473012913,
+      "p95_abs_bp_per_8h": 9.442847436528927,
+      "mean_level_bp": -0.2211430660363435
+    },
+    "ETH binance(cd_futures_eth_15m) vs okx(okx_perp_eth_1h)": {
+      "n": 279,
+      "first": "2026-06-08 08:00",
+      "last": "2026-09-09 08:00",
+      "sd_bp_per_8h": 1.1626598107402575,
+      "mean_abs_bp_per_8h": 0.905373771849758,
+      "p95_abs_bp_per_8h": 2.1626368423590168,
+      "mean_level_bp": 0.0351436049145509
+    },
+    "ETH binance vs bybit(bybit_perp_eth_1h)": {
+      "n": 5693,
+      "first": "2021-03-15 08:00",
+      "last": "2026-05-26 00:00",
+      "sd_bp_per_8h": 3.141430492658526,
+      "mean_abs_bp_per_8h": 2.1205115994504884,
+      "p95_abs_bp_per_8h": 6.709189763084573,
+      "mean_level_bp": -0.36353880659538235
+    }
+  },
+  "pairwise_venue_diff": {
+    "P:binance-okx": {
+      "mean_abs_bp": 0.2766469350759357,
+      "p95_abs_bp": 0.6745695949448001,
+      "max_abs_bp": 0.9456828155579999,
+      "n_gt_3bp": 0
+    },
+    "P:binance-bybit": {
+      "mean_abs_bp": 0.3020510714285714,
+      "p95_abs_bp": 0.768475,
+      "max_abs_bp": 1.0729,
+      "n_gt_3bp": 0
+    },
+    "P:okx-bybit": {
+      "mean_abs_bp": 0.31485248506236424,
+      "p95_abs_bp": 0.8071466363344001,
+      "max_abs_bp": 1.559339409731,
+      "n_gt_3bp": 0
+    },
+    "P-ETH:binance-okx": {
+      "mean_abs_bp": 0.2804060180132214,
+      "p95_abs_bp": 0.7864601213389002,
+      "max_abs_bp": 1.095778153245,
+      "n_gt_3bp": 0
+    },
+    "P-ETH:binance-bybit": {
+      "mean_abs_bp": 0.23038321428571423,
+      "p95_abs_bp": 0.65772,
+      "max_abs_bp": 0.9062999999999999,
+      "n_gt_3bp": 0
+    },
+    "P-ETH:okx-bybit": {
+      "mean_abs_bp": 0.33154727076656426,
+      "p95_abs_bp": 0.7615192198415,
+      "max_abs_bp": 1.5887844339,
+      "n_gt_3bp": 0
+    },
+    "S:binance-bybit:pre_cutover": {
+      "n": 6628,
+      "mean_abs_bp": 0.9669347465298732,
+      "p95_abs_bp": 4.138719999999999,
+      "max_abs_bp": 37.5079,
+      "n_gt_3bp": 497
+    },
+    "S:binance-bybit:post_cutover": {
+      "n": 449,
+      "mean_abs_bp": 0.3078877505567929,
+      "p95_abs_bp": 0.7780599999999996,
+      "max_abs_bp": 1.8043,
+      "n_gt_3bp": 0
+    }
+  },
+  "settings": {
+    "thresholds_bp": [
+      1.0,
+      2.0,
+      3.0,
+      5.0,
+      10.0
+    ],
+    "primary_threshold_bp": 3.0,
+    "cycle_cost_bp": 20.0,
+    "settlements_per_year": 1095,
+    "n_trials": 20,
+    "power_min_settlements": 365
+  }
+}

@@ -1,0 +1,151 @@
+{
+  "generated_utc": "2026-09-08T17:13:58.813438+00:00",
+  "live_config": {
+    "gap_threshold_pct": 2.0,
+    "touch_tol_pct": 0.1,
+    "hold_bars_by_asset": {
+      "BTC": 24,
+      "ETH": 4
+    },
+    "live_regime_threshold_pct": -10.0,
+    "live_cost_bp_rt": 10.0
+  },
+  "cost_bp_rt_primary": 18.0,
+  "cost_bp_rt_secondary": 10.0,
+  "grid_first_hour": "2020-01-01T01:00:00Z",
+  "grid_last_hour": "2026-09-08T17:00:00Z",
+  "same_hour_exit_entry_counts": {
+    "BTC_m10": 0,
+    "BTC_m7": 0,
+    "ETH_m10": 0,
+    "ETH_m7": 0
+  },
+  "deltas": {
+    "oos_BTC": {
+      "mean_bp_m7": 26.862408024317624,
+      "n_m7": 1,
+      "mean_bp_m10": 26.862408024317624,
+      "n_m10": 1,
+      "delta_bp": 0.0
+    },
+    "oos_ETH": {
+      "mean_bp_m7": 14.466193663607811,
+      "n_m7": 6,
+      "mean_bp_m10": 14.466193663607811,
+      "n_m10": 6,
+      "delta_bp": 0.0
+    },
+    "is_BTC": {
+      "mean_bp_m7": 33.397747813976416,
+      "n_m7": 84,
+      "mean_bp_m10": 35.411995156207844,
+      "n_m10": 87,
+      "delta_bp": -2.014247342231428
+    },
+    "is_ETH": {
+      "mean_bp_m7": -5.302642338298242,
+      "n_m7": 123,
+      "mean_bp_m10": -1.3007676346650998,
+      "n_m10": 132,
+      "delta_bp": -4.001874703633143
+    },
+    "pre_etf_BTC": {
+      "mean_bp_m7": 27.488403995219727,
+      "n_m7": 61,
+      "mean_bp_m10": 30.714884944143872,
+      "n_m10": 63,
+      "delta_bp": -3.226480948924145
+    },
+    "pre_etf_ETH": {
+      "mean_bp_m7": -12.418431303683555,
+      "n_m7": 88,
+      "mean_bp_m10": -7.331178633239633,
+      "n_m10": 95,
+      "delta_bp": -5.087252670443922
+    },
+    "post_etf_BTC": {
+      "mean_bp_m7": 48.14502419541387,
+      "n_m7": 24,
+      "mean_bp_m10": 46.906729405333415,
+      "n_m10": 25,
+      "delta_bp": 1.2382947900804524
+    },
+    "post_etf_ETH": {
+      "mean_bp_m7": 12.863270953539413,
+      "n_m7": 41,
+      "mean_bp_m10": 14.222274520084152,
+      "n_m10": 43,
+      "delta_bp": -1.3590035665447395
+    },
+    "pooled_BTC": {
+      "mean_bp_m7": 33.32086146350984,
+      "n_m7": 85,
+      "mean_bp_m10": 35.314840756981816,
+      "n_m10": 88,
+      "delta_bp": -1.9939792934719733
+    },
+    "pooled_ETH": {
+      "mean_bp_m7": -4.383161594023538,
+      "n_m7": 129,
+      "mean_bp_m10": -0.6152475782184519,
+      "n_m10": 138,
+      "delta_bp": -3.7679140158050863
+    }
+  },
+  "clauses": {
+    "A1_oos_delta_btc_bp": 0.0,
+    "A1_oos_delta_eth_bp": 0.0,
+    "A1_required_bp": 5.0,
+    "A1_fired": false,
+    "A2_is_delta_btc_bp": -2.014247342231428,
+    "A2_is_delta_eth_bp": -4.001874703633143,
+    "A2_required_bp": 0.0,
+    "A2_fired": false
+  },
+  "verdict": "KEEP_-10",
+  "regime_occupancy": {
+    "pooled": {
+      "hours": 58625,
+      "hours_with_regime": 58625,
+      "pct_below_-10": 0.19930063965884862,
+      "pct_in_band_-10_to_-7": 0.05381663113006396,
+      "min_regime": -59.81633169251123
+    },
+    "oos": {
+      "hours": 3858,
+      "hours_with_regime": 3858,
+      "pct_below_-10": 0.1886988076723691,
+      "pct_in_band_-10_to_-7": 0.017366511145671334,
+      "min_regime": -26.989923191655542
+    },
+    "is": {
+      "hours": 54767,
+      "hours_with_regime": 54767,
+      "pct_below_-10": 0.20004747384373803,
+      "pct_in_band_-10_to_-7": 0.05638431902422992,
+      "min_regime": -59.81633169251123
+    },
+    "pre_etf": {
+      "hours": 35303,
+      "hours_with_regime": 35303,
+      "pct_below_-10": 0.2239469733450415,
+      "pct_in_band_-10_to_-7": 0.047814633317281814,
+      "min_regime": -59.81633169251123
+    },
+    "post_etf": {
+      "hours": 23322,
+      "hours_with_regime": 23322,
+      "pct_below_-10": 0.1619929680130349,
+      "pct_in_band_-10_to_-7": 0.06290198096218164,
+      "min_regime": -32.89469627982344
+    }
+  },
+  "oos_trade_count_by_config": {
+    "BTC_m10": 1,
+    "BTC_m7": 1,
+    "ETH_m10": 6,
+    "ETH_m7": 6
+  },
+  "band_trades_total": 15,
+  "band_trades_oos": 0
+}

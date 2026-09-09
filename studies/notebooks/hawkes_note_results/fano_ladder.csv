@@ -1,0 +1,23 @@
+stream,name,span_years,n_events,gate_pass,bin,n_bins,mean_count,fano,n_hat,null_shuffle_mean,null_shuffle_p99,null_shuffle_nhat_mean,obs_pctile_in_shuffle,null_poisson_mean,null_poisson_p99,obs_pctile_in_poisson
+S1_LIQ,"LIQ (cd_liquidations, hourly notional >= p95)",0.286,125,False,,,,,,,,,,,,
+S2_OI_FLUSH,"OI_FLUSH (cd_open_interest, oi_chg_4h <= -2%, rising edge)",4.606,1056,True,1h,40379.0,0.02615,0.9739,0.0,0.9739,0.9739,0.0,90.0,0.9998,1.0137,0.0
+S2_OI_FLUSH,"OI_FLUSH (cd_open_interest, oi_chg_4h <= -2%, rising edge)",4.606,1056,True,4h,10094.0,0.10462,0.9637,0.0,0.9672,0.9826,0.0,28.0,0.9984,1.0281,0.0
+S2_OI_FLUSH,"OI_FLUSH (cd_open_interest, oi_chg_4h <= -2%, rising edge)",4.606,1056,True,12h,3364.0,0.31391,0.9856,0.0,0.9788,1.0084,0.0,61.5,1.0019,1.0622,23.0
+S2_OI_FLUSH,"OI_FLUSH (cd_open_interest, oi_chg_4h <= -2%, rising edge)",4.606,1056,True,24h,1682.0,0.62782,0.9807,0.0,0.9756,1.0338,0.0,56.5,0.9987,1.085,26.0
+S2_OI_FLUSH,"OI_FLUSH (cd_open_interest, oi_chg_4h <= -2%, rising edge)",4.606,1056,True,72h,560.0,1.88571,1.2149,0.0928,1.0762,1.1733,0.036,100.0,1.0071,1.1542,99.5
+S3_FUND_EXT,"FUND_EXT (cd_funding_rate pre-2026-04-13, |fr| >= p95, rising edge)",6.548,114,False,,,,,,,,,,,,
+S4_BTC_1M,"BTC_1M (btc_1m, |1m log return| >= 50bp)",6.688,9886,True,1h,58625.0,0.16863,8.0496,0.6475,3.729,3.8188,0.4822,100.0,0.9996,1.0123,100.0
+S4_BTC_1M,"BTC_1M (btc_1m, |1m log return| >= 50bp)",6.688,9886,True,4h,14656.0,0.67454,21.2818,0.7832,5.6101,5.831,0.5778,100.0,0.9995,1.0269,100.0
+S4_BTC_1M,"BTC_1M (btc_1m, |1m log return| >= 50bp)",6.688,9886,True,12h,4885.0,2.02375,47.1079,0.8543,7.4537,7.8734,0.6337,100.0,1.0012,1.0467,100.0
+S4_BTC_1M,"BTC_1M (btc_1m, |1m log return| >= 50bp)",6.688,9886,True,24h,2442.0,4.04832,81.2208,0.889,8.748,9.2893,0.6619,100.0,1.0023,1.0617,100.0
+S4_BTC_1M,"BTC_1M (btc_1m, |1m log return| >= 50bp)",6.688,9886,True,72h,814.0,12.14496,145.0563,0.917,11.4356,12.3224,0.7043,100.0,0.9964,1.1372,100.0
+S4b_BTC_1M_p999,BTC_1M robustness (|1m log return| >= p99.9),6.688,3516,True,1h,58625.0,0.05997,7.2661,0.629,3.4433,3.596,0.4611,100.0,1.0008,1.0117,100.0
+S4b_BTC_1M_p999,BTC_1M robustness (|1m log return| >= p99.9),6.688,3516,True,4h,14656.0,0.2399,17.5776,0.7615,4.756,4.9517,0.5415,100.0,0.9986,1.0219,100.0
+S4b_BTC_1M_p999,BTC_1M robustness (|1m log return| >= p99.9),6.688,3516,True,12h,4885.0,0.71975,34.801,0.8305,5.9146,6.317,0.5888,100.0,1.0023,1.0474,100.0
+S4b_BTC_1M_p999,BTC_1M robustness (|1m log return| >= p99.9),6.688,3516,True,24h,2442.0,1.4398,58.8949,0.8697,6.7957,7.3488,0.6164,100.0,1.0008,1.0635,100.0
+S4b_BTC_1M_p999,BTC_1M robustness (|1m log return| >= p99.9),6.688,3516,True,72h,814.0,4.31941,87.7856,0.8933,8.4046,9.2867,0.6551,100.0,1.0057,1.1031,100.0
+S2b_OI_FLUSH_cooldown,OI_FLUSH secondary: same rule WITH the study's 24h cooldown,4.606,676,True,1h,40379.0,0.01674,0.9833,0.0,0.9833,0.9833,0.0,68.5,1.0005,1.0188,0.5
+S2b_OI_FLUSH_cooldown,OI_FLUSH secondary: same rule WITH the study's 24h cooldown,4.606,676,True,4h,10094.0,0.06697,0.9331,0.0,0.9331,0.9331,0.0,1.0,1.0003,1.0311,0.0
+S2b_OI_FLUSH_cooldown,OI_FLUSH secondary: same rule WITH the study's 24h cooldown,4.606,676,True,12h,3364.0,0.20095,0.7993,0.0,0.7993,0.7993,0.0,8.5,0.9982,1.0627,0.0
+S2b_OI_FLUSH_cooldown,OI_FLUSH secondary: same rule WITH the study's 24h cooldown,4.606,676,True,24h,1682.0,0.4019,0.5985,0.0,0.5985,0.5985,0.0,47.0,0.9998,1.0692,0.0
+S2b_OI_FLUSH_cooldown,OI_FLUSH secondary: same rule WITH the study's 24h cooldown,4.606,676,True,72h,560.0,1.20714,0.5394,0.0,0.5259,0.5661,0.0,74.5,1.0016,1.1678,0.0

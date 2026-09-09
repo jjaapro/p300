@@ -1,0 +1,287 @@
+{
+  "verdict": "KILL",
+  "clauses": {
+    "III-0": {
+      "desc": "rule fires on <30 days overlapping an open position",
+      "value": 79,
+      "threshold": 30,
+      "fired": false
+    },
+    "III-1": {
+      "desc": "Sharpe uplift < 0.10 (full window)",
+      "value": -0.6775380482618925,
+      "threshold": 0.1,
+      "fired": true
+    },
+    "III-1e": {
+      "desc": "Sharpe uplift < 0.10 (rule-eligible window)",
+      "value": -0.7711148766669513,
+      "threshold": 0.1,
+      "fired": true
+    },
+    "III-2": {
+      "desc": "MAR not improved (full window)",
+      "value": 5.677459038891746,
+      "threshold": 6.378931312975825,
+      "fired": true
+    },
+    "III-2e": {
+      "desc": "MAR not improved (rule-eligible window)",
+      "value": 6.658498776617241,
+      "threshold": 9.839354881908994,
+      "fired": true
+    },
+    "III-3": {
+      "desc": "90% paired block-bootstrap CI of Sharpe diff includes 0",
+      "value": [
+        -1.0303949310210176,
+        -0.381109654519365
+      ],
+      "threshold": 0.0,
+      "fired": false
+    },
+    "III-4": {
+      "desc": "DSR of with-rule daily series at n_trials=9 < 0.95",
+      "value": 1.0,
+      "threshold": 0.95,
+      "fired": false
+    }
+  },
+  "byte_equivalence": {
+    "n_days": 2540,
+    "max_abs_diff_daily_pct": 0.0,
+    "accrued_pct_probes": [
+      {
+        "from": "2020-06-05T08:00:00+00:00",
+        "to": "2020-06-15T08:00:00+00:00",
+        "live": 0.254126,
+        "ours": 0.254126,
+        "abs_diff": 0.0
+      },
+      {
+        "from": "2023-07-24T00:00:00+00:00",
+        "to": "2023-08-03T00:00:00+00:00",
+        "live": 0.21573,
+        "ours": 0.21573,
+        "abs_diff": 0.0
+      },
+      {
+        "from": "2026-06-25T08:00:00+00:00",
+        "to": "2026-07-05T08:00:00+00:00",
+        "live": 0.185063,
+        "ours": 0.185063,
+        "abs_diff": 0.0
+      }
+    ]
+  },
+  "constants": {
+    "CARRY_COST_PCT": 0.2,
+    "CARRY_SLIPPAGE_PCT": 0.04,
+    "round_trip_pct": 0.24000000000000002,
+    "resize_cost_pct_per_transition": 0.060000000000000005,
+    "CAPITAL_USDT": 10000.0,
+    "CARRY_NOTIONAL_X": 1.0,
+    "FR_WINDOW_DAYS": 7,
+    "FR_ENTRY_THRESHOLD": 0.0,
+    "EXIT_NEG_DAYS": 3,
+    "P95_WARMUP": 252
+  },
+  "window": {
+    "first_day": "2019-10-04",
+    "last_day": "2026-09-09",
+    "n_days": 2533,
+    "rule_eligible_from": "2020-08-01",
+    "n_days_eligible": 2231
+  },
+  "baseline": {
+    "n_days": 2533,
+    "total_pct": 72.905205,
+    "ann_return_pct": 10.50548749506514,
+    "max_dd_pct": 1.6469040000000001,
+    "mar": 6.378931312975825,
+    "sharpe_ann": 8.951856914793419,
+    "mean_daily_pct": 0.02878215752072641,
+    "sd_daily_pct": 0.06142662383602597
+  },
+  "with_rule": {
+    "n_days": 2533,
+    "total_pct": 64.8880345,
+    "ann_return_pct": 9.350230000986972,
+    "max_dd_pct": 1.6469040000000001,
+    "mar": 5.677459038891746,
+    "sharpe_ann": 8.274318866531527,
+    "mean_daily_pct": 0.025617068495854718,
+    "sd_daily_pct": 0.059148482711167835
+  },
+  "with_rule_elig": {
+    "n_days": 2231,
+    "total_pct": 55.3246245,
+    "ann_return_pct": 9.051316872478708,
+    "max_dd_pct": 1.3593629999999948,
+    "mar": 6.658498776617241,
+    "sharpe_ann": 8.51837385528166,
+    "mean_daily_pct": 0.024798128417749886,
+    "sd_daily_pct": 0.05561713846431244
+  },
+  "baseline_elig": {
+    "n_days": 2231,
+    "total_pct": 63.341795,
+    "ann_return_pct": 10.362956151949797,
+    "max_dd_pct": 1.0532150000000016,
+    "mar": 9.839354881908994,
+    "sharpe_ann": 9.28948873194861,
+    "mean_daily_pct": 0.028391660690273417,
+    "sd_daily_pct": 0.05839093318482488
+  },
+  "primary_no_resize_cost": {
+    "window": 60,
+    "pctile": 95,
+    "resize_cost": false,
+    "n_fire_days": 79,
+    "n_fire_open_days": 79,
+    "sharpe": 8.832720575407581,
+    "sharpe_base": 8.951856914793419,
+    "sharpe_uplift": -0.11913633938583779,
+    "mar": 6.076441893232114,
+    "mar_base": 6.378931312975825,
+    "ann_return_pct": 10.007316459731543,
+    "ann_return_base_pct": 10.50548749506514,
+    "max_dd_pct": 1.6469040000000001,
+    "max_dd_base_pct": 1.6469040000000001,
+    "elig_from": "2020-08-01",
+    "sharpe_elig": 9.185457795729976,
+    "sharpe_base_elig": 9.28948873194861,
+    "sharpe_uplift_elig": -0.1040309362186349,
+    "mar_elig": 9.302326724800933,
+    "mar_base_elig": 9.839354881908994,
+    "n_days_elig": 2231
+  },
+  "bootstrap": {
+    "sharpe_diff_full": {
+      "diff_point": -0.6775380482618925,
+      "p05": -1.0303949310210176,
+      "p50": -0.6795801532550811,
+      "p95": -0.381109654519365,
+      "p_gt_0": 0.0,
+      "n_iter": 5000,
+      "block": 20
+    },
+    "sharpe_diff_eligible": {
+      "diff_point": -0.7711148766669513,
+      "p05": -1.2175250328698244,
+      "p50": -0.7697433644918981,
+      "p95": -0.4173139748639807,
+      "p_gt_0": 0.0002,
+      "n_iter": 5000,
+      "block": 20
+    },
+    "with_rule": {
+      "n": 2533,
+      "block": 20,
+      "n_iter": 5000,
+      "periods_per_year": 365,
+      "sr_point": 8.274318866531527,
+      "sr_p05": 7.1550023634209445,
+      "sr_p50": 8.355274170290771,
+      "sr_p95": 9.54087719130193,
+      "sr_mean": 8.355937847162831,
+      "sr_sd": 0.7282882821687778,
+      "p_sr_gt_0": 1.0
+    },
+    "baseline": {
+      "n": 2533,
+      "block": 20,
+      "n_iter": 5000,
+      "periods_per_year": 365,
+      "sr_point": 8.951856914793419,
+      "sr_p05": 7.812532024599309,
+      "sr_p50": 9.04474088605691,
+      "sr_p95": 10.269309143774493,
+      "sr_mean": 9.044978797272819,
+      "sr_sd": 0.7476341920273805,
+      "p_sr_gt_0": 1.0
+    }
+  },
+  "dsr": {
+    "with_n1": {
+      "sr_per_obs": 0.4330976437882143,
+      "sr_expected": 0.0,
+      "sr_variance": 0.00039494470774091627,
+      "skew": 2.4715813386687637,
+      "kurt": 18.29163184687085,
+      "n": 2533,
+      "n_trials": 1,
+      "dsr": 1.0,
+      "dsr_z": 25.326576209124685,
+      "sr_ann": 8.274318866531527,
+      "sr_expected_ann": 0.0
+    },
+    "base_n1": {
+      "sr_per_obs": 0.46856160608075,
+      "sr_expected": 0.0,
+      "sr_variance": 0.00039494470774091627,
+      "skew": 2.5504333067962808,
+      "kurt": 17.885257235298706,
+      "n": 2533,
+      "n_trials": 1,
+      "dsr": 1.0,
+      "dsr_z": 27.56232801187516,
+      "sr_ann": 8.951856914793419,
+      "sr_expected_ann": 0.0
+    },
+    "with_n9": {
+      "sr_per_obs": 0.4330976437882143,
+      "sr_expected": 0.03022275323098231,
+      "sr_variance": 0.00039494470774091627,
+      "skew": 2.4715813386687637,
+      "kurt": 18.29163184687085,
+      "n": 2533,
+      "n_trials": 9,
+      "dsr": 1.0,
+      "dsr_z": 23.559217568567533,
+      "sr_ann": 8.274318866531527,
+      "sr_expected_ann": 0.5774048897387437
+    },
+    "base_n9": {
+      "sr_per_obs": 0.46856160608075,
+      "sr_expected": 0.03022275323098231,
+      "sr_variance": 0.00039494470774091627,
+      "skew": 2.5504333067962808,
+      "kurt": 17.885257235298706,
+      "n": 2533,
+      "n_trials": 9,
+      "dsr": 1.0,
+      "dsr_z": 25.78452670002218,
+      "sr_ann": 8.951856914793419,
+      "sr_expected_ann": 0.5774048897387437
+    },
+    "with_n18": {
+      "sr_per_obs": 0.4330976437882143,
+      "sr_expected": 0.03684242227285036,
+      "sr_variance": 0.00039494470774091627,
+      "skew": 2.4715813386687637,
+      "kurt": 18.29163184687085,
+      "n": 2533,
+      "n_trials": 18,
+      "dsr": 1.0,
+      "dsr_z": 23.17211421006938,
+      "sr_ann": 8.274318866531527,
+      "sr_expected_ann": 0.7038734892079843
+    },
+    "base_n18": {
+      "sr_per_obs": 0.46856160608075,
+      "sr_expected": 0.03684242227285036,
+      "sr_variance": 0.00039494470774091627,
+      "skew": 2.5504333067962808,
+      "kurt": 17.885257235298706,
+      "n": 2533,
+      "n_trials": 18,
+      "dsr": 1.0,
+      "dsr_z": 25.39513609034731,
+      "sr_ann": 8.951856914793419,
+      "sr_expected_ann": 0.7038734892079843
+    }
+  },
+  "n_trades_baseline": 32,
+  "n_trades_with_rule": 32
+}

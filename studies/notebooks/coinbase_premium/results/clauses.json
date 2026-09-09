@@ -1,0 +1,33 @@
+{
+  "C0": {
+    "clause": "Evaluability: either asset produces < 2 fires",
+    "btc_fires": 302,
+    "eth_fires": 312,
+    "fired": false
+  },
+  "C1": {
+    "clause": "ETH 95% bootstrap CI on mean R includes or lies below zero",
+    "eth_n": 312,
+    "eth_mean_R": 0.21869824669780952,
+    "ci95_lo": -0.005186600605347511,
+    "ci95_hi": 0.45865314999541595,
+    "ci90_lo": 0.02818926342792602,
+    "ci90_hi": 0.41735403437187757,
+    "p_mean_gt_0": 0.9715,
+    "fired": true,
+    "evaluable": true
+  },
+  "C2": {
+    "clause": "BTC entries >= 2025-01-01: n >= 20 AND mean R <= 0",
+    "btc_2025plus_n": 68,
+    "btc_2025plus_mean_R": -0.3191281759661,
+    "btc_2025plus_total_R": -21.7007159656948,
+    "btc_2025plus_ci95": [
+      -0.6221658969849374,
+      0.0380598583470502
+    ],
+    "evaluable": true,
+    "fired": true
+  },
+  "verdict": "CONCLUDED KILL per pre-registration (C1, C2)"
+}

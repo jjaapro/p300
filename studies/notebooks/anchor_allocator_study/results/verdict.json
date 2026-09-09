@@ -1,0 +1,107 @@
+{
+  "verdict": "KILL",
+  "d_sharpe": -0.22783543831303965,
+  "d_mdd_pp": 6.566785079805768,
+  "d_sharpe_nogold": -0.32316873651798517,
+  "d_sharpe_cash_only": 0.11449508300361266,
+  "d_sharpe_baseline_gold": 0.3864659986758012,
+  "clauses": {
+    "KILL: Sharpe uplift < +0.10": {
+      "measured": -0.22783543831303965,
+      "threshold": 0.1,
+      "fires": true
+    },
+    "KILL: MDD worse by > 5 pp": {
+      "measured": 6.566785079805768,
+      "threshold": 5.0,
+      "fires": true
+    },
+    "KILL: uplift disappears without gold (\u0394Sharpe_nogold < +0.10)": {
+      "measured": -0.32316873651798517,
+      "threshold": 0.1,
+      "fires": true
+    },
+    "CONFIRM: Sharpe uplift \u2265 +0.20": {
+      "measured": -0.22783543831303965,
+      "threshold": 0.2,
+      "fires": false
+    },
+    "CONFIRM: MDD \u2264 baseline + 3 pp": {
+      "measured": 6.566785079805768,
+      "threshold": 3.0,
+      "fires": false
+    }
+  },
+  "period": [
+    "2020-01-01",
+    "2026-09-06"
+  ],
+  "n_days": 2441,
+  "bootstrap": [
+    {
+      "a": "overflow",
+      "b": "baseline",
+      "point": -0.22783543831303965,
+      "p05": -0.594735687866836,
+      "p50": -0.21931561352943074,
+      "p95": 0.14197898877799198,
+      "p_gt_0": 0.1635,
+      "p_ge_010": 0.076,
+      "p_ge_020": 0.0295,
+      "block": 20,
+      "n_iter": 2000
+    },
+    {
+      "a": "overflow_no_gold",
+      "b": "baseline",
+      "point": -0.32316873651798517,
+      "p05": -0.5439707881110113,
+      "p50": -0.3088250958634018,
+      "p95": -0.09151623984525863,
+      "p_gt_0": 0.012,
+      "p_ge_010": 0.0035,
+      "p_ge_020": 0.0,
+      "block": 20,
+      "n_iter": 2000
+    },
+    {
+      "a": "overflow_cash_only",
+      "b": "baseline",
+      "point": 0.11449508300361266,
+      "p05": 0.10450881192316396,
+      "p50": 0.1152180655287125,
+      "p95": 0.12646321763310117,
+      "p_gt_0": 1.0,
+      "p_ge_010": 0.992,
+      "p_ge_020": 0.0,
+      "block": 20,
+      "n_iter": 2000
+    },
+    {
+      "a": "baseline_gold",
+      "b": "baseline",
+      "point": 0.3864659986758012,
+      "p05": 0.051159492716583946,
+      "p50": 0.3783274583093197,
+      "p95": 0.737477986726316,
+      "p_gt_0": 0.972,
+      "p_ge_010": 0.917,
+      "p_ge_020": 0.806,
+      "block": 20,
+      "n_iter": 2000
+    },
+    {
+      "a": "overflow",
+      "b": "baseline_gold",
+      "point": -0.6143014369888409,
+      "p05": -0.8563414688312547,
+      "p50": -0.6031429756449711,
+      "p95": -0.34264746276395025,
+      "p_gt_0": 0.0,
+      "p_ge_010": 0.0,
+      "p_ge_020": 0.0,
+      "block": 20,
+      "n_iter": 2000
+    }
+  ]
+}

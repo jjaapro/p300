@@ -1,0 +1,158 @@
+{
+  "S4_BTC_1M": {
+    "threshold": 0.005,
+    "n_events": 9886,
+    "obs": {
+      "1h": 8.0496,
+      "4h": 21.2818,
+      "12h": 47.1079,
+      "24h": 81.2208,
+      "72h": 145.0563
+    },
+    "null_N3": {
+      "smooth_24h": {
+        "1h": {
+          "mean": 4.2331,
+          "p99": 4.5065,
+          "obs_over_null_mean": 1.9016
+        },
+        "4h": {
+          "mean": 13.8528,
+          "p99": 14.7907,
+          "obs_over_null_mean": 1.5363
+        },
+        "12h": {
+          "mean": 38.2399,
+          "p99": 40.8173,
+          "obs_over_null_mean": 1.2319
+        },
+        "24h": {
+          "mean": 70.2907,
+          "p99": 75.0971,
+          "obs_over_null_mean": 1.1555
+        },
+        "72h": {
+          "mean": 138.9063,
+          "p99": 146.9803,
+          "obs_over_null_mean": 1.0443
+        }
+      },
+      "smooth_168h": {
+        "1h": {
+          "mean": 2.4433,
+          "p99": 2.5538,
+          "obs_over_null_mean": 3.2945
+        },
+        "4h": {
+          "mean": 6.7812,
+          "p99": 7.1956,
+          "obs_over_null_mean": 3.1384
+        },
+        "12h": {
+          "mean": 18.312,
+          "p99": 19.535,
+          "obs_over_null_mean": 2.5725
+        },
+        "24h": {
+          "mean": 35.4755,
+          "p99": 37.8245,
+          "obs_over_null_mean": 2.2895
+        },
+        "72h": {
+          "mean": 101.162,
+          "p99": 108.6501,
+          "obs_over_null_mean": 1.4339
+        }
+      }
+    },
+    "acf_powerlaw": {
+      "slope": -0.3399,
+      "r2": 0.9214,
+      "acf_lag1": 0.6113,
+      "acf_lag24": 0.1898
+    },
+    "acf_exponential": {
+      "rate_per_hour": -0.04098,
+      "r2": 0.9087,
+      "halflife_h": 16.92
+    }
+  },
+  "S4b_BTC_1M_p999": {
+    "threshold": 0.007179465888771287,
+    "n_events": 3516,
+    "obs": {
+      "1h": 7.2661,
+      "4h": 17.5776,
+      "12h": 34.801,
+      "24h": 58.8949,
+      "72h": 87.7856
+    },
+    "null_N3": {
+      "smooth_24h": {
+        "1h": {
+          "mean": 3.3582,
+          "p99": 3.6692,
+          "obs_over_null_mean": 2.1637
+        },
+        "4h": {
+          "mean": 10.3576,
+          "p99": 11.7666,
+          "obs_over_null_mean": 1.6971
+        },
+        "12h": {
+          "mean": 27.9217,
+          "p99": 32.1116,
+          "obs_over_null_mean": 1.2464
+        },
+        "24h": {
+          "mean": 49.9845,
+          "p99": 57.1319,
+          "obs_over_null_mean": 1.1783
+        },
+        "72h": {
+          "mean": 82.327,
+          "p99": 92.3528,
+          "obs_over_null_mean": 1.0663
+        }
+      },
+      "smooth_168h": {
+        "1h": {
+          "mean": 1.8488,
+          "p99": 1.9663,
+          "obs_over_null_mean": 3.9301
+        },
+        "4h": {
+          "mean": 4.393,
+          "p99": 4.7751,
+          "obs_over_null_mean": 4.0012
+        },
+        "12h": {
+          "mean": 11.1481,
+          "p99": 12.1606,
+          "obs_over_null_mean": 3.1217
+        },
+        "24h": {
+          "mean": 21.1648,
+          "p99": 23.2671,
+          "obs_over_null_mean": 2.7827
+        },
+        "72h": {
+          "mean": 59.2872,
+          "p99": 65.6438,
+          "obs_over_null_mean": 1.4807
+        }
+      }
+    },
+    "acf_powerlaw": {
+      "slope": -0.4467,
+      "r2": 0.8033,
+      "acf_lag1": 0.5488,
+      "acf_lag24": 0.0971
+    },
+    "acf_exponential": {
+      "rate_per_hour": -0.05566,
+      "r2": 0.7794,
+      "halflife_h": 12.45
+    }
+  }
+}

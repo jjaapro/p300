@@ -1,0 +1,420 @@
+{
+  "generated_utc": "2026-09-09 08:29",
+  "prod_db": "C:\\Source\\Repos\\p300\\data\\databases\\prod.db",
+  "D1": {
+    "n_contract_rows": 4,
+    "n_anchor_checks": 8,
+    "n_anchor_matches": 8,
+    "n_distinct_timestamps": 4,
+    "n_distinct_matched": 4,
+    "pass_": true
+  },
+  "D3": {
+    "candidates": {
+      "open_stamped(+2700s)": {
+        "overlap": 61383,
+        "exact_frac": 0.9880422918397602,
+        "frac_rel_le_1e6": 0.9935161200983986,
+        "max_abs_diff": 875.1000000000058
+      },
+      "close_stamped(+0s)": {
+        "overlap": 61383,
+        "exact_frac": 0.0005050258214815177,
+        "frac_rel_le_1e6": 0.0006679373767981363,
+        "max_abs_diff": 5056.600000000006
+      }
+    },
+    "chosen": "open_stamped(+2700s)",
+    "chosen_offset": 2700,
+    "exact_frac": 0.9880422918397602,
+    "threshold": 0.999,
+    "pass_": false,
+    "tiebreak_third_source": {
+      "available": true,
+      "overlap": 21014,
+      "n_mismatch": 719,
+      "n_1h_closer_to_tv": 2,
+      "n_15m_closer_to_tv": 717,
+      "median_abs_1h_minus_tv": 0.10000000000582077,
+      "median_abs_15m_minus_tv": 0.0,
+      "verdict": "cd_futures_15m matches the third source; cd_futures_ohlcv is the table carrying the error"
+    }
+  },
+  "panels": {
+    "BTC-CURRENT_QUARTER": {
+      "hours": 49035,
+      "first": "2021-02-03 08:00",
+      "last": "2026-09-09 08:00"
+    },
+    "BTC-NEXT_QUARTER": {
+      "hours": 40636,
+      "first": "2021-03-16 07:00",
+      "last": "2026-09-09 08:00"
+    },
+    "ETH-CURRENT_QUARTER": {
+      "hours": 49011,
+      "first": "2021-02-04 07:00",
+      "last": "2026-09-09 07:00"
+    },
+    "ETH-NEXT_QUARTER": {
+      "hours": 40635,
+      "first": "2021-03-16 07:00",
+      "last": "2026-09-09 07:00"
+    }
+  },
+  "D2": {
+    "per_asset": {
+      "BTC": {
+        "rolls": 22,
+        "confirmed": 22,
+        "frac": 1.0
+      },
+      "ETH": {
+        "rolls": 22,
+        "confirmed": 20,
+        "frac": 0.9090909090909091
+      }
+    },
+    "worst_frac": 0.9090909090909091,
+    "threshold": 0.9,
+    "pass_": true
+  },
+  "primary": {
+    "label": "preregistered BTC+ETH CURRENT_QUARTER @8%",
+    "n_trades": 39,
+    "R_ann": -0.07143696222297785,
+    "gross_ann_pooled": 0.11721551391584625,
+    "fees_ann_pooled": -0.01194332948825362,
+    "funding_ann_pooled": -0.17670914665057047,
+    "mean_net_ann": -0.07180961109790242,
+    "median_net_ann": -0.016524285110578126,
+    "mean_gross_ann": 0.1089078163926839,
+    "mean_funding_ann": -0.15565274302207444,
+    "mean_net": -0.012322478693251107,
+    "sd_net": 0.026664606224849313,
+    "win_rate": 0.41025641025641024,
+    "total_hold_days": 2455.4583333333335,
+    "sum_gross": 0.788541946412641,
+    "sum_fees": 0.08034615868404957,
+    "sum_funding": -1.1887724567653846,
+    "sum_net": -0.4805766690367932,
+    "n_funding_incomplete": 0,
+    "trades_per_year": 7.22971114167813,
+    "span_years": 5.394406392694064,
+    "mean_entry_basis_ann": 0.12786003163889667,
+    "mean_exit_basis": 0.003589571659019952,
+    "mean_hold_days": 62.96047008547009,
+    "n_long_basis": 38,
+    "n_reverse": 1,
+    "bootstrap_R_ann": {
+      "point": -0.07143696222297785,
+      "n_iter": 10000,
+      "p2_5": -0.12219556207391254,
+      "p5": -0.11286268625078566,
+      "p50": -0.07078102180346463,
+      "p95": -0.0322129278334019,
+      "p97_5": -0.02582710010182237,
+      "p_above_kill": 0.0,
+      "p_above_zero": 0.0008
+    },
+    "bootstrap_sharpe": {
+      "n": 39,
+      "sr_point": -0.46212865809237136,
+      "sr_point_ann": -1.2425771819958773,
+      "sr_p05": -0.6829805787062951,
+      "sr_p50": -0.4645961865636323,
+      "sr_p95": -0.2455785441471577,
+      "sr_mean": -0.4653590055001349,
+      "sr_sd": 0.13309518432842923,
+      "n_iter": 10000,
+      "threshold": 0.0,
+      "p_at_or_above": 0.0005
+    },
+    "dsr": {
+      "sr_per_obs": -0.46212865809237136,
+      "sr_expected": 0.2700680691175689,
+      "sr_variance": 0.02631578947368421,
+      "skew": -0.9062350686433527,
+      "kurt": 2.7661841402024563,
+      "n": 39,
+      "n_trials": 12,
+      "dsr": 1.990431569565132e-08,
+      "dsr_z": -5.491698610135405,
+      "sr_ann": -1.2425771819958773,
+      "sr_expected_ann": 0.7261623238351516
+    },
+    "trade_sharpe_ann": -1.2425771819958773,
+    "long_basis_n": 38,
+    "long_basis_R_ann": -0.07210291433411543,
+    "long_basis_mean_gross_ann": 0.1096364501155187,
+    "long_basis_mean_funding_ann": -0.15687417257735942,
+    "reverse_n": 1,
+    "reverse_R_ann": -0.04055530672844932,
+    "reverse_mean_gross_ann": 0.08121973492496135,
+    "reverse_mean_funding_ann": -0.10923841992124567
+  },
+  "primary_btc_only": {
+    "label": "BTC only",
+    "n_trades": 19,
+    "R_ann": -0.05974231483244698,
+    "gross_ann_pooled": 0.11240809828680996,
+    "fees_ann_pooled": -0.011416495529744317,
+    "funding_ann_pooled": -0.1607339175895126,
+    "mean_net_ann": -0.07008628409022083,
+    "median_net_ann": -0.0038992297350458503,
+    "mean_gross_ann": 0.10325504933098807,
+    "mean_funding_ann": -0.15123353540777928,
+    "mean_net": -0.01088204613539591,
+    "sd_net": 0.022660185281018725,
+    "win_rate": 0.3684210526315789,
+    "total_hold_days": 1263.2083333333333,
+    "sum_gross": 0.38902697668507047,
+    "sum_fees": 0.039510718604481555,
+    "sum_funding": -0.5562751346531112,
+    "sum_net": -0.20675887657252226,
+    "n_funding_incomplete": 0,
+    "trades_per_year": 3.6928401854851236,
+    "span_years": 5.145091324200913,
+    "mean_entry_basis_ann": 0.1407287813310418,
+    "mean_exit_basis": 0.005550738099018934,
+    "mean_hold_days": 66.48464912280701,
+    "n_long_basis": 19,
+    "n_reverse": 0,
+    "bootstrap_R_ann": {
+      "point": -0.05974231483244698,
+      "n_iter": 10000,
+      "p2_5": -0.1177427434439875,
+      "p5": -0.10812515904289657,
+      "p50": -0.05914766146821955,
+      "p95": -0.01596813731929662,
+      "p97_5": -0.00806229201881673,
+      "p_above_kill": 0.0,
+      "p_above_zero": 0.0103
+    },
+    "bootstrap_sharpe": {
+      "n": 19,
+      "sr_point": -0.4802275886292616,
+      "sr_point_ann": -0.9228420235938223,
+      "sr_p05": -0.798284010478894,
+      "sr_p50": -0.4888847895754168,
+      "sr_p95": -0.17110166816111333,
+      "sr_mean": -0.48689592029026724,
+      "sr_sd": 0.19362865647115723,
+      "n_iter": 10000,
+      "threshold": 0.0,
+      "p_at_or_above": 0.0091
+    },
+    "dsr": {
+      "sr_per_obs": -0.4802275886292616,
+      "sr_expected": 0.3923998070535469,
+      "sr_variance": 0.05555555555555555,
+      "skew": -1.0031722416661486,
+      "kurt": 3.005594251816565,
+      "n": 19,
+      "n_trials": 12,
+      "dsr": 1.6589568145874978e-06,
+      "dsr_z": -4.650089283284721,
+      "sr_ann": -0.9228420235938223,
+      "sr_expected_ann": 0.7540654484944255
+    },
+    "trade_sharpe_ann": -0.9228420235938223,
+    "long_basis_n": 19,
+    "long_basis_R_ann": -0.05974231483244698,
+    "long_basis_mean_gross_ann": 0.10325504933098807,
+    "long_basis_mean_funding_ann": -0.15123353540777928
+  },
+  "primary_eth_only": {
+    "label": "ETH only",
+    "n_trades": 20,
+    "R_ann": -0.08382763199786865,
+    "gross_ann_pooled": 0.1223090492351128,
+    "fees_ann_pooled": -0.012501518665583836,
+    "funding_ann_pooled": -0.19363516256739763,
+    "mean_net_ann": -0.07344677175519994,
+    "median_net_ann": -0.028539795919513722,
+    "mean_gross_ann": 0.11427794510129499,
+    "mean_funding_ann": -0.15985099025565494,
+    "mean_net": -0.013690889623213548,
+    "sd_net": 0.030520451785604648,
+    "win_rate": 0.45,
+    "total_hold_days": 1192.25,
+    "sum_gross": 0.3995149697275705,
+    "sum_fees": 0.04083544007956802,
+    "sum_funding": -0.6324973221122735,
+    "sum_net": -0.27381779246427096,
+    "n_funding_incomplete": 0,
+    "trades_per_year": 3.709349593495935,
+    "span_years": 5.391780821917808,
+    "mean_entry_basis_ann": 0.11563471943135877,
+    "mean_exit_basis": 0.0017264635410209196,
+    "mean_hold_days": 59.61250000000001,
+    "n_long_basis": 19,
+    "n_reverse": 1,
+    "bootstrap_R_ann": {
+      "point": -0.08382763199786865,
+      "n_iter": 10000,
+      "p2_5": -0.16345899583499757,
+      "p5": -0.15059463540790904,
+      "p50": -0.0826451828294225,
+      "p95": -0.018768976332495194,
+      "p97_5": -0.008833780793434996,
+      "p_above_kill": 0.0001,
+      "p_above_zero": 0.0125
+    },
+    "bootstrap_sharpe": {
+      "n": 20,
+      "sr_point": -0.44858083095844037,
+      "sr_point_ann": -0.8639519597567695,
+      "sr_p05": -0.7697355308667091,
+      "sr_p50": -0.4536246001774422,
+      "sr_p95": -0.12892599674582417,
+      "sr_mean": -0.4528103221012838,
+      "sr_sd": 0.19580915448600414,
+      "n_iter": 10000,
+      "threshold": 0.0,
+      "p_at_or_above": 0.0145
+    },
+    "dsr": {
+      "sr_per_obs": -0.44858083095844037,
+      "sr_expected": 0.3819339261099804,
+      "sr_variance": 0.05263157894736842,
+      "skew": -0.730866820116141,
+      "kurt": 2.199436447413609,
+      "n": 20,
+      "n_trials": 12,
+      "dsr": 1.1692635576709964e-05,
+      "dsr_z": -4.22984468489362,
+      "sr_ann": -0.8639519597567695,
+      "sr_expected_ann": 0.7355922081095028
+    },
+    "trade_sharpe_ann": -0.8639519597567695,
+    "long_basis_n": 19,
+    "long_basis_R_ann": -0.08579441214529859,
+    "long_basis_mean_gross_ann": 0.11601785090004937,
+    "long_basis_mean_funding_ann": -0.16251480974693966,
+    "reverse_n": 1,
+    "reverse_R_ann": -0.04055530672844932,
+    "reverse_mean_gross_ann": 0.08121973492496135,
+    "reverse_mean_funding_ann": -0.10923841992124567
+  },
+  "primary_alt_all_15m": {
+    "label": "robustness: both perps from 15m tables",
+    "n_trades": 39,
+    "R_ann": -0.0714369509629141,
+    "gross_ann_pooled": 0.11721551391584625,
+    "fees_ann_pooled": -0.01194332948825362,
+    "funding_ann_pooled": -0.17670913539050673,
+    "mean_net_ann": -0.07180960255070692,
+    "median_net_ann": -0.016524285110578126,
+    "mean_gross_ann": 0.1089078163926839,
+    "mean_funding_ann": -0.155652734474879,
+    "mean_net": -0.012322476750952733,
+    "sd_net": 0.02666460714594527,
+    "win_rate": 0.41025641025641024,
+    "total_hold_days": 2455.4583333333335,
+    "sum_gross": 0.788541946412641,
+    "sum_fees": 0.08034615868404957,
+    "sum_funding": -1.188772381015748,
+    "sum_net": -0.4805765932871565,
+    "n_funding_incomplete": 0,
+    "trades_per_year": 7.22971114167813,
+    "span_years": 5.394406392694064,
+    "mean_entry_basis_ann": 0.12786003163889667,
+    "mean_exit_basis": 0.003589571659019952,
+    "mean_hold_days": 62.96047008547009,
+    "n_long_basis": 38,
+    "n_reverse": 1,
+    "bootstrap_R_ann": {
+      "point": -0.0714369509629141,
+      "n_iter": 10000,
+      "p2_5": -0.12219555090774059,
+      "p5": -0.11286268432260994,
+      "p50": -0.07078102134852832,
+      "p95": -0.03221292622121531,
+      "p97_5": -0.025827069091452114,
+      "p_above_kill": 0.0,
+      "p_above_zero": 0.0008
+    },
+    "bootstrap_sharpe": {
+      "n": 39,
+      "sr_point": -0.4621285692868923,
+      "sr_point_ann": -1.24257694321462,
+      "sr_p05": -0.6829803928151287,
+      "sr_p50": -0.4645960759076457,
+      "sr_p95": -0.2455783661345214,
+      "sr_mean": -0.46535891269697893,
+      "sr_sd": 0.13309518402701076,
+      "n_iter": 10000,
+      "threshold": 0.0,
+      "p_at_or_above": 0.0005
+    },
+    "dsr": {
+      "sr_per_obs": -0.4621285692868923,
+      "sr_expected": 0.2700680691175689,
+      "sr_variance": 0.02631578947368421,
+      "skew": -0.906235140106033,
+      "kurt": 2.7661840527196544,
+      "n": 39,
+      "n_trials": 12,
+      "dsr": 1.990439374432995e-08,
+      "dsr_z": -5.491697917477775,
+      "sr_ann": -1.24257694321462,
+      "sr_expected_ann": 0.7261623238351516
+    },
+    "trade_sharpe_ann": -1.24257694321462,
+    "long_basis_n": 38,
+    "long_basis_R_ann": -0.07210290283123234,
+    "long_basis_mean_gross_ann": 0.1096364501155187,
+    "long_basis_mean_funding_ann": -0.15687416380523778,
+    "reverse_n": 1,
+    "reverse_R_ann": -0.04055530672844932,
+    "reverse_mean_gross_ann": 0.08121973492496135,
+    "reverse_mean_funding_ann": -0.10923841992124567
+  },
+  "d3_impact_on_primary": {
+    "btc_trades": 19,
+    "n_fills_checked": 38,
+    "n_trades_touching_a_mismatched_hour": 0,
+    "examples": []
+  },
+  "clauses": {
+    "D1": {
+      "measured": "4/4 distinct anchors",
+      "threshold": "4/4",
+      "fired": false
+    },
+    "D2": {
+      "measured": 0.9090909090909091,
+      "threshold": 0.9,
+      "fired": false
+    },
+    "D3": {
+      "measured": 0.9880422918397602,
+      "threshold": 0.999,
+      "fired": true
+    },
+    "S1": {
+      "measured": 39,
+      "threshold": 5,
+      "fired": false
+    },
+    "K1": {
+      "measured": -0.07143696222297785,
+      "threshold": 0.05,
+      "fired": true
+    },
+    "K2": {
+      "measured_p2_5": -0.12219556207391254,
+      "measured_p5": -0.11286268625078566,
+      "threshold": 0.05,
+      "fired": true
+    },
+    "K3": {
+      "measured": 1.990431569565132e-08,
+      "threshold": 0.95,
+      "fired": true
+    }
+  },
+  "verdict_literal_prereg": "INCONCLUSIVE (data) -- clause D3 failed",
+  "economics_verdict_ignoring_D3": "CONCLUDED KILL"
+}

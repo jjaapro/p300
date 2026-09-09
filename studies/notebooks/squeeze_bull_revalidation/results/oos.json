@@ -1,0 +1,379 @@
+{
+  "oos_window": [
+    "2026-04-14 00:00:00+00:00",
+    "2026-09-07 23:59:59+00:00"
+  ],
+  "last_full_day": "2026-09-07",
+  "table_end_hourly": "2026-09-08 17:00:00+00:00",
+  "table_end_15m": "2026-09-08 17:00:00+00:00",
+  "oi_flush": {
+    "window": [
+      "2026-04-14 00:00:00+00:00",
+      "2026-09-07 23:59:59+00:00"
+    ],
+    "last_full_day": "2026-09-07",
+    "fires_pooled": 20,
+    "resolved_pooled": 20,
+    "unresolved": 0,
+    "bull_gated_resolved": {
+      "n": 10,
+      "mean_R": 0.2021,
+      "median_R": 0.273,
+      "sum_R": 2.021,
+      "WR": 0.7,
+      "maxDD": -1.59,
+      "stops": 3,
+      "targets": 3,
+      "tifs": 4,
+      "first": "2026-04-21 19:00:00+00:00",
+      "last": "2026-09-04 14:00:00+00:00"
+    },
+    "pooled_resolved": {
+      "n": 20,
+      "mean_R": -0.1719,
+      "median_R": -0.8695,
+      "sum_R": -3.438,
+      "WR": 0.45,
+      "maxDD": -7.369,
+      "stops": 10,
+      "targets": 5,
+      "tifs": 5,
+      "first": "2026-04-16 16:00:00+00:00",
+      "last": "2026-09-04 14:00:00+00:00"
+    },
+    "by_regime_resolved": {
+      "bear_30d": {
+        "n": 5,
+        "mean_R": -0.59,
+        "median_R": -1.09,
+        "sum_R": -2.95,
+        "WR": 0.2,
+        "maxDD": -3.27,
+        "stops": 4,
+        "targets": 1,
+        "tifs": 0,
+        "first": "2026-06-02 22:00:00+00:00",
+        "last": "2026-07-01 07:00:00+00:00"
+      },
+      "flat_30d": {
+        "n": 5,
+        "mean_R": -0.5018,
+        "median_R": -1.09,
+        "sum_R": -2.509,
+        "WR": 0.2,
+        "maxDD": -3.919,
+        "stops": 3,
+        "targets": 1,
+        "tifs": 1,
+        "first": "2026-04-16 16:00:00+00:00",
+        "last": "2026-07-15 18:00:00+00:00"
+      },
+      "bull_30d": {
+        "n": 10,
+        "mean_R": 0.2021,
+        "median_R": 0.273,
+        "sum_R": 2.021,
+        "WR": 0.7,
+        "maxDD": -1.59,
+        "stops": 3,
+        "targets": 3,
+        "tifs": 4,
+        "first": "2026-04-21 19:00:00+00:00",
+        "last": "2026-09-04 14:00:00+00:00"
+      }
+    },
+    "bull_gated_backonly_regime_resolved": {
+      "n": 10,
+      "mean_R": 0.2462,
+      "median_R": 0.273,
+      "sum_R": 2.462,
+      "WR": 0.7,
+      "maxDD": -1.149,
+      "stops": 2,
+      "targets": 3,
+      "tifs": 5,
+      "first": "2026-04-21 19:00:00+00:00",
+      "last": "2026-09-04 14:00:00+00:00"
+    },
+    "bull_gated_fires": [
+      {
+        "ts": "2026-04-21 19:00:00+00:00",
+        "r_outcome": 1.41,
+        "exit_kind": "target",
+        "ret_30d": 0.1246870881283666,
+        "oi_chg_4h": -0.020470017205519997,
+        "px_chg_4h": -0.010703180347203523,
+        "window_span_h": 4.0,
+        "resolved": true
+      },
+      {
+        "ts": "2026-04-23 10:00:00+00:00",
+        "r_outcome": 0.15973210673333632,
+        "exit_kind": "tif",
+        "ret_30d": 0.10908216930714287,
+        "oi_chg_4h": -0.04252323842704342,
+        "px_chg_4h": -0.010286949735822115,
+        "window_span_h": 4.0,
+        "resolved": true
+      },
+      {
+        "ts": "2026-04-27 05:00:00+00:00",
+        "r_outcome": -1.0899999999999994,
+        "exit_kind": "stop",
+        "ret_30d": 0.16577120907879417,
+        "oi_chg_4h": -0.024055983732997666,
+        "px_chg_4h": -0.019114067332699824,
+        "window_span_h": 4.0,
+        "resolved": true
+      },
+      {
+        "ts": "2026-04-29 18:00:00+00:00",
+        "r_outcome": 1.4100000000000001,
+        "exit_kind": "target",
+        "ret_30d": 0.13458519809958602,
+        "oi_chg_4h": -0.030508305036323957,
+        "px_chg_4h": -0.013982176709524174,
+        "window_span_h": 4.0,
+        "resolved": true
+      },
+      {
+        "ts": "2026-05-04 10:00:00+00:00",
+        "r_outcome": 1.409999999999991,
+        "exit_kind": "target",
+        "ret_30d": 0.18663465683578373,
+        "oi_chg_4h": -0.07084898601729595,
+        "px_chg_4h": -0.011649276477080361,
+        "window_span_h": 4.0,
+        "resolved": true
+      },
+      {
+        "ts": "2026-05-06 14:00:00+00:00",
+        "r_outcome": -1.0899999999999999,
+        "exit_kind": "stop",
+        "ret_30d": 0.18268793438916342,
+        "oi_chg_4h": -0.029099198481043254,
+        "px_chg_4h": -0.009368681004011337,
+        "window_span_h": 4.0,
+        "resolved": true
+      },
+      {
+        "ts": "2026-05-07 17:00:00+00:00",
+        "r_outcome": 0.35514092485880966,
+        "exit_kind": "tif",
+        "ret_30d": 0.11238249441509418,
+        "oi_chg_4h": -0.020692585062862756,
+        "px_chg_4h": -0.005023770313519527,
+        "window_span_h": 4.0,
+        "resolved": true
+      },
+      {
+        "ts": "2026-05-11 03:00:00+00:00",
+        "r_outcome": 0.23449989714153274,
+        "exit_kind": "tif",
+        "ret_30d": 0.11896035522246629,
+        "oi_chg_4h": -0.041020283576734484,
+        "px_chg_4h": -0.018062077668272614,
+        "window_span_h": 4.0,
+        "resolved": true
+      },
+      {
+        "ts": "2026-08-21 12:00:00+00:00",
+        "r_outcome": -1.0899999999999996,
+        "exit_kind": "stop",
+        "ret_30d": 0.18502920613782892,
+        "oi_chg_4h": -0.02097487296486611,
+        "px_chg_4h": -0.025746508723460515,
+        "window_span_h": 4.0,
+        "resolved": true
+      },
+      {
+        "ts": "2026-09-04 14:00:00+00:00",
+        "r_outcome": 0.3114630930344627,
+        "exit_kind": "tif",
+        "ret_30d": 0.23180095893950403,
+        "oi_chg_4h": -0.021885418343815077,
+        "px_chg_4h": -0.02804682686383242,
+        "window_span_h": 4.0,
+        "resolved": true
+      }
+    ],
+    "unresolved_fires": [],
+    "fires_with_window_span_gt_4h": 0,
+    "fires_after_oi_seam_2026_06_10": 6
+  },
+  "funding_cvd": {
+    "A": {
+      "full_n": 23,
+      "full_meanR": 0.9755,
+      "pre_cutover_n": 21,
+      "oos_fires": [
+        {
+          "ts": "2026-06-05 20:30:00+00:00",
+          "r_outcome": 0.6782042464888867,
+          "exit_kind": "tif",
+          "funding_z": -2.0304661193945677,
+          "cvd_z": 0.9250511882219468,
+          "ret_30d": -0.2502527948730866,
+          "regime": "bear_30d",
+          "resolved": true,
+          "cutover_mixed": false
+        },
+        {
+          "ts": "2026-06-17 13:15:00+00:00",
+          "r_outcome": -1.1268456364993977,
+          "exit_kind": "stop",
+          "funding_z": -2.3538780689014698,
+          "cvd_z": 1.0153629691044594,
+          "ret_30d": -0.16228924992723792,
+          "regime": "bear_30d",
+          "resolved": true,
+          "cutover_mixed": false
+        }
+      ],
+      "oos_resolved": {
+        "n": 2,
+        "mean_R": -0.2243,
+        "median_R": -0.2243,
+        "sum_R": -0.449,
+        "WR": 0.5,
+        "maxDD": -1.127,
+        "stops": 1,
+        "targets": 0,
+        "tifs": 1,
+        "first": "2026-06-05 20:30:00+00:00",
+        "last": "2026-06-17 13:15:00+00:00"
+      },
+      "oos_n_cutover_mixed": 0,
+      "fires_between_cutover_and_oos_start": []
+    },
+    "B": {
+      "full_n": 22,
+      "full_meanR": 1.1721,
+      "pre_cutover_n": 20,
+      "oos_fires": [
+        {
+          "ts": "2026-06-05 20:30:00+00:00",
+          "r_outcome": 0.6782042464888867,
+          "exit_kind": "tif",
+          "funding_z": -2.0304661193947107,
+          "cvd_z": 0.9250511882219468,
+          "ret_30d": -0.2502527948730866,
+          "regime": "bear_30d",
+          "resolved": true,
+          "cutover_mixed": false
+        },
+        {
+          "ts": "2026-06-17 13:15:00+00:00",
+          "r_outcome": -1.1268456364993977,
+          "exit_kind": "stop",
+          "funding_z": -2.3538780689016727,
+          "cvd_z": 1.0153629691044594,
+          "ret_30d": -0.16228924992723792,
+          "regime": "bear_30d",
+          "resolved": true,
+          "cutover_mixed": false
+        }
+      ],
+      "oos_resolved": {
+        "n": 2,
+        "mean_R": -0.2243,
+        "median_R": -0.2243,
+        "sum_R": -0.449,
+        "WR": 0.5,
+        "maxDD": -1.127,
+        "stops": 1,
+        "targets": 0,
+        "tifs": 1,
+        "first": "2026-06-05 20:30:00+00:00",
+        "last": "2026-06-17 13:15:00+00:00"
+      },
+      "oos_n_cutover_mixed": 0,
+      "fires_between_cutover_and_oos_start": []
+    }
+  },
+  "regime": {
+    "june_construction": {
+      "hours": 3528,
+      "share_bull_gt_10pct": 0.2789,
+      "share_bear_lt_m10pct": 0.2041,
+      "share_flat": 0.517,
+      "bull_hours": 984,
+      "bull_days": 41.0,
+      "ret_30d_min": -0.2503,
+      "ret_30d_max": 0.2677,
+      "ret_30d_max_at": "2026-09-03 00:00:00+00:00",
+      "ret_30d_min_at": "2026-06-05 00:00:00+00:00",
+      "ret_30d_median": 0.0182,
+      "bull_spans": [
+        [
+          "2026-04-20",
+          "2026-04-23"
+        ],
+        [
+          "2026-04-25",
+          "2026-05-12"
+        ],
+        [
+          "2026-07-30",
+          "2026-07-30"
+        ],
+        [
+          "2026-08-21",
+          "2026-09-07"
+        ]
+      ]
+    },
+    "backward_only": {
+      "hours": 3528,
+      "share_bull_gt_10pct": 0.2721,
+      "share_bear_lt_m10pct": 0.2041,
+      "share_flat": 0.5238,
+      "bull_hours": 960,
+      "bull_days": 40.0,
+      "ret_30d_min": -0.2503,
+      "ret_30d_max": 0.2677,
+      "ret_30d_max_at": "2026-09-04 00:00:00+00:00",
+      "ret_30d_min_at": "2026-06-06 00:00:00+00:00",
+      "ret_30d_median": 0.0182,
+      "bull_spans": [
+        [
+          "2026-04-21",
+          "2026-04-24"
+        ],
+        [
+          "2026-04-26",
+          "2026-05-13"
+        ],
+        [
+          "2026-07-31",
+          "2026-07-31"
+        ],
+        [
+          "2026-08-22",
+          "2026-09-07"
+        ]
+      ]
+    },
+    "bull_gate_never_open": false
+  },
+  "rates": {
+    "june_window": [
+      "2022-01-30 06:00:00+00:00",
+      "2026-06-05 19:01:47+00:00"
+    ],
+    "june_span_years": 4.346,
+    "june_bull_fires": 112,
+    "june_bull_fires_per_year": 25.77,
+    "june_bull_days": 411.0,
+    "june_bull_fires_per_bull_day": 0.2725,
+    "june_share_bull_hours": 0.2589,
+    "oos_span_days": 147.0,
+    "oos_bull_days": 41.0,
+    "oos_bull_fires_resolved": 10,
+    "oos_pooled_fires_per_year": 49.69
+  },
+  "unresolved_cutoffs": {
+    "oi_flush_needs_bars_through": "2026-09-09 23:59:59+00:00",
+    "fcd_needs_bars_through": "2026-09-10 23:59:59+00:00"
+  }
+}

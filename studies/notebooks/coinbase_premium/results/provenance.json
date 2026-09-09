@@ -1,0 +1,22 @@
+{
+  "BTC": {
+    "rows_joined": 58610,
+    "rows_used": 58609,
+    "first": "2020-01-01 00:00",
+    "last": "2026-09-08 16:00",
+    "dropped_final_forming_bar": 1,
+    "eth_hours_dropped_no_59_close": 0,
+    "bars_abs_premium_gt_2pct": 8,
+    "calendar_hours_expected": 58625
+  },
+  "ETH": {
+    "rows_joined": 58572,
+    "rows_used": 58571,
+    "first": "2020-01-01 00:00",
+    "last": "2026-09-08 15:00",
+    "dropped_final_forming_bar": 1,
+    "eth_hours_dropped_no_59_close": 7,
+    "bars_abs_premium_gt_2pct": 8,
+    "calendar_hours_expected": 58624
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "BTC": {
+    "n_overlapping": 58225,
+    "pearson_z_fwd48": 0.0721658143337077,
+    "spearman_z_fwd48": 0.05572256446883058,
+    "n_nonoverlapping": 1214,
+    "pearson_nonoverlapping": 0.1261108928464578,
+    "spearman_nonoverlapping": 0.08073928298377599,
+    "pearson_premium_fwd48": 0.08265640677658664,
+    "spearman_premium_fwd48": 0.04759808321827544
+  },
+  "ETH": {
+    "n_overlapping": 58187,
+    "pearson_z_fwd48": 0.06516827022175879,
+    "spearman_z_fwd48": 0.05994990242096466,
+    "n_nonoverlapping": 1213,
+    "pearson_nonoverlapping": 0.06265735774438384,
+    "spearman_nonoverlapping": 0.0712394425519796,
+    "pearson_premium_fwd48": 0.06987316218292619,
+    "spearman_premium_fwd48": 0.06764240079556727
+  }
+}
