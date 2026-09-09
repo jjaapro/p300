@@ -29,6 +29,16 @@ Files: `harness.py` (engine), `analyze.py` (problem characterisation),
 closed maxDD 27.33%, 33 closed + 1 open trade, open +18.76%. Near-exact parity →
 the Pine and the live signal are the same machine.
 
+> **Correction (2026-09-09, from [validation_audit_2026_09](../validation_audit_2026_09/findings.md)).**
+> The `Sharpe` column in every table in this document is **not an annualised Sharpe
+> ratio**. The harness computes mean-per-trade / sd-per-trade × √n, which is a
+> t-statistic on the mean trade — it grows with sample size instead of converging, so it
+> is not comparable with any other Sharpe in the repo. Measured properly on the daily
+> mark-to-market series, the annualised Sharpe is **0.84 for this baseline** and **1.12
+> for the shipped Tier-2 config** (the same rows this document reports as 2.09 and 2.27).
+> Per-trade Sharpe is 0.34 and 0.42. Read the column as "t-stat", and note that t ≈ 2.06
+> on n = 34 is exactly the marginal significance the audit's deflation then removes.
+
 ---
 
 ## Problem 1 — "incorrect entries that lose money" → it's the SHORTS

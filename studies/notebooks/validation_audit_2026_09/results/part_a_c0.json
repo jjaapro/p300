@@ -1,0 +1,17 @@
+{
+  "clause": "C0",
+  "rule": "is any paper series' closed-trade count >= 20?",
+  "max_closed_trades": 27,
+  "threshold": 20,
+  "fired": false,
+  "registered_bot_variants": [
+    "bot_adx_v1",
+    "bot_carry_v1",
+    "bot_chento_v3_eth",
+    "bot_chento_v3_v1",
+    "bot_short_squeeze_v1"
+  ],
+  "unregistered_bot_variants": [
+    "bot_r4_v1"
+  ]
+}

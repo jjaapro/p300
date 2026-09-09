@@ -1,0 +1,201 @@
+{
+  "BTC": {
+    "n_okx_aligned": 101,
+    "cost_r_mean": 0.11481356156599506,
+    "cost_r_median": 0.0954801296709499,
+    "cost_r_max": 0.4007988857296577,
+    "variants": [
+      {
+        "label": "TIF 72h, NO cost (= the published engine) | tilt=none",
+        "n": 101,
+        "traded_n": 101,
+        "mean_r": 0.8001439689433522,
+        "total_r": 80.81454086327857,
+        "max_dd_r": -11.218061799462774,
+        "mar_like": 7.203966452310748,
+        "wr_pct": 40.5940594059406
+      },
+      {
+        "label": "TIF 72h, NO cost (= the published engine) | tilt=skip_after_loss",
+        "n": 101,
+        "traded_n": 41,
+        "mean_r": 1.0002321781104107,
+        "total_r": 41.00951930252683,
+        "max_dd_r": -5.023528649607343,
+        "mar_like": 8.16348868752491,
+        "wr_pct": 39.02439024390244
+      },
+      {
+        "label": "TIF 72h, NO cost (= the published engine) | tilt=half_after_loss",
+        "n": 101,
+        "traded_n": 101,
+        "mean_r": 0.6030894067614129,
+        "total_r": 60.9120300829027,
+        "max_dd_r": -7.3048959634767385,
+        "mar_like": 8.338521231165057,
+        "wr_pct": 40.5940594059406
+      },
+      {
+        "label": "TIF 72h, 18bp cost charged | tilt=none",
+        "n": 101,
+        "traded_n": 101,
+        "mean_r": 0.6853304073773571,
+        "total_r": 69.21837114511307,
+        "max_dd_r": -13.429493221807562,
+        "mar_like": 5.1542057471470635,
+        "wr_pct": 38.613861386138616
+      },
+      {
+        "label": "TIF 72h, 18bp cost charged | tilt=skip_after_loss",
+        "n": 101,
+        "traded_n": 39,
+        "mean_r": 0.962827204846697,
+        "total_r": 37.55026098902118,
+        "max_dd_r": -5.132206946791975,
+        "mar_like": 7.316591356958626,
+        "wr_pct": 38.46153846153847
+      },
+      {
+        "label": "TIF 72h, 18bp cost charged | tilt=half_after_loss",
+        "n": 101,
+        "traded_n": 101,
+        "mean_r": 0.5285575848224467,
+        "total_r": 53.38431606706712,
+        "max_dd_r": -8.703160150147475,
+        "mar_like": 6.13390023233831,
+        "wr_pct": 38.613861386138616
+      },
+      {
+        "label": "TIF 24h, 18bp cost (the CSV r_outcome column) | tilt=none",
+        "n": 101,
+        "traded_n": 101,
+        "mean_r": 0.22547593352367173,
+        "total_r": 22.773069285890845,
+        "max_dd_r": -11.083585140545104,
+        "mar_like": 2.0546663373915166,
+        "wr_pct": 41.584158415841586
+      },
+      {
+        "label": "TIF 24h, 18bp cost (the CSV r_outcome column) | tilt=skip_after_loss",
+        "n": 101,
+        "traded_n": 43,
+        "mean_r": 0.4427715001744276,
+        "total_r": 19.03917450750039,
+        "max_dd_r": -4.601455764965447,
+        "mar_like": 4.137641537806537,
+        "wr_pct": 46.51162790697674
+      },
+      {
+        "label": "TIF 24h, 18bp cost (the CSV r_outcome column) | tilt=half_after_loss",
+        "n": 101,
+        "traded_n": 101,
+        "mean_r": 0.2069913059078774,
+        "total_r": 20.906121896695616,
+        "max_dd_r": -7.842520452755281,
+        "mar_like": 2.665740181697678,
+        "wr_pct": 41.584158415841586
+      }
+    ],
+    "published_mean_r_base_none": 0.8001439689433522,
+    "reproduced_mean_r_base_none": 0.8001439689433522,
+    "reproduction_diff": 0.0
+  },
+  "ETH": {
+    "n_okx_aligned": 77,
+    "cost_r_mean": 0.09005748890424557,
+    "cost_r_median": 0.06758164319741845,
+    "cost_r_max": 0.37725687825455184,
+    "variants": [
+      {
+        "label": "TIF 72h, NO cost (= the published engine) | tilt=none",
+        "n": 77,
+        "traded_n": 77,
+        "mean_r": 0.7119886757982192,
+        "total_r": 54.82312803646288,
+        "max_dd_r": -9.101054184673906,
+        "mar_like": 6.023821738011904,
+        "wr_pct": 42.857142857142854
+      },
+      {
+        "label": "TIF 72h, NO cost (= the published engine) | tilt=skip_after_loss",
+        "n": 77,
+        "traded_n": 34,
+        "mean_r": 0.829678732470489,
+        "total_r": 28.209076903996625,
+        "max_dd_r": -3.354492744327235,
+        "mar_like": 8.40934205378767,
+        "wr_pct": 47.05882352941176
+      },
+      {
+        "label": "TIF 72h, NO cost (= the published engine) | tilt=half_after_loss",
+        "n": 77,
+        "traded_n": 77,
+        "mean_r": 0.5391701619510357,
+        "total_r": 41.516102470229754,
+        "max_dd_r": -5.508224248182728,
+        "mar_like": 7.537111889358306,
+        "wr_pct": 42.857142857142854
+      },
+      {
+        "label": "TIF 72h, 18bp cost charged | tilt=none",
+        "n": 77,
+        "traded_n": 77,
+        "mean_r": 0.6219311868939736,
+        "total_r": 47.88870139083597,
+        "max_dd_r": -9.836786547962816,
+        "mar_like": 4.868327797633634,
+        "wr_pct": 42.857142857142854
+      },
+      {
+        "label": "TIF 72h, 18bp cost charged | tilt=skip_after_loss",
+        "n": 77,
+        "traded_n": 34,
+        "mean_r": 0.75229886829349,
+        "total_r": 25.57816152197866,
+        "max_dd_r": -3.887976048461656,
+        "mar_like": 6.578785775210497,
+        "wr_pct": 47.05882352941176
+      },
+      {
+        "label": "TIF 72h, 18bp cost charged | tilt=half_after_loss",
+        "n": 77,
+        "traded_n": 77,
+        "mean_r": 0.4770575513819132,
+        "total_r": 36.73343145640732,
+        "max_dd_r": -5.986258988660435,
+        "mar_like": 6.136291718415491,
+        "wr_pct": 42.857142857142854
+      },
+      {
+        "label": "TIF 24h, 18bp cost (the CSV r_outcome column) | tilt=none",
+        "n": 77,
+        "traded_n": 77,
+        "mean_r": 0.1542235453075436,
+        "total_r": 11.875212988680858,
+        "max_dd_r": -7.981638102461723,
+        "mar_like": 1.4878165153865177,
+        "wr_pct": 48.05194805194805
+      },
+      {
+        "label": "TIF 24h, 18bp cost (the CSV r_outcome column) | tilt=skip_after_loss",
+        "n": 77,
+        "traded_n": 38,
+        "mean_r": 0.2646287693534502,
+        "total_r": 10.055893235431107,
+        "max_dd_r": -4.110368537712609,
+        "mar_like": 2.446469980287252,
+        "wr_pct": 50.0
+      },
+      {
+        "label": "TIF 24h, 18bp cost (the CSV r_outcome column) | tilt=half_after_loss",
+        "n": 77,
+        "traded_n": 77,
+        "mean_r": 0.14240978067605173,
+        "total_r": 10.965553112055982,
+        "max_dd_r": -6.046003320087166,
+        "mar_like": 1.8136862537974738,
+        "wr_pct": 48.05194805194805
+      }
+    ]
+  }
+}

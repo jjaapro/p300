@@ -98,6 +98,15 @@ OOS (2025+) totals are positive in all headline variants but thin on ETH (data e
 2026-05). Production expectancy to underwrite any go-decision: **~+0.8R/trade, ~42% WR,
 ~30 trades/yr/asset** at these gates — not the research-pool numbers.
 
+> **Correction (2026-09-09, from [validation_audit_2026_09](../validation_audit_2026_09/findings.md)).**
+> The `~+0.8R/trade` above is a **pre-cost** number. The engine that produces it charges
+> no transaction cost at all; the audit reproduced it to +0.0000 and then re-ran the same
+> 72h pool with this study's own 18 bp model. Post-cost expectancy is **+0.685R BTC** and
+> **+0.622R ETH** on the base/no-tilt pool, and **+0.655R** on the shipped per-asset tilt
+> combination. Roughly 0.11R per trade of cost was missing. Use the post-cost figures to
+> underwrite anything; the relative conclusions of this study are unchanged, because both
+> arms of every comparison were costed identically.
+
 ## Files
 
 `gen_trades.py` (trade regeneration), `run_overlays.py` (engine + grid),

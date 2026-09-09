@@ -1,0 +1,382 @@
+{
+  "chento_cost_tif_dsr_sensitivity": {
+    "BTC | skip_after_loss | r72_nocost (published)": {
+      "n": 41,
+      "mean_r": 1.0002321781104107,
+      "sr_per_trade": 0.3587738095461755,
+      "dsr_cons": 0.5381181751860118,
+      "dsr_cons_z": 0.09569394549479612,
+      "dsr_cons_sr_expected": 0.34618722073102925,
+      "dsr_cons_n_trials": 40,
+      "dsr_aggr": 0.3480084645533481,
+      "dsr_aggr_z": -0.3907027997918826,
+      "dsr_aggr_sr_expected": 0.41016280249112885,
+      "dsr_aggr_n_trials": 120
+    },
+    "BTC | skip_after_loss | r72_cost (audit primary)": {
+      "n": 39,
+      "mean_r": 0.962827204846697,
+      "sr_per_trade": 0.3416770967402239,
+      "dsr_cons": 0.4611674089821041,
+      "dsr_cons_z": -0.09749309441736825,
+      "dsr_cons_sr_expected": 0.35518059423856085,
+      "dsr_cons_n_trials": 40,
+      "dsr_aggr": 0.28386907478045614,
+      "dsr_aggr_z": -0.5713858044432074,
+      "dsr_aggr_sr_expected": 0.42081815618647694,
+      "dsr_aggr_n_trials": 120
+    },
+    "BTC | skip_after_loss | r24_cost (CSV column)": {
+      "n": 43,
+      "mean_r": 0.4427715001744276,
+      "sr_per_trade": 0.23155583352287756,
+      "dsr_cons": 0.20093254293072066,
+      "dsr_cons_z": -0.8382949242899183,
+      "dsr_cons_sr_expected": 0.33784413396526136,
+      "dsr_cons_n_trials": 40,
+      "dsr_aggr": 0.09164229519771655,
+      "dsr_aggr_z": -1.330709577554962,
+      "dsr_aggr_sr_expected": 0.4002779088718675,
+      "dsr_aggr_n_trials": 120
+    },
+    "ETH | half_after_loss | r72_nocost (published)": {
+      "n": 77,
+      "mean_r": 0.5391701619510357,
+      "sr_per_trade": 0.286737602236206,
+      "dsr_cons": 0.6539302848940227,
+      "dsr_cons_z": 0.3959533671830649,
+      "dsr_cons_sr_expected": 0.251150606731954,
+      "dsr_cons_n_trials": 40,
+      "dsr_aggr": 0.4520628270074238,
+      "dsr_aggr_z": -0.12045130206688939,
+      "dsr_aggr_sr_expected": 0.29756337188587756,
+      "dsr_aggr_n_trials": 120
+    },
+    "ETH | half_after_loss | r72_cost (audit primary)": {
+      "n": 77,
+      "mean_r": 0.4770575513819132,
+      "sr_per_trade": 0.2553957329435434,
+      "dsr_cons": 0.5182761814796965,
+      "dsr_cons_z": 0.045827629178088615,
+      "dsr_cons_sr_expected": 0.251150606731954,
+      "dsr_cons_n_trials": 40,
+      "dsr_aggr": 0.32447747212704137,
+      "dsr_aggr_z": -0.4552144799580177,
+      "dsr_aggr_sr_expected": 0.29756337188587756,
+      "dsr_aggr_n_trials": 120
+    },
+    "ETH | half_after_loss | r24_cost (CSV column)": {
+      "n": 77,
+      "mean_r": 0.14240978067605173,
+      "sr_per_trade": 0.11668310471172641,
+      "dsr_cons": 0.0911386402799792,
+      "dsr_cons_z": -1.3337759943664318,
+      "dsr_cons_sr_expected": 0.251150606731954,
+      "dsr_cons_n_trials": 40,
+      "dsr_aggr": 0.03639527405425225,
+      "dsr_aggr_z": -1.7941417412154954,
+      "dsr_aggr_sr_expected": 0.29756337188587756,
+      "dsr_aggr_n_trials": 120
+    }
+  },
+  "chento_flat_max": {
+    "chento_BTC_postloss_mult": {
+      "param_values": [
+        0.0,
+        0.5,
+        1.0
+      ],
+      "scores": {
+        "0.0": 7.316591356958626,
+        "0.5": 6.13390023233831,
+        "1.0": 5.1542057471470635
+      },
+      "chosen": 0.0,
+      "chosen_score": 7.316591356958626,
+      "peak_param": 0.0,
+      "peak_score": 7.316591356958626,
+      "chosen_is_peak": true,
+      "flat_max_score": -1.0297806574358328,
+      "relative_drop": -0.22859529603566428,
+      "verdict": "OK",
+      "metric": "MAR-like (total R / |maxDD R|)"
+    },
+    "chento_ETH_postloss_mult": {
+      "param_values": [
+        0.0,
+        0.5,
+        1.0
+      ],
+      "scores": {
+        "0.0": 6.578785775210497,
+        "0.5": 6.136291718415491,
+        "1.0": 4.868327797633634
+      },
+      "chosen": 0.5,
+      "chosen_score": 6.136291718415491,
+      "peak_param": 0.0,
+      "peak_score": 6.578785775210497,
+      "chosen_is_peak": false,
+      "flat_max_score": -0.8083415166513556,
+      "relative_drop": -0.06726129573579027,
+      "verdict": "OK",
+      "metric": "MAR-like (total R / |maxDD R|)"
+    },
+    "chento_BTC_okx_z_threshold": {
+      "param_values": [
+        -0.5,
+        -0.25,
+        0.0,
+        0.25,
+        0.5,
+        1.0
+      ],
+      "scores": {
+        "-0.5": 2.716124430532879,
+        "-0.25": 4.175415445570168,
+        "0.0": 4.137641537806538,
+        "0.25": 5.031217080961715,
+        "0.5": 2.2736585460729772,
+        "1.0": 3.2328428245623293
+      },
+      "chosen": 0.0,
+      "chosen_score": 4.137641537806538,
+      "peak_param": 0.25,
+      "peak_score": 5.031217080961715,
+      "chosen_is_peak": false,
+      "flat_max_score": -1.1982028631346484,
+      "relative_drop": -0.1422398863324688,
+      "verdict": "OK",
+      "metric": "MAR-like (total R / |maxDD R|), shipped tilt applied"
+    },
+    "chento_ETH_okx_z_threshold": {
+      "param_values": [
+        -0.5,
+        -0.25,
+        0.0,
+        0.25,
+        0.5,
+        1.0
+      ],
+      "scores": {
+        "-0.5": 1.426368805928758,
+        "-0.25": 1.7734087181388871,
+        "0.0": 1.8136862537974738,
+        "0.25": 3.560458918557888,
+        "0.5": 4.657639649304143,
+        "1.0": -0.48739862105047027
+      },
+      "chosen": 0.0,
+      "chosen_score": 1.8136862537974738,
+      "peak_param": 0.5,
+      "peak_score": 4.657639649304143,
+      "chosen_is_peak": false,
+      "flat_max_score": -1.4380762185353182,
+      "relative_drop": 0.5738494003611524,
+      "verdict": "SHARP_PEAK",
+      "metric": "MAR-like (total R / |maxDD R|), shipped tilt applied"
+    }
+  },
+  "chento_pbo_partial": {
+    "BTC": {
+      "pbo": 0.1388888888888889,
+      "n_variants": 4,
+      "n_rows": 101,
+      "s": 10,
+      "n_combos": 252,
+      "median_logit": 1.3862943611198908,
+      "variants": [
+        "tilt=none",
+        "tilt=skip_after_loss",
+        "tilt=half_after_loss",
+        "constant-half (stand-in for half_after_2stops_7d, whose timestamps-based rule was not re-run)"
+      ],
+      "caveat": "PARTIAL \u2014 4 of the grid's 40 variants; CSCV at N=4 is weak and this number should not be read as the study's PBO."
+    },
+    "ETH": {
+      "pbo": 0.11904761904761904,
+      "n_variants": 4,
+      "n_rows": 77,
+      "s": 10,
+      "n_combos": 252,
+      "median_logit": 1.3862943611198908,
+      "variants": [
+        "tilt=none",
+        "tilt=skip_after_loss",
+        "tilt=half_after_loss",
+        "constant-half (stand-in for half_after_2stops_7d, whose timestamps-based rule was not re-run)"
+      ],
+      "caveat": "PARTIAL \u2014 4 of the grid's 40 variants; CSCV at N=4 is weak and this number should not be read as the study's PBO."
+    }
+  },
+  "adx_reproduction_check": {
+    "study_end_date": "2026-06-25",
+    "published_baseline": {
+      "n": 34,
+      "ret_pct": 2769,
+      "max_dd_pct": -27.3,
+      "mar": 1.78,
+      "source": "adx_study/findings.md 2026-06-26"
+    },
+    "reproduced_baseline": {
+      "n": 34,
+      "ret_pct": 2768.5113472678877,
+      "max_dd_pct": -27.34273010000003,
+      "mar": 1.7760915884248751
+    },
+    "published_tier2": {
+      "n": 27,
+      "ret_pct": 2483,
+      "max_dd_pct": -15.1,
+      "mar": 3.09,
+      "source": "adx_study/findings.md + docs/calibration/adx.md"
+    },
+    "reproduced_tier2": {
+      "n": 27,
+      "ret_pct": 2483.2414339232196,
+      "max_dd_pct": -15.12349381412768,
+      "mar": 3.090501705801238
+    }
+  },
+  "adx_exposure_decomposition": {
+    "B_adx_baseline": {
+      "excess_raw_daily_sharpe_ann": -0.06398671426874984,
+      "excess_raw_caveat": "unequal exposure \u2014 not decision-relevant",
+      "vol_match_scale": 1.30134245387273,
+      "excess_volmatched_daily_sharpe_ann": 0.08659186754172463,
+      "excess_dsr_cons": 0.05758820379771379,
+      "excess_dsr_aggr": 0.026399044506972558,
+      "excess_block_sr_p05": -0.4914389604375937,
+      "excess_block_sr_p95": 0.6348846183824918,
+      "excess_n_days": 3093,
+      "sharpe_diff_point": 0.0971569250374588,
+      "sharpe_diff_p05": -0.6577114781762993,
+      "sharpe_diff_p95": 0.8964323787277363,
+      "sharpe_diff_p_gt_0": 0.573,
+      "n_days": 3094,
+      "days_long": 787,
+      "days_short": 693,
+      "time_in_market_pct": 47.83451842275372,
+      "time_long_pct": 25.436328377504847,
+      "time_short_pct": 22.398190045248867,
+      "strategy_daily_sharpe_ann": 0.8389890104569215,
+      "btc_buy_hold_daily_sharpe_ann": 0.7299754902810356,
+      "btc_buy_hold_dsr_n1": 0.9824126749002207,
+      "sharpe_ratio_vs_buy_hold": 1.149338603319293,
+      "alpha_in_position_days": {
+        "n_obs": 1281,
+        "alpha_daily_pct": 0.165621952400355,
+        "alpha_annual_pct": 60.45201262612957,
+        "beta": 0.08540497120236801,
+        "r_squared": 0.007324658475204249,
+        "t_alpha_nw": 1.65864173909142,
+        "p_alpha_nw": 0.09718800578989127,
+        "t_beta_nw": 0.6329440824846622,
+        "nw_lag": 5,
+        "status": "ok"
+      },
+      "alpha_long_days_only": {
+        "n_obs": 679,
+        "alpha_daily_pct": 0.0003795200139392146,
+        "alpha_annual_pct": 0.1385248050878133,
+        "beta": 0.9945249586691566,
+        "r_squared": 0.9998506228242643,
+        "t_alpha_nw": 0.332557191352167,
+        "p_alpha_nw": 0.7394685620213339,
+        "t_beta_nw": 940.409981840432,
+        "nw_lag": 5,
+        "status": "ok"
+      }
+    },
+    "B_adx_tier2": {
+      "excess_raw_daily_sharpe_ann": -0.02054330850105844,
+      "excess_raw_caveat": "unequal exposure \u2014 not decision-relevant",
+      "vol_match_scale": 1.6030523237117493,
+      "excess_volmatched_daily_sharpe_ann": 0.2960096844381687,
+      "excess_dsr_cons": 0.1667353371351738,
+      "excess_dsr_aggr": 0.09196395155627829,
+      "excess_block_sr_p05": -0.30058617144399996,
+      "excess_block_sr_p95": 0.8565066614105659,
+      "excess_n_days": 3093,
+      "sharpe_diff_point": 0.37525358057436586,
+      "sharpe_diff_p05": -0.4002501827135016,
+      "sharpe_diff_p95": 1.1781853545579934,
+      "sharpe_diff_p_gt_0": 0.7815,
+      "n_days": 3094,
+      "days_long": 661,
+      "days_short": 460,
+      "time_in_market_pct": 36.23141564318035,
+      "time_long_pct": 21.363930187459598,
+      "time_short_pct": 14.86748545572075,
+      "strategy_daily_sharpe_ann": 1.1209316047117106,
+      "btc_buy_hold_daily_sharpe_ann": 0.7299754902810356,
+      "btc_buy_hold_dsr_n1": 0.9824126749002207,
+      "sharpe_ratio_vs_buy_hold": 1.5355743030223652,
+      "alpha_in_position_days": {
+        "n_obs": 942,
+        "alpha_daily_pct": 0.24601653454152556,
+        "alpha_annual_pct": 89.79603510765683,
+        "beta": 0.19921850912567776,
+        "r_squared": 0.04010368802299913,
+        "t_alpha_nw": 2.4725698552132576,
+        "p_alpha_nw": 0.013414549412671357,
+        "t_beta_nw": 1.6459129387263833,
+        "nw_lag": 5,
+        "status": "ok"
+      },
+      "alpha_long_days_only": {
+        "n_obs": 573,
+        "alpha_daily_pct": -0.001070252125110008,
+        "alpha_annual_pct": -0.3906420256651529,
+        "beta": 0.995670494981536,
+        "r_squared": 0.9997944100844889,
+        "t_alpha_nw": -0.8224437496106471,
+        "p_alpha_nw": 0.41082438845802,
+        "t_beta_nw": 902.1770191554424,
+        "nw_lag": 5,
+        "status": "ok"
+      }
+    }
+  },
+  "adx_flat_max_atr_mult": {
+    "param_values": [
+      2.5,
+      3.0,
+      3.5,
+      4.0,
+      4.5,
+      5.0
+    ],
+    "scores": {
+      "2.5": 0.7997660306648322,
+      "3.0": 1.587968658803735,
+      "3.5": 3.3053143703933854,
+      "4.0": 2.9470937458687905,
+      "4.5": 3.402697665067577,
+      "5.0": 3.548934762979191
+    },
+    "chosen": 4.0,
+    "chosen_score": 2.9470937458687905,
+    "peak_param": 5.0,
+    "peak_score": 3.548934762979191,
+    "chosen_is_peak": false,
+    "flat_max_score": -0.7403832191013437,
+    "relative_drop": 0.004796290739646774,
+    "verdict": "OK",
+    "metric": "harness MAR (CAGR / |maxDD|)"
+  },
+  "adx_pbo": {
+    "status": "SKIPPED",
+    "reason": "no per-variant return series exist on disk for the ADX experiment grid (experiments.py prints to stdout and saves nothing); reconstructing 17 variants would be re-running the sweep, which this study forbids."
+  },
+  "trial_counts": {
+    "chento_conservative": 40,
+    "chento_conservative_source": "run_overlays.py:183-201 grid = 5 exit x 4 tilt x 2 H-tag; confirmed by 120 data rows in results_backonly/overlay_summary.csv (40 x 3 scopes)",
+    "chento_aggressive": 120,
+    "chento_aggressive_source": "STATED ASSUMPTION: 40 overlay + 30 stop/target grid (chento_journal/validation_target_sweep_5y.py:64-65) + ~25 B-block feature screen (validation_B*.py files) + 7 ladder tiers (memory/project_chento_triple_optimized_config.md) + ~18 TIF/OKX-z/regime/filter variants across the same memory, project_tif_72h_optimal.md, project_chento_regime_filter.md, project_cross_exchange_okx_gate.md. Sum, not product: the searches were sequential.",
+    "adx_conservative": 17,
+    "adx_conservative_source": "adx_study/experiments.py:64-91 \u2014 17 labelled variants on disk",
+    "adx_aggressive": 40,
+    "adx_aggressive_source": "STATED ASSUMPTION: 17 + the funding-veto z-threshold sweep described in adx_study/findings.md (2026-06-27 addendum; script not on disk) + the 2026-05-04 asymmetric-filter and 2026-05-01 signal-source rounds in docs/calibration/adx.md and memory/project_s003_calibration.md"
+  }
+}

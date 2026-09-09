@@ -638,9 +638,19 @@ concurrent exposure comparable to the pre-V2 baseline.
    upstream ML R4 gate had within-day look-ahead and was REPLACED by a
    rule-based gate. Not every input has been audited at the same depth.
 
-4. **GOLD overlay is dropped.** Upstream P-100 J+ MLgate had a 15–55% GOLD
-   allocation as crisis hedge. p300 has no `macro_daily` table and the asset
-   isn't wired. The crypto side now stands at 1.0 weight.
+4. **GOLD overlay is dropped — now on evidence, not on missing data.** Upstream
+   P-100 J+ MLgate had a 15–55% GOLD allocation as crisis hedge. The old reason
+   for dropping it ("p300 has no `macro_daily` table and the asset isn't
+   wired") is out of date: `macro_daily` and `paxg_spot_1h` were both added
+   2026-09-06. The question was then studied properly and killed —
+   [studies/notebooks/anchor_allocator_study/findings.md](studies/notebooks/anchor_allocator_study/findings.md)
+   (2026-09-07, CONCLUDED KILL, all three pre-registered clauses fired):
+   overflow-to-anchor as specified *lowers* full-period Sharpe by 0.23 and
+   *deepens* max drawdown by 6.6pp over 2020-01→2026-09. A **static** gold
+   sleeve with no overflow is the only positive cell (+0.39 Sharpe, −3.9pp MDD)
+   — that is gold beta over this era, not the overflow mechanism. Routing idle
+   capital to cash yield alone is worth +0.11 Sharpe at unchanged drawdown. The
+   crypto side stands at 1.0 weight; no production change was made.
 
 5. **FOMC sleeve has only 11 in-sample backtest events** (added 2026-04-30).
    100% in-sample win rate. Bootstrap on the 52-event historical cohort
@@ -655,9 +665,27 @@ concurrent exposure comparable to the pre-V2 baseline.
    post-hoc from V3's Thursday attribution. V4 backtest comparisons are
    in-sample; live paper is the first genuine OOS record.
 
-8. **Sharpe / MDD numbers are not deflated for multiple-testing.** No
-   bootstrap CI, no Monte Carlo, no White's reality check. Treat point
-   estimates as suggestive only. **Sharpe is computed with risk-free rate = 0**
+8. **Deflation and bootstrap CIs now exist — and nothing clears the bar.**
+   Headline Sharpes here are still *undeflated point estimates*; the deflated
+   ones are in
+   [studies/notebooks/validation_audit_2026_09/findings.md](studies/notebooks/validation_audit_2026_09/findings.md)
+   (2026-09-08), which ran the ported validation toolkit over p300's own record.
+   Headlines: **no series in the audit reaches DSR ≥ 0.95** — the best is
+   chento BTC+ETH combined at **0.876** (N=40 documented variants) / 0.744
+   (N=120); chento BTC alone 0.726 / 0.550; ADX Tier-2 0.732 (N=17) / 0.496
+   (N=40). Harvey-Liu Holm cuts ADX Tier-2's daily Sharpe 1.12 → 0.69 and
+   chento BTC's 1.02 → 0. **The paper ledgers are statistically empty**: six
+   bots have six closed trades between them, no single-strategy series exceeds
+   13, and the entire 13-trade legacy R4 paper record sits inside the
+   pre-2026-05-16 untrustworthy window (zero trustworthy R4 paper trades
+   remain). Two measurement corrections fell out of the audit: chento's quoted
+   **~+0.8R/trade is a zero-cost figure** (+0.69R BTC / +0.62R ETH once the
+   source pool's own 18bp model is charged), and the ADX study's "Sharpe 2.09"
+   is a **per-trade t-statistic**, not an annualised Sharpe (that is 0.84
+   baseline / 1.12 Tier-2). The audit imposed no KILL rules and changed no
+   config. Still missing: White's reality check / SPA, and a full-grid PBO
+   (only a partial 4-variant tilt-family PBO was reconstructible from disk).
+   **Sharpe is computed with risk-free rate = 0**
    — `(mean / sd) × √365` in
    [strategy_health.py](strategies/support/strategy_health.py),
    [backtest_runner.py](backtest_runner.py), and the report notebooks. At a
