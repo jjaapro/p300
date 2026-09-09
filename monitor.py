@@ -62,7 +62,10 @@ BOT_EXPECTATIONS: dict[str, int] = {
     "short_squeeze": 14 * 3600,
     "adx": 26 * 3600,          # daily entry decision + continuous sweep
     "carry": 26 * 3600,        # daily funding decision
-    "r4": 2 * 3600,            # evaluates every tick when inputs exist
+    "r4": 2 * 3600,
+    # Hourly inputs, so one evaluation per closed hour; 2h tolerates a
+    # missed hour before it counts as silent.
+    "squeeze_bull": 2 * 3600,
 }
 
 OVERDUE_GRACE_S = 2 * 3600

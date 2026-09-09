@@ -36,6 +36,7 @@ UNIT_SCRIPTS: dict[str, str] = {
     "adx":           "bots/adx/runner.py",
     "carry":         "bots/carry/runner.py",
     "r4":            "bots/r4/runner.py",
+    "squeeze_bull":  "bots/squeeze_bull/runner.py",
 }
 
 # The legacy monolith embeds its own feed thread — a running bot.py means

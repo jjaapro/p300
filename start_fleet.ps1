@@ -59,8 +59,12 @@
 #>
 [CmdletBinding()]
 param(
+    # r4 is deliberately NOT in the defaults (2026-09-09). It is built, wired and
+    # tested, but held pending a mechanism: it is a calendar timing anomaly with no
+    # explanation for why it works or decays, so it is opt-in only until that call
+    # is made. Start it with:  .\start_fleet.ps1 -Units r4
     [string[]]$Units = @("feed", "chento_v3", "chento_v3_eth", "short_squeeze",
-                         "adx", "carry", "r4", "dashboard"),
+                         "adx", "carry", "dashboard"),
     [switch]$Monitor,
     [switch]$SkipGapFix,
     [switch]$ForceFeed,
@@ -94,6 +98,7 @@ $Fleet = [ordered]@{
     adx           = @{ Script = "bots/adx/runner.py";           Args = @() }
     carry         = @{ Script = "bots/carry/runner.py";         Args = @() }
     r4            = @{ Script = "bots/r4/runner.py";            Args = @() }
+    squeeze_bull  = @{ Script = "bots/squeeze_bull/runner.py"; Args = @() }
     dashboard     = @{ Script = "dashboard/server.py";          Args = @() }
     monitor       = @{ Script = "monitor.py";                   Args = @(); Hourly = $true }
 }

@@ -55,6 +55,17 @@ BOTS: dict[str, dict] = {
                          "multi-month droughts are designed behavior "
                          "(regime-complement to CARRY)"),
     },
+    "squeeze_bull": {
+        "display": "Squeeze Bull (BTC OI flush)",
+        "variant_id": "bot_squeeze_bull_v1",
+        "asset": "BTC",
+        "card": "squeeze_bull.md",
+        "calibration": "squeeze_bull.md",
+        "diag": REPO / "bots" / "squeeze_bull" / "logs" / "diag.jsonl",
+        "cadence_note": ("bull-regime only: ~25 fires/yr on average, and ZERO "
+                         "outside a bull regime (28% of recent days). Silence "
+                         "in a flat or bear tape is correct behaviour"),
+    },
     "adx": {
         "display": "ADX S-003 T2 (BTC)",
         "variant_id": "bot_adx_v1",
@@ -224,6 +235,33 @@ def params(bot: str) -> list[dict]:
                f"negative-funding days", "", ssrc),
             _p("Costs", "round trip", s.ENTRY_EXIT_COST_PCT, "% notional",
                ssrc),
+        ]
+
+    if bot == "squeeze_bull":
+        from bots.squeeze_bull import config as b
+        from strategies import trades as t
+        from strategies.sleeves.squeeze_bull import config as s
+        bsrc = "bots/squeeze_bull/config.py"
+        ssrc = "strategies/sleeves/squeeze_bull/config.py"
+        return [
+            _p("Sizing", "risk per trade", b.RISK_PCT, "% of capital over the stop", bsrc),
+            _p("Sizing", "notional cap", b.NOTIONAL_MAX_X, "x capital (inert at a 2% stop)", bsrc),
+            _p("Sizing", "paper capital", b.CAPITAL_USDT, "USDT", bsrc),
+            _p("Cadence", "tick", b.TICK_SECONDS, "s", bsrc),
+            _p("Cadence", "entry evaluation", "once per closed hourly bar", "", ssrc),
+            _p("Cadence", "cooldown", s.COOLDOWN_HOURS, "h after any kept flush", ssrc),
+            _p("Signal", "OI change 4h", f"<= {s.FLUSH_THRESHOLD:.0%}", "forced deleveraging", ssrc),
+            _p("Signal", "price change 4h", f"<= {s.PRICE_DIR_THRESHOLD:.1%}", "long flush", ssrc),
+            _p("Signal", "regime gate", f"30d return > +{s.BULL_THRESHOLD:.0%}",
+               f"backward-only, shifted {s.REGIME_SHIFT_DAYS}d (causal)", ssrc),
+            _p("Exits", "stop / target", f"-{s.STOP_PCT:.0%} / +{s.TARGET_PCT:.0%}",
+               "1.5 R gross, stop checked first", ssrc),
+            _p("Exits", "time stop", s.TIF_HOURS, "h", ssrc),
+            _p("Costs", "round trip + slippage",
+               f"{t.DEFAULT_COST_BP_RT:g} + {t.DEFAULT_SLIPPAGE_BP_RT:g}", "bp",
+               "strategies/trades.py"),
+            _p("Data", "mgmt / entry tables",
+               f"{', '.join(b.MGMT_TABLES)} / {', '.join(b.ENTRY_TABLES)}", "", bsrc),
         ]
 
     if bot == "r4":
