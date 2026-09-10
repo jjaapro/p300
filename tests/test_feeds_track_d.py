@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytest
 
@@ -148,8 +148,69 @@ def test_deribit_refresh_throttles_and_snapshots_liquid_subset(tmp_prod, monkeyp
     # a non-snapshot hour re-runs nothing either; a new day re-runs the dailies only
     later = NOW.replace(hour=13)
     assert deribit.refresh(now=later, http_get=_fake_api(calls)) == {}
+    # A day later the dailies re-run, AND the snapshot catches up: the newest
+    # row is ~27h old, past SNAPSHOT_MAX_AGE_S, so the 00:05/08:05 window was
+    # missed and waiting for the next one would breach the 18h contract.
     nxt = NOW.replace(day=7, hour=3)
-    assert set(deribit.refresh(now=nxt, http_get=_fake_api(calls))) == {"dvol_BTC", "instruments_BTC"}
+    assert set(deribit.refresh(now=nxt, http_get=_fake_api(calls))) == {
+        "dvol_BTC", "instruments_BTC", "snapshot_BTC"}
+
+
+def test_deribit_snapshot_catches_up_after_downtime(tmp_prod, monkeypatch):
+    """A missed 00:05/08:05 window is not recoverable by waiting, so a snapshot
+    older than SNAPSHOT_MAX_AGE_S makes one due at any hour. Two overnight
+    outages in 2026-09 left a STALE TABLE alert that running the feed could not
+    clear."""
+    monkeypatch.setattr(deribit, "REQUEST_GAP_S", 0)
+    monkeypatch.setattr(deribit, "ASSETS", ("BTC",))
+    calls: list = []
+    deribit.refresh(now=NOW, http_get=_fake_api(calls))          # seeds a snapshot
+    deribit._done.clear()
+
+    # 15h later, off-window: within the legitimate 08:05 -> 00:05 gap, not due.
+    assert "snapshot_BTC" not in deribit.refresh(
+        now=NOW + timedelta(hours=15), http_get=_fake_api(calls))
+
+    # 17h later, off-window: the window was missed, so catch up now.
+    out = deribit.refresh(now=NOW + timedelta(hours=17), http_get=_fake_api(calls))
+    assert out.get("snapshot_BTC") == 1
+
+    # ...and only once per hour, so a repeat tick does not hammer the API.
+    assert "snapshot_BTC" not in deribit.refresh(
+        now=NOW + timedelta(hours=17, minutes=3), http_get=_fake_api(calls))
+
+
+def test_catch_up_is_scoped_per_asset(tmp_prod, monkeypatch):
+    """The table has no asset column, so the age query must filter by
+    instrument prefix. Without it the first asset's catch-up write makes the
+    table look fresh and the second asset is silently skipped for another 16h
+    -- exactly what happened on the 2026-09-10 catch-up (BTC wrote 496 rows,
+    ETH did not run)."""
+    monkeypatch.setattr(deribit, "REQUEST_GAP_S", 0)
+    con = sqlite3.connect(str(tmp_prod))
+    con.execute(f"CREATE TABLE {deribit.DAILY_TABLE} "
+                "(instrument TEXT, timestamp INTEGER, PRIMARY KEY (instrument, timestamp))")
+    # BTC is fresh, ETH is a day stale.
+    con.execute(f"INSERT INTO {deribit.DAILY_TABLE} VALUES ('BTC-2OCT26-70000-C', ?)",
+                (int(NOW.timestamp()),))
+    con.execute(f"INSERT INTO {deribit.DAILY_TABLE} VALUES ('ETH-2OCT26-4000-C', ?)",
+                (int((NOW - timedelta(hours=25)).timestamp()),))
+    con.commit(); con.close()
+
+    assert deribit._snapshot_age_s(NOW, "BTC") == pytest.approx(0, abs=2)
+    assert deribit._snapshot_age_s(NOW, "ETH") == pytest.approx(25 * 3600, abs=2)
+    # unscoped would see only the fresh BTC row and hide the stale ETH one
+    assert deribit._snapshot_age_s(NOW) == pytest.approx(0, abs=2)
+
+
+def test_snapshot_age_is_none_when_unreadable(tmp_prod):
+    """No table and no rows both mean "cannot tell", which must never be read
+    as due — otherwise a fresh DB would snapshot on every single tick."""
+    assert deribit._snapshot_age_s(NOW) is None
+    con = sqlite3.connect(str(tmp_prod))
+    con.execute(f"CREATE TABLE {deribit.DAILY_TABLE} (instrument TEXT, timestamp INTEGER)")
+    con.commit(); con.close()
+    assert deribit._snapshot_age_s(NOW) is None
 
 
 def test_deribit_refresh_noops_under_simulated_clock(tmp_prod):

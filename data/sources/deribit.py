@@ -56,6 +56,13 @@ API = "https://www.deribit.com/api/v2/public/"
 ASSETS = ("BTC", "ETH")
 SNAPSHOT_HOURS_UTC = (0, 8)
 SNAPSHOT_MIN_MINUTE = 5           # let the 08:00 settlement print first
+# Longest legitimate gap between snapshots (08:05 -> 00:05). If the newest
+# row is older than this the scheduled window was MISSED -- the machine was
+# off, or the feed restarted outside 00:05-00:59 / 08:05-08:59 -- and waiting
+# for the next window would leave the table stale for up to another 16h.
+# Twice in 2026-09 (a restart, then an overnight crash) that produced a
+# STALE TABLE alert that no amount of running the feed could clear.
+SNAPSHOT_MAX_AGE_S = 16 * 3600
 LIQUID_MAX_DAYS = 90
 LIQUID_MAX_LOG_MONEYNESS = 0.30
 REQUEST_GAP_S = 0.5
@@ -225,6 +232,36 @@ def snapshot_options(asset: str, *, now: datetime | None = None,
 
 # ─── Orchestration ────────────────────────────────────────────────────────────
 
+def _snapshot_age_s(now: datetime, asset: str | None = None) -> float | None:
+    """Age in seconds of the newest option-book snapshot row, or None when the
+    table is unreadable or empty (a fresh DB, or a test with no schema). None
+    means "cannot tell", and the caller must not treat that as due.
+
+    `asset` scopes the query to that asset's instruments. It MUST be passed
+    from the per-asset loop: the table has no asset column, and without the
+    scope the first asset's catch-up write makes the table look fresh and the
+    second asset is skipped for another 16h (observed on the 2026-09-10
+    catch-up, where BTC wrote 496 rows and ETH silently did not run)."""
+    try:
+        con = sqlite3.connect(f"file:{_db.PROD_DB}?mode=ro", uri=True)
+    except sqlite3.Error:
+        return None
+    try:
+        if asset:
+            row = con.execute(
+                f"SELECT MAX(timestamp) FROM {DAILY_TABLE} WHERE instrument LIKE ?",
+                (f"{asset}-%",)).fetchone()
+        else:
+            row = con.execute(f"SELECT MAX(timestamp) FROM {DAILY_TABLE}").fetchone()
+    except sqlite3.OperationalError:
+        return None
+    finally:
+        con.close()
+    if not row or row[0] is None:
+        return None
+    return now.timestamp() - float(row[0])
+
+
 def refresh(*, now: datetime | None = None, force: bool = False,
             http_get: Callable[[str], dict] = _http_get) -> dict[str, int]:
     """Throttled entry point for the feed loop. Returns {feed: rows or -1};
@@ -248,6 +285,16 @@ def refresh(*, now: datetime | None = None, force: bool = False,
             time.sleep(REQUEST_GAP_S)
         bucket = f"snap:{asset}:{day}:{now.hour}"
         due = now.hour in SNAPSHOT_HOURS_UTC and now.minute >= SNAPSHOT_MIN_MINUTE
+        if not due:
+            # Catch-up after downtime: a missed window is not recoverable by
+            # waiting, so take one snapshot now. Bucketed by hour so a failing
+            # catch-up retries hourly rather than on every 60s tick.
+            age = _snapshot_age_s(now, asset)
+            if age is not None and age > SNAPSHOT_MAX_AGE_S:
+                due = True
+                bucket = f"snap:{asset}:catchup:{int(now.timestamp()) // 3600}"
+                log.info(f"deribit {asset} snapshot catch-up: newest row is "
+                         f"{age / 3600:.1f}h old (> {SNAPSHOT_MAX_AGE_S / 3600:.0f}h)")
         if force or (due and bucket not in _done):
             try:
                 out[f"snapshot_{asset}"] = snapshot_options(asset, now=now, http_get=http_get)
