@@ -7,6 +7,179 @@ discussion) can pick it up.
 
 ---
 
+## Project status and roadmap — 2026-09-12
+
+**This section is the roadmap.** It is updated in the same commit as anything that ships,
+is held, is killed or is decided (user request 2026-09-12: the roadmap must reflect the
+current project state). Add a new dated block above the previous one; the topic entries
+further down stay as they are.
+
+### Where we are
+
+- **What runs:** the paper fleet started by `start_fleet.ps1` — `feed.py` plus seven bot
+  units (`chento_v3` BTC, `chento_v3_eth`, `short_squeeze`, `adx`, `carry`, `squeeze_bull`,
+  `r4`) and the dashboard; nine bot variants (the two squeeze bots each carry a no-stop
+  twin; `r4` is one variant with its ETH windows only). The legacy orchestrator path
+  (`bot.py`, variant `p300_aggressive_v2_v1_0`: EMA_BTC, ETH_DAILY, THU_BEAR, PDO, CPR,
+  FOMC, AI_QUANT) has been dormant since 2026-06-11; its row is still `enabled = 1` but
+  nothing dispatches it.
+- **Paper evidence is thin:** 36 paper trades in total, 9 by the bots — ADX 1 open, CARRY
+  1 open, SQUEEZE_BULL 1 open, chento BTC 6 rows that are 3 signals double-booked during the
+  2026-08-15..24 doubled-fleet incident, chento ETH 0 (three short fires, all filtered),
+  SHORT_SQUEEZE 0, r4 0. Nothing clears an honest DSR
+  ([validation_audit_2026_09](studies/notebooks/validation_audit_2026_09/findings.md)); the
+  constraint is breadth of evidence, not edge.
+- **Shipped 2026-09-12** (commits `5df9772` / `2e9d596` / `5418bbb` on `main`, not pushed):
+  measured execution costs (chento 10 bp, SHORT_SQUEEZE 10, SQUEEZE_BULL 7, ADX 11), CARRY's
+  trailing-30-day cumulative-funding exit, no-stop paper twins for SQUEEZE_BULL (0.5×
+  notional) and SHORT_SQUEEZE (1×) with re-cuts fixed in advance at 20 / 30 paired fires,
+  pool-plan decisions D8 (ADX + CARRY in one account) and F-EXEC (execution-layer
+  requirements), `GATE_VALIDATION.md` §8.
+- **Uncommitted, same day:** R4 runs its ETH windows only and is back in the fleet defaults
+  with the 2026-09-09 hold lifted for that pair ([docs/calibration/r4.md](docs/calibration/r4.md));
+  `botlib.ensure_bot_variant` refreshes a bot's label from config; pool-plan D9 (no-stop
+  sleeves are paired with something stable or isolated); this section; the README and
+  OPERATIONS status pointers.
+- **The bots have not been restarted** for any of the above, and r4 has not been started.
+- **Active plan documents:** [bot_extraction_plan.md](studies/material/plans/bot_extraction_plan.md)
+  (the architecture in force: one bot = one variant = one future sub-account; supersedes
+  pool-plan phases B / D / F), [pool_restructure_implementation_plan.md](studies/material/plans/pool_restructure_implementation_plan.md)
+  (design record, decisions D1–D9, dated status block at its top),
+  [multi_asset_chento_plan.md](studies/material/plans/multi_asset_chento_plan.md) (Phase B
+  as written — one runner, per-asset variant ids — is not what shipped), this file.
+
+### Next, in order
+
+1. **Operator.** `.\start_fleet.ps1` starts r4 and anything not running; stop and restart
+   the six other bots so the 2026-09-12 code loads; `python monitor.py --deep` the next day;
+   commit and push the uncommitted batch.
+2. **Paper evidence — waiting, not work.** First fires of the no-stop twins and of r4 ETH;
+   weekly `strategy_health` per bot; the paired re-cut script for the squeeze twins must
+   exist before n = 20 (topic entry below).
+3. **Research queue — pre-registered notebooks, user picks the order.**
+   1. Shelf re-cost under the no-stop style at measured per-leg costs (R4 windows,
+      post-cascade reversion, absorption, footprint C3, PDO), then fleet-level compounding
+      through the liquidation walk. Pass bar: net ≥ 2× the measured round trip, both halves.
+   2. Condition-only exits (inverse signal, regime flip, flow reversal, OI rebuild, funding
+      normalisation) on chento, SQUEEZE_BULL, SHORT_SQUEEZE and ADX at measured cost with
+      mark-to-market drawdown; fixed-R on current equity against an exposure-matched
+      buy-and-hold with start-date sensitivity (`studies/lib/validation/benchmark.py`).
+   3. ETH/BTC through the two-axis screen: the regime-conditional spread (strong_bull days
+      only; +113 bp/day, t 3.4 since the ETH ETF, but one bull episode; unconditional
+      correlation 0.83 at every timeframe, no lead-lag, ratio ≈ random walk) and hedged
+      expressions of existing signals. ETH_DAILY is the dormant expression; a
+      `bots/eth_regime` extraction is the path if it clears.
+   4. Second assets where the data exists and nothing is studied: SHORT_SQUEEZE on ETH,
+      CARRY on ETH. Closed: ADX on ETH (KILL). Blocked on data: SQUEEZE_BULL on ETH (no ETH
+      open-interest feed). Alts: the 150-symbol screener tables are daily / 1 h only and
+      that feed stopped 2026-05-23.
+   5. R4 target-exit sweep, the one untested exit refinement; no entry conditioner exists
+      (2026-09-12 check, 11 cells, largest |t| 0.9).
+4. **Code, each needs a go-ahead before the first commit.**
+   1. **Bot = directory = strategy** (direction agreed 2026-09-12; topic entry below):
+      strip the orchestrator interface from the running sleeves, move each under its bot
+      as its strategy module, retire `bot.py` / the orchestrator / sim mode, archive the
+      eight dormant sleeves. Absorbs the chento BTC + ETH single-variant fold (multi-asset
+      plan Phase B), the `chento_limit_bid` archival (pool-plan A7) and the legacy variant
+      row. Starts after step 1: the file moves happen between a fleet stop and a restart.
+   2. A DB-level per-bar unique key for paper trades (variant | sleeve | asset | bar) so a
+      doubled process cannot double-book.
+   3. `strategy_health.KNOWN_SLEEVES` += CHENTO_TRIPLE_V3, SHORT_SQUEEZE, SQUEEZE_BULL
+      (pool-plan A6).
+5. **Decisions waiting on the user.** E7 live quoting probe (API key, ≤ $50, two weeks,
+   only if maker entries are wanted); SHORT_SQUEEZE's fate at the n = 30 re-cut (both
+   variants ≤ 0 → retire); pool-plan D1–D7 (unchanged since June) and the D9 recommendation
+   (Standard is the no-stop / experimental account, no new sub-accounts); whether the ETH
+   bull-regime tilt gets its study.
+
+### Concluded since 2026-09-01 (verdict; `findings.md` in each folder under `studies/notebooks/`)
+
+`brainstorm_validation_2026_09` all five external claims KILL, engine claims confirmed ·
+`execution_2026_09` coded costs 2–3× too high, SHORT_SQUEEZE retire-pending → answered by
+its no-stop twin · `sizing_style_2026_09` SQUEEZE_BULL no-stop BUILD → shipped as the twin,
+fixed-R beats compounding beats fixed notional · `carry_exit_rule_2026_09` CUM-30D shipped ·
+`adx_robustness_2026_09` the live-vs-research gap is funding on longs → D8 ·
+`adx_eth_2026_09` KILL · `validation_audit_2026_09` nothing clears DSR 0.95, two published
+numbers corrected · `squeeze_bull_revalidation` BUILD → shipped 2026-09-09 · `r4_bot_prep`
+no stop, 300 s grace · `range_sanity_2026_09`, `calendar_cells`, `coinbase_premium`,
+`delta_neutral` KILL · `basis_carry` INCONCLUSIVE (data gate) · `vrp_study` do not advance ·
+`anchor_allocator_study` KILL · `lsr_b5_study` no change. The 2026-09-06 `REPO_REVIEW.md`
+findings were all addressed on 2026-09-07
+([docs/strategy_issue_validation_2026_09_07.md](docs/strategy_issue_validation_2026_09_07.md):
+218,908 minute rows repaired, minute stop paths, daily marked equity).
+
+### Documents known to be stale
+
+The full readability sweep of README / PORTFOLIO / MANUAL / OPERATIONS is still deferred
+(memory `project-doc-cleanup-planned`). On 2026-09-12 README and OPERATIONS got a
+one-paragraph status pointer to the fleet; their bodies still describe the dormant `bot.py`
+loop, and MANUAL.md describes the pre-fleet manual J+ routine. PORTFOLIO.md §2 lists sleeves
+of the dormant orchestrator path as if composed. Pool-plan Phase E predates the shipped
+SQUEEZE_BULL (OI-flush only; Rule B deferred).
+
+---
+
+## Bot = directory = strategy — retire the orchestrator layer
+
+**Captured:** 2026-09-12. **Status:** planned, direction agreed by the user ("why do we
+need the sleeves if we have bots? I like the maintainability of the bots"); starts after
+the 2026-09-12 batch is committed and the bots restarted; the first file move needs a
+go-ahead (production code).
+
+**Why.** The bot runners are the maintainable unit: `bots/<name>/config.py` holds only what
+the operator controls (variants, capital, risk, caps, grace, stale policy) and the seven
+runners total ~1,400 lines. The strategy module must stay separate from the runner — the
+parity tests feed the same candles to it that the research harness saw and require the
+same fires; one sleeve serves two bots (chento BTC / ETH), two variants (the squeeze
+twins) and four windows (R4) — but the orchestrator-era framework around the sleeves is
+dead weight: 42 `_effective_*` injections across 15 sleeve files, `try_fire_for_variant`
+wrappers, `priority` / `conviction` arguments no bot uses, a dispatch registry keeping
+eight dormant sleeves alive, and ~1,800 lines of dormant loop code (`bot.py`,
+`strategies/orchestrator.py`, `backtest_runner.py`, `studies/simulation/sim.py`). That second
+system is what makes "sleeves" read as overhead.
+
+**Target shape.** `bots/<name>/{config,runner,strategy}.py` (+ `windows.py` where a bot
+needs it): one directory = one bot = one strategy. `strategy.py` exposes `decide(...)`,
+`execute(...)` and `sweep(...)` with plain arguments — no `sleeve_cfg` dict, no
+`_effective_*`, flags such as `use_stop` / `count_diag` passed explicitly. Calibrated
+parameters keep `docs/calibration/<name>.md`. Shared support (`strategies/support/`,
+`strategies/trades.py`, `botlib.py`) is unchanged. Chento becomes one strategy module with
+the asset as a call-time parameter (today `CHENTO_V3_ASSET` is read at import, which is why
+BTC and ETH are two processes), so one runner can carry both assets under one cross-asset
+cap — the multi-asset plan's Phase B as written.
+
+**Steps, each its own commit with the suite green:**
+
+1. Strip the orchestrator interface from the six running strategy modules (adx, carry,
+   chento_triple_v3, short_squeeze, squeeze_bull, r4). Parity tests must stay byte-equal:
+   `test_adx_parity`, `test_chento_parity`, `test_chento_parity_eth`,
+   `test_short_squeeze_parity`, `test_squeeze_bull_parity`, `test_carry_exit_rule`.
+2. `git mv` each module under its bot and re-point the importers (~50 files: the tests
+   above, `studies/notebooks/adx_study/harness.py`, `adx_robustness_2026_09/adx_lib.py`,
+   the chento_journal validations, `strategy_comparison_2026_09/squeeze_overlap.py`,
+   `dashboard/botinfo.py` and `dashboard/market.py`, `strategies/support/{stop_path,
+   margin_check,indicators,funding}.py`). Fleet stopped for this step, restarted from the
+   new paths after it.
+3. Retire the legacy path: `bot.py`, `strategies/orchestrator.py`, `strategies/p300_spec.py`,
+   `backtest_runner.py`, `studies/simulation/sim.py` and its DB builder, the
+   `TIMING_ANOMALIES` meta-sleeve, the allocation / weight tables, `tests/test_sim_mode.py`
+   (the 1.5 GB-per-test copy); set the legacy variant row `p300_aggressive_v2_v1_0` to
+   `enabled = 0` with a note. Each bot's `--once --db <copy> --sim-now` dry run is the
+   simulator; research replays use the study harnesses.
+4. Archive the eight dormant sleeves (EMA_BTC, ETH_DAILY, THU_BEAR, PDO, CPR, FOMC,
+   AI_QUANT, chento_limit_bid) under `studies/material/archive/` — git keeps the history;
+   any of them returns only through a study and a bot of its own. The pending PDO / CPR
+   re-validation and THU_BEAR OOS questions stay open as research items, archiving does not
+   answer them.
+5. Docs: README, OPERATIONS, PORTFOLIO §2, dashboard cards, calibration-log paths — this is
+   where the deferred doc cleanup happens (memory `project-doc-cleanup-planned`).
+
+**Gates:** parity tests byte-equal before and after every step; the full suite green;
+fleet restarted from the new paths with fresh heartbeats; one definition per rule (no
+duplicated strategy logic, grep-verified); `git status` clean of stray copies.
+
+---
+
 ## Execution layer and pending re-cuts from the 2026-09 execution / sizing studies
 
 **Captured:** 2026-09-12. **Status:** open — the paper-side changes shipped

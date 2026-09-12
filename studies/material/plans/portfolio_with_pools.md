@@ -5,6 +5,7 @@
 Each pool is sub-account under main account to minimize liquidation risk and easier position management with cross margin accounts.
 **Each pool = one real exchange sub-account, so keep the count minimal** — a pool earns a sub-account only once it has enough validated edge to justify the operational overhead. Prefer consolidating sleeves into existing pools over spawning new ones.
 Each pool can allocate maximum of 50% of available funds for the sleeves in the pool. 50% of the funds marked for the pool are always in cash to handle possible draw down and to minimize liquidation risk.
+> **No-stop sleeves (2026-09-12, plan decision D9):** a sleeve whose only exit is the clock or a condition (R4, the no-stop paper twins, EMA/ETH, future condition-exit sleeves) is either paired with something stable or isolated, so a tail loss can only reach its own account — see D9 in the implementation plan for the recommended placement (Standard as the no-stop/experimental account) and the S4 margin-sim gate.
 
 
 | Pool | Pool allocation | Sleeve | Collateral (margin) | Leverage | Asset | Direction | Hold | Type |

@@ -7,16 +7,18 @@ upstream `trader` research repo: market data is pulled from Binance public
 REST, scheduled events are computed in-process, and long-short ratio
 history comes from Coinalyze (free tier).
 
-> **Status: paper validation in progress.** All prior upstream backtest
-> numbers are treated as compromised and stripped. Open
-> [`studies/notebooks/tools_statistical_validation.ipynb`](studies/notebooks/tools_statistical_validation.ipynb)
-> in Jupyter to compute Sharpe / win-rate / drawdown on the realized
-> trade ledger — that's the only validation path until paper has
-> accumulated ~6+ months of closed trades.
+> **Status 2026-09-12: paper fleet running, evidence still thin.** What actually runs is
+> `start_fleet.ps1`: `feed.py` plus seven bot units (chento_v3, chento_v3_eth, short_squeeze,
+> adx, carry, squeeze_bull, r4) and the dashboard — see
+> [OPERATIONS.md §10](OPERATIONS.md). The orchestrator loop described below (`bot.py`) has
+> been dormant since 2026-06-11; the table is the sleeve inventory, not the running fleet.
+> Current status and roadmap: the top section of [BACKLOG.md](BACKLOG.md). Validation:
+> `studies/lib/validation/` and [GATE_VALIDATION.md](GATE_VALIDATION.md) §8; the paper
+> ledgers hold 36 trades, too few for any verdict.
 
-## What runs live here
+## Sleeve inventory (orchestrator path, dormant since 2026-06-11)
 
-8 top-level sleeves dispatched per-minute by
+When the orchestrator ran, 8 top-level sleeves were dispatched per-minute by
 [`strategies/orchestrator.py`](strategies/orchestrator.py); one of them
 (`TIMING_ANOMALIES`) is a meta-sleeve that fans out internally to 8
 calendar/clock substrategies, for **15 distinct signal paths** total.

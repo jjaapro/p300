@@ -8,8 +8,9 @@
 | What | Command |
 |---|---|
 | One-time setup | `export COINALYZE_API_KEY=...` → `python bootstrap.py` |
-| Start live loop | `python bot.py` |
-| Single tick (test) | `python bot.py --once` |
+| Start the fleet (feed + bots + dashboard) | `.\start_fleet.ps1` — see §10 |
+| Legacy orchestrator loop (dormant since 2026-06-11) | `python bot.py` / `python bot.py --once` |
+| Dry-run one bot on a DB copy | `python bots/<name>/runner.py --once --db <copy.db> --sim-now <iso>` |
 | Health check | `python health.py` |
 | Run replay (research) | `python backtest_runner.py --start 2021-07-01 --end 2026-04-15 --reset --tag YOUR_TAG` |
 | Run sim mode (operator) | `python studies/simulation/sim.py --start <iso> --end <iso> --trader-db <sim.db> --dash-db <sim_dash.db>` |
@@ -54,8 +55,13 @@ python -m pytest tests/ -q    # ~490 tests should pass (some slow sim
 
 ## 2. Live operation
 
+> **2026-09-12:** the live fleet is started by `start_fleet.ps1` (§10): `feed.py` is the
+> only fetcher, every bot is its own process reading `prod.db`. `bot.py` below is the legacy
+> orchestrator loop, dormant since 2026-06-11; the text is kept because the sim and replay
+> tools still use that path.
+
 ```bash
-# Start the main loop with data feed in the same process (default)
+# Legacy: start the orchestrator loop with the data feed in the same process
 python bot.py
 ```
 
@@ -375,7 +381,7 @@ The operated fleet is what `start_fleet.ps1` launches (feed first, dashboard las
 | short_squeeze | bots/short_squeeze/runner.py | S-105 sweep + CVD-divergence long |
 | adx | bots/adx/runner.py | S-003 ADX regime flip |
 | carry | bots/carry/runner.py | S-078 delta-neutral funding harvest |
-| r4 | bots/r4/runner.py | R4 calendar family, four windows, BTC+ETH (added 2026-09-06) |
+| r4 | bots/r4/runner.py | R4 calendar family; ETH windows only since 2026-09-12 (BTC windows wired but disabled in `bots/r4/config.py`; added 2026-09-06, held 09-09) |
 | dashboard | dashboard/server.py | read-only UI on :8300 |
 | monitor | monitor.py | hourly checks (optional unit, `-Monitor`) |
 

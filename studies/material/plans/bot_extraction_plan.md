@@ -18,6 +18,12 @@
 
 ## Status — implemented 2026-07-21 (same day)
 
+> **2026-09-12:** the "optional later step" — physical co-location — is now planned: each
+> running sleeve moves under its bot as `strategy.py`, the orchestrator interface is
+> stripped, `bot.py` / the orchestrator / sim mode are retired and the dormant sleeves are
+> archived. See `BACKLOG.md`, topic "Bot = directory = strategy — retire the orchestrator
+> layer". Direction agreed by the user; the first file move still needs a go-ahead.
+
 Everything below through M2 shipped and tested the day the plan was written.
 As-built deltas from the text below: the platform library is **`botlib.py` at
 repo root** (a top-level `platform/` package would shadow the stdlib module);
