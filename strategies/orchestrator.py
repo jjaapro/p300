@@ -320,13 +320,24 @@ def _load_dispatch():
     from strategies.sleeves.short_squeeze import signal as short_squeeze_sleeve
     from strategies.sleeves.timing_anomalies import signal as timing_anomalies_sleeve
     from strategies.sleeves.chento_triple_v3 import signal as chento_triple_v3_sleeve
+    from strategies.support import cfg_adapter as ca
+    # The six refactored sleeves are dispatched through closures over their
+    # plain-keyword decide()/execute(); the cfg->kwargs translation lives in
+    # strategies/support/cfg_adapter.py, on the orchestrator's side of the
+    # boundary where the cfg dict is actually a concept. The four sleeves
+    # that were NOT refactored (ai_quant, ema, eth_daily, timing_anomalies)
+    # keep their own wrappers — they have no decide()/execute() of this shape.
     STRATEGY_DISPATCH = {
-        "S-003":           adx_sleeve.try_fire_for_variant,
-        "S-078":           carry_sleeve.try_fire_for_variant,
+        "S-003":           ca.fire_entry(adx_sleeve.decide,
+                                         adx_sleeve.execute, ca.adx),
+        "S-078":           ca.fire_entry(carry_sleeve.decide,
+                                         carry_sleeve.execute, ca.carry),
         "JPLUS_EMA_BTC":   ema_sleeve.ema_btc_try_fire,
         "JPLUS_ETH_DAILY": eth_daily_sleeve.eth_daily_try_fire,
         "AI_QUANT":        ai_quant_sleeve.try_fire_for_variant,
-        "SHORT_SQUEEZE":   short_squeeze_sleeve.try_fire_for_variant,
+        "SHORT_SQUEEZE":   ca.fire_entry(short_squeeze_sleeve.decide,
+                                         short_squeeze_sleeve.execute,
+                                         ca.short_squeeze),
         # TIMING_ANOMALIES — meta-sleeve consolidating calendar/clock
         # edges (FOMC, R4 family, THU_BEAR, PDO, CPR). Per-substrategy
         # params + weight live in sleeve_cfg.params.substrategies; the
@@ -337,7 +348,9 @@ def _load_dispatch():
         # CHENTO_TRIPLE_V3 — mean-reversion-into-extreme on BTC perp 15m
         # with Triple composite (B1∩B5∩B7) + 4 filter gates + A4 ladder.
         # See strategies/sleeves/chento_triple_v3/README.md.
-        "CHENTO_TRIPLE_V3": chento_triple_v3_sleeve.try_fire_for_variant,
+        "CHENTO_TRIPLE_V3": ca.fire_entry(chento_triple_v3_sleeve.decide,
+                                          chento_triple_v3_sleeve.execute,
+                                          ca.chento),
     }
     # Two-phase migrations (P2.4e/f Stage 2). Other sleeves follow as
     # they're refactored; until then they stay on the legacy
@@ -348,18 +361,14 @@ def _load_dispatch():
             ai_quant_sleeve.try_decide_for_variant,
             ai_quant_sleeve.execute_for_variant,
         )
-    if (hasattr(adx_sleeve, "try_decide_for_variant")
-            and hasattr(adx_sleeve, "execute_for_variant")):
-        STRATEGY_TWO_PHASE_DISPATCH["S-003"] = (
-            adx_sleeve.try_decide_for_variant,
-            adx_sleeve.execute_for_variant,
-        )
-    if (hasattr(carry_sleeve, "try_decide_for_variant")
-            and hasattr(carry_sleeve, "execute_for_variant")):
-        STRATEGY_TWO_PHASE_DISPATCH["S-078"] = (
-            carry_sleeve.try_decide_for_variant,
-            carry_sleeve.execute_for_variant,
-        )
+    STRATEGY_TWO_PHASE_DISPATCH["S-003"] = (
+        ca.decide_entry(adx_sleeve.decide, ca.adx),
+        ca.execute_entry(adx_sleeve.execute),
+    )
+    STRATEGY_TWO_PHASE_DISPATCH["S-078"] = (
+        ca.decide_entry(carry_sleeve.decide, ca.carry),
+        ca.execute_entry(carry_sleeve.execute),
+    )
     if (hasattr(eth_daily_sleeve, "try_decide_for_variant")
             and hasattr(eth_daily_sleeve, "execute_for_variant")):
         STRATEGY_TWO_PHASE_DISPATCH["JPLUS_ETH_DAILY"] = (
@@ -372,24 +381,20 @@ def _load_dispatch():
             ema_sleeve.try_decide_for_variant,
             ema_sleeve.execute_for_variant,
         )
-    if (hasattr(short_squeeze_sleeve, "try_decide_for_variant")
-            and hasattr(short_squeeze_sleeve, "execute_for_variant")):
-        STRATEGY_TWO_PHASE_DISPATCH["SHORT_SQUEEZE"] = (
-            short_squeeze_sleeve.try_decide_for_variant,
-            short_squeeze_sleeve.execute_for_variant,
-        )
+    STRATEGY_TWO_PHASE_DISPATCH["SHORT_SQUEEZE"] = (
+        ca.decide_entry(short_squeeze_sleeve.decide, ca.short_squeeze),
+        ca.execute_entry(short_squeeze_sleeve.execute),
+    )
     if (hasattr(timing_anomalies_sleeve, "try_decide_for_variant")
             and hasattr(timing_anomalies_sleeve, "execute_for_variant")):
         STRATEGY_TWO_PHASE_DISPATCH["TIMING_ANOMALIES"] = (
             timing_anomalies_sleeve.try_decide_for_variant,
             timing_anomalies_sleeve.execute_for_variant,
         )
-    if (hasattr(chento_triple_v3_sleeve, "try_decide_for_variant")
-            and hasattr(chento_triple_v3_sleeve, "execute_for_variant")):
-        STRATEGY_TWO_PHASE_DISPATCH["CHENTO_TRIPLE_V3"] = (
-            chento_triple_v3_sleeve.try_decide_for_variant,
-            chento_triple_v3_sleeve.execute_for_variant,
-        )
+    STRATEGY_TWO_PHASE_DISPATCH["CHENTO_TRIPLE_V3"] = (
+        ca.decide_entry(chento_triple_v3_sleeve.decide, ca.chento),
+        ca.execute_entry(chento_triple_v3_sleeve.execute),
+    )
 
 
 _warned_missing: set[tuple[str, str]] = set()
