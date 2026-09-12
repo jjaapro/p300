@@ -401,10 +401,28 @@ on SJ-4247's live close path; inert at the default semantic, which is what made 
 it look safe. **`_r4_execute` keeps its private name**, because `bots/r4/runner.py` calls it
 by exactly that.
 
-15–20. **Repoint the runners, one bot per commit, one restart each.** Gate: the `--sim-now`
-dry run at the pinned firing anchor produces a byte-identical trade row, then the restarted
-bot's heartbeat is `ok` with a fresh `last_eval`. For short_squeeze and squeeze_bull the
-restart brings up **two** variants; the gate covers both.
+15–20. **Repoint the runners, one bot per commit, one restart each.** ✅ **DONE 2026-09-12**
+— commits `f78624c` (squeeze_bull), `db44055` (carry), `d6da44a` (chento, both units),
+`f3b1b92` (short_squeeze), `60d5a7c` (adx + r4). **`grep sleeve_cfg bots/*/runner.py` now
+returns nothing**: the fleet no longer speaks the orchestrator's dict.
+
+Gate per bot, via `tests/fixtures/repoint_baseline.py`: a `--once --db <fresh copy>
+--sim-now <firing anchor>` run before and after, requiring a **byte-identical and non-empty**
+trade row, then a fresh `ok` heartbeat. Every one passed. The non-empty half earned its keep
+on chento ETH — the BTC anchor produces no ETH fire, so its gate would have been
+nothing-vs-nothing; its own anchor (2026-08-02T00:00:05Z) fires **SHORT** where BTC fires
+LONG, proving a genuinely distinct path.
+
+All seven bots restarted, each gated individually. The three open positions — SJ-4242,
+SJ-4247, SJ-4250 — are tracked across every restart, and the running processes finally carry
+the whole day's work, having started nine commits behind.
+
+What kept catching things was `test_entry_points_match_what_the_runners_actually_call` (phase
+A step 2): it went red on the very first repoint because `health.BOT_ENTRYPOINTS` still named
+the legacy entry points, and again on each subsequent one. Roughly a dozen test stubs also
+had to be repointed — each was a `monkeypatch` naming an old entry point, or a fake whose
+`(v, cfg)` signature no longer matched the keyword call. Those are the only test edits in the
+phase; **no golden changed in any of the six commits.**
 
 ### Phase D — contract
 
