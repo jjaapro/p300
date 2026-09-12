@@ -151,6 +151,11 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
             continue
         dispatch = _get_dispatch(sub_name)
         if dispatch is None:
+            # Matches the execute side's existing warning below. A
+            # substrategy that silently stops being dispatched looks exactly
+            # like one that never fires.
+            log.warning(f"[timing_anomalies] unknown substrategy {sub_name!r} "
+                        f"— not dispatched")
             per_sub_status[sub_name] = {"status": "unknown_substrategy"}
             continue
         decide_fn, _ = dispatch

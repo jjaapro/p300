@@ -224,6 +224,43 @@ def close_due_for_variant(variant_id: str, now_utc: datetime) -> int:
 
 # ─── Dispatch composition (variant-scoped) ────────────────────────────────────
 
+def _dispatchable_strategy_ids(variant: dict) -> list[str]:
+    """The composition ids `tick_replay_variant` will actually try to
+    dispatch, applying its own four filters. Kept beside that loop because
+    the two must agree: a validation that ignores --skip or the
+    non-deterministic filter would abort runs the loop would have completed.
+    """
+    spec = variant.get("spec") or {}
+    out = []
+    for sleeve in (spec.get("composition") or []):
+        if sleeve.get("portfolio_id"):
+            continue
+        strategy_id = sleeve.get("strategy_id")
+        if not strategy_id or strategy_id in SKIP_STRATEGIES:
+            continue
+        if (sleeve.get("params") or {}).get("deterministic") is False:
+            continue
+        out.append(strategy_id)
+    return out
+
+
+def validate_dispatch(variant: dict) -> None:
+    """Fail before the first tick if any sleeve this replay will dispatch has
+    no dispatcher — rather than after hours of ticks that quietly produced no
+    trades for it. Same check `tick_replay_variant` raises on, hoisted so the
+    run dies in the first second."""
+    orchestrator._load_dispatch()
+    missing = [s for s in _dispatchable_strategy_ids(variant)
+               if orchestrator.STRATEGY_DISPATCH.get(s) is None]
+    if missing:
+        raise SystemExit(
+            f"unwired sleeves in variant {variant['id']}'s composition: "
+            f"{', '.join(sorted(missing))}. The replay would silently produce "
+            f"zero trades for them. Wire them in "
+            f"strategies/orchestrator._load_dispatch, or exclude them with "
+            f"--skip.")
+
+
 def tick_replay_variant(variant: dict) -> None:
     """Dispatch all sleeves in the replay variant's composition for the
     current simulated clock. Mirrors orchestrator._tick_composition but
@@ -256,7 +293,17 @@ def tick_replay_variant(variant: dict) -> None:
             continue
         dispatcher = orchestrator.STRATEGY_DISPATCH.get(strategy_id)
         if dispatcher is None:
-            continue
+            # Loud, not silent. Skipping here produced a replay that reported
+            # success with the sleeve's rows simply absent — which is how
+            # deleting a try_fire_for_variant wrapper (the only dispatch this
+            # function consults; it never reads STRATEGY_TWO_PHASE_DISPATCH)
+            # would silently zero a sleeve's entire backtest.
+            raise RuntimeError(
+                f"{strategy_id} is in variant {variant['id']}'s composition but "
+                f"has no STRATEGY_DISPATCH entry — the replay would silently "
+                f"produce zero trades for it. Wire it in "
+                f"strategies/orchestrator._load_dispatch, or exclude it with "
+                f"--skip {strategy_id}.")
         sleeve_with_k = dict(sleeve)
         sleeve_with_k["_effective_leverage"] = \
             orchestrator._resolve_sleeve_leverage(spec, sleeve)
@@ -362,6 +409,7 @@ def run(start: datetime, end: datetime, interval_seconds: int,
         progress_every_days: int = 30) -> None:
     variant_id = replay_variant_id(tag)
     variant = ensure_replay_variant(variant_id, reset=reset)
+    validate_dispatch(variant)
     capital = float(variant.get("capital_usdt") or 10000)
     log.info(f"Replay variant: {variant['id']} | capital: ${capital:,.0f}")
     log.info(f"Window: {start.isoformat()} → {end.isoformat()} "

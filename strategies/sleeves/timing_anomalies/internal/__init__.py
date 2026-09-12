@@ -16,7 +16,10 @@ meta-sleeve from importing.
 """
 from __future__ import annotations
 
+import logging
 from typing import Callable
+
+log = logging.getLogger("dashboard.timing_anomalies.internal")
 
 # Each resolver is a callable returning (decide_fn, execute_fn).
 # Lazy-imported so circular-import edge cases don't break module load.
@@ -88,6 +91,13 @@ def get_dispatch(substrategy_name: str) -> tuple[Callable, Callable] | None:
     try:
         funcs = resolver()
     except Exception:
+        # Still None — callers treat an unresolvable substrategy as "not
+        # wired" — but no longer silent. This swallowed an ImportError in a
+        # dormant sleeve as indistinguishably as it swallowed a typo in a
+        # live one, which is how a broken sub-sleeve could disappear from
+        # TIMING_ANOMALIES with nothing in the log.
+        log.exception("substrategy %s failed to resolve — treated as unwired",
+                      name)
         return None
     _DISPATCH_CACHE[name] = funcs
     return funcs
