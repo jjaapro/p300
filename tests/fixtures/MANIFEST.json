@@ -18,6 +18,30 @@
    "cd_spot_binance": 60
   }
  },
+ "chento": {
+  "anchor": "2026-08-21T06:15:00",
+  "sha256": "ec4b62ac0bf769a821b726a63305e797fe3602515a8788eecce0e6da28d9a574",
+  "size_bytes": 1990656,
+  "tables": {
+   "ca_long_short_ratio": 95,
+   "cd_futures_15m": 91,
+   "cd_futures_eth_15m": 91,
+   "okx_perp_1h": 31,
+   "okx_perp_eth_1h": 31
+  }
+ },
+ "short_squeeze": {
+  "anchor": "2025-10-14T10:00:00",
+  "sha256": "9163f703b201b10d7808e2eca658b997fe316cd4b0d0c971735333cbcbe130eb",
+  "size_bytes": 1970176,
+  "tables": {
+   "cd_funding_rate": 5,
+   "cd_futures_15m": 95,
+   "cd_futures_ohlcv": 5,
+   "cd_open_interest": 5,
+   "cd_spot_15m": 95
+  }
+ },
  "squeeze_bull": {
   "anchor": "2026-09-11T18:00:31",
   "sha256": "8e0b9b7afa23f95194816fbf440bfe072df262fd45f99d5bc81fc544b0da7b92",

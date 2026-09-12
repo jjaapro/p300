@@ -1,0 +1,13 @@
+{
+ "db_after": {
+  "n_trades": 0,
+  "trades": []
+ },
+ "intents": [],
+ "status": {
+  "okx_delta_z": -0.7299044539,
+  "reason": "okx_misaligned",
+  "status": "filter_blocked",
+  "swept": 0
+ }
+}

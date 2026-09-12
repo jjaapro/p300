@@ -60,6 +60,18 @@ MUTATIONS = [
      'if fz is not None and FUNDING_VETO_Z is not None and fz > FUNDING_VETO_Z:',
      'if False:',
      "tests/test_golden_adx.py"),
+    ("short_squeeze: use_stop ignored (always stop+target)",
+     "strategies/sleeves/short_squeeze/signal.py",
+     'use_stop = bool(sleeve_cfg.get("use_stop", True))', 'use_stop = True',
+     "tests/test_golden_short_squeeze.py"),
+    ("short_squeeze: macro gate removed",
+     "strategies/sleeves/short_squeeze/signal.py",
+     'if not macro["is_short_macro"]:', 'if False:',
+     "tests/test_golden_short_squeeze.py"),
+    ("chento: OKX alignment gate removed",
+     "strategies/sleeves/chento_triple_v3/signal.py",
+     'if not ctm.okx_aligned(okx_z, direction, OKX_ALIGN_Z_MIN):', 'if False:',
+     "tests/test_golden_chento.py"),
 ]
 
 
@@ -71,12 +83,13 @@ def run(cmd, **kw):
 caught = missed = skipped = 0
 for label, rel, before, after, testfile in MUTATIONS:
     p = REPO / rel
-    orig = p.read_text(encoding="utf-8")
+    orig_bytes = p.read_bytes()
+    orig = orig_bytes.decode("utf-8")
     if before not in orig:
         print(f"  [SKIP ] {label}\n           pattern not found in {rel}")
         skipped += 1
         continue
-    p.write_text(orig.replace(before, after, 1), encoding="utf-8")
+    p.write_bytes(orig.replace(before, after, 1).encode("utf-8"))
     try:
         r = run([str(PY), "-m", "pytest", testfile, "-q", "-p",
                  "no:cacheprovider"], timeout=900)
@@ -89,7 +102,7 @@ for label, rel, before, after, testfile in MUTATIONS:
                   f"decorative here")
             missed += 1
     finally:
-        p.write_text(orig, encoding="utf-8")
+        p.write_bytes(orig_bytes)      # byte-exact restore
 
 print(f"\ncaught {caught}  missed {missed}  skipped {skipped}")
 st = run(["git", "status", "--porcelain",

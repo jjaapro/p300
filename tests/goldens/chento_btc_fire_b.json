@@ -1,0 +1,107 @@
+{
+ "db_after": {
+  "n_trades": 1,
+  "trades": [
+   {
+    "allocation_pct": 100.0,
+    "asset": "BTC",
+    "direction": "LONG",
+    "entry_price": 78395.0,
+    "exit_price": null,
+    "exit_time": "2026-08-25T03:45:05+00:00",
+    "leverage": 1.0,
+    "notes": {
+     "_atr_at_entry": 362.0788809,
+     "_entry_price": 78395.0,
+     "_filter_diag": {
+      "no_tilt": "pass",
+      "okx_delta_z": 0.9437063378,
+      "resist_ob_dist_R": 99.0
+     },
+     "_inside_va": false,
+     "_ladder_size_frac": 0.5,
+     "_risk": 1810.394404,
+     "_state": {
+      "atr_at_entry": 362.0788809,
+      "entry_bar_ts": "2026-08-22T03:45:00+00:00",
+      "entry_price": 78395.0,
+      "ladder_added": false,
+      "ladder_entry": null,
+      "ladder_size_frac": 0.5,
+      "last_walked_ts": "2026-08-22T03:45:00+00:00",
+      "risk": 1810.394404,
+      "stop_price": 76584.6056,
+      "target_price": 89257.36643
+     },
+     "_stop_price": 76584.6056,
+     "_target_price": 89257.36643,
+     "_time_stop_iso": "2026-08-25T03:45:05+00:00",
+     "bar_ts": "2026-08-22T03:45:00+00:00",
+     "sleeve": "CHENTO_TRIPLE_V3",
+     "trigger": "chento_triple_v3",
+     "variant_id": "bot_chento_btc_test"
+    },
+    "notes_tail": null,
+    "pnl_usdt": null,
+    "qty": 0.1275591556,
+    "size_usdt": 10000.0,
+    "status": "open",
+    "strategy": "CHENTO_TRIPLE_V3",
+    "strategy_variant": "bot_chento_btc_test",
+    "unique_key_suffix": "CHENTO_TRIPLE_V3|BTC|2026-08-22T03:45:00+00:00"
+   }
+  ]
+ },
+ "intents": [
+  {
+   "allocation_pct": 100.0,
+   "asset": "BTC",
+   "conviction": 100,
+   "direction": "LONG",
+   "leverage": 1.0,
+   "priority": 100.0,
+   "reason": {
+    "_atr_at_entry": 362.0788809,
+    "_entry_price": 78395.0,
+    "_filter_diag": {
+     "no_tilt": "pass",
+     "okx_delta_z": 0.9437063378,
+     "resist_ob_dist_R": 99.0
+    },
+    "_inside_va": false,
+    "_ladder_size_frac": 0.5,
+    "_risk": 1810.394404,
+    "_state": {
+     "atr_at_entry": 362.0788809,
+     "entry_bar_ts": "2026-08-22T03:45:00+00:00",
+     "entry_price": 78395.0,
+     "ladder_added": false,
+     "ladder_entry": null,
+     "ladder_size_frac": 0.5,
+     "last_walked_ts": "2026-08-22T03:45:00+00:00",
+     "risk": 1810.394404,
+     "stop_price": 76584.6056,
+     "target_price": 89257.36643
+    },
+    "_stop_price": 76584.6056,
+    "_target_price": 89257.36643,
+    "_time_stop_iso": "2026-08-25T03:45:05+00:00",
+    "bar_ts": "2026-08-22T03:45:00+00:00",
+    "sleeve": "CHENTO_TRIPLE_V3",
+    "trigger": "chento_triple_v3",
+    "variant_id": "bot_chento_btc_test"
+   },
+   "scheduled_exit_dt": "2026-08-25T03:45:05+00:00"
+  }
+ ],
+ "status": {
+  "direction": "long",
+  "entry": 78395.0,
+  "inside_va": false,
+  "ladder_size_frac": 0.5,
+  "status": "decided",
+  "stop": 76584.6056,
+  "swept": 0,
+  "target": 89257.36643
+ }
+}

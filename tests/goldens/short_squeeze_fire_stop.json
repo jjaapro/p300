@@ -1,0 +1,82 @@
+{
+ "db_after": {
+  "n_trades": 1,
+  "trades": [
+   {
+    "allocation_pct": 100.0,
+    "asset": "BTC",
+    "direction": "LONG",
+    "entry_price": 111237.4,
+    "exit_price": null,
+    "exit_time": "2025-10-14T16:00:05+00:00",
+    "leverage": 1.0,
+    "notes": {
+     "_reference_stop_price": 110891.7972,
+     "_reference_target_price": 112274.2084,
+     "_stop_price": 110891.7972,
+     "_target_price": 112274.2084,
+     "_time_stop_iso": "2025-10-14T16:00:05+00:00",
+     "bar_close": 111237.4,
+     "bar_low": 111002.8,
+     "bar_ts_utc": "2025-10-14T09:45:00+00:00",
+     "close_in_range": 0.4756690998,
+     "divergence": 324.7472,
+     "divergence_pct": 0.8990079365,
+     "exit_policy": "stop_target_time",
+     "perp_cvd": -400.028,
+     "perp_cvd_pct": 0.08333333333,
+     "prior_low_24x15m": 111302.0,
+     "sleeve": "SHORT_SQUEEZE",
+     "trigger": "short_squeeze_long",
+     "variant_id": "bot_short_squeeze_test"
+    },
+    "notes_tail": null,
+    "pnl_usdt": null,
+    "qty": 0.08989782214,
+    "size_usdt": 10000.0,
+    "status": "open",
+    "strategy": "SHORT_SQUEEZE",
+    "strategy_variant": "bot_short_squeeze_test",
+    "unique_key_suffix": "SHORT_SQUEEZE|BTC|2025-10-14T09:45:00+00:00"
+   }
+  ]
+ },
+ "intents": [
+  {
+   "allocation_pct": 100.0,
+   "asset": "BTC",
+   "conviction": 100,
+   "direction": "LONG",
+   "leverage": 1.0,
+   "priority": 100.0,
+   "reason": {
+    "_entry_price": 111237.4,
+    "_reference_stop_price": 110891.7972,
+    "_reference_target_price": 112274.2084,
+    "_stop_price": 110891.7972,
+    "_target_price": 112274.2084,
+    "_time_stop_iso": "2025-10-14T16:00:05+00:00",
+    "bar_close": 111237.4,
+    "bar_low": 111002.8,
+    "bar_ts_utc": "2025-10-14T09:45:00+00:00",
+    "close_in_range": 0.4756690998,
+    "divergence": 324.7472,
+    "divergence_pct": 0.8990079365,
+    "exit_policy": "stop_target_time",
+    "perp_cvd": -400.028,
+    "perp_cvd_pct": 0.08333333333,
+    "prior_low_24x15m": 111302.0,
+    "sleeve": "SHORT_SQUEEZE",
+    "trigger": "short_squeeze_long",
+    "variant_id": "bot_short_squeeze_test"
+   },
+   "scheduled_exit_dt": "2025-10-14T16:00:05+00:00"
+  }
+ ],
+ "status": {
+  "div_pct": 0.8990079365,
+  "perp_pct": 0.08333333333,
+  "status": "decided",
+  "swept": 0
+ }
+}

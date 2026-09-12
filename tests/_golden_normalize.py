@@ -42,6 +42,15 @@ _VOLATILE_TRADE_COLS = ("id", "actual_entry_time", "actual_exit_time",
 
 
 def _round(v):
+    # numpy scalars first: chento builds its status from a pandas frame, so
+    # `inside_va` arrives as numpy.bool_ and the z-scores as numpy.float64.
+    # Both compare equal to their Python twins but neither is JSON
+    # serializable, and a golden that cannot round-trip through JSON is not a
+    # golden. `.item()` is the documented way to get the Python scalar.
+    if hasattr(v, "item") and hasattr(v, "dtype") and getattr(v, "ndim", 1) == 0:
+        v = v.item()
+    if isinstance(v, bool):
+        return v                      # before the float branch: bool is an int
     if isinstance(v, float):
         return float(f"{v:.10g}")
     if isinstance(v, dict):

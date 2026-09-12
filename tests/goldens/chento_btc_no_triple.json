@@ -1,0 +1,11 @@
+{
+ "db_after": {
+  "n_trades": 0,
+  "trades": []
+ },
+ "intents": [],
+ "status": {
+  "status": "no_triple",
+  "swept": 0
+ }
+}

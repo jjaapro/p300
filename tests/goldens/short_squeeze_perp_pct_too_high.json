@@ -1,0 +1,22 @@
+{
+ "db_after": {
+  "n_trades": 0,
+  "trades": []
+ },
+ "intents": [],
+ "status": {
+  "bar_close": 110315.5,
+  "bar_low": 110270.3,
+  "bar_session": "london",
+  "bar_ts": 1760436900,
+  "close_in_range": 0.07051482059,
+  "divergence": -51.43087,
+  "divergence_pct": 0.3327380952,
+  "now_utc": "2025-10-14T10:30:05+00:00",
+  "perp_cvd": -60.635,
+  "perp_cvd_pct": 0.3920634921,
+  "prior_low": 110794.3,
+  "status": "perp_pct_too_high",
+  "swept": 0
+ }
+}

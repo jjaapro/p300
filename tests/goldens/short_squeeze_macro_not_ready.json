@@ -1,0 +1,12 @@
+{
+ "db_after": {
+  "n_trades": 0,
+  "trades": []
+ },
+ "intents": [],
+ "status": {
+  "now_utc": "2025-10-14T00:00:05+00:00",
+  "status": "macro_not_ready",
+  "swept": 0
+ }
+}

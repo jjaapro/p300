@@ -71,6 +71,23 @@ def _module(key: str):
     raise KeyError(key)
 
 
+def _state_module(key: str):
+    """Where the per-sleeve process state actually lives.
+
+    For every sleeve but chento this is the same module the bot calls. chento's
+    bot imports the PACKAGE (`strategies.sleeves.chento_triple_v3`), which
+    re-exports the three entry points but not the caches — so resetting the
+    package silently resets nothing, and the second golden in a file then runs
+    against a warm feature cache and a stale `_last_trigger_ts`. That produced
+    a `cooldown` where a `no_triple` was expected, intermittently, depending on
+    test order.
+    """
+    if key in ("chento_btc", "chento_eth"):
+        from strategies.sleeves.chento_triple_v3 import signal
+        return signal
+    return _module(key)
+
+
 def _cfg(key: str, *, weight_pct, leverage, priority, params,
          use_stop, count_diag, gate, vol_scalar) -> dict:
     """TODAY's shape. After the strip this function disappears and each branch
@@ -146,7 +163,7 @@ def reset_module_state(key: str) -> None:
                      _carry_action_today query the trades table — those are
                      fixture state, not module state, and are NOT reset here
     """
-    mod = _module(key)
+    mod = _state_module(key)
     for name in ("_cache_date", "_cache_built_at", "_cached_features",
                  "_cached_obs", "_last_trigger_ts", "_last_loss_ts",
                  "_last_eval_bar_ts", "_diag_current_day", "_diag_counters",

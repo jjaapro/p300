@@ -1,0 +1,13 @@
+{
+ "db_after": {
+  "n_trades": 0,
+  "trades": []
+ },
+ "intents": [],
+ "status": {
+  "bar_ts": "2026-08-21T19:30:00+00:00",
+  "minutes_into_bar": 7.083333333,
+  "status": "not_at_15m_boundary",
+  "swept": 0
+ }
+}
