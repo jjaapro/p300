@@ -35,7 +35,8 @@ further down stay as they are.
   notional) and SHORT_SQUEEZE (1×) with re-cuts fixed in advance at 20 / 30 paired fires,
   pool-plan decisions D8 (ADX + CARRY in one account) and F-EXEC (execution-layer
   requirements), `GATE_VALIDATION.md` §8.
-- **Uncommitted, same day:** R4 runs its ETH windows only and is back in the fleet defaults
+- **Committed later the same day** (`d4d811c` R4, `6451699` roadmap and docs, `eb4f2e2` data;
+  on `main`, not pushed): R4 runs its ETH windows only and is back in the fleet defaults
   with the 2026-09-09 hold lifted for that pair ([docs/calibration/r4.md](docs/calibration/r4.md));
   `botlib.ensure_bot_variant` refreshes a bot's label from config; pool-plan D9 (no-stop
   sleeves are paired with something stable or isolated); this section; the README and
@@ -52,7 +53,7 @@ further down stay as they are.
 
 1. **Operator.** `.\start_fleet.ps1` starts r4 and anything not running; stop and restart
    the six other bots so the 2026-09-12 code loads; `python monitor.py --deep` the next day;
-   commit and push the uncommitted batch.
+   push `main`.
 2. **Paper evidence — waiting, not work.** First fires of the no-stop twins and of r4 ETH;
    weekly `strategy_health` per bot; the paired re-cut script for the squeeze twins must
    exist before n = 20 (topic entry below).
