@@ -95,8 +95,8 @@ def test_tick_stale_entry_drops_intent(tmp_db, monkeypatch):
         bot_name=botcfg.BOT_NAME)
 
     monkeypatch.setattr(
-        "strategies.sleeves.short_squeeze.signal.try_decide_for_variant",
-        lambda v, cfg: ([_mk_intent()], {"status": "decided"}))
+        "strategies.sleeves.short_squeeze.signal.decide",
+        lambda v, **kw: ([_mk_intent()], {"status": "decided"}))
 
     def boom(*a, **k):
         raise AssertionError("execute must not run on stale entry tables")
@@ -107,7 +107,7 @@ def test_tick_stale_entry_drops_intent(tmp_db, monkeypatch):
         lambda tables=None: {"cd_open_interest": 9999.0}
         if "cd_open_interest" in (tables or []) else {})
 
-    out = runner.tick(variant, {})
+    out = runner.tick(variant)
     assert out["status"] == "entry_blocked_stale_inputs"
     assert out["hb_status"] == "degraded"
 
@@ -287,17 +287,18 @@ def test_decide_honours_use_stop_and_count_diag(tmp_db, monkeypatch):
 def test_tick_all_runs_both_variants_and_counts_diag_once(tmp_db, monkeypatch):
     calls = []
 
-    def fake_decide(v, cfg):
-        calls.append((v["id"], cfg.get("use_stop", True), cfg.get("count_diag", True)))
+    def fake_decide(v, **kw):
+        calls.append((v["id"], kw.get("use_stop", True),
+                      kw.get("count_diag", True)))
         return [], {"status": "no_sweep"}
     monkeypatch.setattr(
-        "strategies.sleeves.short_squeeze.signal.try_decide_for_variant", fake_decide)
+        "strategies.sleeves.short_squeeze.signal.decide", fake_decide)
     monkeypatch.setattr(botlib, "stale_tables", lambda tables=None: {})
     rows = [botlib.ensure_bot_variant(v["id"], short_name="t", capital_usdt=10_000.0,
                                       bot_name=botcfg.BOT_NAME) for v in botcfg.VARIANTS]
     variants = [{"row": r, "use_stop": v["use_stop"]}
                 for r, v in zip(rows, botcfg.VARIANTS)]
-    out = runner.tick_all(variants, {"weight_pct": 100.0})
+    out = runner.tick_all(variants)
     assert calls == [("bot_short_squeeze_v1", True, True),
                      ("bot_short_squeeze_nostop_v1", False, False)]
     assert out["status"] == "no_sweep" and out["hb_status"] == "ok"
