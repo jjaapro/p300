@@ -328,7 +328,34 @@ NameError I had just introduced in the r4 runner.
    and r4 append to directly — the env redirect alone left a live JSONL being written, which
    the gate caught.
 
-### Phase B — build a net that can actually fail (fleet keeps running)
+### Phase B — build a net that can actually fail (fleet keeps running) ✅ DONE 2026-09-12
+
+Commits `6f9c907` (scaffolding + r4), `756e91f` (carry, squeeze_bull),
+`65bae70` (adx), `5bbc906` (chento both assets, short_squeeze). **68 golden
+documents across all six modules; the drill catches 14 of 14 mutations.**
+Suite 1398 → 1464, fleet untouched.
+
+Run it before and after every phase-C commit:
+
+    python tests/fixtures/build_sleeve_fixtures.py     # verify fixture hashes
+    python tests/fixtures/mutation_drill.py            # must be 14/14, tree clean
+
+The drill found **six goldens that were decorative**, and the pattern held
+every time: the arithmetic was covered, the *calibrated gates* were not —
+R4's weights fallback, squeeze_bull's bull-regime gate and −2 % flush
+threshold, ADX's symmetric trend filter and funding veto, short_squeeze's
+macro gate. Each would have let a strip delete a calibrated rule with a green
+suite. The load-bearing one: **hardcoding ADX's `leverage = 1.0`, the exact
+edit the strip makes, now fails two goldens** including the round-trip through
+`stop_path` that SJ-4247's live close path uses.
+
+Three scaffolding defects worth remembering, all found by running rather than
+reading: the surface adapter defaulted `weight_pct=100.0` for every sleeve,
+which injects `_effective_weight_pct` and **silently overrode R4's
+bear-regime kill switch** (its bot passes no weight at all, so the fallback
+arm is the live path — hence the `AS_BOT` sentinel); `reset_module_state` for
+chento targeted the package rather than `chento_triple_v3.signal`, so it
+reset nothing; and the normalizer could not serialize numpy scalars.
 
 4. Golden scaffolding: a live-DB kill-switch, a fixture builder with hash-pinned bars, an
    output normalizer, and a surface adapter (`tests/_sleeve_surface.py`) that is the single
