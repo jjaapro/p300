@@ -1,0 +1,22 @@
+parity vs C2: {'got': {'LIVE': {'net_ann_pct': 10.845644985764642, 'rt_per_year': 4.750542299349241}, 'ALWAYS_ON': {'net_ann_pct': 11.693231101545555}}, 'expected': {'LIVE': {'net_ann_pct': 10.85, 'rt_per_year': 4.8}, 'ALWAYS_ON': {'net_ann_pct': 11.69}}, 'pass_': True}
+rules over 2019-12-19..2026-09-11 (6.74 y):
+                share_held  round_trips  rt_per_year  gross_ann_pct  net_ann_pct
+LIVE                 0.906         32.0        4.751         11.796       10.846
+ALWAYS_ON            1.000          1.0        0.148         11.723       11.693
+SYMMETRIC_7D         0.898         32.0        4.751         11.875       10.924
+LIVE_MINHOLD21       0.936         25.0        3.711         11.763       11.020
+CUM30D               0.996          5.0        0.742         11.731       11.582
+net %/yr by year:
+ year             2020   2021  2022  2023   2024  2025  2026
+rule                                                       
+ALWAYS_ON       17.19  30.61  4.16  7.87  11.92  5.13  2.61
+CUM30D          16.45  30.61  4.16  7.87  11.92  5.13  2.61
+LIVE            16.32  30.08  2.49  7.24  11.53  4.51  1.56
+LIVE_MINHOLD21  16.63  29.97  2.88  7.24  11.73  4.72  1.71
+SYMMETRIC_7D    16.76  30.18  2.29  7.23  11.53  4.71  1.33
+tail stress: {'worst_30d': {'cum_funding_pct': -1.311426, 'window': ['2020-03-12', '2020-04-10'], 'net_pct_in_window': {'LIVE': -1.297504, 'ALWAYS_ON': -1.311426, 'SYMMETRIC_7D': -0.8317970000000001, 'LIVE_MINHOLD21': -1.213342, 'CUM30D': -1.5474409999999998}}, 'worst_90d': {'cum_funding_pct': -0.3855839999999998, 'window': ['2026-02-06', '2026-05-06'], 'net_pct_in_window': {'LIVE': -0.768518, 'ALWAYS_ON': -0.38558399999999987, 'SYMMETRIC_7D': -0.93015, 'LIVE_MINHOLD21': -0.664828, 'CUM30D': -0.38558399999999987}}, 'worst_180d': {'cum_funding_pct': 0.529983, 'window': ['2025-12-31', '2026-06-28'], 'net_pct_in_window': {'LIVE': -0.2016079999999999, 'ALWAYS_ON': 0.529983, 'SYMMETRIC_7D': -0.3619479999999999, 'LIVE_MINHOLD21': -0.0979179999999999, 'CUM30D': 0.529983}}}
+   ALWAYS_ON        diff vs LIVE  +0.85 %/yr  CI90 [ +0.60,  +1.11]  P(>0) 1.000
+   SYMMETRIC_7D     diff vs LIVE  +0.08 %/yr  CI90 [ -0.11,  +0.27]  P(>0) 0.750
+   LIVE_MINHOLD21   diff vs LIVE  +0.17 %/yr  CI90 [ +0.06,  +0.31]  P(>0) 0.995
+   CUM30D           diff vs LIVE  +0.74 %/yr  CI90 [ +0.44,  +1.04]  P(>0) 1.000
+decision: {'per_rule': {'ALWAYS_ON': {'beats_by_half_pct': True, 'ci_excludes_zero': True, 'worst_year_ok': True, 'worst_year': 2.61232655511811, 'live_worst_year': 1.5610245275590553, 'verdict': 'RECOMMEND'}, 'SYMMETRIC_7D': {'beats_by_half_pct': False, 'ci_excludes_zero': False, 'worst_year_ok': True, 'worst_year': 1.3306146850393703, 'live_worst_year': 1.5610245275590553, 'verdict': 'NO CHANGE'}, 'LIVE_MINHOLD21': {'beats_by_half_pct': False, 'ci_excludes_zero': True, 'worst_year_ok': True, 'worst_year': 1.710027874015748, 'live_worst_year': 1.5610245275590553, 'verdict': 'NO CHANGE'}, 'CUM30D': {'beats_by_half_pct': True, 'ci_excludes_zero': True, 'worst_year_ok': True, 'worst_year': 2.61232655511811, 'live_worst_year': 1.5610245275590553, 'verdict': 'RECOMMEND'}}, 'tail_insurance_premium_pct_per_year': -0.8475861157809135, 'verdict': 'RECOMMEND ALWAYS_ON, CUM30D'}

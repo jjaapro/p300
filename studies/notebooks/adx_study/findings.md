@@ -29,6 +29,15 @@ Files: `harness.py` (engine), `analyze.py` (problem characterisation),
 closed maxDD 27.33%, 33 closed + 1 open trade, open +18.76%. Near-exact parity →
 the Pine and the live signal are the same machine.
 
+> **Note (2026-09-12, from [adx_robustness_2026_09](../adx_robustness_2026_09/findings.md) and
+> [brainstorm_validation_2026_09](../brainstorm_validation_2026_09/findings.md)).** Every maxDD in this
+> document is the drawdown of the trade-close equity. Marked to market daily the same Tier-2 ledger draws
+> down **−38 %** (harness fill) and **−48 %** once perp funding is charged (2020 →, live phase); across the
+> 24 UTC day boundaries the MTM drawdown spans −36 to −50 % and the Sharpe 0.63–1.12. This harness is
+> funding-blind: the ADX longs paid 24.7 %/yr of long exposure in funding, which is the entire gap between
+> the harness and live semantics (fill mechanics themselves reproduce to ±1 pp of CAGR). At the shipped
+> sizing (≈ 0.2× notional) the account drawdown is ≈ −10 %.
+
 > **Correction (2026-09-09, from [validation_audit_2026_09](../validation_audit_2026_09/findings.md)).**
 > The `Sharpe` column in every table in this document is **not an annualised Sharpe
 > ratio**. The harness computes mean-per-trade / sd-per-trade × √n, which is a

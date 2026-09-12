@@ -1,0 +1,52 @@
+1. PARITY (their cache): {'n': 189, 'mean_bp': 193.53709642175843, 't': 3.0430225564664792, 'tc': 3.991401352903537, 'g': 20, 'win': 55.55555555555556, 'capture': 21.437906297376202, 'raw_mean_bp': 187.48070474627025, 'n_long': 87, 'long_mean_bp': 235.95339966118897, 'n_short': 102, 'short_mean_bp': 157.35848483518544} | expected {'n': 189, 'mean_bp': 193.5, 't': 3.04, 'tc': 3.99, 'win': 55.6, 'capture': 21.4} | PASS
+2. p300 BTC daily: {'n': 197, 'mean_bp': 148.96411701609546, 't': 2.1497920901363186, 'tc': 2.6783361491829925, 'g': 20, 'win': 56.34517766497462, 'capture': 16.071093951645345, 'raw_mean_bp': 138.63925730014384, 'n_long': 89, 'long_mean_bp': 207.00353448655247, 'n_short': 108, 'short_mean_bp': 101.13533780433002} | truncation True
+   per year:
+  year  n     mean_bp         t       win
+ 2017  6 -856.677936 -0.898523 50.000000
+ 2018 21  149.261670  0.615769 61.904762
+ 2019 20   22.124540  0.118345 55.000000
+ 2020 20  239.468340  0.879229 55.000000
+ 2021 22  523.499556  2.572113 77.272727
+ 2022 18  314.884531  1.957796 66.666667
+ 2023 26  196.072809  1.352047 57.692308
+ 2024 26   59.598406  0.321477 46.153846
+ 2025 26  -94.448627 -0.979619 34.615385
+ 2026 12  395.245574  1.421877 66.666667
+   era: {'pre_etf': {'n': 135, 'mean_bp': 176.21429575109565, 't': 1.959580379511044, 'win': 60.74074074074074}, 'post_etf': {'n': 62, 'mean_bp': 89.6290504156918, 't': 0.8850024246073901, 'win': 46.774193548387096}} 
+   trailing-drift: {'n': 192, 'mean_bp': 171.39312116557156, 't': 2.5395316345005963, 'tc': 2.7296175438385117, 'g': 20, 'win': 54.6875, 'capture': 18.490862149171235, 'raw_mean_bp': 149.63706349386644, 'n_long': 86, 'long_mean_bp': 183.99126456188432, 'n_short': 106, 'short_mean_bp': 161.1719859572424} 
+   raw: {'n': 197, 'mean_bp': 138.63925730014384, 't': 1.9772063520090999, 'tc': 2.450715981175032, 'g': 20, 'win': 52.79187817258884, 'capture': 14.957189517098278, 'raw_mean_bp': 138.63925730014384, 'n_long': 89, 'long_mean_bp': 314.05602733089273, 'n_short': 108, 'short_mean_bp': -5.9171550400103925}
+3. Bitstamp OOS-in-time 2012-2017: {'n': 105, 'mean_bp': 39.74655745923022, 't': 0.3028623018577208, 'tc': 0.05439020665536228, 'g': 16, 'win': 53.333333333333336, 'capture': 3.1728616722929504, 'raw_mean_bp': 42.6810102620143, 'n_long': 53, 'long_mean_bp': 212.9150624468913, 'n_short': 52, 'short_mean_bp': -136.75211108588593}
+   Bitstamp eras: {'2012-2014': {'n': 35, 'mean_bp': 13.96320995206173, 't': 0.05149417692636101, 'tc': 0.4992775613553154, 'g': 5, 'win': 51.42857142857142, 'capture': 0.8505166667906126, 'raw_mean_bp': 139.71059508994404, 'n_long': 21, 'long_mean_bp': 240.12809931725297, 'n_short': 14, 'short_mean_bp': -325.28412409572536}, '2014-2017': {'n': 53, 'mean_bp': 42.34544978731249, 't': 0.3069224067526831, 'tc': -0.1415770778302838, 'g': 9, 'win': 49.056603773584904, 'capture': 4.66905141437115, 'raw_mean_bp': 39.847715152141305, 'n_long': 25, 'long_mean_bp': 166.14075493179232, 'n_short': 28, 'short_mean_bp': -68.1860726631159}, '2017-2020': {'n': 60, 'mean_bp': 119.24882814756555, 't': 0.7756787928924249, 'tc': 0.4528269566665185, 'g': 8, 'win': 58.333333333333336, 'capture': 10.281199830159323, 'raw_mean_bp': 105.96265440024987, 'n_long': 28, 'long_mean_bp': 288.16283835752375, 'n_short': 32, 'short_mean_bp': -28.550930786147863}, '2020-2023': {'n': 56, 'mean_bp': 384.34671617456297, 't': 2.9103468032304702, 'tc': 1.9901900286651928, 'g': 9, 'win': 69.64285714285714, 'capture': 37.43979682253416, 'raw_mean_bp': 361.97188570117794, 'n_long': 22, 'long_mean_bp': 406.9222050749025, 'n_short': 34, 'short_mean_bp': 369.7390468861081}, '2023-2027': {'n': 83, 'mean_bp': 89.03657306159681, 't': 1.0063297025482456, 'tc': 1.6630032361065108, 'g': 7, 'win': 48.19277108433735, 'capture': 13.77042939155683, 'raw_mean_bp': 85.35064112677999, 'n_long': 40, 'long_mean_bp': 128.97703348872594, 'n_short': 43, 'short_mean_bp': 51.88265638519765}}
+4. ETH spot daily: {'n': 146, 'mean_bp': 101.54875173006532, 't': 1.0928927095798935, 'tc': 1.209945443264616, 'g': 13, 'win': 52.73972602739726, 'capture': 9.048615451427311, 'raw_mean_bp': 73.50444827325515, 'n_long': 59, 'long_mean_bp': 35.58888288002283, 'n_short': 87, 'short_mean_bp': 146.28015704216313} 
+   ETH perp daily: {'n': 123, 'mean_bp': 135.94953851223903, 't': 1.5487824114503355, 'tc': 3.044821806546063, 'g': 9, 'win': 52.84552845528455, 'capture': 12.659122785216207, 'raw_mean_bp': 118.41905369861402, 'n_long': 49, 'long_mean_bp': 50.65627631371358, 'n_short': 74, 'short_mean_bp': 192.4275094274789}
+   alt panel pooled: {'n': 3503, 'n_assets': 64, 'mean_bp': 67.57741960381409, 't_naive': 2.3776765571031864, 't_week_cluster': 0.983249138371222, 'g_weeks': 148, 't_asset_cluster': 2.2472731778036756, 'g_assets': 64, 'share_assets_positive': 0.65625, 'win': 51.27033970882101}
+5. grid: 60 cells, share t>2 = 0.22, share positive = 0.95, primary rank by t = 10/60
+H          3     5     7     10    14
+z   W                                
+0.5 30   0.70  2.10  1.67  1.49  2.05
+    60  -0.04  1.76  1.78  1.58  1.27
+    120  0.66  1.43  1.97  1.63  2.70
+1.0 30   0.06  1.35  1.78  1.87  0.75
+    60   0.17  2.57  2.15  1.95  0.90
+    120  0.72  1.84  2.84  2.66  1.85
+1.5 30   0.17  1.38  1.70  1.41  1.87
+    60  -0.36  1.43  1.93  1.10  1.82
+    120  1.08  1.73  2.11  2.56  2.45
+2.0 30   0.54  2.15  1.97  2.24  3.04
+    60   0.47  1.54  1.91  1.30  1.78
+    120 -0.01  1.72  1.90  1.29  1.86
+6. DSR: {'N1': 0.981, 'N24_control_family': 0.564, 'N96_run2': 0.359, 'N348_study': 0.219} | bootstrap mean bp CI90 [35.1, 149.3, 262.5]
+7. sizing [their_cache] B&H final 48,960 CAGR 19.9% maxDD -83.2%
+   frac1.0_maker_fund1x         final     50,499 CAGR   20.3% maxDD  -63.0% trades 345 gross mean 0.75x (in-mkt 1.56x, max 4.63x) TiM 0.48
+   frac1.0_taker_fund1x         final     41,128 CAGR   17.5% maxDD  -64.9% trades 345 gross mean 0.75x (in-mkt 1.56x, max 4.63x) TiM 0.48
+   frac0.5_maker_fund1x         final     28,148 CAGR   12.5% maxDD  -37.0% trades 345 gross mean 0.38x (in-mkt 0.78x, max 1.83x) TiM 0.48
+   frac1.0_maker_fund3x         final     33,528 CAGR   14.8% maxDD  -66.7% trades 345 gross mean 0.75x (in-mkt 1.56x, max 4.64x) TiM 0.48
+   frac1.0_taker_fund3x         final     27,294 CAGR   12.1% maxDD  -68.4% trades 345 gross mean 0.75x (in-mkt 1.56x, max 4.65x) TiM 0.48
+7. sizing [p300] B&H final 186,373 CAGR 38.1% maxDD -83.2%
+   frac1.0_maker_fund1x         final     24,107 CAGR   10.2% maxDD  -63.0% trades 363 gross mean 0.77x (in-mkt 1.58x, max 6.99x) TiM 0.49
+   frac1.0_taker_fund1x         final     19,385 CAGR    7.6% maxDD  -64.9% trades 363 gross mean 0.77x (in-mkt 1.59x, max 7.00x) TiM 0.49
+   frac0.5_maker_fund1x         final     23,299 CAGR    9.8% maxDD  -37.0% trades 363 gross mean 0.38x (in-mkt 0.79x, max 2.10x) TiM 0.49
+   frac1.0_maker_fund3x         final     15,594 CAGR    5.0% maxDD  -66.7% trades 363 gross mean 0.77x (in-mkt 1.59x, max 7.02x) TiM 0.49
+   frac1.0_taker_fund3x         final     12,534 CAGR    2.5% maxDD  -68.4% trades 363 gross mean 0.77x (in-mkt 1.59x, max 7.04x) TiM 0.49
+8. DECISION: {'parity': True, 'unseen': {'bitstamp_2012_2017': False, 'eth_spot': False, 'alts_week_clustered': False}, 'n_unseen_pass': 0, 'dsr348': 0.21916357295787653, 'dsr_pass': False, 'beats_hold_exposure_matched_ci_above_0': False, 'verdict': 'KILL'}
+exit 0 c1_momentum

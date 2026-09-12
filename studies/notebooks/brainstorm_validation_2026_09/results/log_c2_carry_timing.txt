@@ -1,0 +1,49 @@
+series: 7676 prints 2019-09-10..2026-09-11 | mean 0.0106%/8h | positive 85.7% | untimed 11.58%/yr
+1. PARITY last 1200: {'lag1': 0.666, 'mean_8h_pct': 0.003, 'share_positive': 0.781, 'ann_pct': 3.677} [-1.0, 3.1, 5.1, 7.5]
+          last  500: {'lag1': 0.745, 'mean_8h_pct': 0.003, 'share_positive': 0.778, 'ann_pct': 3.539} [-2.0, 2.9, 5.4, 7.7]
+2. autocorr by year:
+  year    n  lag1  lag2  lag3  mean_8h_pct  ann_pct  share_positive
+ 2019  338 0.656 0.505 0.412        0.007    7.482           0.817
+ 2020 1098 0.688 0.609 0.534        0.016   17.193           0.857
+ 2021 1095 0.806 0.746 0.708        0.028   30.608           0.927
+ 2022 1095 0.611 0.370 0.271        0.004    4.165           0.779
+ 2023 1095 0.768 0.701 0.668        0.007    7.866           0.899
+ 2024 1098 0.822 0.766 0.754        0.011   11.924           0.916
+ 2025 1095 0.553 0.468 0.468        0.005    5.126           0.871
+ 2026  762 0.692 0.609 0.583        0.003    2.756           0.726 
+   full: {'lag1': 0.797, 'lag2': 0.736, 'lag3': 0.693, 'lag6': 0.649}
+   quartiles full-sample in-sample: [-0.5, 5.1, 10.8, 31.0] | causal: {'q1': 3.2, 'q2': 7.2, 'q3': 10.8, 'q4': 44.6}
+ year    n  insample_q1  insample_q2  insample_q3  insample_q4  causal_q1  causal_n1  causal_q2  causal_n2  causal_q3  causal_n3  causal_q4  causal_n4
+ 2019  338         -5.5          9.3         10.3         15.4        2.1         39        NaN          0        NaN          0        NaN          0
+ 2020 1098         -5.1         11.8         13.0         48.9        0.3        344       11.0        460       11.0          1       47.0        293
+ 2021 1095          6.8         10.5         24.4         80.1        8.9        625        NaN          0       28.0        175       78.1        295
+ 2022 1095         -1.1          3.0          6.1          8.6        1.9        547        6.1        462        7.7         86        NaN          0
+ 2023 1095          2.4          5.1          9.7         14.3        1.8        198        4.2        232        9.5        596       24.1         69
+ 2024 1098          2.4          8.8         11.0         25.3        2.3        257        9.7        502       10.8        126       29.4        213
+ 2025 1095          2.4          4.1          5.3          8.7        2.7        340        5.1        441        7.9        299        6.7         15
+ 2026  761         -2.4          2.0          4.5          6.8       -1.4        260        2.6        176        5.1        181        7.6        144
+3. rules over 2019-12-19..2026-09-11 (6.74 y):
+                  rule  share_held  round_trips  rt_per_year  gross_ann_pct  net_ann_pct
+            ALWAYS_ON       1.000            1        0.148         11.723       11.693
+           UPPER_HALF       0.338          486       72.149          8.373       -6.057
+         TOP_QUARTILE       0.140          235       34.887          6.223       -0.754
+   HYSTERESIS_p60_p40       0.406          190       28.206          9.480        3.838
+UPPER_HALF_minhold21d       0.654           67        9.946         10.117        8.127
+       S078_live_rule       0.906           32        4.751         11.796       10.846
+   net %/yr by year:
+ year                    2020   2021  2022   2023   2024   2025   2026
+rule                                                                 
+ALWAYS_ON              17.19  30.61  4.16   7.87  11.92   5.13   2.61
+HYSTERESIS_p60_p40     14.38  28.19 -1.66  -5.02   7.61  -7.73 -14.34
+S078_live_rule         16.32  30.08  2.49   7.24  11.53   4.51   1.56
+TOP_QUARTILE            2.44  10.36  0.00  -2.22  -1.75  -1.71 -17.54
+UPPER_HALF              2.45  13.64 -5.91 -13.95  -1.30 -18.96 -24.10
+UPPER_HALF_minhold21d  13.59  26.91  0.48   5.08   7.54   1.53  -0.63
+4. bootstrap (block 90 prints) of net difference vs ALWAYS_ON, %/yr:
+   UPPER_HALF               diff -17.75  CI90 [-20.08, -15.38]  P(>0) 0.000
+   TOP_QUARTILE             diff -12.45  CI90 [-14.55, -10.38]  P(>0) 0.000
+   HYSTERESIS_p60_p40       diff  -7.85  CI90 [ -9.43,  -6.33]  P(>0) 0.000
+   UPPER_HALF_minhold21d    diff  -3.57  CI90 [ -3.98,  -3.15]  P(>0) 0.000
+   S078_live_rule           diff  -0.85  CI90 [ -1.11,  -0.60]  P(>0) 0.000
+5. DECISION: {'upper_half_beats_always_on_full_sample': False, 'years_won': 0, 'years_compared': 7, 'ci90_excludes_zero': True, 'ci90': [-20.076342322634215, -15.376741164655641], 'verdict': 'KILL'}
+exit 0 c2_carry_timing

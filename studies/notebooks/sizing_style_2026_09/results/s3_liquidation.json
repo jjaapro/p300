@@ -1,0 +1,384 @@
+{
+ "env": {
+  "python": "3.13.11",
+  "numpy": "2.4.4",
+  "pandas": "3.0.2",
+  "run_at": "2026-09-12T05:46:20+00:00"
+ },
+ "per_bot": {
+  "P0_shipped": {
+   "CHENTO_BTC": {
+    "breach_minutes": 0,
+    "episodes": 0,
+    "min_distance": 0.294814364070391,
+    "at": "2023-10-08 13:12",
+    "max_gross_x": 3.3353972318858545,
+    "min_equity": 9661.440408155586,
+    "worst_mae": 0.1134200813047763,
+    "final_equity": 25060.6348421175,
+    "open_minutes": 206192
+   },
+   "CHENTO_ETH": {
+    "breach_minutes": 0,
+    "episodes": 0,
+    "min_distance": 0.31375713734311117,
+    "at": "2023-10-13 20:54",
+    "max_gross_x": 3.1371846551740012,
+    "min_equity": 9395.357284913669,
+    "worst_mae": 0.0822086118567779,
+    "final_equity": 18833.67893544784,
+    "open_minutes": 173743
+   },
+   "SHORT_SQUEEZE": {
+    "breach_minutes": 0,
+    "episodes": 0,
+    "min_distance": 0.3292075117978936,
+    "at": "2023-05-13 07:15",
+    "max_gross_x": 2.9921529729251963,
+    "min_equity": 9847.015015266206,
+    "worst_mae": 0.0189180396750987,
+    "final_equity": 10606.774238170985,
+    "open_minutes": 8922
+   },
+   "SQUEEZE_BULL": {
+    "breach_minutes": 0,
+    "episodes": 0,
+    "min_distance": 1.0502544824034663,
+    "at": "2023-04-03 21:00",
+    "max_gross_x": 0.9476387133863504,
+    "min_equity": 9825.384139861075,
+    "worst_mae": 0.0384615384615384,
+    "final_equity": 13666.885105271354,
+    "open_minutes": 186049
+   }
+  },
+  "P1_time_only": {
+   "CHENTO_BTC": {
+    "breach_minutes": 0,
+    "episodes": 0,
+    "min_distance": 0.28018610950672956,
+    "at": "2023-10-09 16:44",
+    "max_gross_x": 3.5064821415378336,
+    "min_equity": 9743.067222856998,
+    "worst_mae": 0.1238325068228307,
+    "final_equity": 24749.798401779233,
+    "open_minutes": 343290
+   },
+   "CHENTO_ETH": {
+    "breach_minutes": 0,
+    "episodes": 0,
+    "min_distance": 0.2528620097683631,
+    "at": "2023-01-08 00:40",
+    "max_gross_x": 3.8780431475667854,
+    "min_equity": 8886.18428764467,
+    "worst_mae": 0.1495370321712716,
+    "final_equity": 17334.992849314112,
+    "open_minutes": 270660
+   },
+   "SHORT_SQUEEZE": {
+    "breach_minutes": 0,
+    "episodes": 0,
+    "min_distance": 0.15997747358318556,
+    "at": "2023-09-21 14:01",
+    "max_gross_x": 6.061433590179063,
+    "min_equity": 8793.528756269932,
+    "worst_mae": 0.0834001141821572,
+    "final_equity": 13529.91861284613,
+    "open_minutes": 24702
+   },
+   "SQUEEZE_BULL": {
+    "breach_minutes": 0,
+    "episodes": 0,
+    "min_distance": 0.9615867986475499,
+    "at": "2022-08-02 09:33",
+    "max_gross_x": 1.0345682368093603,
+    "min_equity": 9665.867986475507,
+    "worst_mae": 0.1042930491853965,
+    "final_equity": 16496.876849144042,
+    "open_minutes": 315400
+   }
+  },
+  "P1b_target_only": {
+   "CHENTO_BTC": {
+    "breach_minutes": 0,
+    "episodes": 0,
+    "min_distance": 0.28663940456970244,
+    "at": "2023-10-09 16:44",
+    "max_gross_x": 3.4288919272601173,
+    "min_equity": 9743.067222856998,
+    "worst_mae": 0.1238325068228307,
+    "final_equity": 24519.344681383747,
+    "open_minutes": 326354
+   },
+   "CHENTO_ETH": {
+    "breach_minutes": 0,
+    "episodes": 0,
+    "min_distance": 0.24561447364839092,
+    "at": "2023-01-08 00:40",
+    "max_gross_x": 3.9901925273597243,
+    "min_equity": 8886.18428764467,
+    "worst_mae": 0.1495370321712716,
+    "final_equity": 15952.768175571804,
+    "open_minutes": 259919
+   },
+   "SHORT_SQUEEZE": {
+    "breach_minutes": 0,
+    "episodes": 0,
+    "min_distance": 0.15915018976317052,
+    "at": "2023-09-21 14:01",
+    "max_gross_x": 6.091981991874398,
+    "min_equity": 9074.400308498176,
+    "worst_mae": 0.0834001141821572,
+    "final_equity": 11644.255832635892,
+    "open_minutes": 18229
+   },
+   "SQUEEZE_BULL": {
+    "breach_minutes": 0,
+    "episodes": 0,
+    "min_distance": 0.9714712089383791,
+    "at": "2022-08-02 09:33",
+    "max_gross_x": 1.0240957345656934,
+    "min_equity": 9764.712089383798,
+    "worst_mae": 0.1042930491853965,
+    "final_equity": 16004.258200985554,
+    "open_minutes": 245936
+   }
+  },
+  "P2_catastrophe_3x": {
+   "CHENTO_BTC": {
+    "breach_minutes": 0,
+    "episodes": 0,
+    "min_distance": 0.29026501980158853,
+    "at": "2023-10-09 16:29",
+    "max_gross_x": 3.3867879123371187,
+    "min_equity": 9743.067222856998,
+    "worst_mae": 0.1238325068228307,
+    "final_equity": 23456.819758166414,
+    "open_minutes": 305303
+   },
+   "CHENTO_ETH": {
+    "breach_minutes": 0,
+    "episodes": 0,
+    "min_distance": 0.23924240315061837,
+    "at": "2023-01-08 00:40",
+    "max_gross_x": 4.094293157537122,
+    "min_equity": 9047.824425487097,
+    "worst_mae": 0.1088755635249619,
+    "final_equity": 13822.681797013034,
+    "open_minutes": 229174
+   },
+   "SHORT_SQUEEZE": {
+    "breach_minutes": 0,
+    "episodes": 0,
+    "min_distance": 0.17038489433951504,
+    "at": "2023-09-26 16:00",
+    "max_gross_x": 5.701745317154691,
+    "min_equity": 9363.457351855319,
+    "worst_mae": 0.0572115460159331,
+    "final_equity": 10730.584309332236,
+    "open_minutes": 14296
+   },
+   "SQUEEZE_BULL": {
+    "breach_minutes": 0,
+    "episodes": 0,
+    "min_distance": 0.9714712089383791,
+    "at": "2022-08-02 09:33",
+    "max_gross_x": 1.0240957345656934,
+    "min_equity": 9764.712089383798,
+    "worst_mae": 0.1042930491853965,
+    "final_equity": 14745.369075230077,
+    "open_minutes": 234063
+   }
+  }
+ },
+ "pooled": {
+  "P0_shipped": {
+   "breach_minutes": 0,
+   "episodes": 0,
+   "min_distance": 0.9375767877706581,
+   "at": "2023-12-03 19:16",
+   "max_gross_x": 1.06092152169921,
+   "min_equity": 49531.898936105805,
+   "worst_mae": 0.1134200813047763,
+   "final_equity": 78167.97312100766,
+   "open_minutes": 521251
+  },
+  "P1_time_only": {
+   "breach_minutes": 0,
+   "episodes": 0,
+   "min_distance": 0.8123253786874942,
+   "at": "2023-10-08 13:15",
+   "max_gross_x": 1.223502935398696,
+   "min_equity": 49470.71412908463,
+   "worst_mae": 0.1495370321712716,
+   "final_equity": 82111.58671308352,
+   "open_minutes": 811734
+  },
+  "P1b_target_only": {
+   "breach_minutes": 0,
+   "episodes": 0,
+   "min_distance": 0.8009212033474867,
+   "at": "2023-10-08 13:15",
+   "max_gross_x": 1.2408160944846527,
+   "min_equity": 49470.71412908463,
+   "worst_mae": 0.1495370321712716,
+   "final_equity": 78120.62689057698,
+   "open_minutes": 741475
+  },
+  "P2_catastrophe_3x": {
+   "breach_minutes": 0,
+   "episodes": 0,
+   "min_distance": 0.9561433802365698,
+   "at": "2023-12-03 19:16",
+   "max_gross_x": 1.04042749558746,
+   "min_equity": 49470.71412908463,
+   "worst_mae": 0.1238325068228307,
+   "final_equity": 72755.45493974173,
+   "open_minutes": 691806
+  }
+ },
+ "decision": {
+  "CHENTO_BTC": {
+   "P1_time_only": {
+    "halves_higher": false,
+    "mar_higher": false,
+    "maxdd_ok": true,
+    "no_liquidation": true,
+    "safety_2x": true,
+    "verdict": "KEEP THE STOP",
+    "min_distance": 0.28018610950672956,
+    "worst_mae": 0.1238325068228307
+   },
+   "P1b_target_only": {
+    "halves_higher": false,
+    "mar_higher": false,
+    "maxdd_ok": false,
+    "no_liquidation": true,
+    "safety_2x": true,
+    "verdict": "KEEP THE STOP",
+    "min_distance": 0.28663940456970244,
+    "worst_mae": 0.1238325068228307
+   },
+   "P2_catastrophe_3x": {
+    "halves_higher": false,
+    "mar_higher": false,
+    "maxdd_ok": false,
+    "no_liquidation": true,
+    "safety_2x": true,
+    "verdict": "KEEP THE STOP",
+    "min_distance": 0.29026501980158853,
+    "worst_mae": 0.1238325068228307
+   }
+  },
+  "CHENTO_ETH": {
+   "P1_time_only": {
+    "halves_higher": false,
+    "mar_higher": false,
+    "maxdd_ok": false,
+    "no_liquidation": true,
+    "safety_2x": false,
+    "verdict": "KEEP THE STOP",
+    "min_distance": 0.2528620097683631,
+    "worst_mae": 0.1495370321712716
+   },
+   "P1b_target_only": {
+    "halves_higher": false,
+    "mar_higher": false,
+    "maxdd_ok": false,
+    "no_liquidation": true,
+    "safety_2x": false,
+    "verdict": "KEEP THE STOP",
+    "min_distance": 0.24561447364839092,
+    "worst_mae": 0.1495370321712716
+   },
+   "P2_catastrophe_3x": {
+    "halves_higher": false,
+    "mar_higher": false,
+    "maxdd_ok": false,
+    "no_liquidation": true,
+    "safety_2x": true,
+    "verdict": "KEEP THE STOP",
+    "min_distance": 0.23924240315061837,
+    "worst_mae": 0.1088755635249619
+   }
+  },
+  "SHORT_SQUEEZE": {
+   "P1_time_only": {
+    "halves_higher": true,
+    "mar_higher": true,
+    "maxdd_ok": true,
+    "no_liquidation": true,
+    "safety_2x": false,
+    "verdict": "KEEP THE STOP",
+    "min_distance": 0.15997747358318556,
+    "worst_mae": 0.0834001141821572
+   },
+   "P1b_target_only": {
+    "halves_higher": false,
+    "mar_higher": true,
+    "maxdd_ok": true,
+    "no_liquidation": true,
+    "safety_2x": false,
+    "verdict": "KEEP THE STOP",
+    "min_distance": 0.15915018976317052,
+    "worst_mae": 0.0834001141821572
+   },
+   "P2_catastrophe_3x": {
+    "halves_higher": false,
+    "mar_higher": false,
+    "maxdd_ok": false,
+    "no_liquidation": true,
+    "safety_2x": true,
+    "verdict": "KEEP THE STOP",
+    "min_distance": 0.17038489433951504,
+    "worst_mae": 0.0572115460159331
+   }
+  },
+  "SQUEEZE_BULL": {
+   "P1_time_only": {
+    "halves_higher": true,
+    "mar_higher": true,
+    "maxdd_ok": true,
+    "no_liquidation": true,
+    "safety_2x": true,
+    "verdict": "BUILD-CANDIDATE",
+    "min_distance": 0.9615867986475499,
+    "worst_mae": 0.1042930491853965
+   },
+   "P1b_target_only": {
+    "halves_higher": true,
+    "mar_higher": true,
+    "maxdd_ok": true,
+    "no_liquidation": true,
+    "safety_2x": true,
+    "verdict": "BUILD-CANDIDATE",
+    "min_distance": 0.9714712089383791,
+    "worst_mae": 0.1042930491853965
+   },
+   "P2_catastrophe_3x": {
+    "halves_higher": false,
+    "mar_higher": true,
+    "maxdd_ok": true,
+    "no_liquidation": true,
+    "safety_2x": true,
+    "verdict": "KEEP THE STOP",
+    "min_distance": 0.9714712089383791,
+    "worst_mae": 0.1042930491853965
+   }
+  },
+  "ADX": {
+   "P1_signal_only": {
+    "halves_higher": true,
+    "mar_higher": false,
+    "maxdd_ok": false,
+    "verdict": "KEEP THE STOP"
+   },
+   "P2_catastrophe_30": {
+    "halves_higher": true,
+    "mar_higher": false,
+    "maxdd_ok": false,
+    "verdict": "KEEP THE STOP"
+   }
+  }
+ }
+}

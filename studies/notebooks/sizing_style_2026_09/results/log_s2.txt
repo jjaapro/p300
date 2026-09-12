@@ -1,0 +1,27 @@
+
+CHENTO_BTC
+                       final_equity  cagr_pct  maxdd_pct   mar  worst_trade_pct_equity      n  years
+fixed_R_fixed_capital      25060.63     17.97      -9.07  1.98                   -2.02  101.0   5.56
+fixed_R_on_equity          39544.61     28.05     -22.19  1.26                   -2.29  101.0   5.56
+fixed_notional             22905.95     16.07     -11.87  1.35                  -11.87  101.0   5.56
+
+CHENTO_ETH
+                       final_equity  cagr_pct  maxdd_pct   mar  worst_trade_pct_equity     n  years
+fixed_R_fixed_capital      18833.68     12.30     -10.15  1.21                   -2.12  77.0   5.46
+fixed_R_on_equity          22398.35     15.93     -17.47  0.91                   -2.26  77.0   5.46
+fixed_notional             17963.34     11.33     -12.20  0.93                   -4.51  77.0   5.46
+
+SHORT_SQUEEZE
+                       final_equity  cagr_pct  maxdd_pct   mar  worst_trade_pct_equity     n  years
+fixed_R_fixed_capital      10606.77      1.47      -7.19  0.20                   -1.27  71.0   4.03
+fixed_R_on_equity          10546.07      1.33      -7.52  0.18                   -1.28  71.0   4.03
+fixed_notional             10035.72      0.09     -15.14  0.01                   -4.74  71.0   4.03
+
+SQUEEZE_BULL
+                       final_equity  cagr_pct  maxdd_pct   mar  worst_trade_pct_equity      n  years
+fixed_R_fixed_capital      13666.89      7.28      -4.20  1.73                   -1.03  122.0   4.45
+fixed_R_on_equity          14317.15      8.41      -4.81  1.75                   -1.03  122.0   4.45
+fixed_notional             13666.89      7.28      -4.20  1.73                   -1.03  122.0   4.45
+
+liquidating adverse move by gross exposure: {'0.5x': 199.5, '1x': 99.5, '2x': 49.5, '3x': 32.83333333333333, '5x': 19.5, '10x': 9.5}
+worst moves: {'BTC': {'1h': {'worst_drop_pct': -24.77860513782457, 'drop_at': '2020-03-12 10:48', 'worst_rise_pct': 39.523760420715305, 'rise_at': '2020-03-13 02:45'}, '6h': {'worst_drop_pct': -36.85926544240401, 'drop_at': '2020-03-13 02:16', 'worst_rise_pct': 48.064714856443324, 'rise_at': '2020-03-13 08:05'}, '24h': {'worst_drop_pct': -51.31610619469027, 'drop_at': '2020-03-13 02:16', 'worst_rise_pct': 57.45096017323572, 'rise_at': '2020-03-13 13:34'}, '72h': {'worst_drop_pct': -53.58780218431709, 'drop_at': '2020-03-13 02:16', 'worst_rise_pct': 57.45096017323572, 'rise_at': '2020-03-13 13:34'}}, 'ETH': {'1h': {'worst_drop_pct': -30.99667409816892, 'drop_at': '2021-05-19 13:10', 'worst_rise_pct': 41.896984924623105, 'rise_at': '2020-03-13 03:29'}, '6h': {'worst_drop_pct': -37.413579797685756, 'drop_at': '2020-03-13 02:16', 'worst_rise_pct': 60.46511627906976, 'rise_at': '2020-03-13 03:31'}, '24h': {'worst_drop_pct': -54.16266922502931, 'drop_at': '2020-03-13 02:16', 'worst_rise_pct': 62.4186046511628, 'rise_at': '2020-03-13 13:34'}, '72h': {'worst_drop_pct': -58.29291949563531, 'drop_at': '2020-03-13 02:16', 'worst_rise_pct': 68.3306917176672, 'rise_at': '2021-05-26 08:03'}}}

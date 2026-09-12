@@ -1,0 +1,164 @@
+{
+ "env": {
+  "python": "3.13.11",
+  "numpy": "2.4.4",
+  "pandas": "3.0.2",
+  "run_at": "2026-09-12T05:39:43+00:00"
+ },
+ "tick_usdt": 0.01,
+ "sleeves": {
+  "CHENTO_BTC": {
+   "1m": {
+    "n_target_hits": 14,
+    "share_through_tick": 1.0,
+    "share_through_1bp": 0.9285714285714286,
+    "expected_loss_r_per_target_if_resting": 0.0,
+    "mean_loss_r_touch_only": 0.0,
+    "poll_exit_cost_bp": {
+     "mean": -36.638836795320195,
+     "ci90": [
+      -78.4644565905197,
+      -0.5754202904707164
+     ],
+     "median": -6.132997707312111
+    },
+    "unfilled_alt_kinds": {
+     "target": 1
+    }
+   },
+   "5s": {
+    "n_target_hits": 1,
+    "share_through_tick": 1.0,
+    "share_through_1bp": 0.0,
+    "expected_loss_r_per_target_if_resting": 0.0,
+    "mean_loss_r_touch_only": 0.0,
+    "poll_exit_cost_bp": {
+     "mean": 6.958462529546677,
+     "ci90": [
+      6.958462529546677,
+      6.958462529546677
+     ],
+     "median": 6.958462529546677
+    },
+    "unfilled_alt_kinds": {
+     "target": 1
+    }
+   }
+  },
+  "CHENTO_ETH": {
+   "1m": {
+    "n_target_hits": 8,
+    "share_through_tick": 1.0,
+    "share_through_1bp": 0.875,
+    "expected_loss_r_per_target_if_resting": 0.0,
+    "mean_loss_r_touch_only": 0.0,
+    "poll_exit_cost_bp": {
+     "mean": 0.9992217979752205,
+     "ci90": [
+      -33.61740896406467,
+      34.26665553528556
+     ],
+     "median": 11.639736277413224
+    },
+    "unfilled_alt_kinds": {
+     "target": 1
+    }
+   }
+  },
+  "SHORT_SQUEEZE": {
+   "1m": {
+    "n_target_hits": 21,
+    "share_through_tick": 1.0,
+    "share_through_1bp": 0.9523809523809523,
+    "expected_loss_r_per_target_if_resting": 0.0,
+    "mean_loss_r_touch_only": 0.0,
+    "poll_exit_cost_bp": {
+     "mean": -3.9384972837554506,
+     "ci90": [
+      -9.416050780449265,
+      -0.05643163439946322
+     ],
+     "median": -2.2213371266024047
+    },
+    "unfilled_alt_kinds": {
+     "target": 1
+    }
+   },
+   "5s": {
+    "n_target_hits": 5,
+    "share_through_tick": 1.0,
+    "share_through_1bp": 0.6,
+    "expected_loss_r_per_target_if_resting": 0.0,
+    "mean_loss_r_touch_only": 0.0,
+    "poll_exit_cost_bp": {
+     "mean": -0.47273687049640845,
+     "ci90": [
+      -1.5358799429184093,
+      1.1219777381365925
+     ],
+     "median": -0.2618214518542327
+    },
+    "unfilled_alt_kinds": {
+     "target": 2
+    }
+   }
+  },
+  "SQUEEZE_BULL": {
+   "1m": {
+    "n_target_hits": 49,
+    "share_through_tick": 1.0,
+    "share_through_1bp": 0.9183673469387755,
+    "expected_loss_r_per_target_if_resting": 0.01250148812162307,
+    "mean_loss_r_touch_only": 0.15314322948988263,
+    "poll_exit_cost_bp": {
+     "mean": -3.4369731242061747,
+     "ci90": [
+      -7.989244386859049,
+      0.6667912431290483
+     ],
+     "median": -0.1200857334663512
+    },
+    "unfilled_alt_kinds": {
+     "target": 3,
+     "tif": 1
+    }
+   },
+   "5s": {
+    "n_target_hits": 5,
+    "share_through_tick": 1.0,
+    "share_through_1bp": 0.6,
+    "expected_loss_r_per_target_if_resting": 0.0,
+    "mean_loss_r_touch_only": 0.0,
+    "poll_exit_cost_bp": {
+     "mean": -1.3031206223257112,
+     "ci90": [
+      -2.6533643175041384,
+      -0.23605533587617883
+     ],
+     "median": -0.36131310033666947
+    },
+    "unfilled_alt_kinds": {
+     "target": 2
+    }
+   }
+  }
+ },
+ "decision": {
+  "CHENTO_BTC": {
+   "resting_tp": true,
+   "share_through_tick_1m": 1.0
+  },
+  "CHENTO_ETH": {
+   "resting_tp": true,
+   "share_through_tick_1m": 1.0
+  },
+  "SHORT_SQUEEZE": {
+   "resting_tp": true,
+   "share_through_tick_1m": 1.0
+  },
+  "SQUEEZE_BULL": {
+   "resting_tp": true,
+   "share_through_tick_1m": 1.0
+  }
+ }
+}

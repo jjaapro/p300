@@ -1,0 +1,770 @@
+{
+ "env": {
+  "python": "3.13.11",
+  "numpy": "2.4.4",
+  "pandas": "3.0.2",
+  "run_at": "2026-09-12T05:39:47+00:00"
+ },
+ "assumptions": {
+  "half_spread_bp": 0.3,
+  "maker_T_s": 900,
+  "fees_bp": {
+   "perp_maker": 2.0,
+   "perp_taker": 5.0,
+   "spot_maker": 10.0,
+   "spot_taker": 10.0,
+   "perp_maker_bnb": 1.8,
+   "perp_taker_bnb": 4.5
+  },
+  "as_bp": 1.0
+ },
+ "sleeves": {
+  "CHENTO_BTC": {
+   "n": 101,
+   "exit_kinds": {
+    "stop": 54,
+    "tif": 33,
+    "target": 14
+   },
+   "gross": {
+    "n": 101,
+    "mean_r": 0.7997646288766298,
+    "ci90": [
+     0.36258966059276204,
+     1.2756145211323326
+    ],
+    "win": 0.40594059405940597,
+    "sum_r": 80.7762275165396,
+    "maxdd_r": -11.201617212157316,
+    "mar": 1.2968901368499248,
+    "first_half_mean": 1.3008639139929743,
+    "second_half_mean": 0.2886433580579584
+   },
+   "drift_bp": -0.5494740304751887,
+   "drift_ci90": [
+    -1.7848779538761315,
+    0.6576023708712067
+   ],
+   "stop_slip_bp": 0.0,
+   "models": {
+    "M0_sleeve": {
+     "mean_bp_per_trade": 18.0,
+     "mean_cost_r": 0.11481356156599501,
+     "gross_mean_r": 0.7997646288766298,
+     "net_mean_r": 0.6849510673106348,
+     "net_ci90": [
+      0.24908680715849196,
+      1.1599849866338727
+     ],
+     "cost_share_of_gross": 0.14355918906699477,
+     "net_mar": 0.9275851125054138,
+     "net_first_half": 1.2000926730577168,
+     "net_second_half": 0.15950662944861102,
+     "fill_rate": 1.0
+    },
+    "M0_research": {
+     "mean_bp_per_trade": 18.0,
+     "mean_cost_r": 0.11481356156599501,
+     "gross_mean_r": 0.7997646288766298,
+     "net_mean_r": 0.6849510673106348,
+     "net_ci90": [
+      0.24908680715849196,
+      1.1599849866338727
+     ],
+     "cost_share_of_gross": 0.14355918906699477,
+     "net_mar": 0.9275851125054138,
+     "net_first_half": 1.2000926730577168,
+     "net_second_half": 0.15950662944861102,
+     "fill_rate": 1.0
+    },
+    "M1_measured_taker": {
+     "mean_bp_per_trade": 9.593100226950552,
+     "mean_cost_r": 0.06044703347609828,
+     "gross_mean_r": 0.7997646288766298,
+     "net_mean_r": 0.7393175954005314,
+     "net_ci90": [
+      0.30059866757957054,
+      1.2145255720242618
+     ],
+     "cost_share_of_gross": 0.07558102883470073,
+     "net_mar": 1.0798368962415361,
+     "net_first_half": 1.2496464507151417,
+     "net_second_half": 0.21878216297962885,
+     "fill_rate": 1.0
+    },
+    "M2_hybrid_touch": {
+     "mean_bp_per_trade": 7.7603960396039575,
+     "mean_cost_r": 0.048452999698928696,
+     "gross_mean_r": 0.8096839936727864,
+     "net_mean_r": 0.7612309939738576,
+     "net_ci90": [
+      0.32296334852152514,
+      1.2384894498408705
+     ],
+     "cost_share_of_gross": 0.059841864329245674,
+     "net_mar": 1.2414925911842694,
+     "net_first_half": 1.2594825066318585,
+     "net_second_half": 0.2530144510626969,
+     "fill_rate": 0.9900990099009901
+    },
+    "M2_hybrid_through": {
+     "mean_bp_per_trade": 7.382178217821779,
+     "mean_cost_r": 0.04554918324911181,
+     "gross_mean_r": 0.7898820134747666,
+     "net_mean_r": 0.7443328302256548,
+     "net_ci90": [
+      0.3300997557660126,
+      1.1903627733495397
+     ],
+     "cost_share_of_gross": 0.05766580637624168,
+     "net_mar": 1.5010313359374874,
+     "net_first_half": 1.2801022460047928,
+     "net_second_half": 0.1978480261309341,
+     "fill_rate": 0.9405940594059405
+    },
+    "M3_maker_touch": {
+     "mean_bp_per_trade": 7.008910891089108,
+     "mean_cost_r": 0.044842976979770396,
+     "gross_mean_r": 0.8096839936727864,
+     "net_mean_r": 0.7648410166930161,
+     "net_ci90": [
+      0.3273787839544437,
+      1.2426564094676253
+     ],
+     "cost_share_of_gross": 0.05538330673471676,
+     "net_mar": 1.2548250755087635,
+     "net_first_half": 1.2627221800934425,
+     "net_second_half": 0.25700223002458095,
+     "fill_rate": 0.9900990099009901
+    },
+    "M3_maker_through": {
+     "mean_bp_per_trade": 6.630693069306929,
+     "mean_cost_r": 0.041939160529953515,
+     "gross_mean_r": 0.7898820134747666,
+     "net_mean_r": 0.7479428529448132,
+     "net_ci90": [
+      0.33348770813802353,
+      1.1945371371265636
+     ],
+     "cost_share_of_gross": 0.05309547478547984,
+     "net_mar": 1.519458381609251,
+     "net_first_half": 1.2833419194663769,
+     "net_second_half": 0.20183580509281818,
+     "fill_rate": 0.9405940594059405
+    }
+   },
+   "rule1_cost_constant": {
+    "coded_sleeve_bp": 18.0,
+    "measured_taker_bp": 9.593100226950552,
+    "measured_ci90": [
+     8.35769630354961,
+     10.800176628296947
+    ],
+    "differs_by_gt_3bp": true,
+    "ci_excludes_coded": true,
+    "recommend_change": true
+   },
+   "rule4_viability": {
+    "m1_cost_share": 0.07558102883470073,
+    "m2_through_cost_share": 0.05766580637624168,
+    "m2_touch_cost_share": 0.059841864329245674,
+    "verdict": "VIABLE"
+   }
+  },
+  "CHENTO_ETH": {
+   "n": 77,
+   "exit_kinds": {
+    "stop": 41,
+    "tif": 28,
+    "target": 8
+   },
+   "gross": {
+    "n": 77,
+    "mean_r": 0.6531667561489508,
+    "ci90": [
+     0.20333402159028707,
+     1.1366149388096733
+    ],
+    "win": 0.42857142857142855,
+    "sum_r": 50.29384022346921,
+    "maxdd_r": -9.094245609586615,
+    "mar": 1.013495827582439,
+    "first_half_mean": 0.9793210925478942,
+    "second_half_mean": 0.31842941089740345
+   },
+   "drift_bp": -0.23960338347981927,
+   "drift_ci90": [
+    -2.288026876914095,
+    1.6552744719894799
+   ],
+   "stop_slip_bp": 0.0,
+   "models": {
+    "M0_sleeve": {
+     "mean_bp_per_trade": 18.0,
+     "mean_cost_r": 0.09005748890424593,
+     "gross_mean_r": 0.6531667561489508,
+     "net_mean_r": 0.5631092672447047,
+     "net_ci90": [
+      0.11542573869557407,
+      1.0417464896029331
+     ],
+     "cost_share_of_gross": 0.13787824940023258,
+     "net_mar": 0.8070299235837051,
+     "net_first_half": 0.8712370858053823,
+     "net_second_half": 0.24687282187979898,
+     "fill_rate": 1.0
+    },
+    "M0_research": {
+     "mean_bp_per_trade": 18.0,
+     "mean_cost_r": 0.09005748890424593,
+     "gross_mean_r": 0.6531667561489508,
+     "net_mean_r": 0.5631092672447047,
+     "net_ci90": [
+      0.11542573869557407,
+      1.0417464896029331
+     ],
+     "cost_share_of_gross": 0.13787824940023258,
+     "net_mar": 0.8070299235837051,
+     "net_first_half": 0.8712370858053823,
+     "net_second_half": 0.24687282187979898,
+     "fill_rate": 1.0
+    },
+    "M1_measured_taker": {
+     "mean_bp_per_trade": 10.017539473663039,
+     "mean_cost_r": 0.048639815519786266,
+     "gross_mean_r": 0.6531667561489508,
+     "net_mean_r": 0.6045269406291646,
+     "net_ci90": [
+      0.15446615275465547,
+      1.0860125907639393
+     ],
+     "cost_share_of_gross": 0.07446768388300253,
+     "net_mar": 0.8981477183154161,
+     "net_first_half": 0.9227105363640319,
+     "net_second_half": 0.27797009237495834,
+     "fill_rate": 1.0
+    },
+    "M2_hybrid_touch": {
+     "mean_bp_per_trade": 7.957142857142855,
+     "mean_cost_r": 0.03833126982606573,
+     "gross_mean_r": 0.6531827349231898,
+     "net_mean_r": 0.614851465097124,
+     "net_ci90": [
+      0.1645212086382525,
+      1.0967770677070858
+     ],
+     "cost_share_of_gross": 0.058683838038942115,
+     "net_mar": 0.9215170533975308,
+     "net_first_half": 0.9351091781752654,
+     "net_second_half": 0.2861659174642948,
+     "fill_rate": 1.0
+    },
+    "M2_hybrid_through": {
+     "mean_bp_per_trade": 7.849350649350646,
+     "mean_cost_r": 0.03805294931812919,
+     "gross_mean_r": 0.6343262782285736,
+     "net_mean_r": 0.5962733289104443,
+     "net_ci90": [
+      0.1543611347635778,
+      1.0762481881241468
+     ],
+     "cost_share_of_gross": 0.05998955210305376,
+     "net_mar": 0.8936728173694638,
+     "net_first_half": 0.8984292682682311,
+     "net_second_half": 0.2861659174642948,
+     "fill_rate": 0.987012987012987
+    },
+    "M3_maker_touch": {
+     "mean_bp_per_trade": 7.12077922077922,
+     "mean_cost_r": 0.03533490021525959,
+     "gross_mean_r": 0.6531827349231898,
+     "net_mean_r": 0.61784783470793,
+     "net_ci90": [
+      0.16701065799303694,
+      1.100395851877202
+     ],
+     "cost_share_of_gross": 0.0540965006054772,
+     "net_mar": 0.927262584059921,
+     "net_first_half": 0.9379065631491402,
+     "net_second_half": 0.28936650814984605,
+     "fill_rate": 1.0
+    },
+    "M3_maker_through": {
+     "mean_bp_per_trade": 7.042857142857143,
+     "mean_cost_r": 0.03513370466735366,
+     "gross_mean_r": 0.6343262782285736,
+     "net_mean_r": 0.5991925735612198,
+     "net_ci90": [
+      0.15643042944393404,
+      1.0784665500198263
+     ],
+     "cost_share_of_gross": 0.05538743368076824,
+     "net_mar": 0.899264872187404,
+     "net_first_half": 0.9010743808851226,
+     "net_second_half": 0.28936650814984605,
+     "fill_rate": 0.987012987012987
+    }
+   },
+   "rule1_cost_constant": {
+    "coded_sleeve_bp": 18.0,
+    "measured_taker_bp": 10.017539473663039,
+    "measured_ci90": [
+     7.9691159802287626,
+     11.912417329132339
+    ],
+    "differs_by_gt_3bp": true,
+    "ci_excludes_coded": true,
+    "recommend_change": true
+   },
+   "rule4_viability": {
+    "m1_cost_share": 0.07446768388300253,
+    "m2_through_cost_share": 0.05998955210305376,
+    "m2_touch_cost_share": 0.058683838038942115,
+    "verdict": "VIABLE"
+   }
+  },
+  "SHORT_SQUEEZE": {
+   "n": 71,
+   "exit_kinds": {
+    "stop": 39,
+    "target": 21,
+    "tif": 11
+   },
+   "gross": {
+    "n": 71,
+    "mean_r": 0.4807947035680294,
+    "ci90": [
+     0.1335263595176222,
+     0.8249713666883263
+    ],
+    "win": 0.4507042253521127,
+    "sum_r": 34.13642395333009,
+    "maxdd_r": -7.0,
+    "mar": 1.2089951158781331,
+    "first_half_mean": 0.38841642806406695,
+    "second_half_mean": 0.575812358372105
+   },
+   "drift_bp": -0.3073966848313405,
+   "drift_ci90": [
+    -2.582617460975967,
+    1.970980881253515
+   ],
+   "stop_slip_bp": 0.0,
+   "models": {
+    "M0_sleeve": {
+     "mean_bp_per_trade": 25.0,
+     "mean_cost_r": 0.7970466960410975,
+     "gross_mean_r": 0.4807947035680294,
+     "net_mean_r": -0.316251992473068,
+     "net_ci90": [
+      -0.6680207763994722,
+      0.021215039099055987
+     ],
+     "cost_share_of_gross": 1.657769293476255,
+     "net_mar": -0.20932310844436453,
+     "net_first_half": -0.2825371769568366,
+     "net_second_half": -0.3509300884326203,
+     "fill_rate": 1.0
+    },
+    "M0_research": {
+     "mean_bp_per_trade": 4.0,
+     "mean_cost_r": 0.12752747136657555,
+     "gross_mean_r": 0.4807947035680294,
+     "net_mean_r": 0.3532672322014539,
+     "net_ci90": [
+      0.004049990679575819,
+      0.6952504433995209
+     ],
+     "cost_share_of_gross": 0.2652430869562007,
+     "net_mar": 0.8210236231588078,
+     "net_first_half": 0.2810638512607224,
+     "net_second_half": 0.427533566883349,
+     "fill_rate": 1.0
+    },
+    "M1_measured_taker": {
+     "mean_bp_per_trade": 9.31654697714049,
+     "mean_cost_r": 0.2887672877682442,
+     "gross_mean_r": 0.4807947035680294,
+     "net_mean_r": 0.1920274157997852,
+     "net_ci90": [
+      -0.16768410483831608,
+      0.5377144446760573
+     ],
+     "cost_share_of_gross": 0.6006041364958286,
+     "net_mar": 0.3987661794133978,
+     "net_first_half": 0.13553840335301623,
+     "net_second_half": 0.2501304000307476,
+     "fill_rate": 1.0
+    },
+    "M2_hybrid_touch": {
+     "mean_bp_per_trade": 7.323943661971831,
+     "mean_cost_r": 0.22540584570068933,
+     "gross_mean_r": 0.4811626177175168,
+     "net_mean_r": 0.2557567720168275,
+     "net_ci90": [
+      -0.10311551140604625,
+      0.6038008223981902
+     ],
+     "cost_share_of_gross": 0.46846084338376776,
+     "net_mar": 0.5494516312798565,
+     "net_first_half": 0.1894162220211041,
+     "net_second_half": 0.323992766298143,
+     "fill_rate": 1.0
+    },
+    "M2_hybrid_through": {
+     "mean_bp_per_trade": 7.207042253521127,
+     "mean_cost_r": 0.22347632200603157,
+     "gross_mean_r": 0.4705871630747724,
+     "net_mean_r": 0.24711084106874087,
+     "net_ci90": [
+      -0.1096489947999187,
+      0.5954184013763879
+     ],
+     "cost_share_of_gross": 0.4748882662796372,
+     "net_mar": 0.530877261475695,
+     "net_first_half": 0.17236452487348886,
+     "net_second_half": 0.323992766298143,
+     "fill_rate": 0.9859154929577465
+    },
+    "M3_maker_touch": {
+     "mean_bp_per_trade": 6.967605633802817,
+     "mean_cost_r": 0.2171942378420335,
+     "gross_mean_r": 0.4811626177175168,
+     "net_mean_r": 0.2639683798754832,
+     "net_ci90": [
+      -0.09553124817816222,
+      0.6128487172213966
+     ],
+     "cost_share_of_gross": 0.45139466335172557,
+     "net_mar": 0.5670929288994249,
+     "net_first_half": 0.20124707871819314,
+     "net_second_half": 0.3284817182086961,
+     "fill_rate": 1.0
+    },
+    "M3_maker_through": {
+     "mean_bp_per_trade": 6.883098591549296,
+     "mean_cost_r": 0.2157994014362568,
+     "gross_mean_r": 0.4705871630747724,
+     "net_mean_r": 0.25478776163851563,
+     "net_ci90": [
+      -0.10261345191410787,
+      0.602649261013431
+     ],
+     "cost_share_of_gross": 0.4585747728991241,
+     "net_mar": 0.5473698708287373,
+     "net_first_half": 0.18314085941750682,
+     "net_second_half": 0.3284817182086961,
+     "fill_rate": 0.9859154929577465
+    }
+   },
+   "rule1_cost_constant": {
+    "coded_sleeve_bp": 25.0,
+    "measured_taker_bp": 9.31654697714049,
+    "measured_ci90": [
+     7.041326200995863,
+     11.594924543225346
+    ],
+    "differs_by_gt_3bp": true,
+    "ci_excludes_coded": true,
+    "recommend_change": true
+   },
+   "rule4_viability": {
+    "m1_cost_share": 0.6006041364958286,
+    "m2_through_cost_share": 0.4748882662796372,
+    "m2_touch_cost_share": 0.46846084338376776,
+    "verdict": "RETIRE PENDING USER DECISION"
+   }
+  },
+  "SQUEEZE_BULL": {
+   "n": 122,
+   "exit_kinds": {
+    "target": 49,
+    "stop": 42,
+    "tif": 31
+   },
+   "gross": {
+    "n": 122,
+    "mean_r": 0.3339243933517995,
+    "ci90": [
+     0.16883366134682873,
+     0.4955989521574792
+    ],
+    "win": 0.5819672131147541,
+    "sum_r": 40.73877598891954,
+    "maxdd_r": -4.604610918140356,
+    "mar": 1.9899470608297545,
+    "first_half_mean": 0.2561650871007254,
+    "second_half_mean": 0.41168369960287365
+   },
+   "drift_bp": -2.602582071793453,
+   "drift_ci90": [
+    -4.738179584535649,
+    -0.4388389353430026
+   ],
+   "stop_slip_bp": 0.0,
+   "models": {
+    "M0_sleeve": {
+     "mean_bp_per_trade": 18.0,
+     "mean_cost_r": 0.08999999999999994,
+     "gross_mean_r": 0.3339243933517995,
+     "net_mean_r": 0.24392439335179955,
+     "net_ci90": [
+      0.07883366134682879,
+      0.4055989521574793
+     ],
+     "cost_share_of_gross": 0.2695220888076368,
+     "net_mar": 1.2361588859824948,
+     "net_first_half": 0.16616508710072542,
+     "net_second_half": 0.3216836996028737,
+     "fill_rate": 1.0
+    },
+    "M0_research": {
+     "mean_bp_per_trade": 18.0,
+     "mean_cost_r": 0.08999999999999994,
+     "gross_mean_r": 0.3339243933517995,
+     "net_mean_r": 0.24392439335179955,
+     "net_ci90": [
+      0.07883366134682879,
+      0.4055989521574793
+     ],
+     "cost_share_of_gross": 0.2695220888076368,
+     "net_mar": 1.2361588859824948,
+     "net_first_half": 0.16616508710072542,
+     "net_second_half": 0.3216836996028737,
+     "fill_rate": 1.0
+    },
+    "M1_measured_taker": {
+     "mean_bp_per_trade": 6.672008092140972,
+     "mean_cost_r": 0.03336004046070485,
+     "gross_mean_r": 0.3339243933517995,
+     "net_mean_r": 0.3005643528910947,
+     "net_ci90": [
+      0.13439165367300912,
+      0.4630332738120103
+     ],
+     "cost_share_of_gross": 0.09990297541862726,
+     "net_mar": 1.6613025601158524,
+     "net_first_half": 0.22239930893510257,
+     "net_second_half": 0.37872939684708684,
+     "fill_rate": 1.0
+    },
+    "M2_hybrid_touch": {
+     "mean_bp_per_trade": 6.974590163934425,
+     "mean_cost_r": 0.03487295081967211,
+     "gross_mean_r": 0.33398278317610364,
+     "net_mean_r": 0.2991098323564315,
+     "net_ci90": [
+      0.13294615697051881,
+      0.4615655094705379
+     ],
+     "cost_share_of_gross": 0.10441541473496906,
+     "net_mar": 1.648751901451294,
+     "net_first_half": 0.22100266971456495,
+     "net_second_half": 0.3772169949982981,
+     "fill_rate": 1.0
+    },
+    "M2_hybrid_through": {
+     "mean_bp_per_trade": 6.90655737704918,
+     "mean_cost_r": 0.03453278688524588,
+     "gross_mean_r": 0.342179504487579,
+     "net_mean_r": 0.30764671760233314,
+     "net_ci90": [
+      0.1400351852325708,
+      0.4689058450389265
+     ],
+     "cost_share_of_gross": 0.10092009145012777,
+     "net_mar": 1.6958088827305964,
+     "net_first_half": 0.23807644020636823,
+     "net_second_half": 0.3772169949982981,
+     "fill_rate": 0.9918032786885246
+    },
+    "M3_maker_touch": {
+     "mean_bp_per_trade": 6.390163934426229,
+     "mean_cost_r": 0.031950819672131134,
+     "gross_mean_r": 0.33398278317610364,
+     "net_mean_r": 0.3020319635039725,
+     "net_ci90": [
+      0.13595783729838762,
+      0.4649022552566854
+     ],
+     "cost_share_of_gross": 0.09566606807777871,
+     "net_mar": 1.6803868987850599,
+     "net_first_half": 0.22364201397685998,
+     "net_second_half": 0.380421913031085,
+     "fill_rate": 1.0
+    },
+    "M3_maker_through": {
+     "mean_bp_per_trade": 6.322131147540984,
+     "mean_cost_r": 0.031610655737704905,
+     "gross_mean_r": 0.342179504487579,
+     "net_mean_r": 0.3105688487498741,
+     "net_ci90": [
+      0.14288852019691167,
+      0.4719441565628439
+     ],
+     "cost_share_of_gross": 0.09238033056667881,
+     "net_mar": 1.7278827662992806,
+     "net_first_half": 0.2407157844686633,
+     "net_second_half": 0.380421913031085,
+     "fill_rate": 0.9918032786885246
+    }
+   },
+   "rule1_cost_constant": {
+    "coded_sleeve_bp": 18.0,
+    "measured_taker_bp": 6.672008092140972,
+    "measured_ci90": [
+     4.536410579398776,
+     8.835751228591423
+    ],
+    "differs_by_gt_3bp": true,
+    "ci_excludes_coded": true,
+    "recommend_change": true
+   },
+   "rule4_viability": {
+    "m1_cost_share": 0.09990297541862726,
+    "m2_through_cost_share": 0.10092009145012777,
+    "m2_touch_cost_share": 0.10441541473496906,
+    "verdict": "VIABLE"
+   }
+  }
+ },
+ "decisions": {
+  "CHENTO_BTC": {
+   "rule1": {
+    "coded_sleeve_bp": 18.0,
+    "measured_taker_bp": 9.593100226950552,
+    "measured_ci90": [
+     8.35769630354961,
+     10.800176628296947
+    ],
+    "differs_by_gt_3bp": true,
+    "ci_excludes_coded": true,
+    "recommend_change": true
+   },
+   "rule2_entry": {
+    "maker_entry": false,
+    "cell": null,
+    "detail": null,
+    "fill_rate_T300_1m_on_5s_events": 1.0,
+    "fill_rate_T300_5s": 1.0,
+    "resolution_check_pass": true
+   },
+   "rule3_tp": {
+    "resting_tp": true,
+    "share_through_tick_1m": 1.0
+   },
+   "rule4": {
+    "m1_cost_share": 0.07558102883470073,
+    "m2_through_cost_share": 0.05766580637624168,
+    "m2_touch_cost_share": 0.059841864329245674,
+    "verdict": "VIABLE"
+   }
+  },
+  "CHENTO_ETH": {
+   "rule1": {
+    "coded_sleeve_bp": 18.0,
+    "measured_taker_bp": 10.017539473663039,
+    "measured_ci90": [
+     7.9691159802287626,
+     11.912417329132339
+    ],
+    "differs_by_gt_3bp": true,
+    "ci_excludes_coded": true,
+    "recommend_change": true
+   },
+   "rule2_entry": {
+    "maker_entry": false,
+    "cell": null,
+    "detail": null
+   },
+   "rule3_tp": {
+    "resting_tp": true,
+    "share_through_tick_1m": 1.0
+   },
+   "rule4": {
+    "m1_cost_share": 0.07446768388300253,
+    "m2_through_cost_share": 0.05998955210305376,
+    "m2_touch_cost_share": 0.058683838038942115,
+    "verdict": "VIABLE"
+   }
+  },
+  "SHORT_SQUEEZE": {
+   "rule1": {
+    "coded_sleeve_bp": 25.0,
+    "measured_taker_bp": 9.31654697714049,
+    "measured_ci90": [
+     7.041326200995863,
+     11.594924543225346
+    ],
+    "differs_by_gt_3bp": true,
+    "ci_excludes_coded": true,
+    "recommend_change": true
+   },
+   "rule2_entry": {
+    "maker_entry": false,
+    "cell": null,
+    "detail": null,
+    "fill_rate_T300_1m_on_5s_events": 1.0,
+    "fill_rate_T300_5s": 1.0,
+    "resolution_check_pass": true
+   },
+   "rule3_tp": {
+    "resting_tp": true,
+    "share_through_tick_1m": 1.0
+   },
+   "rule4": {
+    "m1_cost_share": 0.6006041364958286,
+    "m2_through_cost_share": 0.4748882662796372,
+    "m2_touch_cost_share": 0.46846084338376776,
+    "verdict": "RETIRE PENDING USER DECISION"
+   }
+  },
+  "SQUEEZE_BULL": {
+   "rule1": {
+    "coded_sleeve_bp": 18.0,
+    "measured_taker_bp": 6.672008092140972,
+    "measured_ci90": [
+     4.536410579398776,
+     8.835751228591423
+    ],
+    "differs_by_gt_3bp": true,
+    "ci_excludes_coded": true,
+    "recommend_change": true
+   },
+   "rule2_entry": {
+    "maker_entry": false,
+    "cell": null,
+    "detail": null,
+    "fill_rate_T300_1m_on_5s_events": 1.0,
+    "fill_rate_T300_5s": 1.0,
+    "resolution_check_pass": true
+   },
+   "rule3_tp": {
+    "resting_tp": true,
+    "share_through_tick_1m": 1.0
+   },
+   "rule4": {
+    "m1_cost_share": 0.09990297541862726,
+    "m2_through_cost_share": 0.10092009145012777,
+    "m2_touch_cost_share": 0.10441541473496906,
+    "verdict": "VIABLE"
+   }
+  }
+ },
+ "ADX": {
+  "coded_sleeve_bp": 15.0,
+  "harness_bp": 10.0,
+  "measured_taker_bp": 10.504582676721117,
+  "mean_trade_pct": 15.192221953536416,
+  "trades_per_year": 3.9080459770114944,
+  "cost_share_of_mean_trade": 0.006914447872633851
+ },
+ "CARRY": {
+  "coded_pct_per_toggle": 0.24,
+  "taker_all_vip0_bp": 30.0,
+  "taker_all_bnb_bp": 24.0,
+  "maker_perp_legs_bnb_bp": 20.6,
+  "toggles_per_year": 4.8,
+  "note": "price P&L is zero by construction; cost = fees on 4 fills per toggle"
+ }
+}

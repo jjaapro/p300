@@ -50,3 +50,7 @@ studies/notebooks/scanner_study/results/trades_*.csv
 studies/material/paladin/images/
 studies/material/paladin/paladin_analysis_pack.zip
 .claude/scheduled_tasks.lock
+
+# brainstorm validation study: fetched funding + 5s->5m aggregation cache
+studies/notebooks/brainstorm_validation_2026_09/cache/
+studies/notebooks/execution_2026_09/cache/

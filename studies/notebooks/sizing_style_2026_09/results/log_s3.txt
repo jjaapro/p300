@@ -1,0 +1,34 @@
+P0_shipped CHENTO_BTC {'breach_minutes': 0, 'episodes': 0, 'min_distance': 0.2948, 'at': '2023-10-08 13:12', 'max_gross_x': 3.3354, 'min_equity': 9661.4404, 'worst_mae': 0.1134, 'final_equity': 25060.6348, 'open_minutes': 206192}
+P0_shipped CHENTO_ETH {'breach_minutes': 0, 'episodes': 0, 'min_distance': 0.3138, 'at': '2023-10-13 20:54', 'max_gross_x': 3.1372, 'min_equity': 9395.3573, 'worst_mae': 0.0822, 'final_equity': 18833.6789, 'open_minutes': 173743}
+P0_shipped SHORT_SQUEEZE {'breach_minutes': 0, 'episodes': 0, 'min_distance': 0.3292, 'at': '2023-05-13 07:15', 'max_gross_x': 2.9922, 'min_equity': 9847.015, 'worst_mae': 0.0189, 'final_equity': 10606.7742, 'open_minutes': 8922}
+P0_shipped SQUEEZE_BULL {'breach_minutes': 0, 'episodes': 0, 'min_distance': 1.0503, 'at': '2023-04-03 21:00', 'max_gross_x': 0.9476, 'min_equity': 9825.3841, 'worst_mae': 0.0385, 'final_equity': 13666.8851, 'open_minutes': 186049}
+P0_shipped POOLED $50k {'breach_minutes': 0, 'episodes': 0, 'min_distance': 0.9376, 'at': '2023-12-03 19:16', 'max_gross_x': 1.0609, 'min_equity': 49531.8989, 'worst_mae': 0.1134, 'final_equity': 78167.9731, 'open_minutes': 521251}
+P1_time_only CHENTO_BTC {'breach_minutes': 0, 'episodes': 0, 'min_distance': 0.2802, 'at': '2023-10-09 16:44', 'max_gross_x': 3.5065, 'min_equity': 9743.0672, 'worst_mae': 0.1238, 'final_equity': 24749.7984, 'open_minutes': 343290}
+P1_time_only CHENTO_ETH {'breach_minutes': 0, 'episodes': 0, 'min_distance': 0.2529, 'at': '2023-01-08 00:40', 'max_gross_x': 3.878, 'min_equity': 8886.1843, 'worst_mae': 0.1495, 'final_equity': 17334.9928, 'open_minutes': 270660}
+P1_time_only SHORT_SQUEEZE {'breach_minutes': 0, 'episodes': 0, 'min_distance': 0.16, 'at': '2023-09-21 14:01', 'max_gross_x': 6.0614, 'min_equity': 8793.5288, 'worst_mae': 0.0834, 'final_equity': 13529.9186, 'open_minutes': 24702}
+P1_time_only SQUEEZE_BULL {'breach_minutes': 0, 'episodes': 0, 'min_distance': 0.9616, 'at': '2022-08-02 09:33', 'max_gross_x': 1.0346, 'min_equity': 9665.868, 'worst_mae': 0.1043, 'final_equity': 16496.8768, 'open_minutes': 315400}
+P1_time_only POOLED $50k {'breach_minutes': 0, 'episodes': 0, 'min_distance': 0.8123, 'at': '2023-10-08 13:15', 'max_gross_x': 1.2235, 'min_equity': 49470.7141, 'worst_mae': 0.1495, 'final_equity': 82111.5867, 'open_minutes': 811734}
+P1b_target_only CHENTO_BTC {'breach_minutes': 0, 'episodes': 0, 'min_distance': 0.2866, 'at': '2023-10-09 16:44', 'max_gross_x': 3.4289, 'min_equity': 9743.0672, 'worst_mae': 0.1238, 'final_equity': 24519.3447, 'open_minutes': 326354}
+P1b_target_only CHENTO_ETH {'breach_minutes': 0, 'episodes': 0, 'min_distance': 0.2456, 'at': '2023-01-08 00:40', 'max_gross_x': 3.9902, 'min_equity': 8886.1843, 'worst_mae': 0.1495, 'final_equity': 15952.7682, 'open_minutes': 259919}
+P1b_target_only SHORT_SQUEEZE {'breach_minutes': 0, 'episodes': 0, 'min_distance': 0.1592, 'at': '2023-09-21 14:01', 'max_gross_x': 6.092, 'min_equity': 9074.4003, 'worst_mae': 0.0834, 'final_equity': 11644.2558, 'open_minutes': 18229}
+P1b_target_only SQUEEZE_BULL {'breach_minutes': 0, 'episodes': 0, 'min_distance': 0.9715, 'at': '2022-08-02 09:33', 'max_gross_x': 1.0241, 'min_equity': 9764.7121, 'worst_mae': 0.1043, 'final_equity': 16004.2582, 'open_minutes': 245936}
+P1b_target_only POOLED $50k {'breach_minutes': 0, 'episodes': 0, 'min_distance': 0.8009, 'at': '2023-10-08 13:15', 'max_gross_x': 1.2408, 'min_equity': 49470.7141, 'worst_mae': 0.1495, 'final_equity': 78120.6269, 'open_minutes': 741475}
+P2_catastrophe_3x CHENTO_BTC {'breach_minutes': 0, 'episodes': 0, 'min_distance': 0.2903, 'at': '2023-10-09 16:29', 'max_gross_x': 3.3868, 'min_equity': 9743.0672, 'worst_mae': 0.1238, 'final_equity': 23456.8198, 'open_minutes': 305303}
+P2_catastrophe_3x CHENTO_ETH {'breach_minutes': 0, 'episodes': 0, 'min_distance': 0.2392, 'at': '2023-01-08 00:40', 'max_gross_x': 4.0943, 'min_equity': 9047.8244, 'worst_mae': 0.1089, 'final_equity': 13822.6818, 'open_minutes': 229174}
+P2_catastrophe_3x SHORT_SQUEEZE {'breach_minutes': 0, 'episodes': 0, 'min_distance': 0.1704, 'at': '2023-09-26 16:00', 'max_gross_x': 5.7017, 'min_equity': 9363.4574, 'worst_mae': 0.0572, 'final_equity': 10730.5843, 'open_minutes': 14296}
+P2_catastrophe_3x SQUEEZE_BULL {'breach_minutes': 0, 'episodes': 0, 'min_distance': 0.9715, 'at': '2022-08-02 09:33', 'max_gross_x': 1.0241, 'min_equity': 9764.7121, 'worst_mae': 0.1043, 'final_equity': 14745.3691, 'open_minutes': 234063}
+P2_catastrophe_3x POOLED $50k {'breach_minutes': 0, 'episodes': 0, 'min_distance': 0.9561, 'at': '2023-12-03 19:16', 'max_gross_x': 1.0404, 'min_equity': 49470.7141, 'worst_mae': 0.1238, 'final_equity': 72755.4549, 'open_minutes': 691806}
+DECISION CHENTO_BTC P1_time_only: {'halves_higher': False, 'mar_higher': False, 'maxdd_ok': True, 'no_liquidation': True, 'safety_2x': True} -> KEEP THE STOP
+DECISION CHENTO_BTC P1b_target_only: {'halves_higher': False, 'mar_higher': False, 'maxdd_ok': False, 'no_liquidation': True, 'safety_2x': True} -> KEEP THE STOP
+DECISION CHENTO_BTC P2_catastrophe_3x: {'halves_higher': False, 'mar_higher': False, 'maxdd_ok': False, 'no_liquidation': True, 'safety_2x': True} -> KEEP THE STOP
+DECISION CHENTO_ETH P1_time_only: {'halves_higher': False, 'mar_higher': False, 'maxdd_ok': False, 'no_liquidation': True, 'safety_2x': False} -> KEEP THE STOP
+DECISION CHENTO_ETH P1b_target_only: {'halves_higher': False, 'mar_higher': False, 'maxdd_ok': False, 'no_liquidation': True, 'safety_2x': False} -> KEEP THE STOP
+DECISION CHENTO_ETH P2_catastrophe_3x: {'halves_higher': False, 'mar_higher': False, 'maxdd_ok': False, 'no_liquidation': True, 'safety_2x': True} -> KEEP THE STOP
+DECISION SHORT_SQUEEZE P1_time_only: {'halves_higher': True, 'mar_higher': True, 'maxdd_ok': True, 'no_liquidation': True, 'safety_2x': False} -> KEEP THE STOP
+DECISION SHORT_SQUEEZE P1b_target_only: {'halves_higher': False, 'mar_higher': True, 'maxdd_ok': True, 'no_liquidation': True, 'safety_2x': False} -> KEEP THE STOP
+DECISION SHORT_SQUEEZE P2_catastrophe_3x: {'halves_higher': False, 'mar_higher': False, 'maxdd_ok': False, 'no_liquidation': True, 'safety_2x': True} -> KEEP THE STOP
+DECISION SQUEEZE_BULL P1_time_only: {'halves_higher': True, 'mar_higher': True, 'maxdd_ok': True, 'no_liquidation': True, 'safety_2x': True} -> BUILD-CANDIDATE
+DECISION SQUEEZE_BULL P1b_target_only: {'halves_higher': True, 'mar_higher': True, 'maxdd_ok': True, 'no_liquidation': True, 'safety_2x': True} -> BUILD-CANDIDATE
+DECISION SQUEEZE_BULL P2_catastrophe_3x: {'halves_higher': False, 'mar_higher': True, 'maxdd_ok': True, 'no_liquidation': True, 'safety_2x': True} -> KEEP THE STOP
+DECISION ADX P1_signal_only: {'halves_higher': True, 'mar_higher': False, 'maxdd_ok': False} -> KEEP THE STOP
+DECISION ADX P2_catastrophe_30: {'halves_higher': True, 'mar_higher': False, 'maxdd_ok': False} -> KEEP THE STOP

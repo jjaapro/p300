@@ -201,3 +201,36 @@ regime indicator.
 The point of the worked example is to make the per-step work small
 and concrete. A gate that resists this much structure is a gate that
 wasn't ready for live anyway.
+
+---
+
+## 8. Study-level checks before any number is quoted (added 2026-09-12)
+
+Each of these caught a false positive in the brainstorm validation
+(`studies/notebooks/brainstorm_validation_2026_09/`) or its follow-up
+studies. Helpers live in `studies/lib/validation/benchmark.py`.
+
+1. **Benchmark must match start date and gross exposure.** A strategy at
+   1.56x gross exposure "beat" 1x buy-and-hold from a start nine days
+   before a cycle top and lost from a start four months earlier. Use
+   `exposure_matched_buy_and_hold` and report `start_date_sensitivity`
+   for at least the data start and the strategy's first trade.
+2. **A conditional rate is not a capital yield.** Funding "while held" was
+   sold as a yield; charged its toggles (0.24 % each) the timed rule earned
+   −6 %/yr against +12 % always-on. Charge every toggle before quoting.
+3. **Daily-bar rules must show the bar-phase sweep.** The ADX machine spans
+   Sharpe 0.63–1.12 and maxDD −36 to −50 % across the 24 UTC day boundaries;
+   any single-phase delta below that spread is noise. Use `bar_phase_sweep`
+   and quote `phase_summary`.
+4. **Report mark-to-market drawdown alongside trade-close drawdown.**
+   `compounded_max_drawdown` vs `metrics.max_drawdown`: the ADX sleeve is
+   −15 % on one and −38 % on the other (−48 % with funding).
+5. **Deflate at the study's own trial count.** The best of 348 or 7,908
+   cells reported at N = 1 fell to DSR 0.2–0.5 at its true count. Every
+   study README carries a trial ledger; `dsr_pbo` takes that number.
+6. **Execution cost by leg and order type, measured.** The coded lumps
+   (18–25 bp) were 2–3x the measured taker round trip (7–10 bp;
+   `studies/notebooks/execution_2026_09/`). Cost a backtest per leg
+   (fee by order type + measured drift + stop slippage), never as a guess.
+7. **Compare a difference with a paired bootstrap.** Two curves on the same
+   days: `paired_block_boot_diff`, not two independent intervals.

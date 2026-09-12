@@ -1,0 +1,198 @@
+{
+ "env": {
+  "python": "3.13.11",
+  "numpy": "2.4.4",
+  "pandas": "3.0.2",
+  "run_at": "2026-09-12T05:46:18+00:00"
+ },
+ "sleeves": {
+  "CHENTO_BTC": {
+   "fixed_R_fixed_capital": {
+    "final_equity": 25060.63484211752,
+    "cagr_pct": 17.966054915427776,
+    "maxdd_pct": -9.07072250409114,
+    "mar": 1.9806641540764367,
+    "worst_trade_pct_equity": -2.0172915900836657,
+    "n": 101,
+    "years": 5.560318275154004
+   },
+   "fixed_R_on_equity": {
+    "final_equity": 39544.607701302426,
+    "cagr_pct": 28.0511992005402,
+    "maxdd_pct": -22.192032907869294,
+    "mar": 1.2640211609722896,
+    "worst_trade_pct_equity": -2.2865214209701086,
+    "n": 101,
+    "years": 5.560318275154004
+   },
+   "fixed_notional": {
+    "final_equity": 22905.945110547862,
+    "cagr_pct": 16.074061794647363,
+    "maxdd_pct": -11.873075216023189,
+    "mar": 1.3538246412315131,
+    "worst_trade_pct_equity": -11.873075216023182,
+    "n": 101,
+    "years": 5.560318275154004
+   }
+  },
+  "CHENTO_ETH": {
+   "fixed_R_fixed_capital": {
+    "final_equity": 18833.678935447842,
+    "cagr_pct": 12.301442053267774,
+    "maxdd_pct": -10.153576515599536,
+    "mar": 1.2115378294897712,
+    "worst_trade_pct_equity": -2.118746354410868,
+    "n": 77,
+    "years": 5.456650695870408
+   },
+   "fixed_R_on_equity": {
+    "final_equity": 22398.351598639187,
+    "cagr_pct": 15.92617478632372,
+    "maxdd_pct": -17.47289421798863,
+    "mar": 0.9114789220166778,
+    "worst_trade_pct_equity": -2.2638183633213433,
+    "n": 77,
+    "years": 5.456650695870408
+   },
+   "fixed_notional": {
+    "final_equity": 17963.339208038335,
+    "cagr_pct": 11.331903965651001,
+    "maxdd_pct": -12.202493595818419,
+    "mar": 0.9286547767199196,
+    "worst_trade_pct_equity": -4.510771246200105,
+    "n": 77,
+    "years": 5.456650695870408
+   }
+  },
+  "SHORT_SQUEEZE": {
+   "fixed_R_fixed_capital": {
+    "final_equity": 10606.774238170989,
+    "cagr_pct": 1.4711344277754002,
+    "maxdd_pct": -7.191469533367117,
+    "mar": 0.2045665939276531,
+    "worst_trade_pct_equity": -1.2738341102932749,
+    "n": 71,
+    "years": 4.033624229979466
+   },
+   "fixed_R_on_equity": {
+    "final_equity": 10546.070568191995,
+    "cagr_pct": 1.3268513214016897,
+    "maxdd_pct": -7.515489686320957,
+    "mar": 0.1765488846078399,
+    "worst_trade_pct_equity": -1.276057641974783,
+    "n": 71,
+    "years": 4.033624229979466
+   },
+   "fixed_notional": {
+    "final_equity": 10035.721947135644,
+    "cagr_pct": 0.08844170860826672,
+    "maxdd_pct": -15.13812558458542,
+    "mar": 0.005842315689224005,
+    "worst_trade_pct_equity": -4.742587061670185,
+    "n": 71,
+    "years": 4.033624229979466
+   }
+  },
+  "SQUEEZE_BULL": {
+   "fixed_R_fixed_capital": {
+    "final_equity": 13666.885105271362,
+    "cagr_pct": 7.278991463261875,
+    "maxdd_pct": -4.195655594607441,
+    "mar": 1.7348877426015041,
+    "worst_trade_pct_equity": -1.033206396440917,
+    "n": 122,
+    "years": 4.446041524070272
+   },
+   "fixed_R_on_equity": {
+    "final_equity": 14317.152986121744,
+    "cagr_pct": 8.406457536458722,
+    "maxdd_pct": -4.81387170630823,
+    "mar": 1.7462986239210878,
+    "worst_trade_pct_equity": -1.0333600404607068,
+    "n": 122,
+    "years": 4.446041524070272
+   },
+   "fixed_notional": {
+    "final_equity": 13666.88510527137,
+    "cagr_pct": 7.278991463261897,
+    "maxdd_pct": -4.195655594607441,
+    "mar": 1.7348877426015095,
+    "worst_trade_pct_equity": -1.0332063964409142,
+    "n": 122,
+    "years": 4.446041524070272
+   }
+  }
+ },
+ "ruin": {
+  "liquidating_move_pct_by_gross": {
+   "0.5x": 199.5,
+   "1x": 99.5,
+   "2x": 49.5,
+   "3x": 32.83333333333333,
+   "5x": 19.5,
+   "10x": 9.5
+  },
+  "worst_moves": {
+   "BTC": {
+    "1h": {
+     "worst_drop_pct": -24.77860513782457,
+     "drop_at": "2020-03-12 10:48",
+     "worst_rise_pct": 39.523760420715305,
+     "rise_at": "2020-03-13 02:45"
+    },
+    "6h": {
+     "worst_drop_pct": -36.85926544240401,
+     "drop_at": "2020-03-13 02:16",
+     "worst_rise_pct": 48.064714856443324,
+     "rise_at": "2020-03-13 08:05"
+    },
+    "24h": {
+     "worst_drop_pct": -51.31610619469027,
+     "drop_at": "2020-03-13 02:16",
+     "worst_rise_pct": 57.45096017323572,
+     "rise_at": "2020-03-13 13:34"
+    },
+    "72h": {
+     "worst_drop_pct": -53.58780218431709,
+     "drop_at": "2020-03-13 02:16",
+     "worst_rise_pct": 57.45096017323572,
+     "rise_at": "2020-03-13 13:34"
+    }
+   },
+   "ETH": {
+    "1h": {
+     "worst_drop_pct": -30.99667409816892,
+     "drop_at": "2021-05-19 13:10",
+     "worst_rise_pct": 41.896984924623105,
+     "rise_at": "2020-03-13 03:29"
+    },
+    "6h": {
+     "worst_drop_pct": -37.413579797685756,
+     "drop_at": "2020-03-13 02:16",
+     "worst_rise_pct": 60.46511627906976,
+     "rise_at": "2020-03-13 03:31"
+    },
+    "24h": {
+     "worst_drop_pct": -54.16266922502931,
+     "drop_at": "2020-03-13 02:16",
+     "worst_rise_pct": 62.4186046511628,
+     "rise_at": "2020-03-13 13:34"
+    },
+    "72h": {
+     "worst_drop_pct": -58.29291949563531,
+     "drop_at": "2020-03-13 02:16",
+     "worst_rise_pct": 68.3306917176672,
+     "rise_at": "2021-05-26 08:03"
+    }
+   }
+  },
+  "fleet_caps_x": {
+   "CHENTO_BTC": 3.0,
+   "CHENTO_ETH": 3.0,
+   "SHORT_SQUEEZE": 3.0,
+   "SQUEEZE_BULL": 0.5,
+   "ADX": 0.5
+  },
+  "pooled_max_gross_x_over_5_bots": 2.0
+ }
+}

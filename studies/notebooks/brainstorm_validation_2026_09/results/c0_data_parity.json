@@ -1,0 +1,355 @@
+{
+  "env": {
+    "python": "3.13.11",
+    "numpy": "2.4.4",
+    "pandas": "3.0.2",
+    "run_at": "2026-09-11T20:28:11+00:00"
+  },
+  "btc_daily_cache_vs_p300": {
+    "n_cache": 3200,
+    "n_p300": 3311,
+    "n_overlap": 3199,
+    "cache_span": [
+      "2017-12-08",
+      "2026-09-11"
+    ],
+    "p300_span": [
+      "2017-08-18",
+      "2026-09-10"
+    ],
+    "only_in_cache": [
+      "2026-09-11"
+    ],
+    "only_in_p300_within_cache_span": [],
+    "stats": {
+      "open": {
+        "n": 3199,
+        "max": 0.007629415088894611,
+        "mean": 5.515865764298946e-05,
+        "p99": 0.000844161280154299,
+        "share_gt_1pct": 0.0,
+        "share_gt_0p1pct": 0.006877149109096593
+      },
+      "high": {
+        "n": 3199,
+        "max": 1.971458213709206e-05,
+        "mean": 1.2297888619819082e-08,
+        "p99": 0.0,
+        "share_gt_1pct": 0.0,
+        "share_gt_0p1pct": 0.0
+      },
+      "low": {
+        "n": 3199,
+        "max": 0.0007553937425647929,
+        "mean": 2.904779228919203e-07,
+        "p99": 0.0,
+        "share_gt_1pct": 0.0,
+        "share_gt_0p1pct": 0.0
+      },
+      "close": {
+        "n": 3199,
+        "max": 0.0006881336886543179,
+        "mean": 2.151089992667452e-07,
+        "p99": 0.0,
+        "share_gt_1pct": 0.0,
+        "share_gt_0p1pct": 0.0
+      },
+      "volume": {
+        "n": 3199,
+        "max": 0.09634650247951204,
+        "mean": 6.891464766063905e-05,
+        "p99": 0.0005235746758833093,
+        "share_gt_1pct": 0.0015629884338855893,
+        "share_gt_0p1pct": 0.005626758361988122
+      },
+      "volume_buy": {
+        "n": 3199,
+        "max": 0.09234356084549784,
+        "mean": 6.774313817440907e-05,
+        "p99": 0.0004769670195105101,
+        "share_gt_1pct": 0.001875586120662707,
+        "share_gt_0p1pct": 0.005001562988433885
+      }
+    },
+    "pass_close": true
+  },
+  "btc_5m_cache_vs_cd_spot_15m": {
+    "n_cache_5m": 338976,
+    "n_cache_15m": 112991,
+    "n_overlap": 112991,
+    "cache_span": [
+      "2023-06-22",
+      "2026-09-11"
+    ],
+    "stats": {
+      "close": {
+        "n": 112991,
+        "max": 0.008625495090099492,
+        "mean": 1.5709068252937113e-07,
+        "p99": 0.0,
+        "share_gt_1pct": 0.0,
+        "share_gt_0p1pct": 3.5401049641121856e-05
+      },
+      "high": {
+        "n": 112991,
+        "max": 0.002029459249306956,
+        "mean": 2.1405052983465393e-08,
+        "p99": 0.0,
+        "share_gt_1pct": 0.0,
+        "share_gt_0p1pct": 8.850262410280464e-06
+      },
+      "low": {
+        "n": 112991,
+        "max": 0.0122726325232064,
+        "mean": 1.4956983638691954e-07,
+        "p99": 0.0,
+        "share_gt_1pct": 8.850262410280464e-06,
+        "share_gt_0p1pct": 1.7700524820560928e-05
+      },
+      "volume": {
+        "n": 112991,
+        "max": 25.581052542333698,
+        "mean": 0.00042052198411994117,
+        "p99": 2.1202359147051227e-16,
+        "share_gt_1pct": 0.00010620314892336558,
+        "share_gt_0p1pct": 0.00011505341133364604
+      },
+      "volume_buy": {
+        "n": 112991,
+        "max": 36.12707431417083,
+        "mean": 0.0006035116436356156,
+        "p99": 2.1252336400559085e-16,
+        "share_gt_1pct": 0.00010620314892336558,
+        "share_gt_0p1pct": 0.00011505341133364604
+      }
+    },
+    "pass_close": false,
+    "pass_taker": true
+  },
+  "funding": {
+    "binance_fetch": {
+      "n": 7676,
+      "span": [
+        "2019-09-10",
+        "2026-09-11"
+      ]
+    },
+    "pickle_vs_fetch": {
+      "n_common": 7673,
+      "max_abs_diff": 0.0,
+      "n_pickle": 7673,
+      "pass_": true
+    },
+    "prod_post_cutover_vs_binance": {
+      "n": 456,
+      "corr": 1.0,
+      "max_abs_diff": 0.0,
+      "share_equal_1e8": 1.0,
+      "mean_this": 3.506401315789474e-05,
+      "mean_binance": 3.506401315789474e-05
+    },
+    "prod_pre_cutover_settlement_rows_vs_binance": {
+      "n": 7175,
+      "corr": 1.0,
+      "max_abs_diff": 0.0,
+      "share_equal_1e8": 1.0,
+      "mean_this": 0.00011030042229965157,
+      "mean_binance": 0.00011030042229965157
+    },
+    "bybit_vs_binance": {
+      "n": 7084,
+      "corr": 0.6702424746170995,
+      "max_abs_diff": 0.00375079,
+      "share_equal_1e8": 0.23687182382834557,
+      "mean_this": 0.00011722028514963297,
+      "mean_binance": 0.00010274908385093168
+    }
+  },
+  "bitstamp": {
+    "pickle": "bitstamp_btcusd_86400_1313625600_1789121076.pkl",
+    "n_pickle": 5504,
+    "span_pickle": [
+      "2011-08-18",
+      "2026-09-11"
+    ],
+    "n_json": 5372,
+    "span_json": [
+      "2011-08-18",
+      "2026-05-04"
+    ],
+    "n_overlap": 5372,
+    "stats": {
+      "open": {
+        "n": 5372,
+        "max": 0.0,
+        "mean": 0.0,
+        "p99": 0.0,
+        "share_gt_1pct": 0.0,
+        "share_gt_0p1pct": 0.0
+      },
+      "high": {
+        "n": 5372,
+        "max": 0.001873054070481412,
+        "mean": 3.486697822936359e-07,
+        "p99": 0.0,
+        "share_gt_1pct": 0.0,
+        "share_gt_0p1pct": 0.00018615040953090097
+      },
+      "low": {
+        "n": 5372,
+        "max": 0.0,
+        "mean": 0.0,
+        "p99": 0.0,
+        "share_gt_1pct": 0.0,
+        "share_gt_0p1pct": 0.0
+      },
+      "close": {
+        "n": 5372,
+        "max": 0.013930689423089133,
+        "mean": 2.5932035411558325e-06,
+        "p99": 0.0,
+        "share_gt_1pct": 0.00018615040953090097,
+        "share_gt_0p1pct": 0.00018615040953090097
+      }
+    },
+    "pass_close": false,
+    "pickle_4h": "bitstamp_btcusd_14400_1325376000_1789084800.pkl",
+    "n_4h": 32202,
+    "span_4h": [
+      "2012-01-01",
+      "2026-09-10"
+    ]
+  },
+  "p300_hourly_vs_1m_daily": {
+    "n_overlap": 2445,
+    "stats": {
+      "open": {
+        "n": 2445,
+        "max": 0.001900997534173812,
+        "mean": 1.3651110082289113e-05,
+        "p99": 0.00021721382236930035,
+        "share_gt_1pct": 0.0,
+        "share_gt_0p1pct": 0.00040899795501022495
+      },
+      "high": {
+        "n": 2445,
+        "max": 2.482633975283773e-06,
+        "mean": 1.3845026268298304e-09,
+        "p99": 0.0,
+        "share_gt_1pct": 0.0,
+        "share_gt_0p1pct": 0.0
+      },
+      "low": {
+        "n": 2445,
+        "max": 0.0,
+        "mean": 0.0,
+        "p99": 0.0,
+        "share_gt_1pct": 0.0,
+        "share_gt_0p1pct": 0.0
+      },
+      "close": {
+        "n": 2445,
+        "max": 0.0,
+        "mean": 0.0,
+        "p99": 0.0,
+        "share_gt_1pct": 0.0,
+        "share_gt_0p1pct": 0.0
+      }
+    },
+    "pass_close": true
+  },
+  "coverage": {
+    "eth_daily": {
+      "n": 2445,
+      "span": [
+        "2020-01-01",
+        "2026-09-10"
+      ]
+    },
+    "alts": {
+      "n_assets": 64,
+      "assets": [
+        "1000BONKUSDT",
+        "1000LUNCUSDT",
+        "1000PEPEUSDT",
+        "1000SHIBUSDT",
+        "AAVEUSDT",
+        "ADAUSDT",
+        "ALGOUSDT",
+        "ALTUSDT",
+        "APEUSDT",
+        "APTUSDT",
+        "ARBUSDT",
+        "ATOMUSDT",
+        "AVAXUSDT",
+        "BCHUSDT",
+        "BNBUSDT",
+        "CHZUSDT",
+        "COMPUSDT",
+        "CRVUSDT",
+        "DASHUSDT",
+        "DODOXUSDT",
+        "DOGEUSDT",
+        "DOTUSDT",
+        "DUSKUSDT",
+        "DYMUSDT",
+        "ETCUSDT",
+        "FETUSDT",
+        "FILUSDT",
+        "GALAUSDT",
+        "GMTUSDT",
+        "GRTUSDT",
+        "HBARUSDT",
+        "ICPUSDT",
+        "INJUSDT",
+        "JTOUSDT",
+        "JUPUSDT",
+        "LDOUSDT",
+        "LINKUSDT",
+        "LPTUSDT",
+        "LTCUSDT",
+        "MTLUSDT",
+        "NEARUSDT",
+        "ONDOUSDT",
+        "OPUSDT",
+        "ORDIUSDT",
+        "PENDLEUSDT",
+        "RIFUSDT",
+        "RONINUSDT",
+        "SANDUSDT",
+        "SEIUSDT",
+        "STEEMUSDT",
+        "STORJUSDT",
+        "STRKUSDT",
+        "SUIUSDT",
+        "TIAUSDT",
+        "TONUSDT",
+        "TRXUSDT",
+        "UNIUSDT",
+        "WIFUSDT",
+        "WLDUSDT",
+        "XLMUSDT",
+        "XMRUSDT",
+        "XRPUSDT",
+        "ZECUSDT",
+        "ZENUSDT"
+      ],
+      "min_days": 814,
+      "max_days": 1100
+    },
+    "spot_5m_from_5s": {
+      "n": 105120,
+      "span": [
+        "2025-06-08",
+        "2026-06-07"
+      ]
+    }
+  },
+  "gate": {
+    "btc_daily": true,
+    "btc_5m": true,
+    "funding": true,
+    "bitstamp": true,
+    "p300_internal": true
+  }
+}

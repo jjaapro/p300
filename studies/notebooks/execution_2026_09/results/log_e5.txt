@@ -1,0 +1,15 @@
+CHENTO_BTC_all {'n_signals': 41, 'n_cond_filled': 40, 'n_rand': 820, 'fill_rate_cond': 0.975609756097561, 'fill_rate_rand': 0.9841463414634146}
+   markout +60s: cond -0.01 bp [-2.46, 2.25] | random -0.18 [-0.59, 0.22] | diff +0.17 [-2.68, 2.84]
+   markout +300s: cond +5.56 bp [0.49, 11.28] | random -0.15 [-0.91, 0.58] | diff +5.71 [-0.1, 12.19]
+   markout +900s: cond +11.45 bp [5.1, 17.92] | random -0.66 [-1.87, 0.5] | diff +12.11 [4.6, 19.79]
+   markout +3600s: cond +5.05 bp [-4.38, 15.36] | random -1.50 [-4.04, 0.99] | diff +6.55 [-5.37, 19.4]
+SHORT_SQUEEZE {'n_signals': 17, 'n_cond_filled': 17, 'n_rand': 340, 'fill_rate_cond': 1.0, 'fill_rate_rand': 0.9764705882352941}
+   markout +60s: cond -2.28 bp [-4.86, -0.26] | random +0.62 [-0.07, 1.31] | diff -2.90 [-6.18, -0.19]
+   markout +300s: cond -0.48 bp [-8.37, 6.35] | random +2.02 [0.59, 3.47] | diff -2.50 [-11.84, 5.76]
+   markout +900s: cond +2.44 bp [-7.04, 12.33] | random +1.01 [-1.51, 3.34] | diff +1.43 [-10.38, 13.84]
+   markout +3600s: cond +6.86 bp [-19.39, 35.53] | random +2.58 [-2.59, 7.6] | diff +4.29 [-26.99, 38.12]
+SQUEEZE_BULL_ALL {'n_signals': 61, 'n_cond_filled': 61, 'n_rand': 1220, 'fill_rate_cond': 1.0, 'fill_rate_rand': 0.9606557377049181}
+   markout +60s: cond -0.24 bp [-2.46, 2.25] | random -0.16 [-0.53, 0.21] | diff -0.08 [-2.67, 2.78]
+   markout +300s: cond +1.92 bp [-1.62, 5.65] | random +0.11 [-0.66, 0.88] | diff +1.81 [-2.49, 6.31]
+   markout +900s: cond +4.39 bp [-2.47, 10.91] | random +0.66 [-0.84, 2.23] | diff +3.73 [-4.69, 11.76]
+   markout +3600s: cond +4.68 bp [-7.54, 16.32] | random -1.11 [-3.48, 1.38] | diff +5.79 [-8.92, 19.8]

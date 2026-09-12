@@ -1,0 +1,71 @@
+{
+ "env": {
+  "python": "3.13.11",
+  "numpy": "2.4.4",
+  "pandas": "3.0.2",
+  "run_at": "2026-09-12T05:46:23+00:00"
+ },
+ "note": "post-hoc sensitivity, not pre-registered",
+ "SHORT_SQUEEZE": {
+  "P0_shipped": {
+   "n": 71,
+   "dropped": 0,
+   "mean_r": 0.4807947035680294,
+   "first_half_r": 0.38841642806406695,
+   "second_half_r": 0.575812358372105,
+   "mar": 0.1908921818727062,
+   "maxdd_pct": -7.880597193046766,
+   "pct_per_year": 1.5043443926406213,
+   "episodes": 0,
+   "min_distance": 0.3292075117978936,
+   "worst_mae": 0.0189180396750987,
+   "max_gross_x": 2.9921529729251963,
+   "safety_2x": true
+  },
+  "P1_time_only": {
+   "n": 59,
+   "dropped": 12,
+   "mean_r": 1.1308818156720883,
+   "first_half_r": 0.5313607287208808,
+   "second_half_r": 1.751076043552648,
+   "mar": 0.6317601163793877,
+   "maxdd_pct": -10.825108912213498,
+   "pct_per_year": 6.838872066199546,
+   "episodes": 0,
+   "min_distance": 0.287591060246892,
+   "worst_mae": 0.0475771490526621,
+   "max_gross_x": 3.417739418135973,
+   "safety_2x": true
+  },
+  "P1b_target_only": {
+   "n": 61,
+   "dropped": 10,
+   "mean_r": 0.6916910848067275,
+   "first_half_r": 0.43469084261786906,
+   "second_half_r": 0.9572580017352141,
+   "mar": 0.36510894164258384,
+   "maxdd_pct": -11.364486503087456,
+   "pct_per_year": 4.149275639453689,
+   "episodes": 0,
+   "min_distance": 0.29702428181441354,
+   "worst_mae": 0.0475771490526621,
+   "max_gross_x": 3.3109920632622356,
+   "safety_2x": true
+  },
+  "P2_catastrophe_3x": {
+   "n": 65,
+   "dropped": 6,
+   "mean_r": 0.39837557847938593,
+   "first_half_r": 0.4346051822417861,
+   "second_half_r": 0.3610137995994107,
+   "mar": 0.08282372436286636,
+   "maxdd_pct": -11.920328532730133,
+   "pct_per_year": 0.9872860047096518,
+   "episodes": 0,
+   "min_distance": 0.31459556988104576,
+   "worst_mae": 0.0572115460159331,
+   "max_gross_x": 3.128954510765598,
+   "safety_2x": true
+  }
+ }
+}

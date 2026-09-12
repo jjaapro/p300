@@ -1,0 +1,27 @@
+phase  0: n=19 mean +14.63% t 1.40 CAGR 25.2% MTM maxDD -54.3% Sharpe 0.72 MAR 0.46
+phase  1: n=20 mean +15.36% t 1.57 CAGR 32.1% MTM maxDD -53.7% Sharpe 0.80 MAR 0.60
+phase  2: n=22 mean +3.83% t 1.07 CAGR 7.2% MTM maxDD -50.1% Sharpe 0.38 MAR 0.14
+phase  3: n=20 mean +15.14% t 1.49 CAGR 30.1% MTM maxDD -61.0% Sharpe 0.78 MAR 0.49
+phase  4: n=23 mean +5.03% t 1.57 CAGR 10.1% MTM maxDD -48.9% Sharpe 0.44 MAR 0.21
+phase  5: n=23 mean +4.79% t 1.44 CAGR 9.5% MTM maxDD -52.6% Sharpe 0.43 MAR 0.18
+phase  6: n=23 mean +7.89% t 2.10 CAGR 22.5% MTM maxDD -47.6% Sharpe 0.67 MAR 0.47
+phase  7: n=20 mean +5.80% t 1.42 CAGR 13.7% MTM maxDD -52.5% Sharpe 0.51 MAR 0.26
+phase  8: n=20 mean +7.28% t 1.29 CAGR 14.2% MTM maxDD -65.7% Sharpe 0.53 MAR 0.22
+phase  9: n=20 mean +6.60% t 1.62 CAGR 14.8% MTM maxDD -57.8% Sharpe 0.55 MAR 0.26
+phase 10: n=19 mean +11.60% t 1.93 CAGR 28.9% MTM maxDD -51.4% Sharpe 0.76 MAR 0.56
+phase 11: n=19 mean +12.15% t 2.40 CAGR 31.5% MTM maxDD -52.5% Sharpe 0.80 MAR 0.60
+phase 12: n=20 mean +4.75% t 1.27 CAGR 10.4% MTM maxDD -44.8% Sharpe 0.45 MAR 0.23
+phase 13: n=18 mean +15.94% t 1.35 CAGR 29.3% MTM maxDD -56.4% Sharpe 0.76 MAR 0.52
+phase 14: n=19 mean +4.61% t 1.20 CAGR 10.5% MTM maxDD -45.0% Sharpe 0.45 MAR 0.23
+phase 15: n=20 mean +13.70% t 1.31 CAGR 25.2% MTM maxDD -58.4% Sharpe 0.71 MAR 0.43
+phase 16: n=20 mean +5.39% t 1.44 CAGR 14.6% MTM maxDD -49.5% Sharpe 0.54 MAR 0.30
+phase 17: n=22 mean +5.84% t 1.56 CAGR 14.3% MTM maxDD -50.8% Sharpe 0.53 MAR 0.28
+phase 18: n=21 mean +6.58% t 1.82 CAGR 18.5% MTM maxDD -50.0% Sharpe 0.60 MAR 0.37
+phase 19: n=20 mean +5.77% t 1.51 CAGR 13.6% MTM maxDD -52.9% Sharpe 0.51 MAR 0.26
+phase 20: n=19 mean +17.81% t 1.58 CAGR 40.1% MTM maxDD -54.0% Sharpe 0.90 MAR 0.74
+phase 21: n=21 mean +14.73% t 1.43 CAGR 33.4% MTM maxDD -61.2% Sharpe 0.81 MAR 0.55
+phase 22: n=21 mean +13.56% t 1.35 CAGR 27.3% MTM maxDD -58.0% Sharpe 0.73 MAR 0.47
+phase 23: n=23 mean +8.14% t 2.10 CAGR 22.9% MTM maxDD -49.3% Sharpe 0.67 MAR 0.46
+live phase: {'n': 19, 'mean_net_pct': 14.629, 't_trade': 1.396, 'sharpe': 0.717, 'mtm_maxdd_pct': -54.327, 'cagr_pct': 25.162, 'mar': 0.463, 'first_half_mean': 23.35, 'second_half_mean': 4.938, 'longs': {'n': 13, 'mean_net_pct': 19.404969478740824}, 'shorts': {'n': 6, 'mean_net_pct': 4.280362772652282}, 'funding_pct_sum': -41.105, 'span': ['2020-04-27 00:01', '2026-07-14 22:34'], 'dsr_n1': 0.958}
+BTC/ETH: {'corr_daily_returns': 0.47309957496666727, 'corr_days': 1118, 'btc_curve': {'cagr_pct': 35.95909398540456, 'mtm_maxdd_pct': -48.069243137263314, 'sharpe': 1.0170444611775094, 'mar': 0.7480686534365056, 'days': 2400, 'total_pct': 652.6699809389366}, 'eth_curve': {'cagr_pct': 23.6494035375334, 'mtm_maxdd_pct': -54.32721765972263, 'sharpe': 0.6977485760496108, 'mar': 0.43531409404510524, 'days': 2400, 'total_pct': 303.440250306873}, 'pair_curve': {'cagr_pct': 32.96925616428068, 'mtm_maxdd_pct': -43.676151752144584, 'sharpe': 0.9743892454946586, 'mar': 0.7548571667068132, 'days': 2400, 'total_pct': 550.35401693926}, 'share_days_both_in_market': 0.18166666666666667}
+DECISION: {'sharpe_ge_0p7': True, 'sharpe_ge_0p5_in_80pct_phases': False, 'maxdd_ge_m55': True, 't_trade_ge_1p5': False, 'corr_lt_0p7': True, 'share_phases_sharpe_ge_0p5': 0.7916666666666666, 'verdict': 'KILL'}

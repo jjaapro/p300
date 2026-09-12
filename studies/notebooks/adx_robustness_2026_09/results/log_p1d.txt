@@ -1,0 +1,18 @@
+same trades, late entry price:
+         n  missed  mean_net_pct  delta_vs_h0
+h0   21.0     0.0        14.460        0.000
+h1   21.0     0.0        14.218       -0.242
+h2   21.0     0.0        14.177       -0.283
+h6   21.0     0.0        13.979       -0.481
+h12  21.0     0.0        13.743       -0.717
+h23  21.0     0.0        13.851       -0.609
+
+machine re-run with delayed entry tick:
+         n  mean_net_pct  cagr_pct  mtm_maxdd_pct  sharpe    mar    days  total_pct
+h0   21.0        14.460    35.959        -48.069   1.017  0.748  2400.0    652.670
+h1   21.0        14.178    35.001        -47.655   0.999  0.734  2400.0    618.499
+h2   21.0        14.142    34.667        -47.719   0.992  0.726  2400.0    606.897
+h6   21.0        13.985    34.318        -47.458   0.987  0.723  2400.0    594.947
+h12  21.0        13.814    33.880        -47.162   0.979  0.718  2400.0    580.171
+h23  21.0        13.769    33.893        -45.374   0.979  0.747  2400.0    580.633
+decision: {'delta_6h_pp': -0.4813840090437669, 'within_half_pp': True, 'verdict': 'current behaviour fine; document the assumption'}

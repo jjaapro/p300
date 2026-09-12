@@ -1,0 +1,51 @@
+
+CHENTO_BTC: n=101 exits={'stop': 54, 'tif': 33, 'target': 14} gross +0.800 R | drift -0.55 bp | stop slip 0.00 bp
+                  mean_bp_per_trade mean_cost_r net_mean_r cost_share_of_gross   net_mar net_first_half net_second_half fill_rate
+M0_sleeve                      18.0    0.114814   0.684951            0.143559  0.927585       1.200093        0.159507       1.0
+M0_research                    18.0    0.114814   0.684951            0.143559  0.927585       1.200093        0.159507       1.0
+M1_measured_taker            9.5931    0.060447   0.739318            0.075581  1.079837       1.249646        0.218782       1.0
+M2_hybrid_touch            7.760396    0.048453   0.761231            0.059842  1.241493       1.259483        0.253014  0.990099
+M2_hybrid_through          7.382178    0.045549   0.744333            0.057666  1.501031       1.280102        0.197848  0.940594
+M3_maker_touch             7.008911    0.044843   0.764841            0.055383  1.254825       1.262722        0.257002  0.990099
+M3_maker_through           6.630693    0.041939   0.747943            0.053095  1.519458       1.283342        0.201836  0.940594
+rule1: {'coded_sleeve_bp': 18.0, 'measured_taker_bp': 9.593100226950552, 'measured_ci90': [8.35769630354961, 10.800176628296947], 'differs_by_gt_3bp': True, 'ci_excludes_coded': True, 'recommend_change': True}
+rule4: {'m1_cost_share': 0.07558102883470073, 'm2_through_cost_share': 0.05766580637624168, 'm2_touch_cost_share': 0.059841864329245674, 'verdict': 'VIABLE'}
+
+CHENTO_ETH: n=77 exits={'stop': 41, 'tif': 28, 'target': 8} gross +0.653 R | drift -0.24 bp | stop slip 0.00 bp
+                  mean_bp_per_trade mean_cost_r net_mean_r cost_share_of_gross   net_mar net_first_half net_second_half fill_rate
+M0_sleeve                      18.0    0.090057   0.563109            0.137878   0.80703       0.871237        0.246873       1.0
+M0_research                    18.0    0.090057   0.563109            0.137878   0.80703       0.871237        0.246873       1.0
+M1_measured_taker         10.017539     0.04864   0.604527            0.074468  0.898148       0.922711         0.27797       1.0
+M2_hybrid_touch            7.957143    0.038331   0.614851            0.058684  0.921517       0.935109        0.286166       1.0
+M2_hybrid_through          7.849351    0.038053   0.596273             0.05999  0.893673       0.898429        0.286166  0.987013
+M3_maker_touch             7.120779    0.035335   0.617848            0.054097  0.927263       0.937907        0.289367       1.0
+M3_maker_through           7.042857    0.035134   0.599193            0.055387  0.899265       0.901074        0.289367  0.987013
+rule1: {'coded_sleeve_bp': 18.0, 'measured_taker_bp': 10.017539473663039, 'measured_ci90': [7.9691159802287626, 11.912417329132339], 'differs_by_gt_3bp': True, 'ci_excludes_coded': True, 'recommend_change': True}
+rule4: {'m1_cost_share': 0.07446768388300253, 'm2_through_cost_share': 0.05998955210305376, 'm2_touch_cost_share': 0.058683838038942115, 'verdict': 'VIABLE'}
+
+SHORT_SQUEEZE: n=71 exits={'stop': 39, 'target': 21, 'tif': 11} gross +0.481 R | drift -0.31 bp | stop slip 0.00 bp
+                  mean_bp_per_trade mean_cost_r net_mean_r cost_share_of_gross   net_mar net_first_half net_second_half fill_rate
+M0_sleeve                      25.0    0.797047  -0.316252            1.657769 -0.209323      -0.282537        -0.35093       1.0
+M0_research                     4.0    0.127527   0.353267            0.265243  0.821024       0.281064        0.427534       1.0
+M1_measured_taker          9.316547    0.288767   0.192027            0.600604  0.398766       0.135538         0.25013       1.0
+M2_hybrid_touch            7.323944    0.225406   0.255757            0.468461  0.549452       0.189416        0.323993       1.0
+M2_hybrid_through          7.207042    0.223476   0.247111            0.474888  0.530877       0.172365        0.323993  0.985915
+M3_maker_touch             6.967606    0.217194   0.263968            0.451395  0.567093       0.201247        0.328482       1.0
+M3_maker_through           6.883099    0.215799   0.254788            0.458575   0.54737       0.183141        0.328482  0.985915
+rule1: {'coded_sleeve_bp': 25.0, 'measured_taker_bp': 9.31654697714049, 'measured_ci90': [7.041326200995863, 11.594924543225346], 'differs_by_gt_3bp': True, 'ci_excludes_coded': True, 'recommend_change': True}
+rule4: {'m1_cost_share': 0.6006041364958286, 'm2_through_cost_share': 0.4748882662796372, 'm2_touch_cost_share': 0.46846084338376776, 'verdict': 'RETIRE PENDING USER DECISION'}
+
+SQUEEZE_BULL: n=122 exits={'target': 49, 'stop': 42, 'tif': 31} gross +0.334 R | drift -2.60 bp | stop slip 0.00 bp
+                  mean_bp_per_trade mean_cost_r net_mean_r cost_share_of_gross   net_mar net_first_half net_second_half fill_rate
+M0_sleeve                      18.0        0.09   0.243924            0.269522  1.236159       0.166165        0.321684       1.0
+M0_research                    18.0        0.09   0.243924            0.269522  1.236159       0.166165        0.321684       1.0
+M1_measured_taker          6.672008     0.03336   0.300564            0.099903  1.661303       0.222399        0.378729       1.0
+M2_hybrid_touch             6.97459    0.034873    0.29911            0.104415  1.648752       0.221003        0.377217       1.0
+M2_hybrid_through          6.906557    0.034533   0.307647             0.10092  1.695809       0.238076        0.377217  0.991803
+M3_maker_touch             6.390164    0.031951   0.302032            0.095666  1.680387       0.223642        0.380422       1.0
+M3_maker_through           6.322131    0.031611   0.310569             0.09238  1.727883       0.240716        0.380422  0.991803
+rule1: {'coded_sleeve_bp': 18.0, 'measured_taker_bp': 6.672008092140972, 'measured_ci90': [4.536410579398776, 8.835751228591423], 'differs_by_gt_3bp': True, 'ci_excludes_coded': True, 'recommend_change': True}
+rule4: {'m1_cost_share': 0.09990297541862726, 'm2_through_cost_share': 0.10092009145012777, 'm2_touch_cost_share': 0.10441541473496906, 'verdict': 'VIABLE'}
+
+ADX: {'coded_sleeve_bp': 15.0, 'harness_bp': 10.0, 'measured_taker_bp': 10.504582676721117, 'mean_trade_pct': 15.192221953536416, 'trades_per_year': 3.9080459770114944, 'cost_share_of_mean_trade': 0.006914447872633851}
+CARRY: {'coded_pct_per_toggle': 0.24, 'taker_all_vip0_bp': 30.0, 'taker_all_bnb_bp': 24.0, 'maker_perp_legs_bnb_bp': 20.6, 'toggles_per_year': 4.8, 'note': 'price P&L is zero by construction; cost = fees on 4 fills per toggle'}

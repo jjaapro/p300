@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from . import (  # noqa: F401
     alpha_halflife,
+    benchmark,
     bootstrap,
     changepoint,
     cpcv,
@@ -39,6 +40,7 @@ from . import (  # noqa: F401
 
 __all__ = [
     "alpha_halflife",
+    "benchmark",
     "bootstrap",
     "changepoint",
     "cpcv",

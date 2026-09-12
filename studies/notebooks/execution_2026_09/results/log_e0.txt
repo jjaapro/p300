@@ -1,0 +1,8 @@
+(a) btc_1m identity: {'n_hours': 58671, 'median_abs_bp_vs_spot': 0.0, 'median_abs_bp_vs_perp': 4.566778195775889, 'share_exact_vs_spot': 0.9997784254572105, 'verdict': 'SPOT'}
+(b) basis bp (perp/spot-1): {'full': {'n': 245637, 'mean': -1.3257263026407646, 'sd': 6.32267553052864, 'p95_abs': 10.678612549050555, 'span': ['2019-09-08 17:45', '2026-09-12 05:15']}, 'five_s_year': {'n': 35136, 'mean': -4.505136841822187, 'sd': 1.2488415554580996, 'p95_abs': 6.154753317236528}, 'd15_sd': 2.4512896157749564, 'd15_p95_abs': 3.162540064106656}
+(c) CHENTO_BTC: n=101 no-cost 0.8001 (exp 0.8) | 18bp 0.6853 (exp 0.685) -> PASS
+(c) CHENTO_ETH: n=77 no-cost 0.7120 (exp 0.712) | 18bp 0.6219 (exp 0.622) -> PASS
+(c) SHORT_SQUEEZE port: {'n': 70, 'win': 0.45714285714285713, 'mean_r': 0.3916288386832697, 'pf': 1.64431729954119, 'n_all': 71, 'triggers_all': 71, 'span': ['2022-05-06 07:30:00+00:00', '2026-05-18 14:15:00+00:00']} -> PASS
+(c) SQUEEZE_BULL ledger parity: {'n': 122, 'n_matched': 122, 'max_abs_diff': 2.220446049250313e-16, 'pass_': True}
+(c) ADX ledger: {'n_closed': 34, 'reasons': {'ADX<20': 23, 'SL': 11}, 'mean_net_pct': 15.192221953536416}
+event counts: {'CHENTO_BTC': 101, 'CHENTO_ETH': 77, 'SHORT_SQUEEZE': 71, 'SQUEEZE_BULL': 122, 'ADX': 34}

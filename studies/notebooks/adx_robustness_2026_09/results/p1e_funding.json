@@ -1,0 +1,32 @@
+{
+ "env": {
+  "python": "3.13.11",
+  "numpy": "2.4.4",
+  "pandas": "3.0.2",
+  "run_at": "2026-09-12T05:55:00+00:00"
+ },
+ "longs": {
+  "n": 14,
+  "funding_paid_pct_sum": 37.41243000000001,
+  "per_trade_mean_pct": 2.672316428571429,
+  "long_days": 553.8902777777778,
+  "pct_per_year_of_long_exposure": 24.67075268467231,
+  "share_trades_paying": 1.0,
+  "max_paid_pct": 9.311775
+ },
+ "shorts": {
+  "n": 7,
+  "funding_received_pct_sum": 2.603801
+ },
+ "netting": {
+  "long_days": 563,
+  "share_carry_on": 0.9662522202486679,
+  "carry_on_share_all_days": 0.9007424775302852,
+  "note": "when CARRY's perp short is on, the pair's perp legs net and the ADX long is economically a spot long"
+ },
+ "venue_arith": {
+  "spot_extra_fee_bp_rt": 10.0,
+  "funding_paid_bp_per_trade_mean": 267.2316428571429,
+  "longs_where_spot_cheaper": 12
+ }
+}
