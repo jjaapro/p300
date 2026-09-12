@@ -37,7 +37,6 @@ from strategies.support import db
 
 REPO = Path(__file__).resolve().parent
 UNFILLABLE_PATH = REPO / "data" / "known_unfillable.json"
-VARIANT_ID = "p300_aggressive_v2_v1_0"
 
 
 class HealthError(Exception):
@@ -188,41 +187,89 @@ def check_dashboard_tables() -> None:
     con.close()
 
 
-def check_variant_registration() -> None:
-    print("\n=== variant registration ===")
+# The entry points each bot runner actually calls on its strategy module.
+# This is the contract the fleet depends on — not the orchestrator's dispatch
+# registry, which no running process reads. UPDATE THIS TABLE when an entry
+# point is renamed (the bot = directory = strategy refactor renames r4's,
+# BACKLOG.md "Step 1 re-planned" steps 18 and 23).
+BOT_ENTRYPOINTS: dict[str, tuple[str, tuple[str, ...]]] = {
+    "adx": ("strategies.sleeves.adx.signal",
+            ("try_decide_for_variant", "execute_for_variant")),
+    "carry": ("strategies.sleeves.carry.signal",
+              ("try_decide_for_variant", "execute_for_variant")),
+    "chento_v3": ("strategies.sleeves.chento_triple_v3",
+                  ("try_decide_for_variant", "execute_for_variant")),
+    "short_squeeze": ("strategies.sleeves.short_squeeze.signal",
+                      ("try_decide_for_variant", "execute_for_variant")),
+    "squeeze_bull": ("strategies.sleeves.squeeze_bull.signal",
+                     ("try_decide_for_variant", "execute_for_variant")),
+    # The r4 runner calls the four window deciders directly, plus the shared
+    # private executor.
+    "r4": ("strategies.sleeves.timing_anomalies.internal.r4.signal",
+           ("r4_btc_decide", "r4_eth_decide", "r4_btc_v2_decide",
+            "r4_eth_v2_decide", "_r4_execute")),
+}
+
+# Bot config modules, for the variant-registration check. chento_v3_eth reuses
+# the chento_v3 runner, so it has no entry points of its own.
+BOT_CONFIGS = ("adx", "carry", "chento_v3", "chento_v3_eth", "r4",
+               "short_squeeze", "squeeze_bull")
+
+
+def check_bot_variants_registered() -> None:
+    """Every variant the fleet is configured to trade has a row. Derived from
+    bots/*/config.py rather than a hardcoded list, so a variant that was added
+    to a bot but never registered is caught."""
+    print("\n=== bot variant registration ===")
+    import importlib
+
+    want: list[tuple[str, str]] = []          # (bot, variant_id)
+    for bot in BOT_CONFIGS:
+        try:
+            cfg = importlib.import_module(f"bots.{bot}.config")
+        except Exception as e:  # noqa: BLE001
+            _fail(bot, f"config import failed: {e!r}", 3)
+        ids = [v["id"] for v in getattr(cfg, "VARIANTS", [])] \
+            or [getattr(cfg, "VARIANT_ID")]
+        want += [(bot, vid) for vid in ids]
+
     con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
-    row = con.execute(
-        "SELECT id, short_name, status, enabled FROM variants WHERE id = ?",
-        (VARIANT_ID,),
-    ).fetchone()
-    con.close()
-    if row is None:
-        _fail("variant", f"{VARIANT_ID} NOT REGISTERED — start bot.py to auto-register", 3)
-    if row["enabled"] != 1:
-        _fail("variant", f"{VARIANT_ID} DISABLED", 3)
-    _ok("variant", f"{VARIANT_ID} ({row['short_name']}, status={row['status']})")
+    try:
+        rows = {r["id"]: r for r in con.execute(
+            "SELECT id, short_name, status, enabled FROM variants "
+            "WHERE id LIKE 'bot_%'")}
+    finally:
+        con.close()
+
+    for bot, vid in want:
+        row = rows.get(vid)
+        if row is None:
+            _fail(bot, f"{vid} NOT REGISTERED — start the bot to register it", 3)
+        if row["enabled"] != 1:
+            _fail(bot, f"{vid} DISABLED (enabled={row['enabled']})", 3)
+        _ok(bot, f"{vid} ({row['short_name']}, status={row['status']})")
 
 
-def check_dispatch_wired() -> None:
-    print("\n=== dispatch wiring ===")
-    import json
-    con = sqlite3.connect(str(db.DASH_DB))
-    row = con.execute("SELECT spec_json FROM variants WHERE id = ?",
-                      (VARIANT_ID,)).fetchone()
-    con.close()
-    if row is None:
-        _fail("dispatch", "variant missing; can't check", 3)
-    spec = json.loads(row[0])
-    strategy_ids = [s["strategy_id"] for s in spec.get("composition", [])
-                    if s.get("strategy_id")]
-    from strategies import orchestrator
-    orchestrator._load_dispatch()
-    for sid in strategy_ids:
-        if sid in orchestrator.STRATEGY_DISPATCH:
-            _ok(sid, "dispatch wired")
-        else:
-            _fail(sid, "NOT in STRATEGY_DISPATCH — check services/orchestrator.py", 4)
+def check_bot_entrypoints() -> None:
+    """The callables each runner calls on its strategy module exist and are
+    callable. This replaces the old dispatch-wiring check, which policed the
+    composition of a variant that has not traded since 2026-06-11 and policed
+    none of SHORT_SQUEEZE, SQUEEZE_BULL or the R4 windows."""
+    print("\n=== bot entry points ===")
+    import importlib
+
+    for bot, (modname, names) in BOT_ENTRYPOINTS.items():
+        try:
+            mod = importlib.import_module(modname)
+        except Exception as e:  # noqa: BLE001
+            _fail(bot, f"cannot import {modname}: {e!r}", 4)
+        missing = [n for n in names
+                   if not callable(getattr(mod, n, None))]
+        if missing:
+            _fail(bot, f"{modname} is missing {', '.join(missing)} — the "
+                       f"runner calls it every tick", 4)
+        _ok(bot, f"{modname} ({len(names)} entry points)")
 
 
 def check_warmup_sufficiency() -> None:
@@ -560,11 +607,14 @@ def main() -> int:
         check_databases()
         check_trader_tables()
         check_dashboard_tables()
-        check_variant_registration()
-        check_dispatch_wired()
+        # Data checks first: the structural checks below abort on the first
+        # failure (_fail raises), and a missing entry point should not hide
+        # the data-continuity report an operator came here to read.
         check_warmup_sufficiency()
         check_data_continuity()
         check_single_open_invariant()
+        check_bot_variants_registered()
+        check_bot_entrypoints()
     except HealthError as e:
         print(f"\n{'=' * 60}\nHEALTH CHECK FAILED (exit {e.code}): {e}\n{'=' * 60}")
         return e.code
