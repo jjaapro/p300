@@ -140,13 +140,13 @@ def test_tick_stale_mgmt_skips_everything(tmp_db, monkeypatch):
     def boom(*a, **k):
         raise AssertionError("decide must not run on stale mgmt tables")
     monkeypatch.setattr(
-        "strategies.sleeves.chento_triple_v3.try_decide_for_variant", boom)
+        "strategies.sleeves.chento_triple_v3.decide", boom)
     monkeypatch.setattr(
         botlib, "stale_tables",
         lambda tables=None: {"cd_futures_15m": 7200.0}
         if "cd_futures_15m" in (tables or []) else {})
 
-    out = runner.tick(variant, {})
+    out = runner.tick(variant)
     assert out["status"] == "stale_mgmt_inputs"
     assert out["hb_status"] == "degraded"
 
@@ -158,7 +158,7 @@ def test_tick_stale_entry_drops_intent_keeps_sweep(tmp_db, monkeypatch):
 
     swept = {"n": 0}
 
-    def fake_decide(v, cfg):
+    def fake_decide(v, **kw):
         swept["n"] += 1                      # stands in for the sweep running
         return [_mk_intent()], {"status": "decided"}
 
@@ -166,16 +166,16 @@ def test_tick_stale_entry_drops_intent_keeps_sweep(tmp_db, monkeypatch):
         raise AssertionError("execute must not run on stale entry tables")
 
     monkeypatch.setattr(
-        "strategies.sleeves.chento_triple_v3.try_decide_for_variant",
+        "strategies.sleeves.chento_triple_v3.decide",
         fake_decide)
     monkeypatch.setattr(
-        "strategies.sleeves.chento_triple_v3.execute_for_variant", boom)
+        "strategies.sleeves.chento_triple_v3.execute", boom)
     monkeypatch.setattr(
         botlib, "stale_tables",
         lambda tables=None: {"okx_perp_1h": None}
         if "okx_perp_1h" in (tables or []) else {})
 
-    out = runner.tick(variant, {})
+    out = runner.tick(variant)
     assert swept["n"] == 1                   # sweep/decide DID run
     assert out["status"] == "entry_blocked_stale_inputs"
     assert out["hb_status"] == "degraded"

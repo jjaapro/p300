@@ -196,8 +196,7 @@ BOT_ENTRYPOINTS: dict[str, tuple[str, tuple[str, ...]]] = {
     "adx": ("strategies.sleeves.adx.signal",
             ("try_decide_for_variant", "execute_for_variant")),
     "carry": ("strategies.sleeves.carry.signal", ("decide", "execute")),
-    "chento_v3": ("strategies.sleeves.chento_triple_v3",
-                  ("try_decide_for_variant", "execute_for_variant")),
+    "chento_v3": ("strategies.sleeves.chento_triple_v3", ("decide", "execute")),
     "short_squeeze": ("strategies.sleeves.short_squeeze.signal",
                       ("try_decide_for_variant", "execute_for_variant")),
     # Repointed to the plain-argument surface (phase C step 15).

@@ -92,7 +92,7 @@ def size_intent(intent, capital: float, risk_scale: float = 1.0):
         notional_max_x=botcfg.NOTIONAL_MAX_X)
 
 
-def tick(variant: dict, sleeve_cfg: dict) -> dict:
+def tick(variant: dict) -> dict:
     """One bot tick. Returns a status dict for logging/heartbeat."""
     from strategies.sleeves import chento_triple_v3 as sleeve
 
@@ -102,7 +102,9 @@ def tick(variant: dict, sleeve_cfg: dict) -> dict:
                 "hb_status": "degraded",
                 "hb_note": f"mgmt tables stale: {sorted(stale_mgmt)}"}
 
-    intents, status = sleeve.try_decide_for_variant(variant, sleeve_cfg)
+    # Sizing is the runner's job (size_intent overwrites both), so the sleeve
+    # gets the placeholders the cfg dict used to carry.
+    intents, status = sleeve.decide(variant, weight_pct=100.0, leverage=1.0)
     st = status.get("status", "?")
     out = {"status": st, "detail": status, "hb_status": "ok", "hb_note": "",
            # "evaluated" = a real 15m-boundary evaluation happened, so the
@@ -128,7 +130,7 @@ def tick(variant: dict, sleeve_cfg: dict) -> dict:
             for intent in intents:
                 resized, info = size_intent(intent, float(variant["capital_usdt"]),
                                             risk_scale)
-                res = sleeve.execute_for_variant(variant, sleeve_cfg, resized)
+                res = sleeve.execute(variant, resized)
                 log.info(f"OPENED {res.get('trade_id')} {resized.direction} "
                          f"notional=${info['notional']:,.0f} "
                          f"(stop_pct={info['stop_pct']:.2%}, "
@@ -175,11 +177,6 @@ def main(argv: list[str] | None = None) -> int:
              f"risk={botcfg.RISK_PCT}%/trade cap={botcfg.NOTIONAL_MAX_X}x "
              f"open_trades={botlib.count_open_trades(variant['id'])}")
 
-    # The sleeve reads only these keys from sleeve_cfg; alloc/lev are
-    # placeholders that size_intent() overwrites on every Intent.
-    sleeve_cfg = {"weight_pct": 100.0, "_effective_leverage": 1.0,
-                  "priority": 100}
-
     signal.signal(signal.SIGINT, _signal_handler)
     signal.signal(signal.SIGTERM, _signal_handler)
 
@@ -189,7 +186,7 @@ def main(argv: list[str] | None = None) -> int:
         t0 = time.time()
         hb_status, hb_note, evaluated, signalled = "ok", "", False, False
         try:
-            out = tick(variant, sleeve_cfg)
+            out = tick(variant)
             hb_status = out.get("hb_status", "ok")
             hb_note = out.get("hb_note", "")
             evaluated = bool(out.get("evaluated"))
