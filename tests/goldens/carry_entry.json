@@ -1,0 +1,62 @@
+{
+ "db_after": {
+  "n_trades": 1,
+  "trades": [
+   {
+    "allocation_pct": 100.0,
+    "asset": "BTC",
+    "direction": "LONG",
+    "entry_price": 66556.16,
+    "exit_price": null,
+    "exit_time": "2099-12-31T00:00:00+00:00",
+    "leverage": 1.0,
+    "notes": {
+     "fr_7d_avg_pct": 0.0164,
+     "fr_window_days": 7,
+     "regime": "unknown",
+     "sleeve": "CARRY",
+     "structure": "long_spot_short_perp_delta_neutral",
+     "threshold": 0.0,
+     "trigger": "S-078_carry_entry",
+     "variant_id": "bot_carry_test"
+    },
+    "notes_tail": null,
+    "pnl_usdt": null,
+    "qty": 0.1502490528,
+    "size_usdt": 10000.0,
+    "status": "open",
+    "strategy": "CARRY",
+    "strategy_variant": "bot_carry_test",
+    "unique_key_suffix": "CARRY|BTC|2026-07-22"
+   }
+  ]
+ },
+ "intents": [
+  {
+   "allocation_pct": 100.0,
+   "asset": "BTC",
+   "conviction": 100,
+   "direction": "LONG",
+   "leverage": 1.0,
+   "priority": 100.0,
+   "reason": {
+    "_entry_price": 66556.16,
+    "_fr_7d_avg_pct": 0.01636857143,
+    "_signal_day": "2026-07-22",
+    "fr_7d_avg_pct": 0.0164,
+    "fr_window_days": 7,
+    "regime": "unknown",
+    "sleeve": "CARRY",
+    "structure": "long_spot_short_perp_delta_neutral",
+    "threshold": 0.0,
+    "trigger": "S-078_carry_entry",
+    "variant_id": "bot_carry_test"
+   },
+   "scheduled_exit_dt": null
+  }
+ ],
+ "status": {
+  "fr_7d_avg_pct": 0.01636857143,
+  "status": "decided"
+ }
+}

@@ -1,0 +1,16 @@
+{
+ "db_after": {
+  "n_trades": 0,
+  "trades": []
+ },
+ "intents": [],
+ "status": {
+  "bar_iso": "2026-09-09T11:00:00+00:00",
+  "bar_ts": 1788951600,
+  "close": 79281.7,
+  "oi_chg_4h": -0.002546279451,
+  "px_chg_4h": 0.0004504959241,
+  "status": "no_flush",
+  "swept": 0
+ }
+}

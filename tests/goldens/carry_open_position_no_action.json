@@ -1,0 +1,36 @@
+{
+ "db_after": {
+  "n_trades": 1,
+  "trades": [
+   {
+    "allocation_pct": 100.0,
+    "asset": "BTC",
+    "direction": "LONG",
+    "entry_price": 66556.16,
+    "exit_price": null,
+    "exit_time": "2099-12-31T00:00:00+00:00",
+    "leverage": 1.0,
+    "notes": {
+     "sleeve": "CARRY",
+     "trigger": "S-078_carry_entry"
+    },
+    "notes_tail": null,
+    "pnl_usdt": null,
+    "qty": 0.07512452641,
+    "size_usdt": 5000.0,
+    "status": "open",
+    "strategy": "CARRY",
+    "strategy_variant": "bot_carry_test",
+    "unique_key_suffix": null
+   }
+  ]
+ },
+ "intents": [],
+ "status": {
+  "cum_funding_pct": 0.496078,
+  "date": "2026-07-22",
+  "fr_7d_avg_pct": 0.01636857143,
+  "open_count": 1,
+  "status": "no_action"
+ }
+}

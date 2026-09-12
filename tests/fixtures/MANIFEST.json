@@ -1,0 +1,30 @@
+{
+ "adx": {
+  "anchor": "2026-08-22T00:00:05",
+  "sha256": "032051fbc526880d9841a95f0775e7c5d89450ac6b315620efa7df1c70b5463f",
+  "size_bytes": 991232,
+  "tables": {
+   "cd_funding_rate": 60,
+   "cd_spot_binance": 372
+  }
+ },
+ "carry": {
+  "anchor": "2026-07-22T13:54:00",
+  "sha256": "8bdd5613bb7f50436addf79b6341b2ebd0080ff1681f538c6cbc931820fa0ed0",
+  "size_bytes": 331776,
+  "tables": {
+   "cd_funding_rate": 60,
+   "cd_futures_ohlcv": 60,
+   "cd_spot_binance": 60
+  }
+ },
+ "squeeze_bull": {
+  "anchor": "2026-09-11T18:00:31",
+  "sha256": "8e0b9b7afa23f95194816fbf440bfe072df262fd45f99d5bc81fc544b0da7b92",
+  "size_bytes": 241664,
+  "tables": {
+   "cd_futures_ohlcv": 50,
+   "cd_open_interest": 50
+  }
+ }
+}

@@ -1,0 +1,45 @@
+{
+ "db_after": {
+  "n_trades": 0,
+  "trades": []
+ },
+ "intents": [
+  {
+   "allocation_pct": 100.0,
+   "asset": "BTC",
+   "conviction": 100,
+   "direction": "LONG",
+   "leverage": 1.0,
+   "priority": 100.0,
+   "reason": {
+    "_entry_price": 77493.9,
+    "_reference_stop_price": 75944.022,
+    "_stop_price": null,
+    "_target_price": 79818.717,
+    "_time_stop_iso": "2026-09-13T17:00:00+00:00",
+    "bar_iso": "2026-09-11T17:00:00+00:00",
+    "bar_ts": 1789146000,
+    "exit_policy": "target_time",
+    "oi_chg_4h": -0.02478077712,
+    "px_chg_4h": -0.02164049086,
+    "regime": "bull_30d",
+    "ret_30d_backonly": 0.2039215378,
+    "sleeve": "SQUEEZE_BULL",
+    "trigger": "squeeze_bull_oi_flush",
+    "variant_id": "bot_squeeze_bull_test"
+   },
+   "scheduled_exit_dt": "2026-09-13T17:00:00+00:00"
+  }
+ ],
+ "status": {
+  "bar_iso": "2026-09-11T17:00:00+00:00",
+  "bar_ts": 1789146000,
+  "close": 77493.9,
+  "oi_chg_4h": -0.02478077712,
+  "px_chg_4h": -0.02164049086,
+  "regime": "bull_30d",
+  "ret_30d_backonly": 0.2039215378,
+  "status": "decided",
+  "swept": 0
+ }
+}

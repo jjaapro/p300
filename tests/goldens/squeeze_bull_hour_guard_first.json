@@ -1,0 +1,79 @@
+{
+ "db_after": {
+  "n_trades": 1,
+  "trades": [
+   {
+    "allocation_pct": 100.0,
+    "asset": "BTC",
+    "direction": "LONG",
+    "entry_price": 77493.9,
+    "exit_price": null,
+    "exit_time": "2026-09-13T17:00:00+00:00",
+    "leverage": 1.0,
+    "notes": {
+     "_reference_stop_price": 75944.022,
+     "_stop_price": 75944.022,
+     "_target_price": 79818.717,
+     "_time_stop_iso": "2026-09-13T17:00:00+00:00",
+     "bar_iso": "2026-09-11T17:00:00+00:00",
+     "bar_ts": 1789146000,
+     "exit_policy": "stop_target_time",
+     "oi_chg_4h": -0.02478077712,
+     "px_chg_4h": -0.02164049086,
+     "regime": "bull_30d",
+     "ret_30d_backonly": 0.2039215378,
+     "sleeve": "SQUEEZE_BULL",
+     "trigger": "squeeze_bull_oi_flush",
+     "variant_id": "bot_squeeze_bull_test"
+    },
+    "notes_tail": null,
+    "pnl_usdt": null,
+    "qty": 0.129042415,
+    "size_usdt": 10000.0,
+    "status": "open",
+    "strategy": "SQUEEZE_BULL",
+    "strategy_variant": "bot_squeeze_bull_test",
+    "unique_key_suffix": "SQUEEZE_BULL|BTC|1789146000"
+   }
+  ]
+ },
+ "intents": [
+  {
+   "allocation_pct": 100.0,
+   "asset": "BTC",
+   "conviction": 100,
+   "direction": "LONG",
+   "leverage": 1.0,
+   "priority": 100.0,
+   "reason": {
+    "_entry_price": 77493.9,
+    "_reference_stop_price": 75944.022,
+    "_stop_price": 75944.022,
+    "_target_price": 79818.717,
+    "_time_stop_iso": "2026-09-13T17:00:00+00:00",
+    "bar_iso": "2026-09-11T17:00:00+00:00",
+    "bar_ts": 1789146000,
+    "exit_policy": "stop_target_time",
+    "oi_chg_4h": -0.02478077712,
+    "px_chg_4h": -0.02164049086,
+    "regime": "bull_30d",
+    "ret_30d_backonly": 0.2039215378,
+    "sleeve": "SQUEEZE_BULL",
+    "trigger": "squeeze_bull_oi_flush",
+    "variant_id": "bot_squeeze_bull_test"
+   },
+   "scheduled_exit_dt": "2026-09-13T17:00:00+00:00"
+  }
+ ],
+ "status": {
+  "bar_iso": "2026-09-11T17:00:00+00:00",
+  "bar_ts": 1789146000,
+  "close": 77493.9,
+  "oi_chg_4h": -0.02478077712,
+  "px_chg_4h": -0.02164049086,
+  "regime": "bull_30d",
+  "ret_30d_backonly": 0.2039215378,
+  "status": "decided",
+  "swept": 0
+ }
+}
