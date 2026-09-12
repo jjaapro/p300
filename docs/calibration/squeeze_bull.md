@@ -156,6 +156,19 @@ stop variant takes; the replay in the re-cut below covers the union.
   own replay of the same fires by > 0.05 R on any trade. Disable via
   `enabled = 0`; do not edit thresholds.
 
+**The re-cut is executable**, written 2026-09-12 while `n_paired = 0` so the
+code predates the data it judges: `studies/notebooks/squeeze_recut/`
+(`python studies/notebooks/squeeze_recut/run_recut.py --sleeve squeeze_bull`).
+Its README quotes the block above verbatim and `tests/test_squeeze_recut.py`
+pins each clause, including that below the gate the thresholds are not
+computed at all. Two readings had to be fixed in advance and are recorded
+there: a pair requires both sides CLOSED (an open trade has no R, and counting
+it could trigger the re-cut early), and the 0.05 R clause is read against the
+**residual** after funding and booked cost, because the clause exists to catch
+"an execution or data fault rather than an edge failure". Note that
+`enabled = 0` alone does not stop a runner — the variant must also leave
+`bots/squeeze_bull/config.py: VARIANTS`, then the bot restarts.
+
 ## Log
 
 | date | change | why |

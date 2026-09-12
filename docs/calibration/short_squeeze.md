@@ -121,6 +121,18 @@ reference distance (`_reference_stop_price` in the trade notes).
   own replay of the same fires by > 0.05 R on any trade. Disable via
   `enabled = 0`; do not edit thresholds.
 
+**The re-cut is executable**, written 2026-09-12 while `n_paired = 0` so the
+code predates the data it judges: `studies/notebooks/squeeze_recut/`
+(`python studies/notebooks/squeeze_recut/run_recut.py --sleeve short_squeeze`).
+Its README quotes the block above verbatim; `tests/test_squeeze_recut.py` pins
+each clause, this sleeve's −10 R floor and its D7 retire-the-sleeve rule, which
+SQUEEZE_BULL does not have. Sleeve-specific caveats recorded there: the
+reconstructed fires are labelled approximate because the live gate reads the
+newest funding settlement where the validated history used a 7-row mean (see
+above), which affects only union bars neither variant took — never the paired
+set, which comes from the live ledger. `enabled = 0` alone does not stop a
+runner; the variant must also leave `bots/short_squeeze/config.py: VARIANTS`.
+
 ## Change history
 
 | Date | Change | Why / provenance |

@@ -1,0 +1,2 @@
+bar_ts,bar_iso,taken_stop,taken_nostop,klass,stop_trade,nostop_trade,stop_block,nostop_block
+1789146000,2026-09-11T17:00:00+00:00,True,False,STOP_ONLY,SJ-4250,,,unexplained

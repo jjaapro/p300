@@ -86,8 +86,10 @@ further down stay as they are.
    live `--force-start` feed should be relaunched under `start_fleet.ps1` so the duplicate
    guard applies to it. `python monitor.py --deep` the next day.
 2. **Paper evidence — waiting, not work.** First fires of the no-stop twins and of r4 ETH;
-   weekly `strategy_health` per bot; the paired re-cut script for the squeeze twins must
-   exist before n = 20 (topic entry below).
+   weekly `strategy_health` per bot. The paired re-cut script now exists —
+   `studies/notebooks/squeeze_recut/`, written 2026-09-12 while `n_paired = 0` so the
+   decision code predates the data it judges; `run_recut.py --sleeve both` reports NOT_DUE
+   with 0 / 20 today and exits non-zero on any DISABLE verdict.
 3. **Research queue — pre-registered notebooks, user picks the order.**
    1. Shelf re-cost under the no-stop style at measured per-leg costs (R4 windows,
       post-cascade reversion, absorption, footprint C3, PDO), then fleet-level compounding
