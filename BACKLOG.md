@@ -116,17 +116,11 @@ further down stay as they are.
       eight dormant sleeves. Absorbs the chento BTC + ETH single-variant fold (multi-asset
       plan Phase B), the `chento_limit_bid` archival (pool-plan A7) and the legacy variant
       row. Starts after step 1: the file moves happen between a fleet stop and a restart.
-      **Two hazards the step list below does not mention**, found in the 2026-09-12 audit
-      and to be designed around before the first file is touched: (a) deleting
-      `try_fire_for_variant` degrades research replay SILENTLY — `backtest_runner` looks the
-      sleeve up in `STRATEGY_DISPATCH` and does `if dispatcher is None: continue` with no
-      log, so between step 1 and step 3 an ADX / CARRY / SHORT_SQUEEZE / chento replay
-      returns zero trades and reports success; the only test that would catch it is
-      `tests/test_sim_mode.py`, the one excluded for the 1.5 GB-per-test disk copy. (b) ADX
-      is the one sleeve whose `_effective_leverage` is not merely overwritten by the bot:
-      it feeds `effective_price_move_sl_pct`, is persisted into the trade notes as
-      `sl_semantic_price_thresh_pct`, and is read back by `strategies/support/stop_path.py`
-      on the live close path — including for the currently-open SJ-4247.
+      **Step 1 was re-planned 2026-09-12** — see "Step 1 re-planned" in the topic entry
+      below. Its original gate does not work (five of the six named parity tests never touch
+      the surface being changed), and the obvious edit silently zeroes research replay. The
+      replacement is expand-contract behind a golden-record net, ~23 commits in four phases,
+      with the first live strategy-module edit needing its own go-ahead.
    2. ~~A DB-level per-bar unique key for paper trades~~ — **done 2026-09-12**; the real gap
       was the optional `signal_time_iso` and four bots falling through it, see the evening
       entry above.
@@ -211,10 +205,9 @@ cap — the multi-asset plan's Phase B as written.
 
 **Steps, each its own commit with the suite green:**
 
-1. Strip the orchestrator interface from the six running strategy modules (adx, carry,
-   chento_triple_v3, short_squeeze, squeeze_bull, r4). Parity tests must stay byte-equal:
-   `test_adx_parity`, `test_chento_parity`, `test_chento_parity_eth`,
-   `test_short_squeeze_parity`, `test_squeeze_bull_parity`, `test_carry_exit_rule`.
+1. Strip the orchestrator interface from the six running strategy modules — **re-planned
+   2026-09-12, see the section below.** The original one-line step was unsafe: its stated
+   gate does not work, and the obvious edit silently breaks research replay.
 2. `git mv` each module under its bot and re-point the importers (~50 files: the tests
    above, `studies/notebooks/adx_study/harness.py`, `adx_robustness_2026_09/adx_lib.py`,
    the chento_journal validations, `strategy_comparison_2026_09/squeeze_overlap.py`,
@@ -238,6 +231,158 @@ cap — the multi-asset plan's Phase B as written.
 **Gates:** parity tests byte-equal before and after every step; the full suite green;
 fleet restarted from the new paths with fresh heartbeats; one definition per rule (no
 duplicated strategy logic, grep-verified); `git status` clean of stray copies.
+
+---
+
+## Step 1 re-planned — stripping the orchestrator interface safely
+
+**Written 2026-09-12** after an audit of the original one-line step. Supersedes step 1
+above; steps 2–5 are unchanged.
+
+### Why the original step 1 was unsafe
+
+**Its gate does not work.** Five of the six named parity tests never call
+`try_decide_for_variant` / `execute_for_variant` and never pass a `sleeve_cfg` — they
+exercise math, loaders and private helpers only. Just `test_carry_exit_rule` touches the
+surface being changed, and `tests/test_allocation_parity.py:136-158`, named after the ADX
+sleeve, re-states the sleeve's expression inline and asserts on its own copy. An
+arbitrarily broken decide/execute path keeps all six green.
+
+**The obvious edit breaks research replay silently.** `try_fire_for_variant` is not dead:
+`backtest_runner.tick_replay_variant` resolves sleeves *only* through
+`orchestrator.STRATEGY_DISPATCH` — the `try_fire` wrappers — and never consults
+`STRATEGY_TWO_PHASE_DISPATCH`. On a miss it does `if dispatcher is None: continue` with no
+log (`backtest_runner.py:257-259`), so deleting a wrapper turns every historical replay of
+that sleeve into a zero-trade run that still prints a full report and exits 0. The
+orchestrator is the opposite — it prefers two-phase and warns on a miss.
+
+**And a broken sleeve import does not stop a bot.** Every runner catches it, writes
+heartbeat `status='error'` and keeps ticking while evaluating nothing and — the part that
+matters — **sweeping and closing nothing**. That would strand SJ-4242 (CARRY, open since
+2026-07-22), SJ-4247 (ADX) and SJ-4250 (SQUEEZE_BULL).
+
+### The approach: expand-contract, never a red commit boundary
+
+The plain-argument `decide()` / `execute()` becomes the *real* implementation inside each
+module; the old `(variant, sleeve_cfg)` entry points shrink to three-line cfg-unpacking
+adapters; nothing is deleted until nothing references it. No running bot's call path
+changes until a deliberate, one-bot-at-a-time repoint. Two of three independent judges
+preferred this over characterize-first and over retiring the consumers first; the safety
+net from characterize-first is grafted in as phase B, which is what makes the strip
+gateable at all.
+
+### Preconditions
+
+- Record the baseline: full suite count, `python health.py` exit code, and a read-only
+  snapshot of SJ-4242 / SJ-4247 / SJ-4250. Note that SJ-4250 carries a real scheduled exit
+  and will legitimately close during this work; the other two carry the 2099-12-31 sentinel
+  and must stay open unless their own sleeve rule closes them.
+- **Copy prod.db with `sqlite3 .backup`, never `shutil.copy`** — eight processes write every
+  60 s and prod.db is in WAL, so a plain copy without its `-wal` is not a consistent
+  snapshot. **A fresh copy for every dry run**: the per-bar idempotency keys shipped
+  2026-09-12 mean a second `--once --db <same copy>` writes no row, which would make a
+  before/after diff pass on two empty results.
+- **Pin one FIRING `--sim-now` anchor per bot** and require the baseline row at that anchor
+  to be non-empty. A bot whose baseline is empty is *blocked*, not passing — short_squeeze
+  has never fired, R4's next enabled window is 2026-10-02, and chento fires ~36×/yr, so an
+  unpinned anchor compares nothing to nothing.
+- Fix the target signatures in writing first, since the surface adapter encodes them.
+  They must include `use_stop` — **short_squeeze and squeeze_bull each drive TWO live
+  variants** (the no-stop twins) through one `tick_all` loop, so `use_stop` (and
+  `count_diag` for short_squeeze) is threaded per variant into `decide()`. Getting that
+  wrong silently flips the sizing branch and the `_stop_price` written into the reason blob.
+- If `P300_STOP_SEMANTICS` cannot be read from the live process environments, **assume
+  margin semantics are live** and keep ADX's leverage argument.
+- Leave `p300_aggressive_v2_v1_0.enabled = 1`. `tests/test_sim_mode.py` copies prod.db
+  verbatim and the sim path selects `enabled = 1`; disabling it silently zeroes that side.
+  The disable belongs to step 3.
+- Go-ahead needed before phase C (the first live strategy-module edit).
+
+### Phase A — make it safe to work (fleet keeps running)
+
+1. **Make every dispatch miss loud.** In `backtest_runner.py:257-259` keep the existing
+   `STRATEGY_DISPATCH` resolution and replace only `continue` with a `raise` naming the
+   `strategy_id`. **Do not "mirror the orchestrator" here** — `STRATEGY_TWO_PHASE_DISPATCH`
+   holds `(decide_fn, execute_fn)` tuples and the block one would copy is the
+   collect-into-`_pending_intents`-for-reconcile shape, but `tick_replay_variant` has no
+   reconcile pass, so a literal mirror collects intents and never executes them: the same
+   silent zero-trade replay this step exists to prevent. Add the same validation once in
+   `run()`, and **make it honour `SKIP_STRATEGIES` and `params.deterministic is False`** or
+   `--skip` and AI_QUANT abort the run. Log the swallowed `except Exception: return None` in
+   `timing_anomalies/internal/__init__.py`. New `tests/test_dispatch_registry.py`.
+2. **Repoint `health.py`** off the dead composition onto the bot fleet: assert the nine
+   `bot_*` variants are registered and that each runner's actual entry points exist. Prove
+   it bites by renaming one in a scratch worktree and confirming a non-zero exit.
+3. **Port `--db` / `--sim-now`** to the five runners that lack them (only `bots/r4/runner.py`
+   has them today), including its refusal to accept prod.db. The dry-run helper must also
+   redirect `CHENTO_V3_DIAG_PATH` and `SSQ_DIAG_PATH` into a scratch dir, or every chento /
+   short_squeeze dry run appends to the live JSONL the dashboard reads. Note
+   `bots/chento_v3_eth/runner.py` sets `CHENTO_V3_DIAG=1` *unconditionally*, so the redirect
+   must follow that import.
+
+### Phase B — build a net that can actually fail (fleet keeps running)
+
+4. Golden scaffolding: a live-DB kill-switch, a fixture builder with hash-pinned bars, an
+   output normalizer, and a surface adapter (`tests/_sleeve_surface.py`) that is the single
+   place the call shape is written down — this is what lets the goldens survive the
+   signature change they are guarding. The diag-env half of the guard must be **module-level
+   code, not an autouse fixture**: autouse runs after the test module's imports, and the
+   sleeves read their diag flags at import.
+5. **Goldens tier 1** — r4 (four windows), carry, squeeze_bull. Include a `use_stop=False`
+   case so the live no-stop twins are inside the net.
+6. **Goldens tier 2** — adx, chento BTC/ETH, short_squeeze, plus the stop-path consumer.
+   Build the `P300_STOP_SEMANTICS=margin` ADX case **on the same firing fixture** as the
+   default case, or its assertion never runs and the step-7 drill reports a false green.
+7. **Mutation drill.** Deliberately break each sleeve and confirm the golden goes red. Any
+   mutation that stays green means that golden is decorative — fix the golden, not the rule.
+8. Fix the live defect the drill exposes: a raising `decide()` must not be able to skip the
+   scheduled-exit close. (The same trap exists in the other five runners via an early
+   `stale_mgmt_inputs` return — its own commit, not folded into this refactor.)
+
+### Phase C — shim each module, then repoint each bot (go-ahead required)
+
+9–14. **One module per commit, no restart.** The new plain-argument `decide()`/`execute()`
+becomes the implementation; the old entry point becomes a three-line adapter. Both surfaces
+stay live, so nothing that imports either breaks at any commit. Order: squeeze_bull (no
+orchestrator referent at all), then carry, chento, short_squeeze, adx, r4 last. For R4,
+transcribe the calendar gates character-for-character and note the gate arm is
+`R4_INNER_LEV_UNGATED * gate.leverage_mult` — **UNGATED**, which no test covers; add a
+golden for that exact product.
+
+15–20. **Repoint the runners, one bot per commit, one restart each.** Gate: the `--sim-now`
+dry run at the pinned firing anchor produces a byte-identical trade row, then the restarted
+bot's heartbeat is `ok` with a fresh `last_eval`. For short_squeeze and squeeze_bull the
+restart brings up **two** variants; the gate covers both.
+
+### Phase D — contract
+
+21. Centralize the cfg→kwargs translation and rewrite the registries. The rewrite must
+    preserve the four sleeves *not* being refactored (ai_quant, ema, eth_daily,
+    timing_anomalies), which have no new-shape `decide`/`execute` pair. Gate on
+    `test_dispatch_registry` + `test_orchestrator_two_phase` + `test_timing_anomalies_sleeve`
+    + `test_fomc_service` — **not** on `health.py`, which after step 2 no longer imports the
+    orchestrator and cannot see a broken registry.
+22. Repoint the remaining tests and pin wrapper equivalence before deleting anything.
+23. Delete the adapters and the ten `try_fire` wrappers; fix the docs. **Grep must cover
+    `health.py`, `strategies/orchestrator.py`, `strategies/support/` and
+    `strategies/sleeves/timing_anomalies/`** — a bots/-and-tests-only grep cannot see that
+    step 2's new health check names five of the symbols this step deletes.
+
+### What this does not do
+
+No module moves (that is step 2 and it needs the fleet stopped); `sweep()` is not split out
+of `decide()`, because the sweep's closes change what the entry check sees — so the
+three-function target is two-thirds delivered; `priority` survives as a plain keyword until
+the orchestrator goes in step 3; chento's asset stays import-time; nothing is retired.
+
+### Residual risks
+
+The goldens enshrine today's behaviour, bugs included — characterization tests cannot tell a
+correct rule from a wrong one. The mutation drill proves the net is not vacuous, not that it
+is complete. **R4 has a ~20-day blind window**: it has never opened a trade and its next
+enabled fire is 2026-10-02, so a regression has no live output to diff until October. And a
+passing short_squeeze golden is evidence the strip preserved behaviour, not evidence the
+sleeve works — it has never fired in production and is pending a retirement decision.
 
 ---
 
