@@ -205,3 +205,50 @@ def test_chento_package_and_module_are_the_same_functions():
     from strategies.sleeves.chento_triple_v3 import signal
     assert pkg.decide is signal.decide
     assert pkg.execute is signal.execute
+
+
+# ── short_squeeze ──────────────────────────────────────────────────────────
+
+def test_short_squeeze_adapter_forwards_the_full_cfg_surface(monkeypatch):
+    """The widest surface of the six: five keys, including both per-variant
+    flags that separate the live paper twins."""
+    from strategies.sleeves.short_squeeze import signal as sleeve
+
+    seen = _capture(monkeypatch, sleeve)
+    sleeve.try_decide_for_variant(VARIANT, {
+        "_effective_weight_pct": 6.0, "weight_pct": 1.0,
+        "_effective_leverage": 4.0, "priority": 15.0,
+        "use_stop": False, "count_diag": False})
+    assert seen["kwargs"] == {"weight_pct": 6.0, "leverage": 4.0,
+                              "priority": 15.0, "use_stop": False,
+                              "count_diag": False}
+
+
+def test_short_squeeze_adapter_defaults_match_the_pre_strip_behaviour(monkeypatch):
+    from strategies.sleeves.short_squeeze import signal as sleeve
+
+    seen = _capture(monkeypatch, sleeve)
+    sleeve.try_decide_for_variant(VARIANT, {})
+    assert seen["kwargs"] == {"weight_pct": 0.0, "leverage": 1.0,
+                              "priority": 100.0, "use_stop": True,
+                              "count_diag": True}
+
+
+def test_short_squeeze_count_diag_is_independent_of_use_stop(monkeypatch):
+    """The runner passes count_diag=(k==0) and use_stop per variant, so the
+    two must not be conflated — variant 0 counts diagnostics AND keeps its
+    stop, variant 1 does neither."""
+    from strategies.sleeves.short_squeeze import signal as sleeve
+
+    seen = _capture(monkeypatch, sleeve)
+    sleeve.try_decide_for_variant(VARIANT, {"use_stop": True,
+                                            "count_diag": False})
+    assert seen["kwargs"]["use_stop"] is True
+    assert seen["kwargs"]["count_diag"] is False
+
+
+@pytest.mark.parametrize("name", ["decide", "execute", "try_decide_for_variant",
+                                  "execute_for_variant", "try_fire_for_variant"])
+def test_short_squeeze_exposes_both_surfaces(name):
+    from strategies.sleeves.short_squeeze import signal as sleeve
+    assert callable(getattr(sleeve, name, None)),         f"short_squeeze lost {name}; both surfaces must stay live until phase D"

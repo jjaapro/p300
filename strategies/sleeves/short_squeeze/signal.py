@@ -437,18 +437,23 @@ def _evaluate_trigger(variant_id: str, now: datetime) -> tuple[bool, dict]:
 
 # ─── Orchestrator interface ──────────────────────────────────────────────────
 
-def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
-    """Two-phase dispatch entry point. See strategies/support/dispatch.py.
+def decide(variant: dict, *, weight_pct: float = 0.0, leverage: float = 1.0,
+           priority: float = 100.0, use_stop: bool = True,
+           count_diag: bool = True):
+    """Decide whether to open, sweeping open positions first.
 
-    Side effects (always run):
-      - Sweep open positions for stop / target / time-stop hits.
+    Returns ``(list[Intent], status_dict)``. Emits at most one Intent per
+    call, and only on a 15m boundary minute when all gates pass.
 
-    Returns ``(list[Intent], status_dict)``. Emits at most one Intent
-    per call, and only on a 15m boundary minute when all gates pass.
+    Two per-variant flags, both load-bearing for the live paper twins:
+    ``use_stop`` selects the exit policy (`bot_short_squeeze_v1` keeps the
+    swept-low stop and 3R target; `bot_short_squeeze_nostop_v1` runs the 6 h
+    time stop alone), and ``count_diag`` decides which of the two counts the
+    per-day gate diagnostics — the runner passes it True for the first
+    variant only, so both variants seeing the same bar do not double-count.
     """
     variant_id = variant["id"]
     swept = _sweep_open_positions(variant_id)
-    count_diag = bool(sleeve_cfg.get("count_diag", True))
 
     now = clock.now_utc()
     if not ssq_math.is_15m_boundary(now):
@@ -474,11 +479,9 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
         return [], {"status": "invalid_risk", "swept": swept}
     target_price = entry_price + TP_R * risk
     time_stop_dt = now + timedelta(hours=TIME_STOP_HOURS)
-    use_stop = bool(sleeve_cfg.get("use_stop", True))
 
-    alloc_pct = float(sleeve_cfg.get("_effective_weight_pct",
-                                       sleeve_cfg.get("weight_pct", 0.0)))
-    leverage  = float(sleeve_cfg.get("_effective_leverage", 1.0))
+    alloc_pct = float(weight_pct)
+    leverage = float(leverage)
 
     reason = {
         "trigger": "short_squeeze_long",
@@ -503,7 +506,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
         asset="BTC", direction="LONG",
         allocation_pct=alloc_pct, leverage=leverage,
         conviction=100,
-        priority=float(sleeve_cfg.get("priority", 100)),
+        priority=float(priority),
         reason=reason, scheduled_exit_dt=time_stop_dt,
     )
     return [intent], {"status": "decided", "swept": swept,
@@ -511,7 +514,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
                        "div_pct": diag["divergence_pct"]}
 
 
-def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Intent) -> dict:
+def execute(variant: dict, intent: Intent) -> dict:
     """Phase 2: open the LONG described by ``intent``."""
     from strategies.trades import open_paper_trade
     reason = dict(intent.reason or {})
@@ -549,9 +552,36 @@ def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Intent) -> dict
             "target_price": reason["_target_price"]}
 
 
+# ─── Legacy orchestrator interface ───────────────────────────────────────
+# Thin adapters over decide()/execute(); no logic of their own, so the two
+# surfaces cannot diverge. Deleted in phase D once nothing calls them.
+
+def _unpack(sleeve_cfg: dict) -> dict:
+    """sleeve_cfg -> decide() keywords. The complete surface for this sleeve —
+    five keys, the widest of the six."""
+    return {
+        "weight_pct": float(sleeve_cfg.get(
+            "_effective_weight_pct", sleeve_cfg.get("weight_pct", 0.0))),
+        "leverage": float(sleeve_cfg.get("_effective_leverage", 1.0)),
+        "priority": float(sleeve_cfg.get("priority", 100)),
+        "use_stop": bool(sleeve_cfg.get("use_stop", True)),
+        "count_diag": bool(sleeve_cfg.get("count_diag", True)),
+    }
+
+
+def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
+    """Legacy adapter — see decide()."""
+    return decide(variant, **_unpack(sleeve_cfg))
+
+
+def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Intent) -> dict:
+    """Legacy adapter — see execute()."""
+    return execute(variant, intent)
+
+
 def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
-    """Single-call entry point for the legacy orchestrator path. Wraps
-    decide + execute."""
+    """Single-call entry point (decide + execute). Still the ONLY dispatch
+    backtest_runner consults, so it outlives the two adapters above."""
     intents, status = try_decide_for_variant(variant, sleeve_cfg)
     if not intents:
         return status
