@@ -195,8 +195,7 @@ def check_dashboard_tables() -> None:
 BOT_ENTRYPOINTS: dict[str, tuple[str, tuple[str, ...]]] = {
     "adx": ("strategies.sleeves.adx.signal",
             ("try_decide_for_variant", "execute_for_variant")),
-    "carry": ("strategies.sleeves.carry.signal",
-              ("try_decide_for_variant", "execute_for_variant")),
+    "carry": ("strategies.sleeves.carry.signal", ("decide", "execute")),
     "chento_v3": ("strategies.sleeves.chento_triple_v3",
                   ("try_decide_for_variant", "execute_for_variant")),
     "short_squeeze": ("strategies.sleeves.short_squeeze.signal",
