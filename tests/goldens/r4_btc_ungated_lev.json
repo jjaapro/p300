@@ -1,0 +1,36 @@
+{
+ "db_after": {
+  "n_trades": 0,
+  "trades": []
+ },
+ "intents": [
+  {
+   "allocation_pct": 10.0,
+   "asset": "BTC",
+   "conviction": 100,
+   "direction": "LONG",
+   "leverage": 5.0,
+   "priority": 100.0,
+   "reason": {
+    "_entry_price": 70000.0,
+    "_exit_dt_iso": "2026-09-07T18:00:00+00:00",
+    "_mode": "uncertain",
+    "_now_iso": "2026-09-07T06:01:00+00:00",
+    "_signal_day": "2026-09-07",
+    "_strategy": "JPLUS_R4_BTC",
+    "gated": false,
+    "inner_lev": 2.5,
+    "mode": "uncertain",
+    "sleeve": "JPLUS_R4_BTC",
+    "trigger": "calendar_open",
+    "vol_lev": 2.0
+   },
+   "scheduled_exit_dt": "2026-09-07T18:00:00+00:00"
+  }
+ ],
+ "status": {
+  "stacked_lev": 5.0,
+  "status": "decided",
+  "weight": 0.1
+ }
+}

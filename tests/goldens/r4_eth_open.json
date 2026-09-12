@@ -1,0 +1,64 @@
+{
+ "db_after": {
+  "n_trades": 1,
+  "trades": [
+   {
+    "allocation_pct": 10.0,
+    "asset": "ETH",
+    "direction": "LONG",
+    "entry_price": 3000.0,
+    "exit_price": null,
+    "exit_time": "2026-09-09T20:00:00+00:00",
+    "leverage": 5.0,
+    "notes": {
+     "gated": false,
+     "inner_lev": 2.5,
+     "mode": "uncertain",
+     "sleeve": "JPLUS_R4_ETH",
+     "trade_day": "2026-09-09",
+     "trigger": "calendar_open",
+     "vol_lev": 2.0
+    },
+    "notes_tail": null,
+    "pnl_usdt": null,
+    "qty": 1.666666667,
+    "size_usdt": 5000.0,
+    "status": "open",
+    "strategy": "JPLUS_R4_ETH",
+    "strategy_variant": "bot_r4_test",
+    "unique_key_suffix": "JPLUS_R4_ETH|ETH|2026-09-08"
+   }
+  ]
+ },
+ "intents": [
+  {
+   "allocation_pct": 10.0,
+   "asset": "ETH",
+   "conviction": 100,
+   "direction": "LONG",
+   "leverage": 5.0,
+   "priority": 100.0,
+   "reason": {
+    "_entry_price": 3000.0,
+    "_exit_dt_iso": "2026-09-09T20:00:00+00:00",
+    "_mode": "uncertain",
+    "_now_iso": "2026-09-08T20:01:00+00:00",
+    "_signal_day": "2026-09-08",
+    "_strategy": "JPLUS_R4_ETH",
+    "gated": false,
+    "inner_lev": 2.5,
+    "mode": "uncertain",
+    "sleeve": "JPLUS_R4_ETH",
+    "trade_day": "2026-09-09",
+    "trigger": "calendar_open",
+    "vol_lev": 2.0
+   },
+   "scheduled_exit_dt": "2026-09-09T20:00:00+00:00"
+  }
+ ],
+ "status": {
+  "stacked_lev": 5.0,
+  "status": "decided",
+  "weight": 0.1
+ }
+}

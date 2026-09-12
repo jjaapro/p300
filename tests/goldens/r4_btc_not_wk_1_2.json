@@ -1,0 +1,10 @@
+{
+ "db_after": {
+  "n_trades": 0,
+  "trades": []
+ },
+ "intents": [],
+ "status": {
+  "status": "not_wk_1_2"
+ }
+}

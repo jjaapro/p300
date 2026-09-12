@@ -1,0 +1,11 @@
+{
+ "db_after": {
+  "n_trades": 0,
+  "trades": []
+ },
+ "intents": [],
+ "status": {
+  "mode": "bear",
+  "status": "regime_zero_weight"
+ }
+}
