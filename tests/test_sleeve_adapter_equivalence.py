@@ -252,3 +252,59 @@ def test_short_squeeze_count_diag_is_independent_of_use_stop(monkeypatch):
 def test_short_squeeze_exposes_both_surfaces(name):
     from strategies.sleeves.short_squeeze import signal as sleeve
     assert callable(getattr(sleeve, name, None)),         f"short_squeeze lost {name}; both surfaces must stay live until phase D"
+
+
+# ── adx ────────────────────────────────────────────────────────────────────
+
+def test_adx_adapter_forwards_the_full_cfg_surface(monkeypatch):
+    """ADX is the only sleeve reading a NESTED params dict, and the only one
+    whose leverage is load-bearing rather than decorative."""
+    from strategies.sleeves.adx import signal as sleeve
+
+    seen = _capture(monkeypatch, sleeve)
+    sleeve.try_decide_for_variant(VARIANT, {
+        "_effective_weight_pct": 15.0, "weight_pct": 3.0,
+        "_effective_leverage": 4.0, "priority": 40.0,
+        "params": {"stop_loss_pct": 7.5}})
+    assert seen["kwargs"] == {"weight_pct": 15.0, "leverage": 4.0,
+                              "priority": 40.0, "stop_loss_pct": 7.5}
+
+
+def test_adx_adapter_defaults_match_the_pre_strip_behaviour(monkeypatch):
+    """Note stop_loss_pct defaults to 10.0, not 0.0 — it is a risk parameter
+    whose absence must not mean "no stop"."""
+    from strategies.sleeves.adx import signal as sleeve
+
+    seen = _capture(monkeypatch, sleeve)
+    sleeve.try_decide_for_variant(VARIANT, {})
+    assert seen["kwargs"] == {"weight_pct": 0.0, "leverage": 1.0,
+                              "priority": 100.0, "stop_loss_pct": 10.0}
+
+
+def test_adx_adapter_survives_a_missing_params_dict(monkeypatch):
+    """`sleeve_cfg.get("params") or {}` — a None params must not raise. The
+    orchestrator omits the key entirely for sleeves with no parameters."""
+    from strategies.sleeves.adx import signal as sleeve
+
+    seen = _capture(monkeypatch, sleeve)
+    sleeve.try_decide_for_variant(VARIANT, {"params": None})
+    assert seen["kwargs"]["stop_loss_pct"] == 10.0
+
+
+def test_adx_adapter_keeps_leverage_reaching_the_stop_semantics(monkeypatch):
+    """The coupling that makes ADX different: leverage feeds
+    effective_price_move_sl_pct, whose result stop_path reads back off the
+    trade notes on the live close path. The adapter must forward it, not
+    default it."""
+    from strategies.sleeves.adx import signal as sleeve
+
+    seen = _capture(monkeypatch, sleeve)
+    sleeve.try_decide_for_variant(VARIANT, {"_effective_leverage": 9.0})
+    assert seen["kwargs"]["leverage"] == 9.0
+
+
+@pytest.mark.parametrize("name", ["decide", "execute", "try_decide_for_variant",
+                                  "execute_for_variant", "try_fire_for_variant"])
+def test_adx_exposes_both_surfaces(name):
+    from strategies.sleeves.adx import signal as sleeve
+    assert callable(getattr(sleeve, name, None)),         f"adx lost {name}; both surfaces must stay live until phase D"

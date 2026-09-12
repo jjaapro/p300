@@ -59,6 +59,11 @@ def _module(key: str):
     if key in ("chento_btc", "chento_eth"):
         from strategies.sleeves import chento_triple_v3
         return chento_triple_v3
+    if key == "adx":
+        return mod.decide(variant, weight_pct=(w or 0.0), leverage=leverage,
+                          priority=priority,
+                          stop_loss_pct=float((params or {}).get(
+                              "stop_loss_pct", 10.0)))
     if key == "short_squeeze":
         from strategies.sleeves.short_squeeze import signal
         return signal
@@ -109,6 +114,11 @@ def _cfg(key: str, *, weight_pct, leverage, priority, params,
         cfg["params"] = dict(params or {})
     if key in ("short_squeeze", "squeeze_bull"):
         cfg["use_stop"] = use_stop
+    if key == "adx":
+        return mod.decide(variant, weight_pct=(w or 0.0), leverage=leverage,
+                          priority=priority,
+                          stop_loss_pct=float((params or {}).get(
+                              "stop_loss_pct", 10.0)))
     if key == "short_squeeze":
         cfg["count_diag"] = count_diag
     return cfg
@@ -132,6 +142,11 @@ def decide(key: str, *, variant: dict, weight_pct=AS_BOT,
     if key == "squeeze_bull":
         return mod.decide(variant, weight_pct=(w or 0.0), leverage=leverage,
                           priority=priority, use_stop=use_stop)
+    if key == "adx":
+        return mod.decide(variant, weight_pct=(w or 0.0), leverage=leverage,
+                          priority=priority,
+                          stop_loss_pct=float((params or {}).get(
+                              "stop_loss_pct", 10.0)))
     if key == "short_squeeze":
         return mod.decide(variant, weight_pct=(w or 0.0), leverage=leverage,
                           priority=priority, use_stop=use_stop,
@@ -156,7 +171,7 @@ def execute(key: str, *, variant: dict, intent, weight_pct=AS_BOT,
     bots/r4/runner.py calls."""
     mod = _module(key)
     if key in ("squeeze_bull", "carry", "chento_btc", "chento_eth",
-               "short_squeeze"):
+               "short_squeeze", "adx"):
         return mod.execute(variant, intent)
     cfg = _cfg(key, weight_pct=_bot_weight(key, weight_pct), leverage=leverage,
                priority=priority, params=params, use_stop=use_stop,

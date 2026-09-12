@@ -389,22 +389,9 @@ def _close_adx_paper(trade_id: str, exit_price: float, reason: str, *,
 
 # ─── Public tick ─────────────────────────────────────────────────────────────
 
-def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
-    """Variant-engine dispatch entry point. Returns a status dict.
-
-    Backward-compatible wrapper: calls the two-phase entry points
-    (:func:`try_decide_for_variant` then :func:`execute_for_variant`)
-    so callers that don't know about the new protocol — including every
-    legacy unit test and the backtest runner — keep working unchanged.
-    """
-    intents, status = try_decide_for_variant(variant, sleeve_cfg)
-    if not intents:
-        return status
-    # ADX emits at most one intent per tick (single-asset, single-open).
-    return execute_for_variant(variant, sleeve_cfg, intents[0])
-
-
-def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
+def decide(variant: dict, *, weight_pct: float = 0.0,
+           leverage: float = 1.0, priority: float = 100.0,
+           stop_loss_pct: float = 10.0):
     """Phase-1 of the two-phase dispatch (P2.4e/f Stage 2).
 
     Side-effects (always run, not subject to reconcile):
@@ -426,11 +413,16 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
     from strategies.support.risk_config import effective_price_move_sl_pct
     from strategies.support.dispatch import Intent
 
-    alloc_pct = float(sleeve_cfg.get("_effective_weight_pct",
-                                       sleeve_cfg.get("weight_pct", 0.0)))
-    params = sleeve_cfg.get("params") or {}
-    stop_loss_pct = float(params.get("stop_loss_pct", 10.0))
-    leverage = float(sleeve_cfg.get("_effective_leverage", 1.0))
+    alloc_pct = float(weight_pct)
+    stop_loss_pct = float(stop_loss_pct)
+    leverage = float(leverage)
+    # `leverage` is NOT decorative here, unlike the other five sleeves. Under
+    # P300_STOP_SEMANTICS=margin this divides the configured stop, the result
+    # is persisted into the reason blob as sl_semantic_price_thresh_pct, and
+    # strategies/support/stop_path.py reads it back on EVERY close-path stop
+    # check — including for SJ-4247, open since 2026-08-22. At the default
+    # 'price_move' semantic it is inert, which is exactly why hardcoding it
+    # would look safe and would not be.
     sl_price_thresh = effective_price_move_sl_pct(stop_loss_pct, leverage)
 
     candles = _load_btc_daily_candles()
@@ -564,7 +556,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
         allocation_pct=alloc_pct,
         leverage=leverage,
         conviction=100,  # ADX has no graded conviction; fixed-signal sleeve.
-        priority=float(sleeve_cfg.get("priority", 100)),
+        priority=float(priority),
         reason=reason,
         scheduled_exit_dt=None,
     )
@@ -572,7 +564,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
                      "adx": sig["adx"], "ema50": sig["ema"]}
 
 
-def execute_for_variant(variant: dict, sleeve_cfg: dict, intent) -> dict:
+def execute(variant: dict, intent) -> dict:
     """Phase-2 of the two-phase dispatch — open the trade described by
     ``intent`` (post-reconcile, so allocation_pct / leverage already
     account for cross-sleeve margin / conflict / pooling).
@@ -589,3 +581,40 @@ def execute_for_variant(variant: dict, sleeve_cfg: dict, intent) -> dict:
              f"{intent.direction} @ {entry_price:.2f} "
              f"(alloc={intent.allocation_pct}%, k={intent.leverage}x)")
     return {"status": "opened", "trade_id": tid, "direction": intent.direction}
+
+
+# ─── Legacy orchestrator interface ───────────────────────────────────────
+# Thin adapters over decide()/execute(); no logic of their own, so the two
+# surfaces cannot diverge. Deleted in phase D once nothing calls them.
+
+def _unpack(sleeve_cfg: dict) -> dict:
+    """sleeve_cfg -> decide() keywords. ADX is the only sleeve reading a
+    nested params dict, and the only one whose leverage is load-bearing."""
+    params = sleeve_cfg.get("params") or {}
+    return {
+        "weight_pct": float(sleeve_cfg.get(
+            "_effective_weight_pct", sleeve_cfg.get("weight_pct", 0.0))),
+        "leverage": float(sleeve_cfg.get("_effective_leverage", 1.0)),
+        "priority": float(sleeve_cfg.get("priority", 100)),
+        "stop_loss_pct": float(params.get("stop_loss_pct", 10.0)),
+    }
+
+
+def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
+    """Legacy adapter — see decide()."""
+    return decide(variant, **_unpack(sleeve_cfg))
+
+
+def execute_for_variant(variant: dict, sleeve_cfg: dict, intent) -> dict:
+    """Legacy adapter — see execute()."""
+    return execute(variant, intent)
+
+
+def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
+    """Single-call entry point (decide + execute). Still the ONLY dispatch
+    backtest_runner consults, so it outlives the two adapters above.
+    ADX emits at most one intent per tick (single-asset, single-open)."""
+    intents, status = try_decide_for_variant(variant, sleeve_cfg)
+    if not intents:
+        return status
+    return execute_for_variant(variant, sleeve_cfg, intents[0])
