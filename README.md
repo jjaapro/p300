@@ -219,7 +219,7 @@ features they layer on top**:
 | Per-sleeve PnL summary | uses `strategy_health.build_report` | bespoke report block |
 | `--reset` purges prior runs | NO (use a fresh `--dash-db`) | YES |
 | `--tag` for parallel A/B runs | NO | YES |
-| `--with-fomc` injects FOMC sleeve mid-run | NO | YES |
+| `--with-fomc` injects FOMC sleeve mid-run | NO | **NO — the flag now aborts** |
 | `--skip <strategy>` excludes one sleeve | NO | YES |
 
 **Pick `studies/simulation/sim.py`** when you want a clean *operator-style*
@@ -231,9 +231,18 @@ parameter sweeps, A/B comparisons, liquidation-aware long-window
 backtests, or anything where keeping multiple result sets in one DB
 helps.
 
-There is no "third option": the two tools share their dispatch
-(STRATEGY_DISPATCH) and clock primitive, so a sleeve that fires under
-one fires identically under the other.
+There is no "third option": the two tools share their clock primitive, and
+both resolve sleeves through `orchestrator.STRATEGY_DISPATCH`.
+
+Two caveats, both found on 2026-09-12 and both now enforced rather than
+documented. `--with-fomc` appended `{"strategy_id": "FOMC"}` to the
+composition, but FOMC is not a top-level dispatch key — it dispatches only as
+a TIMING_ANOMALIES substrategy — so every such run silently produced a run
+WITHOUT FOMC and reported success. It aborts now. And `backtest_runner` skipped
+an unresolved sleeve with no log, so a missing dispatch entry meant a
+zero-trade replay that still exited 0; that raises now. The narrower claim
+that survives is `tests/test_sim_mode.py`'s: the J+ sub-sleeve trades are
+byte-identical across the two paths.
 
 ## Inspect state
 

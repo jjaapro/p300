@@ -205,9 +205,13 @@ cap — the multi-asset plan's Phase B as written.
 
 **Steps, each its own commit with the suite green:**
 
-1. Strip the orchestrator interface from the six running strategy modules — **re-planned
-   2026-09-12, see the section below.** The original one-line step was unsafe: its stated
-   gate does not work, and the obvious edit silently breaks research replay.
+1. ~~Strip the orchestrator interface from the six running strategy modules~~ — **DONE
+   2026-09-13** after being re-planned; see the section below. The original one-line step
+   was unsafe (its gate did not work, and the obvious edit silently broke research replay),
+   so it became four phases and 20 commits. All six sleeves now expose plain-keyword
+   `decide()`/`execute()`, all seven bots call them, and no runner carries a `sleeve_cfg`.
+   **Step 2 — moving each module under its bot — is next, and is the one that needs the
+   fleet stopped.**
 2. `git mv` each module under its bot and re-point the importers (~50 files: the tests
    above, `studies/notebooks/adx_study/harness.py`, `adx_robustness_2026_09/adx_lib.py`,
    the chento_journal validations, `strategy_comparison_2026_09/squeeze_overlap.py`,
@@ -424,19 +428,37 @@ had to be repointed — each was a `monkeypatch` naming an old entry point, or a
 `(v, cfg)` signature no longer matched the keyword call. Those are the only test edits in the
 phase; **no golden changed in any of the six commits.**
 
-### Phase D — contract
+### Phase D — contract ✅ DONE 2026-09-13
 
-21. Centralize the cfg→kwargs translation and rewrite the registries. The rewrite must
-    preserve the four sleeves *not* being refactored (ai_quant, ema, eth_daily,
-    timing_anomalies), which have no new-shape `decide`/`execute` pair. Gate on
-    `test_dispatch_registry` + `test_orchestrator_two_phase` + `test_timing_anomalies_sleeve`
-    + `test_fomc_service` — **not** on `health.py`, which after step 2 no longer imports the
-    orchestrator and cannot see a broken registry.
-22. Repoint the remaining tests and pin wrapper equivalence before deleting anything.
-23. Delete the adapters and the ten `try_fire` wrappers; fix the docs. **Grep must cover
-    `health.py`, `strategies/orchestrator.py`, `strategies/support/` and
-    `strategies/sleeves/timing_anomalies/`** — a bots/-and-tests-only grep cannot see that
-    step 2's new health check names five of the symbols this step deletes.
+Commits `cd0d787` (21), `2138481` (22), `fea2975` (23).
+
+21. **Centralized the cfg→kwargs translation** in `strategies/support/cfg_adapter.py`, on
+    the orchestrator's side of the boundary — the cfg dict is its vocabulary, not the
+    sleeves'. `STRATEGY_DISPATCH` / `STRATEGY_TWO_PHASE_DISPATCH` are now built from
+    closures over each sleeve's plain `decide()`/`execute()`. The unpackers are written out
+    one per sleeve rather than driven from a table, because their differences are the point.
+    `fire_entry` takes `merge_status` because the old wrappers did **not** agree on their
+    return shape — only an orchestrator log line reads it, but reproducing it kept the
+    switch a true no-op.
+22. **Repointed the last callers.** Exactly one was production: r4's four resolvers in
+    `timing_anomalies/internal/__init__.py`. `test_jplus_live`'s shim was rebuilt from the
+    plain deciders so its 28 call sites survived the deletion untouched.
+23. **Deleted ~400 lines** of adapters and wrappers. `tests/test_orchestrator_interface_gone.py`
+    replaces the phase-C equivalence file and asserts the inverse: legacy names absent, plain
+    surface present, no runner carrying a `sleeve_cfg`, no migrated sleeve reading an
+    `_effective_*` key. README's `--with-fomc` row and its "a sleeve that fires under one
+    fires identically under the other" claim are corrected.
+
+**Two things worth remembering.** The first deletion pass took carry's `decide()` and
+`execute()` with it — the regex ran to end-of-file and carry is the one sleeve whose legacy
+block sat *before* its implementation; caught by a char count 4× the others. And the drill
+found a real hole rather than a stale one: with the per-sleeve equivalence tests
+self-skipping, the remaining coverage checked that a flag KEY was present but never that its
+VALUE was forwarded, so a translation that always returned `use_stop=True` passed. Fixed
+with explicit value assertions.
+
+Final: suite 1578 passed / 54 skipped (the equivalence parametrisations retiring
+themselves), drill 22 mutations 0 missed, `health.py` exits 0, fleet untouched.
 
 ### What this does not do
 
