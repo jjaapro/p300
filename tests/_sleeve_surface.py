@@ -127,7 +127,13 @@ def decide(key: str, *, variant: dict, weight_pct=AS_BOT,
            count_diag: bool = True, gate=None, vol_scalar=None):
     """Returns (intents, status), exactly as the bot runners consume it."""
     mod = _module(key)
-    cfg = _cfg(key, weight_pct=_bot_weight(key, weight_pct), leverage=leverage,
+    w = _bot_weight(key, weight_pct)
+    # --- migrated sleeves: called with plain keywords, the target shape ---
+    if key == "squeeze_bull":
+        return mod.decide(variant, weight_pct=(w or 0.0), leverage=leverage,
+                          priority=priority, use_stop=use_stop)
+    # --- not yet migrated: build the cfg dict ---
+    cfg = _cfg(key, weight_pct=w, leverage=leverage,
                priority=priority, params=params, use_stop=use_stop,
                count_diag=count_diag, gate=gate, vol_scalar=vol_scalar)
     if key in R4_KEYS:
@@ -142,6 +148,8 @@ def execute(key: str, *, variant: dict, intent, weight_pct=AS_BOT,
     """Phase 2. r4 routes through the PRIVATE _r4_execute, which is what
     bots/r4/runner.py calls."""
     mod = _module(key)
+    if key == "squeeze_bull":
+        return mod.execute(variant, intent)
     cfg = _cfg(key, weight_pct=_bot_weight(key, weight_pct), leverage=leverage,
                priority=priority, params=params, use_stop=use_stop,
                count_diag=count_diag, gate=gate, vol_scalar=vol_scalar)

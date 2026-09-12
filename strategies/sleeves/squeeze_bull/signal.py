@@ -206,11 +206,18 @@ def evaluate(bars: list[dict]) -> tuple[bool, dict]:
 
 # ─── Dispatch contract ───────────────────────────────────────────────────
 
-def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
-    """Two-phase dispatch entry point. Returns (list[Intent], status_dict).
+def decide(variant: dict, *, weight_pct: float = 0.0, leverage: float = 1.0,
+           priority: float = 100.0, use_stop: bool = True):
+    """Decide whether to open. Returns (list[Intent], status_dict).
 
     Side effect on every call: sweep open positions for stop / target /
     time-stop. Entry is evaluated at most once per closed hourly bar.
+
+    ``use_stop`` selects the exit policy and is what separates the two live
+    paper variants — `bot_squeeze_bull_v1` (-2 % stop) from
+    `bot_squeeze_bull_nostop_v1` (target + 48 h only). They run on the same
+    signals in one process with a pre-registered paired re-cut at n = 20 / 30,
+    so this flag must stay per-variant and explicit.
     """
     variant_id = variant["id"]
     swept = _sweep_open_positions(variant_id)
@@ -238,7 +245,6 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
         return [], {"status": "invalid_risk", "swept": swept}
     time_stop_dt = datetime.fromtimestamp(diag["bar_ts"], tz=timezone.utc) + \
         timedelta(hours=TIF_HOURS)
-    use_stop = bool(sleeve_cfg.get("use_stop", True))
 
     reason = {
         "trigger": "squeeze_bull_oi_flush",
@@ -259,18 +265,17 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
     }
     intent = Intent(
         asset=ASSET, direction="LONG",
-        allocation_pct=float(sleeve_cfg.get("_effective_weight_pct",
-                                            sleeve_cfg.get("weight_pct", 0.0))),
-        leverage=float(sleeve_cfg.get("_effective_leverage", 1.0)),
+        allocation_pct=float(weight_pct),
+        leverage=float(leverage),
         conviction=100,
-        priority=float(sleeve_cfg.get("priority", 100)),
+        priority=float(priority),
         reason=reason, scheduled_exit_dt=time_stop_dt,
     )
     # diag first: a trailing **diag would overwrite "status" with "fires".
     return [intent], {**diag, "status": "decided", "swept": swept}
 
 
-def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Intent) -> dict:
+def execute(variant: dict, intent: Intent) -> dict:
     """Phase 2: open the LONG described by `intent`."""
     from strategies.trades import open_paper_trade
     reason = dict(intent.reason or {})
@@ -301,8 +306,37 @@ def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Intent) -> dict
             "target_price": reason["_target_price"]}
 
 
+# ─── Legacy orchestrator interface ───────────────────────────────────────
+# Thin adapters over decide()/execute(). They exist only so the callers that
+# still pass a sleeve_cfg dict keep working while the bot runners are
+# repointed one at a time; they hold no logic of their own, so the two
+# surfaces cannot diverge. Deleted once nothing calls them
+# (BACKLOG.md "Step 1 re-planned", phase D).
+
+def _unpack(sleeve_cfg: dict) -> dict:
+    """sleeve_cfg -> decide() keywords. The complete surface for this sleeve."""
+    return {
+        "weight_pct": float(sleeve_cfg.get(
+            "_effective_weight_pct", sleeve_cfg.get("weight_pct", 0.0))),
+        "leverage": float(sleeve_cfg.get("_effective_leverage", 1.0)),
+        "priority": float(sleeve_cfg.get("priority", 100)),
+        "use_stop": bool(sleeve_cfg.get("use_stop", True)),
+    }
+
+
+def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
+    """Legacy adapter — see decide()."""
+    return decide(variant, **_unpack(sleeve_cfg))
+
+
+def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Intent) -> dict:
+    """Legacy adapter — see execute()."""
+    return execute(variant, intent)
+
+
 def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
-    """Single-call entry point (decide + execute)."""
+    """Single-call entry point (decide + execute). Still the ONLY dispatch
+    backtest_runner consults, so it outlives the two adapters above."""
     intents, status = try_decide_for_variant(variant, sleeve_cfg)
     if not intents:
         return status

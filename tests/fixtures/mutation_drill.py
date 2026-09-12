@@ -33,11 +33,21 @@ MUTATIONS = [
      "strategies/sleeves/carry/config.py",
      "FR_WINDOW_DAYS = 7", "FR_WINDOW_DAYS = 14",
      "tests/test_golden_carry.py"),
-    ("squeeze_bull: use_stop ignored (always stop)",
+    ("squeeze_bull: use_stop ignored in decide() (always writes a stop)",
      "strategies/sleeves/squeeze_bull/signal.py",
-     'use_stop = bool(sleeve_cfg.get("use_stop", True))',
-     'use_stop = True',
+     '"_stop_price": stop if use_stop else None,',
+     '"_stop_price": stop,',
      "tests/test_golden_squeeze_bull.py"),
+    ("squeeze_bull: legacy adapter drops use_stop",
+     "strategies/sleeves/squeeze_bull/signal.py",
+     '"use_stop": bool(sleeve_cfg.get("use_stop", True)),',
+     '"use_stop": True,',
+     "tests/test_sleeve_adapter_equivalence.py"),
+    ("squeeze_bull: legacy adapter loses the effective-weight override",
+     "strategies/sleeves/squeeze_bull/signal.py",
+     '"_effective_weight_pct", sleeve_cfg.get("weight_pct", 0.0))),',
+     '"weight_pct", 0.0)),',
+     "tests/test_sleeve_adapter_equivalence.py"),
     ("squeeze_bull: flush threshold loosened",
      "strategies/sleeves/squeeze_bull/config.py",
      "FLUSH_THRESHOLD = -0.02", "FLUSH_THRESHOLD = -0.01",
@@ -80,6 +90,8 @@ def run(cmd, **kw):
                           **kw)
 
 
+before_state = run(["git", "status", "--porcelain", "strategies/"]).stdout
+
 caught = missed = skipped = 0
 for label, rel, before, after, testfile in MUTATIONS:
     p = REPO / rel
@@ -105,7 +117,8 @@ for label, rel, before, after, testfile in MUTATIONS:
         p.write_bytes(orig_bytes)      # byte-exact restore
 
 print(f"\ncaught {caught}  missed {missed}  skipped {skipped}")
-st = run(["git", "status", "--porcelain",
-          "strategies/"]).stdout.strip()
-print("working tree clean:" if not st else "!! DIRTY:", st or "(yes)")
+after_state = run(["git", "status", "--porcelain", "strategies/"]).stdout
+st = "" if after_state == before_state else after_state.strip()
+print("restored to pre-drill state:" if not st else "!! DRILL LEFT RESIDUE:",
+      st or "(yes)")
 sys.exit(1 if (missed or st) else 0)
