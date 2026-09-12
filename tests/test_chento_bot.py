@@ -439,7 +439,7 @@ def test_live_sweep_reads_final_candle_not_partial_cache(tmp_db, live_clock):
     # 33s after the bar closed: inside the feed settle margin -> not walked
     _seed_price(tmp_db, T0 + timedelta(minutes=29), 99_800.0)
     clock.set_simulated_now(T0 + timedelta(minutes=30, seconds=33))
-    ch_sig._sweep_open_positions(variant, {})
+    ch_sig._sweep_open_positions(variant)
     status, _, notes = _row()
     assert status == "open"
     assert json.loads(notes)["_state"]["last_walked_ts"] == T0.isoformat()
@@ -448,7 +448,7 @@ def test_live_sweep_reads_final_candle_not_partial_cache(tmp_db, live_clock):
     # partial one) and closes at the stop
     _seed_price(tmp_db, T0 + timedelta(minutes=30), 99_800.0)
     clock.set_simulated_now(T0 + timedelta(minutes=31, seconds=33))
-    ch_sig._sweep_open_positions(variant, {})
+    ch_sig._sweep_open_positions(variant)
     status, exit_price, _ = _row()
     assert status == "closed"
     assert exit_price == pytest.approx(99_000.0)
@@ -481,7 +481,8 @@ def test_cooldown_survives_restart(tmp_db, monkeypatch):
     ch_sig.execute_for_variant(variant, {}, resized)
     monkeypatch.setattr(ch_sig, "_last_trigger_ts", {})       # "restart"
     clock.set_simulated_now(T0 + timedelta(minutes=15))
-    _, status = ch_sig._evaluate_trigger(clock.now_utc(), variant, {})
+    _, status = ch_sig._evaluate_trigger(clock.now_utc(), variant, weight_pct=0.0,
+                                     leverage=1.0, priority=100.0)
     assert status["status"] == "cooldown"
 
 
@@ -516,7 +517,7 @@ def test_execute_then_sweep_stop_hit(tmp_db):
     _seed_price(tmp_db, T0 + timedelta(minutes=34), 96_900.0)
     clock.set_simulated_now(T0 + timedelta(minutes=35))
 
-    n = ch_sig._sweep_open_positions(variant, {})
+    n = ch_sig._sweep_open_positions(variant)
     assert n >= 1
 
     con = sqlite3.connect(str(tmp_db))

@@ -166,3 +166,42 @@ def test_carry_exposes_both_surfaces(name):
     from strategies.sleeves.carry import signal as sleeve
     assert callable(getattr(sleeve, name, None)), \
         f"carry lost {name}; both surfaces must stay live until phase D"
+
+
+# ── chento_triple_v3 ───────────────────────────────────────────────────────
+
+def test_chento_adapter_forwards_the_full_cfg_surface(monkeypatch):
+    from strategies.sleeves.chento_triple_v3 import signal as sleeve
+
+    seen = _capture(monkeypatch, sleeve)
+    sleeve.try_decide_for_variant(VARIANT, {
+        "_effective_weight_pct": 10.0, "weight_pct": 2.0,
+        "_effective_leverage": 5.0, "priority": 20.0})
+    assert seen["kwargs"] == {"weight_pct": 10.0, "leverage": 5.0,
+                              "priority": 20.0}
+
+
+def test_chento_adapter_defaults_match_the_pre_strip_behaviour(monkeypatch):
+    from strategies.sleeves.chento_triple_v3 import signal as sleeve
+
+    seen = _capture(monkeypatch, sleeve)
+    sleeve.try_decide_for_variant(VARIANT, {})
+    assert seen["kwargs"] == {"weight_pct": 0.0, "leverage": 1.0,
+                              "priority": 100.0}
+
+
+def test_chento_package_reexports_both_surfaces():
+    """The bot imports the PACKAGE, not the signal module, so the new names
+    must be re-exported there or the repoint in phase C step 15-20 fails."""
+    from strategies.sleeves import chento_triple_v3 as pkg
+    for name in ("decide", "execute", "try_decide_for_variant",
+                 "execute_for_variant", "try_fire_for_variant"):
+        assert callable(getattr(pkg, name, None)),             f"chento package does not re-export {name}"
+        assert name in pkg.__all__, f"{name} missing from chento __all__"
+
+
+def test_chento_package_and_module_are_the_same_functions():
+    from strategies.sleeves import chento_triple_v3 as pkg
+    from strategies.sleeves.chento_triple_v3 import signal
+    assert pkg.decide is signal.decide
+    assert pkg.execute is signal.execute

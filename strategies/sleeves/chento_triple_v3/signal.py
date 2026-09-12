@@ -558,7 +558,7 @@ def _iter_closed_bars(after_ts: pd.Timestamp, through_ts: pd.Timestamp):
 
 # ─── Open-position sweep (every-tick) ──────────────────────────────────────
 
-def _sweep_open_positions(variant: dict, sleeve_cfg: dict) -> int:
+def _sweep_open_positions(variant: dict) -> int:
     """Manage open CHENTO_TRIPLE_V3 trades: check stop/target/ladder/TIF.
 
     Returns number of position-management actions taken.
@@ -697,7 +697,8 @@ def _sweep_open_positions(variant: dict, sleeve_cfg: dict) -> int:
 # ─── 15m trigger evaluation ────────────────────────────────────────────────
 
 def _evaluate_trigger(now: datetime, variant: dict,
-                       sleeve_cfg: dict) -> tuple[list[Intent], dict]:
+                       weight_pct: float, leverage: float,
+                       priority: float) -> tuple[list[Intent], dict]:
     """Phase 1: check Triple + filters at the current 15m bar."""
     variant_id = variant["id"]
     _diag_inc("eval_calls")
@@ -884,9 +885,8 @@ def _evaluate_trigger(now: datetime, variant: dict,
 
     time_stop_dt = now + timedelta(hours=TIF_HOURS)
 
-    alloc_pct = float(sleeve_cfg.get("_effective_weight_pct",
-                                       sleeve_cfg.get("weight_pct", 0.0)))
-    leverage = float(sleeve_cfg.get("_effective_leverage", 1.0))
+    alloc_pct = float(weight_pct)
+    leverage = float(leverage)
 
     reason = {
         "trigger": "chento_triple_v3",
@@ -923,7 +923,7 @@ def _evaluate_trigger(now: datetime, variant: dict,
         asset=ASSET, direction=direction.upper(),
         allocation_pct=alloc_pct, leverage=leverage,
         conviction=100,
-        priority=float(sleeve_cfg.get("priority", 100)),
+        priority=float(priority),
         reason=reason, scheduled_exit_dt=time_stop_dt,
     )
     return [intent], {"status": "decided",
@@ -934,16 +934,23 @@ def _evaluate_trigger(now: datetime, variant: dict,
 
 # ─── Public sleeve interface ───────────────────────────────────────────────
 
-def try_decide_for_variant(variant: dict, sleeve_cfg: dict
-                              ) -> tuple[list[Intent], dict]:
-    """Phase 1: position management sweep, then 15m trigger evaluation."""
+def decide(variant: dict, *, weight_pct: float = 0.0, leverage: float = 1.0,
+           priority: float = 100.0) -> tuple[list[Intent], dict]:
+    """Phase 1: position management sweep, then 15m trigger evaluation.
+
+    The traded asset is still fixed at IMPORT (``CHENTO_V3_ASSET``), which is
+    why BTC and ETH are two processes. Making it a call-time parameter is the
+    next move (multi-asset plan Phase B) and is deliberately NOT folded in
+    here — the goldens for both assets are the before-picture for it.
+    """
     now = clock.now_utc()
-    swept = _sweep_open_positions(variant, sleeve_cfg)
-    intents, status = _evaluate_trigger(now, variant, sleeve_cfg)
+    swept = _sweep_open_positions(variant)
+    intents, status = _evaluate_trigger(now, variant, weight_pct=weight_pct,
+                                        leverage=leverage, priority=priority)
     return intents, {"swept": swept, **status}
 
 
-def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Intent) -> dict:
+def execute(variant: dict, intent: Intent) -> dict:
     """Phase 2: open the trade described by `intent`."""
     from strategies.trades import open_paper_trade
     reason = dict(intent.reason or {})
@@ -973,8 +980,34 @@ def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Intent) -> dict
             "target_price": reason["_target_price"]}
 
 
+# ─── Legacy orchestrator interface ───────────────────────────────────────
+# Thin adapters over decide()/execute(); no logic of their own, so the two
+# surfaces cannot diverge. Deleted in phase D once nothing calls them.
+
+def _unpack(sleeve_cfg: dict) -> dict:
+    """sleeve_cfg -> decide() keywords. The complete surface for this sleeve."""
+    return {
+        "weight_pct": float(sleeve_cfg.get(
+            "_effective_weight_pct", sleeve_cfg.get("weight_pct", 0.0))),
+        "leverage": float(sleeve_cfg.get("_effective_leverage", 1.0)),
+        "priority": float(sleeve_cfg.get("priority", 100)),
+    }
+
+
+def try_decide_for_variant(variant: dict, sleeve_cfg: dict
+                              ) -> tuple[list[Intent], dict]:
+    """Legacy adapter — see decide()."""
+    return decide(variant, **_unpack(sleeve_cfg))
+
+
+def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Intent) -> dict:
+    """Legacy adapter — see execute()."""
+    return execute(variant, intent)
+
+
 def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
-    """Single-call entry point for legacy orchestrator paths."""
+    """Single-call entry point (decide + execute). Still the ONLY dispatch
+    backtest_runner consults, so it outlives the two adapters above."""
     intents, status = try_decide_for_variant(variant, sleeve_cfg)
     if not intents:
         return status

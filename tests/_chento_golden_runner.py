@@ -70,15 +70,12 @@ def main(argv=None) -> int:
     from tests._golden_normalize import golden_document
 
     clock.set_simulated_now(datetime.fromisoformat(a.anchor))
-    cfg = {"weight_pct": 100.0, "_effective_weight_pct": 100.0,
-           "_effective_leverage": 1.0, "priority": 100}
-    intents, status = sleeve.try_decide_for_variant(
-        {"id": f"bot_chento_{a.asset.lower()}_test", "capital_usdt": 10_000.0},
-        cfg)
+    variant = {"id": f"bot_chento_{a.asset.lower()}_test",
+               "capital_usdt": 10_000.0}
+    intents, status = sleeve.decide(variant, weight_pct=100.0, leverage=1.0,
+                                    priority=100.0)
     if a.execute and intents:
-        sleeve.execute_for_variant(
-            {"id": f"bot_chento_{a.asset.lower()}_test",
-             "capital_usdt": 10_000.0}, cfg, intents[0])
+        sleeve.execute(variant, intents[0])
 
     doc = golden_document(intents=intents, status=status, db_path=tmp)
     # The asset is IN the document, so a mis-set env fails loudly instead of
