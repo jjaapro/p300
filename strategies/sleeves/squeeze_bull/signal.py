@@ -283,7 +283,12 @@ def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Intent) -> dict
         reason=reason,
         scheduled_exit_dt=intent.scheduled_exit_dt,
         regime_value=reason.get("regime", "bull_30d"),
-        signal_time_iso=str(reason.get("bar_ts")),
+        # Epoch seconds of the trigger bar, as a string. Guarded: an absent
+        # bar_ts would otherwise key every open as the literal "None", and
+        # the partial UNIQUE index would then block this variant's SECOND
+        # open forever. None falls back to the fill instant instead.
+        signal_time_iso=(str(reason["bar_ts"])
+                         if reason.get("bar_ts") is not None else None),
     )
     stop_txt = (f"{reason['_stop_price']:.2f}" if reason.get("_stop_price") is not None
                 else "none")

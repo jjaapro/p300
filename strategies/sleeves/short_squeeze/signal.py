@@ -527,9 +527,13 @@ def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Intent) -> dict
         scheduled_exit_dt=intent.scheduled_exit_dt,
         regime_value="short_squeeze",
         # Same trigger bar -> same row, however many seconds apart the
-        # executions land (see strategies.trades.open_paper_trade).
-        signal_time_iso=(str(reason["bar_ts"])
-                         if reason.get("bar_ts") is not None else None),
+        # executions land (see strategies.trades.open_paper_trade). The key
+        # is `bar_ts_utc` — the name this reason dict actually carries (see
+        # the dict built in decide). It read `bar_ts` until 2026-09-12, a
+        # name that was never written, so every key silently fell back to
+        # the fill instant and the UNIQUE index protected nothing.
+        signal_time_iso=(str(reason["bar_ts_utc"])
+                         if reason.get("bar_ts_utc") is not None else None),
     )
     _last_trigger_ts[variant["id"]] = clock.now_utc()
 

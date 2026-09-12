@@ -183,7 +183,11 @@ def open_paper_trade(*, variant: dict, sleeve_name: str,
       size_usdt = capital × (allocation_pct / 100) × leverage
       qty = size_usdt / entry_price  (clamped to 0 if entry_price <= 0)
     """
-    from strategies.support import trade_db
+    from strategies.support import instance_guard, trade_db
+    # Refuse if a second instance of this bot is live (botlib.heartbeat sets
+    # the flag). Entries only — exits keep running in both processes, see
+    # strategies.support.instance_guard.
+    instance_guard.check_entry_allowed()
     capital = float(variant.get("capital_usdt") or
                     trade_db.get_config("paper_account_usdt") or 10000)
     size_usdt = capital * (allocation_pct / 100.0) * leverage
@@ -195,6 +199,18 @@ def open_paper_trade(*, variant: dict, sleeve_name: str,
     if regime_value is None:
         regime_value = reason.get("regime", "unknown")
 
+    # A missing signal key is legal but unprotected: the key becomes the fill
+    # instant, so two processes opening the same logical trade seconds apart
+    # mint two distinct keys and the UNIQUE index cannot collapse them. That
+    # is exactly how the 2026-08-15..24 doubled fleet booked three chento
+    # signals as six rows. Every sleeve the fleet runs passes a key; say so
+    # out loud when one does not, rather than degrading in silence.
+    if signal_time_iso is None:
+        log.warning(
+            "%s/%s opened with no signal key — idempotency falls back to the "
+            "fill instant, so a second process CAN double-book this trade",
+            variant["id"], sleeve_name.upper(),
+        )
     unique_key = _build_unique_key(variant["id"], sleeve_name, asset,
                                    signal_time_iso or now_iso)
 

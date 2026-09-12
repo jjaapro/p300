@@ -47,7 +47,7 @@ class LedgerCoherence:
     as_of: str
 
     # System-wide duplicate detection
-    n_duplicate_groups: int                       # (variant, strategy, asset, entry_time) trios with >1 trade
+    n_duplicate_groups: int                       # (variant, strategy, asset, direction, entry MINUTE) groups with >1 trade
     duplicate_samples: tuple[dict, ...] = ()      # up to 5 representative groups
 
     # Per-scope (variant filter if provided, else system-wide)
@@ -82,13 +82,28 @@ def _duplicate_groups(con: sqlite3.Connection,
     if variant_filter:
         where = "WHERE strategy_variant = ?"
         params = (variant_filter,)
+    # Bucket to the MINUTE, not to the exact timestamp. A double-book is two
+    # processes executing the same signal seconds apart, so their entry_time
+    # values differ in the seconds/microseconds field and an exact-match GROUP
+    # BY cannot see them: run against the 2026-08-15..24 doubled-fleet rows,
+    # exact grouping returns 0 groups while the same rows bucketed by minute
+    # return the three known chento pairs (fills 33s / 33s / 28s apart).
+    # Minute is the coarsest bucket that stays free of false positives — the
+    # next step up, the day, merges two genuinely distinct 2026-08-21 chento
+    # signals (06:15 and 19:45) into one group. Direction is in the key so a
+    # legitimate close-and-reverse is never counted as a duplicate.
     rows = con.execute(f"""
-        SELECT strategy_variant, strategy, asset, entry_time, COUNT(*) AS cnt
+        SELECT strategy_variant, strategy, asset, direction,
+               substr(entry_time, 1, 16) AS entry_minute,
+               COUNT(*) AS cnt,
+               COUNT(DISTINCT unique_key) AS distinct_keys,
+               group_concat(id) AS trade_ids
         FROM trades
         {where}
-        GROUP BY strategy_variant, strategy, asset, entry_time
+        GROUP BY strategy_variant, strategy, asset, direction,
+                 substr(entry_time, 1, 16)
         HAVING COUNT(*) > 1
-        ORDER BY cnt DESC, entry_time DESC
+        ORDER BY cnt DESC, entry_minute DESC
     """, params).fetchall()
     samples = tuple(dict(r) for r in rows[:5])
     return len(rows), samples
@@ -245,7 +260,8 @@ def format_ledger_coherence(lc: LedgerCoherence) -> str:
         f"  As of {lc.as_of}",
         "=" * 78,
         "",
-        f"  [{status(lc.n_duplicate_groups)}] duplicate (variant,strategy,asset,entry_time) groups: "
+        f"  [{status(lc.n_duplicate_groups)}] duplicate "
+        f"(variant,strategy,asset,direction,entry-minute) groups: "
         f"{lc.n_duplicate_groups}",
         f"  [{status(lc.n_disabled_variants_with_recent_opens)}] disabled-variant opens in last 7d "
         f"(replay leak guard): {lc.n_disabled_variants_with_recent_opens}",

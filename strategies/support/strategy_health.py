@@ -326,10 +326,20 @@ def _load_closed_trades(variant_id: str, strategy: str,
 # sub-sleeves (JPLUS_ prefix). If you add a sleeve, append here so it shows
 # up in the bot startup banner.
 KNOWN_SLEEVES = (
-    "ADX", "CARRY", "THU_BEAR", "PDO_RETOUCH", "CPR", "FOMC",
-    "JPLUS_EMA_BTC", "JPLUS_ETH_DAILY",
+    # Sleeves the paper fleet runs today (bots/<name>/). A sleeve missing
+    # from this tuple is invisible in its own bot's report until it has
+    # traded, which is indistinguishable from "wired but quiet" — and this
+    # CLI is the pre-registered instrument for the SQUEEZE_BULL and
+    # SHORT_SQUEEZE n = 20 / 30 re-cuts (docs/calibration/*.md), so silence
+    # there is an operational defect, not a cosmetic one.
+    "ADX", "CARRY", "CHENTO_TRIPLE_V3", "SHORT_SQUEEZE", "SQUEEZE_BULL",
     "JPLUS_R4_BTC", "JPLUS_R4_ETH",
     "JPLUS_R4_BTC_V2", "JPLUS_R4_ETH_V2",
+    # Dormant since 2026-06-11: dispatched only by the legacy orchestrator
+    # path, which nothing runs. Kept until the archival step of the
+    # bot = directory = strategy refactor (BACKLOG.md) retires them.
+    "THU_BEAR", "PDO_RETOUCH", "CPR", "FOMC",
+    "JPLUS_EMA_BTC", "JPLUS_ETH_DAILY",
     "AI_QUANT",  # discretionary LLM trader; decision-side stats below
 )
 

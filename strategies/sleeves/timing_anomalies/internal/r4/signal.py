@@ -111,6 +111,12 @@ def _r4_decide(variant: dict, sleeve_cfg: dict, *, asset: str, strategy: str,
         "_exit_dt_iso": exit_dt.isoformat(),
         "_mode": ti["mode"],
         "_now_iso": now.isoformat(),
+        # UTC date the window opened — the idempotency key. The window
+        # itself is already in the key via sleeve_name (STRATEGY_R4_*), so
+        # (variant | window | asset | day) matches exactly what
+        # `_has_trade_for_day` enforces in-process. Overlapping windows stay
+        # independent, which is the design (they genuinely overlap).
+        "_signal_day": now.date().isoformat(),
     }
     intent = Intent(
         asset=asset, direction="LONG",
@@ -134,6 +140,7 @@ def _r4_execute(variant: dict, sleeve_cfg: dict, intent) -> dict:
     exit_dt = datetime.fromisoformat(reason.pop("_exit_dt_iso"))
     mode = reason.pop("_mode")
     now = datetime.fromisoformat(reason.pop("_now_iso"))
+    signal_day = reason.pop("_signal_day", None)
     weight = intent.allocation_pct / 100.0
     capital = float(variant.get("capital_usdt") or 10000)
     tid = trades.open_paper_trade(
@@ -146,6 +153,7 @@ def _r4_execute(variant: dict, sleeve_cfg: dict, intent) -> dict:
         scheduled_exit_dt=exit_dt,
         regime_value=mode,
         entry_dt=now,
+        signal_time_iso=signal_day,
     )
     log.info(f"[jplus_live {strategy} {variant['id']}] OPENED {tid} "
              f"{intent.asset} LONG @ ${entry_price:,.2f}  "

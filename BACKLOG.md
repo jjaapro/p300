@@ -29,19 +29,47 @@ further down stay as they are.
   SHORT_SQUEEZE 0, r4 0. Nothing clears an honest DSR
   ([validation_audit_2026_09](studies/notebooks/validation_audit_2026_09/findings.md)); the
   constraint is breadth of evidence, not edge.
-- **Shipped 2026-09-12** (commits `5df9772` / `2e9d596` / `5418bbb` on `main`, not pushed):
+- **Shipped 2026-09-12, morning** (commits `5df9772` / `2e9d596` / `5418bbb`):
   measured execution costs (chento 10 bp, SHORT_SQUEEZE 10, SQUEEZE_BULL 7, ADX 11), CARRY's
   trailing-30-day cumulative-funding exit, no-stop paper twins for SQUEEZE_BULL (0.5×
   notional) and SHORT_SQUEEZE (1×) with re-cuts fixed in advance at 20 / 30 paired fires,
   pool-plan decisions D8 (ADX + CARRY in one account) and F-EXEC (execution-layer
   requirements), `GATE_VALIDATION.md` §8.
-- **Committed later the same day** (`d4d811c` R4, `6451699` roadmap and docs, `eb4f2e2` data;
-  on `main`, not pushed): R4 runs its ETH windows only and is back in the fleet defaults
+- **Shipped 2026-09-12, afternoon** (`d4d811c` R4, `6451699` roadmap and docs, `eb4f2e2` data):
+  R4 runs its ETH windows only and is back in the fleet defaults
   with the 2026-09-09 hold lifted for that pair ([docs/calibration/r4.md](docs/calibration/r4.md));
   `botlib.ensure_bot_variant` refreshes a bot's label from config; pool-plan D9 (no-stop
   sleeves are paired with something stable or isolated); this section; the README and
   OPERATIONS status pointers.
-- **The bots have not been restarted** for any of the above, and r4 has not been started.
+- **Shipped 2026-09-12, evening — the paper ledger's integrity guards.** Roadmap steps 4.2
+  and 4.3, both done. The per-bar idempotency key was NOT missing: the column, the partial
+  UNIQUE index, the pre-check and the race fallback shipped 2026-06-05, but
+  `open_paper_trade`'s `signal_time_iso` was optional with a silent wall-clock fallback and
+  **four of seven bots fell through it**. SHORT_SQUEEZE read `reason["bar_ts"]` from a dict
+  that only ever carried `bar_ts_utc`, so it was unprotected from its 2026-07-21 deployment
+  onward while a comment claimed otherwise; ADX, CARRY and R4 passed no key at all. Each now
+  keys on the granularity its own in-process guard already enforced (trigger bar; UTC day;
+  UTC day per window), so no trade that was permitted before is refused now — the guard just
+  moved from check-then-insert, which two processes can both pass, to the DB's UNIQUE index,
+  which they cannot. SQUEEZE_BULL's unguarded `str(reason.get("bar_ts"))` was a latent
+  landmine: an absent bar would key the literal `"None"` and block that variant's second open
+  forever. The fallback now logs. `ledger_coherence`'s duplicate detector grouped on the
+  exact `entry_time` and so returned **zero** groups against the August incident it exists
+  for (the paired fills are 33 s / 33 s / 28 s apart); re-bucketed to the minute it returns
+  exactly those three pairs, each flagged `distinct_keys = 2`, which is the signature of two
+  processes rather than one retry. `botlib.heartbeat` has returned False on a detected
+  duplicate instance since August and **every runner discarded it**; it now sets a
+  stand-down that refuses entries at `open_paper_trade` — exits keep running in both
+  processes on purpose, since a double close is idempotent but unmanaged positions are not.
+  `KNOWN_SLEEVES` += CHENTO_TRIPLE_V3 / SHORT_SQUEEZE / SQUEEZE_BULL. Suite 1332 → 1347.
+- **The fleet was restarted 2026-09-12 17:11–17:12** and r4 has been started; all seven bots,
+  the feed and the dashboard are up. That restart predates the evening commit above, so the
+  running processes do **not** carry the integrity guards — they need another restart.
+  Two live-fleet defects found during that check and still open: `monitor.py` is not running
+  and has no scheduled task (nothing is watching the LSR / OI retention burn-down), and the
+  `start_fleet.ps1` feed console is a zombie — its `feed.py` exited at launch and the live
+  feed was started 44 s later from a separate shell with `--force-start`, so console-based
+  triage currently lies about which feed is alive.
 - **Active plan documents:** [bot_extraction_plan.md](studies/material/plans/bot_extraction_plan.md)
   (the architecture in force: one bot = one variant = one future sub-account; supersedes
   pool-plan phases B / D / F), [pool_restructure_implementation_plan.md](studies/material/plans/pool_restructure_implementation_plan.md)
@@ -51,9 +79,12 @@ further down stay as they are.
 
 ### Next, in order
 
-1. **Operator.** `.\start_fleet.ps1` starts r4 and anything not running; stop and restart
-   the six other bots so the 2026-09-12 code loads; `python monitor.py --deep` the next day;
-   push `main`.
+1. **Operator.** Restart all seven bots so the integrity guards load — the 17:11 restart
+   predates them. Start the hourly monitor (`.\start_fleet.ps1 -Units monitor`, or
+   `-Monitor`): it is not running and has no scheduled task, so nothing is watching the
+   LSR / OI retention burn-down. Close the zombie "p300 feed" console and decide whether the
+   live `--force-start` feed should be relaunched under `start_fleet.ps1` so the duplicate
+   guard applies to it. `python monitor.py --deep` the next day.
 2. **Paper evidence — waiting, not work.** First fires of the no-stop twins and of r4 ETH;
    weekly `strategy_health` per bot; the paired re-cut script for the squeeze twins must
    exist before n = 20 (topic entry below).
@@ -83,10 +114,37 @@ further down stay as they are.
       eight dormant sleeves. Absorbs the chento BTC + ETH single-variant fold (multi-asset
       plan Phase B), the `chento_limit_bid` archival (pool-plan A7) and the legacy variant
       row. Starts after step 1: the file moves happen between a fleet stop and a restart.
-   2. A DB-level per-bar unique key for paper trades (variant | sleeve | asset | bar) so a
-      doubled process cannot double-book.
-   3. `strategy_health.KNOWN_SLEEVES` += CHENTO_TRIPLE_V3, SHORT_SQUEEZE, SQUEEZE_BULL
-      (pool-plan A6).
+      **Two hazards the step list below does not mention**, found in the 2026-09-12 audit
+      and to be designed around before the first file is touched: (a) deleting
+      `try_fire_for_variant` degrades research replay SILENTLY — `backtest_runner` looks the
+      sleeve up in `STRATEGY_DISPATCH` and does `if dispatcher is None: continue` with no
+      log, so between step 1 and step 3 an ADX / CARRY / SHORT_SQUEEZE / chento replay
+      returns zero trades and reports success; the only test that would catch it is
+      `tests/test_sim_mode.py`, the one excluded for the 1.5 GB-per-test disk copy. (b) ADX
+      is the one sleeve whose `_effective_leverage` is not merely overwritten by the bot:
+      it feeds `effective_price_move_sl_pct`, is persisted into the trade notes as
+      `sl_semantic_price_thresh_pct`, and is read back by `strategies/support/stop_path.py`
+      on the live close path — including for the currently-open SJ-4247.
+   2. ~~A DB-level per-bar unique key for paper trades~~ — **done 2026-09-12**; the real gap
+      was the optional `signal_time_iso` and four bots falling through it, see the evening
+      entry above.
+   3. ~~`strategy_health.KNOWN_SLEEVES` += CHENTO_TRIPLE_V3, SHORT_SQUEEZE, SQUEEZE_BULL~~
+      (pool-plan A6) — **done 2026-09-12**.
+   4. **`botlib.close_due_trades` books the wrong cost.** The scheduled-exit backstop calls
+      `close_perp_trade` with no cost overrides, so it charges the 15 bp default while the
+      sleeves charge their measured 7 bp (SQUEEZE_BULL) and 10 bp (SHORT_SQUEEZE). It is a
+      true fallback — the sleeve's own sweep runs first on every tick — but when it does
+      fire it mis-prices by 8 bp, which is 0.04 R on SQUEEZE_BULL and 0.07–0.5 R on
+      SHORT_SQUEEZE, against a pre-registered "DISABLE if live diverges from replay by
+      > 0.05 R" tripwire. Needs a per-sleeve cost passthrough and a calibration-log entry in
+      both docs, because it changes booked P&L.
+   5. **`trade_adjustments` is missing `UNIQUE(trade_id, event_date, event_type)` in prod.**
+      `strategies/support/trade_db.py` declares it and `record_adjustment` relies on it, but
+      the 2026-05-18 PK rebuild dropped it and `CREATE TABLE IF NOT EXISTS` cannot retrofit —
+      the documented failure mode in the `feedback-table-pk-required` memory, recurring. Only
+      `UNIQUE (trade_id, seq)` survives, and `seq` is computed from the current max, so a
+      sequential retry gets `seq + 1` and lands a duplicate event. Needs a table rebuild
+      between a fleet stop and a restart, after a backup.
 5. **Decisions waiting on the user.** E7 live quoting probe (API key, ≤ $50, two weeks,
    only if maker entries are wanted); SHORT_SQUEEZE's fate at the n = 30 re-cut (both
    variants ≤ 0 → retire); pool-plan D1–D7 (unchanged since June) and the D9 recommendation

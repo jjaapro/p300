@@ -135,6 +135,85 @@ def test_duplicate_groups_detected(synthetic_ledger_db):
     assert audit.duplicate_samples[0]["cnt"] == 2
 
 
+def _mk_ledger(tmp_path, monkeypatch, rows):
+    """Minimal ledger holding just `rows` of (tid, variant, strategy, asset,
+    direction, entry_time, unique_key)."""
+    fixture_db = tmp_path / "dupes.db"
+    from strategies.support import db as _db_mod, trade_db
+    monkeypatch.setattr(trade_db, "DB_PATH", fixture_db)
+    monkeypatch.setattr(_db_mod, "DASH_DB", fixture_db)
+    trade_db.init_db()
+    con = sqlite3.connect(str(fixture_db))
+    con.execute("CREATE TABLE IF NOT EXISTS variants "
+                "(id TEXT PRIMARY KEY, enabled INTEGER NOT NULL DEFAULT 1)")
+    con.execute("INSERT OR IGNORE INTO variants (id, enabled) VALUES ('live_v', 1)")
+    for tid, variant, strategy, asset, direction, entry_time, ukey in rows:
+        con.execute("""
+            INSERT INTO trades
+            (id, series, asset, direction, strategy, allocation_pct, leverage,
+             entry_time, exit_time, status, execution_mode, strategy_variant,
+             actual_entry_time, entry_price, size_usdt, qty, unique_key)
+            VALUES (?, 'SJ', ?, ?, ?, 5.0, 1.0, ?,
+                    '2099-12-31T00:00:00+00:00', 'open', 'paper', ?,
+                    ?, 100.0, 1000.0, 10.0, ?)
+        """, (tid, asset, direction, strategy, entry_time, variant,
+              entry_time, ukey))
+    con.commit()
+    con.close()
+    return fixture_db
+
+
+def test_duplicate_detector_sees_fills_seconds_apart(tmp_path, monkeypatch):
+    """The 2026-08-15..24 doubled-fleet signature: one signal, two processes,
+    fills 33s apart, so two DIFFERENT unique_keys and nothing for the UNIQUE
+    index to collapse. Grouping on the exact entry_time — what this detector
+    did until 2026-09-12 — returns zero and the incident stays invisible.
+    """
+    _mk_ledger(tmp_path, monkeypatch, [
+        ("SJ-9001", "live_v", "CHENTO_TRIPLE_V3", "BTC", "LONG",
+         "2026-08-21T06:15:25.500991+00:00",
+         "live_v|CHENTO_TRIPLE_V3|BTC|2026-08-21T06:15:25.500991+00:00"),
+        ("SJ-9002", "live_v", "CHENTO_TRIPLE_V3", "BTC", "LONG",
+         "2026-08-21T06:15:58.170967+00:00",
+         "live_v|CHENTO_TRIPLE_V3|BTC|2026-08-21T06:15:58.170967+00:00"),
+    ])
+    audit = lc.audit_ledger()
+    assert audit.n_duplicate_groups == 1
+    sample = audit.duplicate_samples[0]
+    assert sample["cnt"] == 2
+    assert sample["entry_minute"] == "2026-08-21T06:15"
+    # Two distinct keys on one logical trade IS the diagnosis: the rows were
+    # written by two processes, not by one process retrying.
+    assert sample["distinct_keys"] == 2
+    assert sample["trade_ids"] == "SJ-9001,SJ-9002"
+
+
+def test_duplicate_detector_ignores_distinct_signals_on_the_same_day(
+        tmp_path, monkeypatch):
+    """Guards the granularity from the other side: chento genuinely fired
+    twice on 2026-08-21 (06:15 and 19:45). A day-level bucket would call that
+    a duplicate; a minute-level bucket must not."""
+    _mk_ledger(tmp_path, monkeypatch, [
+        ("SJ-9003", "live_v", "CHENTO_TRIPLE_V3", "BTC", "LONG",
+         "2026-08-21T06:15:25+00:00", "k1"),
+        ("SJ-9004", "live_v", "CHENTO_TRIPLE_V3", "BTC", "LONG",
+         "2026-08-21T19:45:03+00:00", "k2"),
+    ])
+    assert lc.audit_ledger().n_duplicate_groups == 0
+
+
+def test_duplicate_detector_ignores_a_close_and_reverse(tmp_path, monkeypatch):
+    """Direction is part of the key, so a sleeve that closes a LONG and opens
+    a SHORT in the same minute is not a duplicate."""
+    _mk_ledger(tmp_path, monkeypatch, [
+        ("SJ-9005", "live_v", "ADX", "BTC", "LONG",
+         "2026-08-21T06:15:25+00:00", "k1"),
+        ("SJ-9006", "live_v", "ADX", "BTC", "SHORT",
+         "2026-08-21T06:15:41+00:00", "k2"),
+    ])
+    assert lc.audit_ledger().n_duplicate_groups == 0
+
+
 def test_disabled_variant_recent_opens_detected(synthetic_ledger_db):
     """SJ-1003 in replay_v opened 2h ago — should flag as the replay-leak class."""
     _, now = synthetic_ledger_db

@@ -24,7 +24,7 @@ import logging
 import sqlite3
 from datetime import datetime, timezone
 
-from strategies.support import clock, db
+from strategies.support import clock, db, instance_guard
 
 log = logging.getLogger("botlib")
 
@@ -279,6 +279,14 @@ def heartbeat(name: str, *, status: str = "ok", note: str = "",
         _last_hb_write[name] = now_iso
     finally:
         con.close()
+    # Turn the detection into a refusal rather than a note. Every runner
+    # discarded this return value until 2026-09-12, which is why the August
+    # doubling ran for nine days with the alarm already firing.
+    if duplicate:
+        instance_guard.stand_down(
+            f"another process is writing the '{name}' heartbeat")
+    else:
+        instance_guard.resume()
     return not duplicate
 
 

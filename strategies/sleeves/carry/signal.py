@@ -163,18 +163,26 @@ def _carry_action_today(variant_id: str, today_utc: str) -> bool:
 
 
 def _open_carry_paper(variant: dict, entry_price: float, allocation_pct: float,
-                       reason: dict, leverage: float = 1.0) -> str:
+                       reason: dict, leverage: float = 1.0,
+                       signal_day: str | None = None) -> str:
     """Open a CARRY paper trade — delegates to strategies.trades.open_paper_trade.
     CARRY is delta-neutral (long-spot + short-perp); the trades.direction
     column stores 'LONG' as the spot-leg notation. Carry exits when the
     trailing ``EXIT_CUM_DAYS``-day cumulative funding falls below
-    ``EXIT_CUM_THRESHOLD_PCT``, not on a schedule."""
+    ``EXIT_CUM_THRESHOLD_PCT``, not on a schedule.
+
+    ``signal_day`` is the UTC date of the funding day that fired, and becomes
+    the idempotency key — the same granularity `_carry_action_today` already
+    enforces, but held by the DB's UNIQUE index rather than by a
+    check-then-insert two processes can both pass.
+    """
     from strategies.trades import open_paper_trade
     return open_paper_trade(
         variant=variant, sleeve_name="CARRY",
         asset="BTC", direction="LONG",
         entry_price=entry_price, allocation_pct=allocation_pct, leverage=leverage,
         reason=reason, scheduled_exit_dt=None,
+        signal_time_iso=signal_day,
     )
 
 
@@ -261,6 +269,8 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
             "regime": "unknown",
             "_entry_price": entry_price,
             "_fr_7d_avg_pct": sig["fr_7d_avg_pct"],
+            # UTC date of the firing funding day — the idempotency key.
+            "_signal_day": today,
         }
         intent = Intent(
             asset="BTC", direction="LONG",
@@ -285,9 +295,10 @@ def execute_for_variant(variant: dict, sleeve_cfg: dict, intent) -> dict:
     reason = dict(intent.reason or {})
     entry_price = float(reason.pop("_entry_price"))
     fr_7d = reason.pop("_fr_7d_avg_pct")
+    signal_day = reason.pop("_signal_day", None)
     tid = _open_carry_paper(
         variant, entry_price, intent.allocation_pct, reason,
-        leverage=intent.leverage,
+        leverage=intent.leverage, signal_day=signal_day,
     )
     log.info(f"[carry {variant['id']}] opened {tid} @ {entry_price:.2f} "
              f"(7d avg FR = {fr_7d:.4f}%, alloc={intent.allocation_pct}%)")

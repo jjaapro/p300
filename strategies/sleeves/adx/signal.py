@@ -357,15 +357,24 @@ def _adx_trade_exists_today(variant_id: str, today_utc: str) -> bool:
 
 def _open_adx_paper(variant: dict, direction: str, entry_price: float,
                      asset: str, allocation_pct: float, reason: dict,
-                     leverage: float = 1.0) -> str:
+                     leverage: float = 1.0,
+                     signal_day: str | None = None) -> str:
     """Open an S-003 paper trade — delegates to strategies.trades.open_paper_trade.
-    ADX exits on signal (ADX < 20) so no scheduled exit_time is set."""
+    ADX exits on signal (ADX < 20) so no scheduled exit_time is set.
+
+    ``signal_day`` is the UTC date of the daily bar that fired. It becomes
+    the idempotency key, which is exactly the granularity `_adx_trade_exists_today`
+    already enforces in-process: at most one ADX open per variant per day.
+    Passing it moves that guard from check-then-insert (which two processes
+    can both pass) to the DB's UNIQUE index, which they cannot.
+    """
     from strategies.trades import open_paper_trade
     return open_paper_trade(
         variant=variant, sleeve_name="ADX",
         asset=asset, direction=direction,
         entry_price=entry_price, allocation_pct=allocation_pct, leverage=leverage,
         reason=reason, scheduled_exit_dt=None,
+        signal_time_iso=signal_day,
     )
 
 
@@ -546,6 +555,8 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
         # Private payload the execute phase consumes to write the trade
         # without redoing the candle/indicator work.
         "_entry_price": current_price,
+        # UTC date of the firing daily bar — the trade's idempotency key.
+        "_signal_day": today,
     }
     intent = Intent(
         asset="BTC",
@@ -568,9 +579,11 @@ def execute_for_variant(variant: dict, sleeve_cfg: dict, intent) -> dict:
     """
     reason = dict(intent.reason or {})
     entry_price = float(reason.pop("_entry_price"))
+    signal_day = reason.pop("_signal_day", None)
     tid = _open_adx_paper(
         variant, intent.direction, entry_price, intent.asset,
         intent.allocation_pct, reason, leverage=intent.leverage,
+        signal_day=signal_day,
     )
     log.info(f"[adx {variant['id']}] opened {tid} {intent.asset} "
              f"{intent.direction} @ {entry_price:.2f} "
