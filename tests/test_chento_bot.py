@@ -234,13 +234,13 @@ def test_live_boundary_evaluates_just_closed_bar(tmp_db, live_clock):
     _seed_15m_range(tmp_db, T0 - timedelta(minutes=15 * 40), 41)
 
     clock.set_simulated_now(T0 + timedelta(seconds=33))
-    intents, status = ch_sig.try_decide_for_variant(variant, {})
+    intents, status = ch_sig.decide(variant)
     target = ch_sig._last_eval_bar_ts.get(botcfg.VARIANT_ID)
     assert status["status"] not in ("not_at_15m_boundary", "bar_not_ready"), status
     assert target is not None and target.to_pydatetime() == T0 - timedelta(minutes=15)
 
     # same boundary again -> deduped, no second evaluation
-    _, status2 = ch_sig.try_decide_for_variant(variant, {})
+    _, status2 = ch_sig.decide(variant)
     assert status2["status"] == "already_evaluated"
 
 
@@ -252,7 +252,7 @@ def test_live_midbar_tick_skips(tmp_db, live_clock):
     _seed_15m_range(tmp_db, T0 - timedelta(minutes=15 * 40), 41)
 
     clock.set_simulated_now(T0 + timedelta(minutes=7, seconds=33))
-    _, status = ch_sig.try_decide_for_variant(variant, {})
+    _, status = ch_sig.decide(variant)
     assert status["status"] == "not_at_15m_boundary"
     assert ch_sig._last_eval_bar_ts.get(botcfg.VARIANT_ID) is None
 
@@ -267,13 +267,13 @@ def test_live_stale_cache_rebuilt_after_bar_close(tmp_db, live_clock):
     _seed_15m_range(tmp_db, T0 - timedelta(minutes=15 * 40), 41)
 
     clock.set_simulated_now(T0 + timedelta(seconds=33))
-    ch_sig.try_decide_for_variant(variant, {})       # builds cache at T0+33s
+    ch_sig.decide(variant)       # builds cache at T0+33s
     built_first = ch_sig._cache_built_at
 
     # next boundary: target = T0 bar, which was FORMING at the first build
     _seed_15m_range(tmp_db, T0, 1)                    # bar T0 now final
     clock.set_simulated_now(T0 + timedelta(minutes=15, seconds=40))
-    _, status = ch_sig.try_decide_for_variant(variant, {})
+    _, status = ch_sig.decide(variant)
     assert status["status"] not in ("not_at_15m_boundary", "bar_not_ready")
     assert ch_sig._cache_built_at > built_first       # rebuilt for final row
     assert ch_sig._last_eval_bar_ts[botcfg.VARIANT_ID].to_pydatetime() == T0
@@ -290,12 +290,12 @@ def test_live_bar_not_ready_then_recovers(tmp_db, live_clock):
     _seed_15m_range(tmp_db, T0 - timedelta(minutes=15 * 40), 39)
 
     clock.set_simulated_now(T0 + timedelta(seconds=33))
-    _, status = ch_sig.try_decide_for_variant(variant, {})
+    _, status = ch_sig.decide(variant)
     assert status["status"] == "bar_not_ready"
 
     _seed_15m_range(tmp_db, T0 - timedelta(minutes=15), 1)   # feed catches up
     clock.set_simulated_now(T0 + timedelta(minutes=1, seconds=33))
-    _, status = ch_sig.try_decide_for_variant(variant, {})
+    _, status = ch_sig.decide(variant)
     assert status["status"] not in ("not_at_15m_boundary", "bar_not_ready")
     assert ch_sig._last_eval_bar_ts[botcfg.VARIANT_ID].to_pydatetime() \
         == T0 - timedelta(minutes=15)
@@ -328,12 +328,12 @@ def test_replay_path_selection_unchanged(tmp_db, monkeypatch):
     _seed_15m_range(tmp_db, T0 - timedelta(minutes=15 * 40), 41)
 
     clock.set_simulated_now(T0)                       # is_simulated() True
-    _, status = ch_sig.try_decide_for_variant(variant, {})
+    _, status = ch_sig.decide(variant)
     assert status["status"] not in ("not_at_15m_boundary", "bar_not_ready",
                                      "already_evaluated")
 
     clock.set_simulated_now(T0 + timedelta(minutes=5))
-    _, status = ch_sig.try_decide_for_variant(variant, {})
+    _, status = ch_sig.decide(variant)
     assert status["status"] == "not_at_15m_boundary"
 
 
@@ -417,13 +417,13 @@ def test_live_sweep_reads_final_candle_not_partial_cache(tmp_db, live_clock):
     # 41 closed bars up to T0 plus the forming T0+15m bar (low only -50)
     _seed_15m_range(tmp_db, T0 - timedelta(minutes=15 * 40), 42)
     clock.set_simulated_now(T0 + timedelta(minutes=15, seconds=33))
-    ch_sig.try_decide_for_variant(variant, {})      # cache holds partial T0+15m
+    ch_sig.decide(variant)      # cache holds partial T0+15m
     assert ch_sig._cache_built_at is not None
 
     # long from bar T0 whose stop the COMPLETED T0+15m bar pierces
     intent = _mk_intent(entry=100_000.0, stop=99_000.0, target=106_000.0)
     resized, _ = runner.size_intent(intent, float(variant["capital_usdt"]))
-    tid = ch_sig.execute_for_variant(variant, {}, resized)["trade_id"]
+    tid = ch_sig.execute(variant, resized)["trade_id"]
     _seed_15m_bar(tmp_db, T0 + timedelta(minutes=15),
                   high=100_100.0, low=98_500.0, close=99_800.0)
 
@@ -463,9 +463,9 @@ def test_execute_same_signal_twice_is_one_trade(tmp_db):
         botcfg.VARIANT_ID, short_name="t", capital_usdt=10_000.0,
         bot_name=botcfg.BOT_NAME)
     resized, _ = runner.size_intent(_mk_intent(), float(variant["capital_usdt"]))
-    a = ch_sig.execute_for_variant(variant, {}, resized)["trade_id"]
+    a = ch_sig.execute(variant, resized)["trade_id"]
     clock.set_simulated_now(T0 + timedelta(seconds=7))
-    b = ch_sig.execute_for_variant(variant, {}, resized)["trade_id"]
+    b = ch_sig.execute(variant, resized)["trade_id"]
     assert a == b
     assert botlib.count_open_trades(variant["id"]) == 1
 
@@ -478,7 +478,7 @@ def test_cooldown_survives_restart(tmp_db, monkeypatch):
         botcfg.VARIANT_ID, short_name="t", capital_usdt=10_000.0,
         bot_name=botcfg.BOT_NAME)
     resized, _ = runner.size_intent(_mk_intent(), float(variant["capital_usdt"]))
-    ch_sig.execute_for_variant(variant, {}, resized)
+    ch_sig.execute(variant, resized)
     monkeypatch.setattr(ch_sig, "_last_trigger_ts", {})       # "restart"
     clock.set_simulated_now(T0 + timedelta(minutes=15))
     _, status = ch_sig._evaluate_trigger(clock.now_utc(), variant, weight_pct=0.0,
@@ -495,7 +495,7 @@ def test_execute_then_sweep_stop_hit(tmp_db):
 
     intent = _mk_intent(entry=100_000.0, stop=97_000.0)
     resized, info = runner.size_intent(intent, float(variant["capital_usdt"]))
-    res = ch_sig.execute_for_variant(variant, {}, resized)
+    res = ch_sig.execute(variant, resized)
     tid = res["trade_id"]
     assert res["status"] == "opened"
 

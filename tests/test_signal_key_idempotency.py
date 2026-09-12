@@ -102,7 +102,7 @@ def test_short_squeeze_keys_on_the_trigger_bar(ledger):
     }, scheduled_exit_dt=exit_dt)
 
     first, second = _twice(
-        lambda i: sleeve.execute_for_variant(VARIANT, {}, i), intent)
+        lambda i: sleeve.execute(VARIANT, i), intent)
     _assert_one_row(ledger, first, second)
     assert _rows(ledger)[0]["unique_key"].endswith("2026-09-12T09:45:00+00:00")
 
@@ -123,7 +123,7 @@ def test_squeeze_bull_keys_on_the_trigger_bar(ledger):
     }, scheduled_exit_dt=exit_dt)
 
     first, second = _twice(
-        lambda i: sleeve.execute_for_variant(VARIANT, {}, i), intent)
+        lambda i: sleeve.execute(VARIANT, i), intent)
     _assert_one_row(ledger, first, second)
     assert _rows(ledger)[0]["unique_key"].endswith("|1789146000")
 
@@ -141,9 +141,9 @@ def test_squeeze_bull_without_a_bar_never_keys_on_the_string_none(ledger):
             "_entry_price": 100.0,
         })
 
-    first = sleeve.execute_for_variant(VARIANT, {}, _mk())
+    first = sleeve.execute(VARIANT, _mk())
     clock.set_simulated_now(T0 + timedelta(days=3))
-    second = sleeve.execute_for_variant(VARIANT, {}, _mk())
+    second = sleeve.execute(VARIANT, _mk())
 
     rows = _rows(ledger)
     assert len(rows) == 2, "an unrelated later signal must not be swallowed"
@@ -163,7 +163,7 @@ def test_adx_keys_on_the_signal_day(ledger):
     })
 
     first, second = _twice(
-        lambda i: sleeve.execute_for_variant(VARIANT, {}, i), intent)
+        lambda i: sleeve.execute(VARIANT, i), intent)
     _assert_one_row(ledger, first, second)
     assert _rows(ledger)[0]["unique_key"] == "v_test|ADX|BTC|2026-09-12"
 
@@ -180,7 +180,7 @@ def test_carry_keys_on_the_signal_day(ledger):
     })
 
     first, second = _twice(
-        lambda i: sleeve.execute_for_variant(VARIANT, {}, i), intent)
+        lambda i: sleeve.execute(VARIANT, i), intent)
     _assert_one_row(ledger, first, second)
     assert _rows(ledger)[0]["unique_key"] == "v_test|CARRY|BTC|2026-09-12"
 
@@ -205,12 +205,12 @@ def test_r4_keys_on_the_signal_day_per_window(ledger):
         }, asset="ETH", scheduled_exit_dt=exit_dt)
 
     first, second = _twice(
-        lambda i: sleeve._r4_execute(VARIANT, {}, i), _r4_intent("JPLUS_R4_ETH"))
+        lambda i: sleeve.execute(VARIANT, i), _r4_intent("JPLUS_R4_ETH"))
     _assert_one_row(ledger, first, second)
 
     # A different window on the same day is a different trade, not a dupe.
     clock.set_simulated_now(T0 + timedelta(minutes=5))
-    sleeve._r4_execute(VARIANT, {}, _r4_intent("JPLUS_R4_ETH_V2"))
+    sleeve.execute(VARIANT, _r4_intent("JPLUS_R4_ETH_V2"))
     keys = {r["unique_key"] for r in _rows(ledger)}
     assert keys == {"v_test|JPLUS_R4_ETH|ETH|2026-09-12",
                     "v_test|JPLUS_R4_ETH_V2|ETH|2026-09-12"}

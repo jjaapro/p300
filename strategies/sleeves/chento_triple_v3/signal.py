@@ -978,37 +978,3 @@ def execute(variant: dict, intent: Intent) -> dict:
     return {"status": "opened", "trade_id": tid, "entry_price": entry_price,
             "stop_price": reason["_stop_price"],
             "target_price": reason["_target_price"]}
-
-
-# ─── Legacy orchestrator interface ───────────────────────────────────────
-# Thin adapters over decide()/execute(); no logic of their own, so the two
-# surfaces cannot diverge. Deleted in phase D once nothing calls them.
-
-def _unpack(sleeve_cfg: dict) -> dict:
-    """sleeve_cfg -> decide() keywords. The complete surface for this sleeve."""
-    return {
-        "weight_pct": float(sleeve_cfg.get(
-            "_effective_weight_pct", sleeve_cfg.get("weight_pct", 0.0))),
-        "leverage": float(sleeve_cfg.get("_effective_leverage", 1.0)),
-        "priority": float(sleeve_cfg.get("priority", 100)),
-    }
-
-
-def try_decide_for_variant(variant: dict, sleeve_cfg: dict
-                              ) -> tuple[list[Intent], dict]:
-    """Legacy adapter — see decide()."""
-    return decide(variant, **_unpack(sleeve_cfg))
-
-
-def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Intent) -> dict:
-    """Legacy adapter — see execute()."""
-    return execute(variant, intent)
-
-
-def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
-    """Single-call entry point (decide + execute). Still the ONLY dispatch
-    backtest_runner consults, so it outlives the two adapters above."""
-    intents, status = try_decide_for_variant(variant, sleeve_cfg)
-    if not intents:
-        return status
-    return execute_for_variant(variant, sleeve_cfg, intents[0])

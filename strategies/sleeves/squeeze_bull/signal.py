@@ -28,7 +28,7 @@ Look-ahead: the regime uses `REGIME_SHIFT_DAYS = 1`, so a fire reads a daily
 close at least three hours old. The June construction read the current day's
 close and is not implementable; see config.py.
 
-Exit policy (2026-09-12): `sleeve_cfg["use_stop"]` (default True) is the one
+Exit policy (2026-09-12): the `use_stop` keyword (default True) is the one
 thing the bot's two paper variants differ on. The shipped variant keeps the
 -2% stop; the no-stop variant exits on the +3% target or the 48h time stop
 only (studies/notebooks/sizing_style_2026_09/, policy P1b). The 2% distance
@@ -304,40 +304,3 @@ def execute(variant: dict, intent: Intent) -> dict:
     return {"status": "opened", "trade_id": tid, "entry_price": entry_price,
             "stop_price": reason["_stop_price"],
             "target_price": reason["_target_price"]}
-
-
-# ─── Legacy orchestrator interface ───────────────────────────────────────
-# Thin adapters over decide()/execute(). They exist only so the callers that
-# still pass a sleeve_cfg dict keep working while the bot runners are
-# repointed one at a time; they hold no logic of their own, so the two
-# surfaces cannot diverge. Deleted once nothing calls them
-# (BACKLOG.md "Step 1 re-planned", phase D).
-
-def _unpack(sleeve_cfg: dict) -> dict:
-    """sleeve_cfg -> decide() keywords. The complete surface for this sleeve."""
-    return {
-        "weight_pct": float(sleeve_cfg.get(
-            "_effective_weight_pct", sleeve_cfg.get("weight_pct", 0.0))),
-        "leverage": float(sleeve_cfg.get("_effective_leverage", 1.0)),
-        "priority": float(sleeve_cfg.get("priority", 100)),
-        "use_stop": bool(sleeve_cfg.get("use_stop", True)),
-    }
-
-
-def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
-    """Legacy adapter — see decide()."""
-    return decide(variant, **_unpack(sleeve_cfg))
-
-
-def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Intent) -> dict:
-    """Legacy adapter — see execute()."""
-    return execute(variant, intent)
-
-
-def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
-    """Single-call entry point (decide + execute). Still the ONLY dispatch
-    backtest_runner consults, so it outlives the two adapters above."""
-    intents, status = try_decide_for_variant(variant, sleeve_cfg)
-    if not intents:
-        return status
-    return {**status, **execute_for_variant(variant, sleeve_cfg, intents[0])}

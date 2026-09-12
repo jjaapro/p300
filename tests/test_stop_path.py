@@ -7,6 +7,18 @@ import sqlite3
 
 import pytest
 
+from strategies.support import cfg_adapter as _ca
+
+
+def _decide(sleeve, cfg, variant_id="v"):
+    """Drive whichever surface this sleeve exposes. ADX was migrated to
+    decide(variant, **kwargs); THU_BEAR is a dormant orchestrator sleeve and
+    still takes (variant, sleeve_cfg)."""
+    variant = {"id": variant_id}
+    if hasattr(sleeve, "decide"):
+        return sleeve.decide(variant, **_ca.adx(cfg))
+    return sleeve.try_decide_for_variant(variant, cfg)
+
 from strategies.support import clock, db, stop_path, trade_db
 from strategies.trades import close_perp_trade
 
@@ -234,10 +246,9 @@ def test_sleeve_closes_recovered_wick_with_historical_accounting(
     monkeypatch.setattr(adx, "_current_signal", lambda candles: None)
     monkeypatch.setattr(adx, "ATR_TRAIL_MULT", 0)
     sleeve = adx if strategy == "ADX" else thu
-    sleeve.try_decide_for_variant(
-        {"id": "v"}, {"weight_pct": 100, "_effective_leverage": 1,
-                      "params": {"assets": ["BTC"], "version": "V3_enhanced",
-                                 "stop_loss_pct": 10 if strategy == "ADX" else 5}})
+    _decide(sleeve, {"weight_pct": 100, "_effective_leverage": 1,
+                     "params": {"assets": ["BTC"], "version": "V3_enhanced",
+                                "stop_loss_pct": 10 if strategy == "ADX" else 5}})
     row = _trade(ledger)
     assert row["status"] == "closed"
     assert row["exit_price"] == pytest.approx(expected)
@@ -277,9 +288,8 @@ def test_historical_path_uses_entry_stop_not_new_config(
     monkeypatch.setattr(adx, "ATR_TRAIL_MULT", 0)
     monkeypatch.setenv("P300_STOP_SEMANTICS", "margin")
     sleeve = adx if strategy == "ADX" else thu
-    sleeve.try_decide_for_variant(
-        {"id": "v"}, {"weight_pct": 100, "_effective_leverage": 10,
-                      "params": {"stop_loss_pct": 2, "assets": ["BTC"]}})
+    _decide(sleeve, {"weight_pct": 100, "_effective_leverage": 10,
+                     "params": {"stop_loss_pct": 2, "assets": ["BTC"]}})
     assert _trade(ledger)["status"] == "open"
 
 

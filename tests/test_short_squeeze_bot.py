@@ -101,7 +101,7 @@ def test_tick_stale_entry_drops_intent(tmp_db, monkeypatch):
     def boom(*a, **k):
         raise AssertionError("execute must not run on stale entry tables")
     monkeypatch.setattr(
-        "strategies.sleeves.short_squeeze.signal.execute_for_variant", boom)
+        "strategies.sleeves.short_squeeze.signal.execute", boom)
     monkeypatch.setattr(
         botlib, "stale_tables",
         lambda tables=None: {"cd_open_interest": 9999.0}
@@ -123,7 +123,7 @@ def test_execute_then_sweep_stop_hit(tmp_db):
 
     intent = _mk_intent(entry=100_000.0, stop=99_900.0)
     resized, info = runner.size_intent(intent, float(variant["capital_usdt"]))
-    res = ssq.execute_for_variant(variant, {}, resized)
+    res = ssq.execute(variant, resized)
     tid = res["trade_id"]
     assert res["status"] == "opened"
 
@@ -213,7 +213,7 @@ def test_no_stop_execute_then_sweep_ignores_stop_and_target_and_closes_on_time(t
     variant = botlib.ensure_bot_variant(
         v["id"], short_name="t", capital_usdt=10_000.0, bot_name=botcfg.BOT_NAME)
     resized, info = runner.size_intent(_nostop_intent(), 10_000.0, use_stop=False)
-    res = ssq.execute_for_variant(variant, {"use_stop": False}, resized)
+    res = ssq.execute(variant, resized)
     tid = res["trade_id"]
     assert res["status"] == "opened" and res["stop_price"] is None
 
@@ -265,8 +265,8 @@ def test_decide_honours_use_stop_and_count_diag(tmp_db, monkeypatch):
     monkeypatch.setattr(ssq, "_diag_count", lambda status, now: counted.append(status))
     variant = {"id": "v", "capital_usdt": 10_000.0}
 
-    intents, status = ssq.try_decide_for_variant(
-        variant, {"weight_pct": 100.0, "use_stop": False, "count_diag": False})
+    intents, status = ssq.decide(variant, weight_pct=100.0, use_stop=False,
+                                 count_diag=False)
     assert status["status"] == "decided" and len(intents) == 1
     r = intents[0].reason
     assert r["exit_policy"] == "time_only"
@@ -276,7 +276,7 @@ def test_decide_honours_use_stop_and_count_diag(tmp_db, monkeypatch):
         100_000.0 + 3.0 * (100_000.0 - 99_900.0 * 0.999))
     assert counted == []
 
-    intents, status = ssq.try_decide_for_variant(variant, {"weight_pct": 100.0})
+    intents, status = ssq.decide(variant, weight_pct=100.0)
     r = intents[0].reason
     assert r["exit_policy"] == "stop_target_time"
     assert r["_stop_price"] == pytest.approx(r["_reference_stop_price"])

@@ -137,8 +137,8 @@ def test_fixed_r_sizing_is_half_notional_and_never_hits_the_cap(env):
 def test_entry_evaluated_once_per_hour(env, monkeypatch):
     monkeypatch.setattr(sleeve, "_load_hourly",
                         lambda now, lookback_days=45: _bars(now, flush_at_last=False))
-    first = sleeve.try_decide_for_variant(env["variant"], env["cfg"])
-    second = sleeve.try_decide_for_variant(env["variant"], env["cfg"])
+    first = sleeve.decide(env["variant"])
+    second = sleeve.decide(env["variant"])
     assert first[1]["status"] == "no_flush"
     assert second[1]["status"] == "already_evaluated_this_hour"
 
@@ -146,8 +146,8 @@ def test_entry_evaluated_once_per_hour(env, monkeypatch):
 def test_no_bars_does_not_burn_the_hour(env, monkeypatch):
     """A data outage must not consume the hour's single evaluation slot."""
     monkeypatch.setattr(sleeve, "_load_hourly", lambda now, lookback_days=45: [])
-    assert sleeve.try_decide_for_variant(env["variant"], env["cfg"])[1]["status"] == "no_bars"
-    assert sleeve.try_decide_for_variant(env["variant"], env["cfg"])[1]["status"] == "no_bars"
+    assert sleeve.decide(env["variant"])[1]["status"] == "no_bars"
+    assert sleeve.decide(env["variant"])[1]["status"] == "no_bars"
 
 
 def test_flush_in_bull_regime_fires_and_opens_one_trade(env, monkeypatch):

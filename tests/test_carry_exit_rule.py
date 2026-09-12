@@ -17,6 +17,7 @@ import pytest
 
 from strategies.sleeves.carry import config as cfg
 from strategies.sleeves.carry import signal as carry
+from strategies.support import cfg_adapter as ca
 
 CFG = {"weight_pct": 100.0, "_effective_leverage": 1.0, "priority": 100}
 
@@ -101,7 +102,7 @@ def _open(variant):
                     reason={"trigger": "t", "_entry_price": 100.0,
                             "_fr_7d_avg_pct": 0.03},
                     scheduled_exit_dt=None)
-    return carry.execute_for_variant(variant, CFG, intent)["trade_id"]
+    return carry.execute(variant, intent)["trade_id"]
 
 
 def test_decide_closes_an_open_trade_when_the_month_breaks(env, monkeypatch):
@@ -114,7 +115,7 @@ def test_decide_closes_an_open_trade_when_the_month_breaks(env, monkeypatch):
     _open(env)
     assert len(carry._get_open_carry_trades(env["id"])) == 1
 
-    intents, status = carry.try_decide_for_variant(env, CFG)
+    intents, status = carry.decide(env, **ca.carry(CFG))
     assert seen["days"] >= cfg.EXIT_CUM_DAYS, "the loader window must cover the exit window"
     assert status["status"] == "closed" and not intents
     assert carry._get_open_carry_trades(env["id"]) == []
@@ -127,7 +128,7 @@ def test_decide_does_not_enter_while_the_exit_is_active(env, monkeypatch):
     monkeypatch.setattr(carry, "_load_recent_daily_funding",
                         lambda days=30: _records([-0.05] * 23 + [0.02] * 7,
                                                  start="2026-02-08"))
-    intents, status = carry.try_decide_for_variant(env, CFG)
+    intents, status = carry.decide(env, **ca.carry(CFG))
     assert not intents
     assert status["status"] == "no_action"
     assert status["cum_funding_pct"] == pytest.approx(-1.01)
@@ -137,7 +138,7 @@ def test_decide_does_not_enter_while_the_exit_is_active(env, monkeypatch):
 def test_decide_enters_when_the_mean_is_positive_and_no_exit(env, monkeypatch):
     monkeypatch.setattr(carry, "_load_recent_daily_funding",
                         lambda days=30: _records([0.01] * 37, start="2026-02-01"))
-    intents, status = carry.try_decide_for_variant(env, CFG)
+    intents, status = carry.decide(env, **ca.carry(CFG))
     assert len(intents) == 1 and status["status"] == "decided"
 
 
@@ -168,7 +169,7 @@ def _study_signals(dates, vals):
 
 
 def _sleeve_window(records, i):
-    """What try_decide_for_variant hands the evaluator on day i."""
+    """What decide() hands the evaluator on day i."""
     window = cfg.EXIT_CUM_DAYS + 7
     return records[max(0, i - window + 1): i + 1]
 

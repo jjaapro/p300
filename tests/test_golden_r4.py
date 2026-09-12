@@ -7,10 +7,10 @@ and none passes a sleeve_cfg.
 
 R4 is the sleeve the strip most endangers, for three reasons:
 
-* ``bots/r4/runner.py`` calls the PRIVATE ``_r4_execute``, a name nothing
-  outside that runner pins today.
-* Its ``_effective_*`` FALLBACK arms are the live behaviour, not dead weight —
-  the runner passes only ``{"priority": 100}``, so the timing-anomaly weights
+* ``bots/r4/runner.py`` called the PRIVATE ``_r4_execute`` until phase C
+  repointed it to ``execute`` — a name nothing outside that runner pinned.
+* Its FALLBACK arms are the live behaviour, not dead weight — the runner
+  passes no weight/gate/vol_scalar at all, so the timing-anomaly weights
   table, the gated inner leverage and the vol leverage all come from the
   fallback, and ``stacked_lev`` survives all the way to the trade.
 * It has a ~20-day blind window: ``bot_r4_v1`` has never opened a trade and
@@ -247,11 +247,11 @@ def test_the_executor_the_bot_calls_exists():
     """bots/r4/runner.py called the PRIVATE `_r4_execute` until phase C step
     20 repointed it to `execute`. Either way the invariant is the same: the
     name the runner calls must exist, or the bot raises on its first fire —
-    in October, with no other coverage. `_r4_execute` survives as the legacy
-    adapter until phase D."""
+    in October, with no other coverage. The `_r4_execute` adapter was deleted
+    in phase D step 23; `execute` is the only surface now."""
     from strategies.sleeves.timing_anomalies.internal.r4 import signal
     assert callable(getattr(signal, "execute", None))
-    assert callable(getattr(signal, "_r4_execute", None))
+    assert not hasattr(signal, "_r4_execute"),         "the legacy adapter should be gone after phase D"
     src = (Path(__file__).resolve().parents[1]
            / "bots" / "r4" / "runner.py").read_text(encoding="utf-8")
     assert "r4.execute(" in src

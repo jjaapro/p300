@@ -111,6 +111,48 @@ def test_only_short_squeeze_carries_count_diag():
         assert has == (name == "short_squeeze"), name
 
 
+def test_flag_VALUES_are_forwarded_not_just_their_keys():
+    """The presence checks above would pass a translation that always
+    returned True. The mutation drill found exactly that hole once the
+    per-sleeve equivalence tests started self-skipping, so pin the values."""
+    assert ca.squeeze_bull({"use_stop": False})["use_stop"] is False
+    assert ca.squeeze_bull({"use_stop": True})["use_stop"] is True
+    assert ca.squeeze_bull({})["use_stop"] is True          # default
+
+    ss_off = ca.short_squeeze({"use_stop": False, "count_diag": False})
+    assert ss_off["use_stop"] is False and ss_off["count_diag"] is False
+    ss_mixed = ca.short_squeeze({"use_stop": True, "count_diag": False})
+    assert ss_mixed["use_stop"] is True and ss_mixed["count_diag"] is False
+    assert ca.short_squeeze({})["use_stop"] is True
+    assert ca.short_squeeze({})["count_diag"] is True
+
+
+def test_r4_forwards_the_gate_object_itself():
+    """The gate is an object with a `.leverage_mult`, and the sleeve reads
+    that attribute. Forwarding anything but the object — a default, a
+    coerced value — changes the leverage the trade is sized at."""
+    class _Gate:
+        leverage_mult = 0.5
+
+    g = _Gate()
+    assert ca.r4({"_effective_gate": g})["gate"] is g
+    assert ca.r4({})["gate"] is None
+    assert ca.r4({"_effective_vol_scalar": 1.5})["vol_scalar"] == 1.5
+    assert ca.r4({"_effective_weight_pct": 25.0})["weight_pct"] == 25.0
+
+
+def test_leverage_and_weight_VALUES_are_forwarded():
+    for name, central, _ in PAIRS:
+        if name == "r4":
+            continue
+        got = central({"_effective_weight_pct": 33.0,
+                       "_effective_leverage": 7.0, "priority": 5.0})
+        assert got["weight_pct"] == 33.0, name
+        assert got["leverage"] == 7.0, name
+        assert got["priority"] == 5.0, name
+    assert ca.adx({"params": {"stop_loss_pct": 2.5}})["stop_loss_pct"] == 2.5
+
+
 # ── the dispatch builders ──────────────────────────────────────────────────
 
 def test_decide_entry_translates_and_forwards():
