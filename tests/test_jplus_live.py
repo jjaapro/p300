@@ -22,6 +22,7 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
+from strategies.support import cfg_adapter as _ca
 from strategies.support import clock
 
 from strategies.sleeves.timing_anomalies.internal.r4 import signal as _r4_signal
@@ -29,12 +30,20 @@ from strategies.sleeves.ema import signal as _ema_signal
 from strategies.sleeves.eth_daily import signal as _eth_daily_signal
 
 
+def _r4_fire(decide_fn):
+    """(variant, sleeve_cfg) -> decide-then-execute, the shape these 28 tests
+    were written against. Built from the plain decider and the central cfg
+    adapter rather than from the sleeve's own try_fire wrapper, so the tests
+    keep their call sites when phase D deletes those wrappers."""
+    return staticmethod(_ca.fire_entry(decide_fn, _r4_signal.execute, _ca.r4))
+
+
 class jplus_live:  # noqa: N801 — test-only convenience namespace
     """Test-only accessor matching the pre-restructure ``services.jplus_live`` shape."""
-    r4_btc_try_fire = staticmethod(_r4_signal.r4_btc_try_fire)
-    r4_eth_try_fire = staticmethod(_r4_signal.r4_eth_try_fire)
-    r4_btc_v2_try_fire = staticmethod(_r4_signal.r4_btc_v2_try_fire)
-    r4_eth_v2_try_fire = staticmethod(_r4_signal.r4_eth_v2_try_fire)
+    r4_btc_try_fire = _r4_fire(_r4_signal.decide_btc)
+    r4_eth_try_fire = _r4_fire(_r4_signal.decide_eth)
+    r4_btc_v2_try_fire = _r4_fire(_r4_signal.decide_btc_v2)
+    r4_eth_v2_try_fire = _r4_fire(_r4_signal.decide_eth_v2)
     ema_btc_try_fire = staticmethod(_ema_signal.ema_btc_try_fire)
     eth_daily_try_fire = staticmethod(_eth_daily_signal.eth_daily_try_fire)
 

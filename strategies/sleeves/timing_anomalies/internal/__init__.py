@@ -45,23 +45,31 @@ def _resolve_cpr() -> tuple[Callable, Callable]:
 
 
 def _resolve_r4_btc() -> tuple[Callable, Callable]:
+    from strategies.support import cfg_adapter as ca
     from .r4 import signal as r4
-    return r4.r4_btc_decide, r4._r4_execute
+    return (ca.decide_entry(r4.decide_btc, ca.r4),
+            ca.execute_entry(r4.execute))
 
 
 def _resolve_r4_eth() -> tuple[Callable, Callable]:
+    from strategies.support import cfg_adapter as ca
     from .r4 import signal as r4
-    return r4.r4_eth_decide, r4._r4_execute
+    return (ca.decide_entry(r4.decide_eth, ca.r4),
+            ca.execute_entry(r4.execute))
 
 
 def _resolve_r4_btc_v2() -> tuple[Callable, Callable]:
+    from strategies.support import cfg_adapter as ca
     from .r4 import signal as r4
-    return r4.r4_btc_v2_decide, r4._r4_execute
+    return (ca.decide_entry(r4.decide_btc_v2, ca.r4),
+            ca.execute_entry(r4.execute))
 
 
 def _resolve_r4_eth_v2() -> tuple[Callable, Callable]:
+    from strategies.support import cfg_adapter as ca
     from .r4 import signal as r4
-    return r4.r4_eth_v2_decide, r4._r4_execute
+    return (ca.decide_entry(r4.decide_eth_v2, ca.r4),
+            ca.execute_entry(r4.execute))
 
 
 _RESOLVERS: dict[str, Callable[[], tuple[Callable, Callable]]] = {
