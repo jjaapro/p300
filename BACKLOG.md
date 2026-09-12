@@ -376,13 +376,30 @@ reset nothing; and the normalizer could not serialize numpy scalars.
 
 ### Phase C — shim each module, then repoint each bot (go-ahead required)
 
-9–14. **One module per commit, no restart.** The new plain-argument `decide()`/`execute()`
-becomes the implementation; the old entry point becomes a three-line adapter. Both surfaces
-stay live, so nothing that imports either breaks at any commit. Order: squeeze_bull (no
-orchestrator referent at all), then carry, chento, short_squeeze, adx, r4 last. For R4,
-transcribe the calendar gates character-for-character and note the gate arm is
-`R4_INNER_LEV_UNGATED * gate.leverage_mult` — **UNGATED**, which no test covers; add a
-golden for that exact product.
+9–14. **One module per commit, no restart.** ✅ **DONE 2026-09-12** — commits `cdf7dbf`
+(squeeze_bull), `2890ebc` (carry), `3f18770` (chento), `0f7c3f0` (short_squeeze), `e1b286b`
+(adx), `cb13cb5` (r4). Every sleeve now has a plain-keyword `decide()`/`execute()` as its
+real implementation with the old entry points as pure-passthrough adapters; both surfaces
+stay live. `tests/_sleeve_surface.py` no longer builds a `sleeve_cfg` for anything — the
+only file under tests/ that knew the old shape has forgotten it.
+
+**Every commit shows zero `tests/goldens/` churn**, which is the mechanical form of the
+gate: a strip commit that touched a golden would be changing behaviour, not shape. Drill
+14 → 23 mutations, still 0 missed. Suite 1464 → 1529. `tests/test_sleeve_adapter_equivalence.py`
+(65 tests) pins the unpacking itself, since that is the one place the two surfaces could
+diverge, and it enforces that each sleeve's defaults stay its OWN — `weight_pct` falls back
+to 0.0, not 100.0, and ADX's `stop_loss_pct` to 10.0, not 0.0.
+
+Three sleeve-specific facts that the shims had to preserve and now have tests:
+**R4's `weight_pct=None` means ABSENT, not zero** — the bot passes no weight, so the
+fallback arms (weights table incl. the bear-regime zero, gated inner leverage, vol leverage)
+are the live path, and substituting 0.0 would disable the regime kill switch invisibly until
+October. Its gate arm is literally `R4_INNER_LEV_UNGATED * gate.leverage_mult` — UNGATED,
+which reads like a typo and is not. **ADX's leverage is load-bearing**, feeding
+`effective_price_move_sl_pct` → the persisted `sl_semantic_price_thresh_pct` → `stop_path`
+on SJ-4247's live close path; inert at the default semantic, which is what made hardcoding
+it look safe. **`_r4_execute` keeps its private name**, because `bots/r4/runner.py` calls it
+by exactly that.
 
 15–20. **Repoint the runners, one bot per commit, one restart each.** Gate: the `--sim-now`
 dry run at the pinned firing anchor produces a byte-identical trade row, then the restarted
