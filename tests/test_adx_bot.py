@@ -32,12 +32,12 @@ def test_tick_stale_mgmt_skips(monkeypatch):
     def boom(*a, **k):
         raise AssertionError("decide must not run on stale mgmt tables")
     monkeypatch.setattr(
-        "strategies.sleeves.adx.signal.try_decide_for_variant", boom)
+        "strategies.sleeves.adx.signal.decide", boom)
     monkeypatch.setattr(
         botlib, "stale_tables",
         lambda tables=None: {"cd_spot_binance": 99999.0}
         if "cd_spot_binance" in (tables or []) else {})
-    out = runner.tick({"id": "x", "capital_usdt": 10_000.0}, {})
+    out = runner.tick({"id": "x", "capital_usdt": 10_000.0})
     assert out["status"] == "stale_mgmt_inputs"
     assert out["hb_status"] == "degraded"
 

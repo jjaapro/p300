@@ -54,7 +54,7 @@ def size_intent(intent, capital: float):
         notional_max_x=botcfg.NOTIONAL_MAX_X)
 
 
-def tick(variant: dict, sleeve_cfg: dict) -> dict:
+def tick(variant: dict) -> dict:
     from strategies.sleeves.adx import signal as sleeve
 
     stale_mgmt = botlib.stale_tables(botcfg.MGMT_TABLES)
@@ -63,7 +63,13 @@ def tick(variant: dict, sleeve_cfg: dict) -> dict:
                 "hb_status": "degraded",
                 "hb_note": f"mgmt tables stale: {sorted(stale_mgmt)}"}
 
-    intents, status = sleeve.try_decide_for_variant(variant, sleeve_cfg)
+    # Sizing is the runner's job (size_intent overwrites alloc and leverage),
+    # so those are placeholders — but stop_loss_pct is REAL config, and
+    # leverage is load-bearing for this sleeve alone: under
+    # P300_STOP_SEMANTICS=margin it sets the stop threshold that stop_path
+    # reads back off the trade notes on every close check.
+    intents, status = sleeve.decide(variant, weight_pct=100.0, leverage=1.0,
+                                    stop_loss_pct=botcfg.STOP_LOSS_PCT)
     st = status.get("status", "?")
     out = {"status": st, "detail": status, "hb_status": "ok", "hb_note": "",
            "evaluated": st not in _NOT_EVALUATED_STATUSES}
@@ -78,7 +84,7 @@ def tick(variant: dict, sleeve_cfg: dict) -> dict:
         else:
             for intent in intents:
                 resized, info = size_intent(intent, float(variant["capital_usdt"]))
-                res = sleeve.execute_for_variant(variant, sleeve_cfg, resized)
+                res = sleeve.execute(variant, resized)
                 log.info(f"OPENED {res.get('trade_id')} {resized.direction} "
                          f"notional=${info['notional']:,.0f} "
                          f"(stop_pct={info['stop_pct']:.2%}, "
@@ -121,12 +127,6 @@ def main(argv: list[str] | None = None) -> int:
              f"risk={botcfg.RISK_PCT}%/trade cap={botcfg.NOTIONAL_MAX_X}x "
              f"open_trades={botlib.count_open_trades(variant['id'])}")
 
-    # The sleeve reads weight/leverage (overwritten by size_intent) plus the
-    # per-variant stop-loss param from sleeve_cfg.params.
-    sleeve_cfg = {"weight_pct": 100.0, "_effective_leverage": 1.0,
-                  "priority": 100,
-                  "params": {"stop_loss_pct": botcfg.STOP_LOSS_PCT}}
-
     signal.signal(signal.SIGINT, _signal_handler)
     signal.signal(signal.SIGTERM, _signal_handler)
 
@@ -136,7 +136,7 @@ def main(argv: list[str] | None = None) -> int:
         t0 = time.time()
         hb_status, hb_note, evaluated, signalled = "ok", "", False, False
         try:
-            out = tick(variant, sleeve_cfg)
+            out = tick(variant)
             hb_status = out.get("hb_status", "ok")
             hb_note = out.get("hb_note", "")
             evaluated = bool(out.get("evaluated"))

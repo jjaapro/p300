@@ -243,15 +243,18 @@ def test_golden_r4_execute_writes_the_expected_row(env, monkeypatch):
     assert row["unique_key_suffix"] == "JPLUS_R4_BTC|BTC|2026-09-07"
 
 
-def test_private_executor_is_the_name_the_bot_calls():
-    """bots/r4/runner.py calls r4._r4_execute. If the strip renames it without
-    updating the runner, the bot raises on its first fire — in October, with
-    no other coverage."""
+def test_the_executor_the_bot_calls_exists():
+    """bots/r4/runner.py called the PRIVATE `_r4_execute` until phase C step
+    20 repointed it to `execute`. Either way the invariant is the same: the
+    name the runner calls must exist, or the bot raises on its first fire —
+    in October, with no other coverage. `_r4_execute` survives as the legacy
+    adapter until phase D."""
     from strategies.sleeves.timing_anomalies.internal.r4 import signal
+    assert callable(getattr(signal, "execute", None))
     assert callable(getattr(signal, "_r4_execute", None))
     src = (Path(__file__).resolve().parents[1]
            / "bots" / "r4" / "runner.py").read_text(encoding="utf-8")
-    assert "_r4_execute" in src
+    assert "r4.execute(" in src
 
 
 def test_goldens_are_committed_and_non_empty():

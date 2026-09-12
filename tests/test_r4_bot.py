@@ -140,7 +140,7 @@ def test_tick_stale_mgmt_never_calls_decide(env, monkeypatch):
     monkeypatch.setattr(botlib, "stale_tables",
                         lambda tables=None: {"eth_1m": 9_999.0}
                         if "eth_1m" in (tables or []) else {})
-    out = runner.tick(_variant(), {})
+    out = runner.tick(_variant())
     assert out["status"] == "stale_mgmt_inputs"
     assert out["hb_status"] == "degraded"
     assert out["evaluated"] is False
@@ -151,13 +151,13 @@ def test_tick_entry_blocked_then_recovers_inside_grace(env, monkeypatch):
     monkeypatch.setattr(botlib, "stale_tables",
                         lambda tables=None: {"ca_long_short_ratio": 100_000.0}
                         if "ca_long_short_ratio" in (tables or []) else {})
-    out = runner.tick(_variant(), {})
+    out = runner.tick(_variant())
     assert out["status"] == "entry_blocked_stale_inputs"
     assert out["hb_status"] == "degraded"
     assert _rows(env) == []
     monkeypatch.setattr(botlib, "stale_tables", lambda tables=None: {})
     _at(MON.replace(hour=6, minute=3))
-    out = runner.tick(_variant(), {})
+    out = runner.tick(_variant())
     assert out["status"] == "opened"
     assert len(_rows(env, STRATEGY_R4_BTC)) == 1
 
@@ -166,7 +166,7 @@ def test_tick_entry_blocked_then_recovers_inside_grace(env, monkeypatch):
 
 def test_opens_monday_within_grace_with_bot_sizing(env):
     _at(MON.replace(hour=6, minute=2))
-    out = runner.tick(_variant(), {})
+    out = runner.tick(_variant())
     assert out["status"] == "opened"
     assert out["evaluated"] is True
     rows = _rows(env, STRATEGY_R4_BTC)
@@ -187,20 +187,20 @@ def test_opens_monday_within_grace_with_bot_sizing(env):
 
 def test_idempotent_per_day_across_ticks_and_restart(env):
     _at(MON.replace(hour=6, minute=1))
-    assert runner.tick(_variant(), {})["status"] == "opened"
+    assert runner.tick(_variant())["status"] == "opened"
     _at(MON.replace(hour=6, minute=2))
-    out = runner.tick(_variant(), {})
+    out = runner.tick(_variant())
     assert out["status"] == "no_action"
     assert out["detail"][STRATEGY_R4_BTC] == "already_open"
     runner._missed.clear()                       # simulate a process restart
     _at(MON.replace(hour=6, minute=4))
-    runner.tick(_variant(), {})
+    runner.tick(_variant())
     assert len(_rows(env, STRATEGY_R4_BTC)) == 1
 
 
 def test_late_entry_is_a_logged_miss_not_a_fill(env):
     _at(MON.replace(hour=6, minute=11))          # 660s > 300s grace
-    out = runner.tick(_variant(), {})
+    out = runner.tick(_variant())
     assert out["status"] == "missed_window"
     assert out["detail"][STRATEGY_R4_BTC] == "missed_window"
     assert "missed_window" in out["hb_note"]
@@ -209,7 +209,7 @@ def test_late_entry_is_a_logged_miss_not_a_fill(env):
     assert len(lines) == 1 and json.loads(lines[0])["event"] == "missed_window"
     # a second tick the same day does not re-log
     _at(MON.replace(hour=6, minute=12))
-    runner.tick(_variant(), {})
+    runner.tick(_variant())
     assert len(botcfg.DIAG_PATH.read_text().splitlines()) == 1
 
 
@@ -217,7 +217,7 @@ def test_eth_v1_after_window_is_covered_by_the_guard(env):
     """The sleeve has no after-window check for R4_ETH (fires until 23:59
     Tuesday); the bot's late-entry guard turns that into a miss."""
     _at(TUE.replace(hour=23, minute=30))
-    out = runner.tick(_variant(), {})
+    out = runner.tick(_variant())
     assert out["detail"][STRATEGY_R4_ETH] == "missed_window"
     assert _rows(env) == []
 
@@ -225,7 +225,7 @@ def test_eth_v1_after_window_is_covered_by_the_guard(env):
 def test_disabled_variant_is_never_evaluated(env, monkeypatch):
     monkeypatch.setitem(botcfg.ENABLED, STRATEGY_R4_BTC, False)
     _at(MON.replace(hour=6, minute=1))
-    out = runner.tick(_variant(), {})
+    out = runner.tick(_variant())
     assert out["status"] == "no_action"
     assert STRATEGY_R4_BTC not in out["detail"]
     assert _rows(env) == []
@@ -234,7 +234,7 @@ def test_disabled_variant_is_never_evaluated(env, monkeypatch):
 def test_bear_regime_opens_nothing(env, monkeypatch):
     monkeypatch.setattr(jplus_inputs, "today_inputs", lambda: _inputs_stub(mode="bear"))
     _at(MON.replace(hour=6, minute=1))
-    out = runner.tick(_variant(), {})
+    out = runner.tick(_variant())
     assert out["status"] == "no_action"
     assert out["detail"][STRATEGY_R4_BTC] == "regime_zero_weight"
     assert out["evaluated"] is True
@@ -258,7 +258,7 @@ def test_wednesday_cofire_scales_third_position_to_budget(env, monkeypatch):
     monkeypatch.setattr(jplus_inputs, "today_inputs", lambda: _inputs_stub(lev=3.0))
     _seed_open_eth_v1(12_000.0)
     _at(WED.replace(hour=4, minute=1))
-    out = runner.tick(_variant(), {})
+    out = runner.tick(_variant())
     assert out["status"] == "opened"
     btc = _rows(env, STRATEGY_R4_BTC_V2)[0]
     eth = _rows(env, STRATEGY_R4_ETH_V2)[0]
@@ -273,7 +273,7 @@ def test_budget_exhausted_opens_nothing(env, monkeypatch):
     monkeypatch.setattr(jplus_inputs, "today_inputs", lambda: _inputs_stub(lev=3.0))
     _seed_open_eth_v1(botcfg.GROSS_MAX_X * CAPITAL - 100.0)
     _at(WED.replace(hour=4, minute=1))
-    out = runner.tick(_variant(), {})
+    out = runner.tick(_variant())
     assert out["status"] == "budget_exhausted"
     assert _rows(env, STRATEGY_R4_BTC_V2) == []
     assert _rows(env, STRATEGY_R4_ETH_V2) == []
@@ -284,7 +284,7 @@ def test_budget_exhausted_opens_nothing(env, monkeypatch):
 def test_backstop_closes_due_eth_trade(env):
     _seed_open_eth_v1(6_000.0)
     _at(WED.replace(hour=20, minute=1))
-    out = runner.tick(_variant(), {})
+    out = runner.tick(_variant())
     assert out.get("backstop_closed")
     assert _rows(env, STRATEGY_R4_ETH)[0]["status"] == "closed"
 
@@ -306,7 +306,7 @@ def test_calendar_matches_sleeve_decides_2025_2026(env):
                 STRATEGY_R4_BTC: 6, STRATEGY_R4_ETH: 20,
                 STRATEGY_R4_BTC_V2: 4, STRATEGY_R4_ETH_V2: 4}[strategy])
             _at(open_dt + timedelta(minutes=1))
-            intents, _ = decide(_variant(), {})
+            intents, _ = decide(_variant())
             if intents:
                 sleeve_fires.add((strategy, day.date()))
                 assert r4cal.window_open_for(
@@ -359,19 +359,19 @@ def test_shipped_config_skips_monday_and_trades_the_eth_pair(env, monkeypatch):
         STRATEGY_R4_BTC: False, STRATEGY_R4_ETH: True,
         STRATEGY_R4_BTC_V2: False, STRATEGY_R4_ETH_V2: True})
     _at(MON.replace(hour=6, minute=1))
-    out = runner.tick(_variant(), {})
+    out = runner.tick(_variant())
     assert out["status"] == "no_action"
     assert STRATEGY_R4_BTC not in out["detail"] and STRATEGY_R4_BTC_V2 not in out["detail"]
     assert _rows(env) == []
     _at(TUE.replace(hour=20, minute=1))
-    out = runner.tick(_variant(), {})
+    out = runner.tick(_variant())
     assert out["status"] == "opened"
     rows = _rows(env, STRATEGY_R4_ETH)
     assert len(rows) == 1 and rows[0]["asset"] == "ETH"
     assert rows[0]["exit_time"].startswith("2026-09-09T20:00")
     # Wednesday: only the ETH V2 joins the open ETH V1 — two legs, never three
     _at(WED.replace(hour=4, minute=1))
-    out = runner.tick(_variant(), {})
+    out = runner.tick(_variant())
     assert out["status"] == "opened"
     assert _rows(env, STRATEGY_R4_BTC_V2) == []
     assert len(_rows(env, STRATEGY_R4_ETH_V2)) == 1

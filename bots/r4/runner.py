@@ -72,10 +72,10 @@ def deciders() -> dict:
         STRATEGY_R4_BTC, STRATEGY_R4_BTC_V2, STRATEGY_R4_ETH, STRATEGY_R4_ETH_V2,
     )
     return {
-        STRATEGY_R4_BTC: r4.r4_btc_decide,
-        STRATEGY_R4_ETH: r4.r4_eth_decide,
-        STRATEGY_R4_BTC_V2: r4.r4_btc_v2_decide,
-        STRATEGY_R4_ETH_V2: r4.r4_eth_v2_decide,
+        STRATEGY_R4_BTC: r4.decide_btc,
+        STRATEGY_R4_ETH: r4.decide_eth,
+        STRATEGY_R4_BTC_V2: r4.decide_btc_v2,
+        STRATEGY_R4_ETH_V2: r4.decide_eth_v2,
     }
 
 
@@ -151,7 +151,7 @@ def _stop_sweep(variant_id: str) -> list[str]:
     return closed
 
 
-def tick(variant: dict, sleeve_cfg: dict) -> dict:
+def tick(variant: dict) -> dict:
     from strategies.support import clock
 
     stale_mgmt = botlib.stale_tables(botcfg.MGMT_TABLES)
@@ -174,7 +174,13 @@ def tick(variant: dict, sleeve_cfg: dict) -> dict:
     for strategy, decide in deciders().items():
         if not botcfg.ENABLED.get(strategy, False):
             continue
-        intents, status = decide(variant, sleeve_cfg)
+        # No weight / gate / vol_scalar: their ABSENCE is the live path.
+        # The sleeve then reads the timing-anomaly weights table (including
+        # its bear-regime zero), the gated inner leverage and the vol
+        # leverage from today_inputs, and the bot consumes the resulting
+        # stacked leverage in size_intent. Passing any of them here would
+        # override the regime gate.
+        intents, status = decide(variant)
         st = status.get("status", "?")
         detail[strategy] = st
         if st != "no_inputs":
@@ -213,7 +219,7 @@ def tick(variant: dict, sleeve_cfg: dict) -> dict:
             _diag({"ts": now.isoformat(), "event": "budget_exhausted",
                    "strategy": strategy, **info})
             continue
-        res = r4._r4_execute(variant, sleeve_cfg, resized)
+        res = r4.execute(variant, resized)
         detail[strategy] = "opened"
         opened.append(res.get("trade_id"))
         log.info(f"OPENED {res.get('trade_id')} {strategy} notional="
@@ -283,7 +289,6 @@ def main(argv: list[str] | None = None) -> int:
 
     # No _effective_* keys: the sleeve decides with its own inputs, the bot
     # re-sizes the Intent (see size_intent).
-    sleeve_cfg = {"priority": 100}
 
     signal.signal(signal.SIGINT, _signal_handler)
     signal.signal(signal.SIGTERM, _signal_handler)
@@ -293,7 +298,7 @@ def main(argv: list[str] | None = None) -> int:
         t0 = time.time()
         hb_status, hb_note, evaluated, signalled = "ok", "", False, False
         try:
-            out = tick(variant, sleeve_cfg)
+            out = tick(variant)
             hb_status = out.get("hb_status", "ok")
             hb_note = out.get("hb_note", "")
             evaluated = bool(out.get("evaluated"))

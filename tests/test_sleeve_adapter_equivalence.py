@@ -360,10 +360,11 @@ def test_r4_adapters_forward_absence_as_none(monkeypatch, legacy, new):
                               "vol_scalar": None, "priority": 100.0}
 
 
-def test_r4_execute_adapter_keeps_its_private_name(monkeypatch):
-    """bots/r4/runner.py calls r4._r4_execute by that exact private name. If
-    the strip renames it without updating the runner, the bot raises on its
-    first fire — in October, with no other coverage."""
+def test_r4_execute_adapter_still_delegates(monkeypatch):
+    """`_r4_execute` was the name bots/r4/runner.py called until phase C step
+    20 repointed it to `execute`. The adapter stays until phase D, because
+    the legacy dispatch path still reaches it, and it must keep delegating
+    rather than holding a second copy of the open logic."""
     sleeve = _r4()
     seen = {}
     monkeypatch.setattr(sleeve, "execute",
@@ -375,7 +376,7 @@ def test_r4_execute_adapter_keeps_its_private_name(monkeypatch):
 
     src = (pathlib.Path(__file__).resolve().parents[1]
            / "bots" / "r4" / "runner.py").read_text(encoding="utf-8")
-    assert "_r4_execute" in src
+    assert "r4.execute(" in src, "the runner must call the repointed name"
 
 
 @pytest.mark.parametrize("name", [
