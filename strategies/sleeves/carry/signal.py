@@ -196,20 +196,42 @@ def _close_carry_paper(trade_id: str, exit_price: float, reason: str) -> None:
 
 # ─── Public tick ─────────────────────────────────────────────────────────────
 
-def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
-    """Variant-engine dispatch entry point. Returns a status dict.
+# ─── Legacy orchestrator interface ───────────────────────────────────────
+# Thin adapters over decide()/execute(); no logic of their own, so the two
+# surfaces cannot diverge. Deleted in phase D once nothing calls them.
 
-    Backward-compatible wrapper: runs decide (side-effect exit sweep +
-    entry Intent), then executes any returned Intent.
-    """
+def _unpack(sleeve_cfg: dict) -> dict:
+    """sleeve_cfg -> decide() keywords. The complete surface for this sleeve."""
+    return {
+        "weight_pct": float(sleeve_cfg.get(
+            "_effective_weight_pct", sleeve_cfg.get("weight_pct", 0.0))),
+        "leverage": float(sleeve_cfg.get("_effective_leverage", 1.0)),
+        "priority": float(sleeve_cfg.get("priority", 100)),
+    }
+
+
+def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
+    """Legacy adapter — see decide()."""
+    return decide(variant, **_unpack(sleeve_cfg))
+
+
+def execute_for_variant(variant: dict, sleeve_cfg: dict, intent) -> dict:
+    """Legacy adapter — see execute()."""
+    return execute(variant, intent)
+
+
+def try_fire_for_variant(variant: dict, sleeve_cfg: dict) -> dict:
+    """Single-call entry point (decide + execute). Still the ONLY dispatch
+    backtest_runner consults, so it outlives the two adapters above."""
     intents, status = try_decide_for_variant(variant, sleeve_cfg)
     if not intents:
         return status
     return execute_for_variant(variant, sleeve_cfg, intents[0])
 
 
-def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
-    """Phase-1 of the two-phase dispatch (P2.4e/f Stage 2).
+def decide(variant: dict, *, weight_pct: float = 0.0, leverage: float = 1.0,
+           priority: float = 100.0):
+    """Decide whether to open, and sweep the exit. Returns (intents, status).
 
     Side-effect (always run, not subject to reconcile):
       - Exit sweep: close every open carry trade when the trailing 30-day
@@ -225,9 +247,8 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
     """
     from strategies.support.dispatch import Intent
 
-    alloc_pct = float(sleeve_cfg.get("_effective_weight_pct",
-                                       sleeve_cfg.get("weight_pct", 0.0)))
-    leverage = float(sleeve_cfg.get("_effective_leverage", 1.0))
+    alloc_pct = float(weight_pct)
+    leverage = float(leverage)
 
     records = _load_recent_daily_funding(days=EXIT_CUM_DAYS + 7)
     sig = _evaluate_today(records)
@@ -276,7 +297,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
             asset="BTC", direction="LONG",
             allocation_pct=alloc_pct, leverage=leverage,
             conviction=100,
-            priority=float(sleeve_cfg.get("priority", 100)),
+            priority=float(priority),
             reason=reason, scheduled_exit_dt=None,
         )
         return [intent], {"status": "decided",
@@ -289,9 +310,8 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
                  "cum_funding_pct": sig["cum_funding_pct"]}
 
 
-def execute_for_variant(variant: dict, sleeve_cfg: dict, intent) -> dict:
-    """Phase-2 of the two-phase dispatch — open the delta-neutral
-    carry pair described by ``intent`` (post-reconcile)."""
+def execute(variant: dict, intent) -> dict:
+    """Phase 2 — open the delta-neutral carry pair described by ``intent``."""
     reason = dict(intent.reason or {})
     entry_price = float(reason.pop("_entry_price"))
     fr_7d = reason.pop("_fr_7d_avg_pct")

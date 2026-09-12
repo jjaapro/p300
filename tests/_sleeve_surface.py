@@ -132,6 +132,9 @@ def decide(key: str, *, variant: dict, weight_pct=AS_BOT,
     if key == "squeeze_bull":
         return mod.decide(variant, weight_pct=(w or 0.0), leverage=leverage,
                           priority=priority, use_stop=use_stop)
+    if key == "carry":
+        return mod.decide(variant, weight_pct=(w or 0.0), leverage=leverage,
+                          priority=priority)
     # --- not yet migrated: build the cfg dict ---
     cfg = _cfg(key, weight_pct=w, leverage=leverage,
                priority=priority, params=params, use_stop=use_stop,
@@ -148,7 +151,7 @@ def execute(key: str, *, variant: dict, intent, weight_pct=AS_BOT,
     """Phase 2. r4 routes through the PRIVATE _r4_execute, which is what
     bots/r4/runner.py calls."""
     mod = _module(key)
-    if key == "squeeze_bull":
+    if key in ("squeeze_bull", "carry"):
         return mod.execute(variant, intent)
     cfg = _cfg(key, weight_pct=_bot_weight(key, weight_pct), leverage=leverage,
                priority=priority, params=params, use_stop=use_stop,

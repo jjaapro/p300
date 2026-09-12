@@ -110,3 +110,59 @@ def test_squeeze_bull_exposes_both_surfaces(name):
     from strategies.sleeves.squeeze_bull import signal as sleeve
     assert callable(getattr(sleeve, name, None)), \
         f"squeeze_bull lost {name}; both surfaces must stay live until phase D"
+
+
+# ── carry ──────────────────────────────────────────────────────────────────
+
+def test_carry_adapter_forwards_the_full_cfg_surface(monkeypatch):
+    from strategies.sleeves.carry import signal as sleeve
+
+    seen = _capture(monkeypatch, sleeve)
+    sleeve.try_decide_for_variant(VARIANT, {
+        "_effective_weight_pct": 8.0, "weight_pct": 1.0,
+        "_effective_leverage": 2.0, "priority": 30.0})
+    assert seen["variant"] is VARIANT
+    # carry has no use_stop / params / count_diag — three keys, that is all.
+    assert seen["kwargs"] == {"weight_pct": 8.0, "leverage": 2.0,
+                              "priority": 30.0}
+
+
+def test_carry_adapter_defaults_match_the_pre_strip_behaviour(monkeypatch):
+    from strategies.sleeves.carry import signal as sleeve
+
+    seen = _capture(monkeypatch, sleeve)
+    sleeve.try_decide_for_variant(VARIANT, {})
+    assert seen["kwargs"] == {"weight_pct": 0.0, "leverage": 1.0,
+                              "priority": 100.0}
+
+
+def test_carry_execute_adapter_ignores_the_cfg(monkeypatch):
+    from strategies.sleeves.carry import signal as sleeve
+
+    seen = {}
+    monkeypatch.setattr(sleeve, "execute",
+                        lambda variant, intent: seen.update(
+                            variant=variant, intent=intent) or {"status": "ok"})
+    sentinel = object()
+    sleeve.execute_for_variant(VARIANT, {"anything": "at all"}, sentinel)
+    assert seen == {"variant": VARIANT, "intent": sentinel}
+
+
+def test_carry_exit_sweep_still_runs_when_no_intent_is_returned(monkeypatch):
+    """CARRY's decide() closes the WHOLE BOOK on the 30-day cumulative-funding
+    rule and returns no Intent when it does. The adapter must not swallow that
+    status — SJ-4242 has been open since 2026-07-22 and this is its exit."""
+    from strategies.sleeves.carry import signal as sleeve
+
+    monkeypatch.setattr(sleeve, "decide", lambda variant, **kw: (
+        [], {"status": "closed", "trade_ids": ["SJ-4242"]}))
+    assert sleeve.try_fire_for_variant(VARIANT, {}) == {
+        "status": "closed", "trade_ids": ["SJ-4242"]}
+
+
+@pytest.mark.parametrize("name", ["decide", "execute", "try_decide_for_variant",
+                                  "execute_for_variant", "try_fire_for_variant"])
+def test_carry_exposes_both_surfaces(name):
+    from strategies.sleeves.carry import signal as sleeve
+    assert callable(getattr(sleeve, name, None)), \
+        f"carry lost {name}; both surfaces must stay live until phase D"
