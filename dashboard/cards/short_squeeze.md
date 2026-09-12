@@ -19,10 +19,23 @@ pass on the same bar:
 6. **Cooldown** — 4h since the last trigger.
 
 ## Exits & sizing
-Stop 10bp **below the swept low** (invalidation = the low actually breaking),
-target **3R**, time stop **6h**. Fixed-R **1% of capital**; the stop is so tight
-that the 3× notional cap **binds by design** (this replaces the old "20–100×
-leverage" idea from the research notes).
+Two paper variants run in one process on the same signals since 2026-09-12:
+
+- **`bot_short_squeeze_v1`** (shipped 2026-07-21): stop 10bp **below the swept
+  low** (invalidation = the low actually breaking), target **3R**, time stop
+  **6h**. Fixed-R **1% of capital**; the stop is so tight that the 3× notional
+  cap **binds by design** (this replaces the old "20–100× leverage" idea from
+  the research notes).
+- **`bot_short_squeeze_nostop_v1`**: **no stop, no target, the 6h time stop
+  only**, at a fixed **1× capital**. The sizing study found the bp-wide stop
+  is inside the sweep's own noise (39 of 71 historical fires stopped out):
+  without it the replay went from +0.48 R to +1.16 R per fire, with a −7.8 R
+  worst trade instead of −1 R — hence the smaller notional. The two ledgers
+  decide at 20 paired fires (`docs/calibration/short_squeeze.md`).
+
+Costs booked: 10 bp per round trip, measured. Until 2026-09-12 the bot booked
+25 bp, which on a bp-wide stop was 0.80 R per trade and made the paper record
+negative by construction.
 
 ## Why it's usually silent
 The Asia short-macro setup exists on only **~3.7% of days**; the longest historical

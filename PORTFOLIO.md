@@ -78,7 +78,7 @@ TIMING_ANOMALIES's 8 substrategies live in §3.8.
 
 - **Signal**: 7-day average BTC perp funding > 0%. Entry opens spot-long + perp-short of equal notional → market-neutral.
 - **Income**: collects funding payments every 8h while the perp side is short.
-- **Exit**: 3 consecutive negative funding days, or scheduled time-stop.
+- **Exit**: trailing 30-day cumulative funding below −0.5 % of notional (since 2026-09-12; the 3-consecutive-negative-days exit cost 0.85 %/yr and never protected — [docs/calibration/carry.md](docs/calibration/carry.md)). No scheduled time-stop.
 - **Edge thesis**: structurally positive funding in bullish regimes is paid for free if you can hedge cheaply. P&L is dominated by funding accrual, not price moves.
 
 ### 3.3 JPLUS_EMA_BTC — Weekly EMA crossover position-flip
@@ -138,7 +138,7 @@ TIMING_ANOMALIES's 8 substrategies live in §3.8.
   3. `okx_aligned` — OKX-Binance perp price log-delta z-score (rolling 7d) must sign-match the trade direction.
   4. `skip_up_30d_shorts` (asymmetric) — skip ONLY shorts when BTC 30d return > +10%. Longs still take.
 - **Entry**: at the 15m bar close. Size split with the H_B adaptive-sizing rule (see Execution).
-- **Math layer**: stop = entry ± 5×ATR(14, 15m), target = entry ± 6R fixed, TIF = 72 hours, 18bp RT cost scaled by stop distance.
+- **Math layer**: stop = entry ± 5×ATR(14, 15m), target = entry ± 6R fixed, TIF = 72 hours, 10bp RT cost scaled by stop distance (measured 2026-09-12; the research replays charged 18bp).
 - **Execution — A4 ladder add**: on the bar where adverse excursion reaches −0.3R, the sleeve adds a second order at that price. Add size depends on 7-day Volume-Profile classification of the original entry price:
   - **Inside Value Area** (~34% of triggers): T3 sizing → 150% add. Worst-case combined loss ~3.3R (~4.4% NAV at 4% risk).
   - **Outside Value Area** (~66% of triggers): T1 sizing → 50% add. Worst-case combined loss ~2.0R (~2.5% NAV at 4% risk).
@@ -726,6 +726,18 @@ concurrent exposure comparable to the pre-V2 baseline.
       2026-05-13 onward are net of fees + slippage; older backtest figures
       were not. Treat the step-down on 2026-05-13 as a methodology change,
       not a regime change.
+    - **Measured and adopted 2026-09-12**
+      ([execution_2026_09](studies/notebooks/execution_2026_09/findings.md)):
+      on seven years of 1 m bars the taker round trip is 9.6 bp (chento BTC),
+      10.0 (chento ETH), 9.3 (SHORT_SQUEEZE), 6.7 (SQUEEZE_BULL) and 10.5 bp
+      (ADX) — half-spread < 1 bp, decision-to-fill drift within ±3 bp, zero
+      stop gap-throughs. The sleeves now book **chento 10 bp** (was 18),
+      **SHORT_SQUEEZE 10** (was 10 + 15), **SQUEEZE_BULL 7** (was the 15 bp
+      default), **ADX 10 + 1** (was 10 + 5); CARRY and the default constants
+      above are unchanged. SHORT_SQUEEZE's old 25 bp was 0.80 R per trade on a
+      +0.48 R gross edge, so its paper record before this date is negative by
+      construction. Treat the step on 2026-09-12 as a methodology change, as
+      on 2026-05-13; each sleeve's calibration log carries the provenance.
 
 ---
 

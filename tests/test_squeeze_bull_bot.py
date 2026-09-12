@@ -243,3 +243,105 @@ def test_bot_is_wired_into_the_fleet_surfaces():
     assert "squeeze_bull" in botinfo.BOTS
     meta = botinfo.BOTS["squeeze_bull"]
     assert (botinfo.CALIB_DIR / meta["calibration"]).is_file()
+    assert meta["variant_ids"] == [v["id"] for v in botcfg.VARIANTS]
+
+
+# ─── no-stop paper variant (2026-09-12, sizing_style_2026_09 policy P1b) ──
+
+def _nostop_variant():
+    v = botcfg.VARIANTS[1]
+    assert v["use_stop"] is False
+    return botlib.ensure_bot_variant(v["id"], short_name=v["short_name"],
+                                     capital_usdt=CAPITAL, bot_name=botcfg.BOT_NAME)
+
+
+def _rows_for(db_path, variant_id):
+    return [r for r in _trades(db_path) if r["strategy_variant"] == variant_id]
+
+
+def test_variants_are_the_incumbent_plus_a_no_stop_twin():
+    assert [v["id"] for v in botcfg.VARIANTS] == ["bot_squeeze_bull_v1",
+                                                  "bot_squeeze_bull_nostop_v1"]
+    assert [v["use_stop"] for v in botcfg.VARIANTS] == [True, False]
+    assert botcfg.VARIANT_ID == "bot_squeeze_bull_v1"
+    # sized as if the 2% stop existed: 1% / 2% = 0.5x, same as the stop variant
+    assert botcfg.NOSTOP_NOTIONAL_X == pytest.approx(0.5)
+
+
+def test_no_stop_sizing_is_the_same_half_notional():
+    from strategies.support.dispatch import Intent
+    intent = Intent(asset="BTC", direction="LONG", allocation_pct=0.0, leverage=1.0,
+                    conviction=100, priority=100,
+                    reason={"_entry_price": ENTRY, "_stop_price": None,
+                            "_reference_stop_price": ENTRY * 0.98},
+                    scheduled_exit_dt=None)
+    resized, info = runner.size_intent(intent, CAPITAL, use_stop=False)
+    assert info["notional"] == pytest.approx(CAPITAL * 0.5)
+    assert info["stop_pct"] == pytest.approx(0.02)
+    assert info["at_cap"] is False
+    assert resized.allocation_pct == 100.0
+    assert resized.leverage == pytest.approx(0.5)
+
+
+def test_no_stop_variant_opens_without_a_stop_and_survives_the_stop_price(env, monkeypatch):
+    monkeypatch.setattr(sleeve, "_load_hourly",
+                        lambda now, lookback_days=45: _bars(now))
+    v = _nostop_variant()
+    out = runner.tick(v, {**env["cfg"], "use_stop": False})
+    assert out["status"] == "decided", out
+    rows = _rows_for(env["db"], v["id"])
+    assert len(rows) == 1
+    tr = rows[0]
+    blob = json.loads(tr["notes"])
+    assert blob["exit_policy"] == "target_time"
+    assert blob["_stop_price"] is None
+    assert blob["_reference_stop_price"] == pytest.approx(tr["entry_price"] * 0.98)
+    assert blob["_target_price"] == pytest.approx(tr["entry_price"] * 1.03)
+    assert tr["size_usdt"] == pytest.approx(CAPITAL * 0.5)
+    # a print far through the reference stop closes nothing ...
+    monkeypatch.setattr(price_feed, "get_current_price",
+                        lambda a: float(tr["entry_price"]) * 0.95)
+    assert sleeve._sweep_open_positions(v["id"]) == 0
+    assert _rows_for(env["db"], v["id"])[0]["status"] == "open"
+    # ... the target still does
+    monkeypatch.setattr(price_feed, "get_current_price",
+                        lambda a: float(tr["entry_price"]) * 1.031)
+    assert sleeve._sweep_open_positions(v["id"]) == 1
+    assert _rows_for(env["db"], v["id"])[0]["status"] == "closed"
+
+
+def test_no_stop_variant_time_stop_still_closes_a_loser(env, monkeypatch):
+    monkeypatch.setattr(sleeve, "_load_hourly",
+                        lambda now, lookback_days=45: _bars(now))
+    v = _nostop_variant()
+    runner.tick(v, {**env["cfg"], "use_stop": False})
+    tr = _rows_for(env["db"], v["id"])[0]
+    monkeypatch.setattr(price_feed, "get_current_price",
+                        lambda a: float(tr["entry_price"]) * 0.95)
+    clock.set_simulated_now(NOW + timedelta(hours=49))
+    assert sleeve._sweep_open_positions(v["id"]) == 1
+    closed = _rows_for(env["db"], v["id"])[0]
+    assert closed["status"] == "closed"
+    assert closed["exit_price"] == pytest.approx(float(tr["entry_price"]) * 0.95)
+
+
+def test_tick_all_runs_both_variants_on_the_same_bar_and_diags_once(env, monkeypatch):
+    monkeypatch.setattr(sleeve, "_load_hourly",
+                        lambda now, lookback_days=45: _bars(now))
+    v2 = _nostop_variant()
+    variants = [{"row": env["variant"], "use_stop": True},
+                {"row": v2, "use_stop": False}]
+    out = runner.tick_all(variants, env["cfg"])
+    assert out["status"] == "decided"
+    assert out["signal"] and out["evaluated"] and out["hb_status"] == "ok"
+    assert out["open_trades"] == 2
+    assert set(out["per_variant"]) == {env["variant"]["id"], v2["id"]}
+    rows = _trades(env["db"])
+    assert len(rows) == 2
+    blobs = {r["strategy_variant"]: json.loads(r["notes"]) for r in rows}
+    assert len({b["bar_ts"] for b in blobs.values()}) == 1, "same bar for both"
+    assert blobs[env["variant"]["id"]]["_stop_price"] is not None
+    assert blobs[v2["id"]]["_stop_price"] is None
+    assert all(r["size_usdt"] == pytest.approx(CAPITAL * 0.5) for r in rows)
+    lines = botcfg.DIAG_PATH.read_text(encoding="utf-8").strip().splitlines()
+    assert len(lines) == 1, "the evaluation is recorded once per tick, not per variant"

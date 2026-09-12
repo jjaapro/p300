@@ -16,9 +16,12 @@ When the **7-day rolling average daily funding turns positive** (> 0). Positive
 funding = longs paying shorts = the perp-short leg is being paid to exist.
 
 ## Exit
-After **3 consecutive days of negative funding** — the regime has flipped and the
-position would start paying instead of collecting. Cost of a full round trip is
-~0.20% of notional, so it doesn't flip-flop on single bad days.
+When the **trailing 30 days of funding add up to less than −0.5%** of notional —
+a sustained negative regime, where the position pays instead of collecting. A
+full round trip costs ~0.24% of notional, so single bad days (or three of them)
+are not worth leaving over: the old three-negative-day exit paid that toll about
+five times a year and never left before the damage. The rule changed on
+2026-09-12 (`docs/calibration/carry.md`).
 
 ## Character
 Positions are held for **weeks** (the current one entered in July). Earnings are a

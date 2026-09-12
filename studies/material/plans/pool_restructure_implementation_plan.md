@@ -62,6 +62,7 @@ Issues found evaluating the vision itself (beyond the factual fixes above). Each
 | D5 | Calendar fate criteria (#8): pre-commit to 3 sub-accounts unless evidence clears? | **Yes** — commit now: Calendar earns a sub-account only if ≥2 subs besides R4_BTC clear post-cost expectancy in S5; otherwise timing stays paper-only and R4_BTC folds into an existing pool later |
 | D6 | Replay-variant retention (#16) | **Archive-then-delete** maintenance script: export `__replay*` rows >30d closed to an archive file, delete from live table |
 | D7 | Fact-sheet split (vision / plan / audit log) | **Yes, later** — parked P3; do it after Phase B lands so the vision doc describes something real |
+| D8 (added 2026-09-12) | ADX and CARRY: same cross-margin account, or ADX longs on spot? | **Same account** (or ADX longs expressed on spot). `studies/notebooks/adx_robustness_2026_09/`: live semantics reproduce the ADX research once funding is excluded, and funding on the longs is the *whole* remaining gap (CAGR 44 → 36 %, MTM drawdown −38 → −48 %, 24.7 %/yr of long exposure). CARRY's perp short was on during 96.6 % of ADX long-days, so in one account the two perp legs net and the pair is economically "ADX long on spot". This overrides D1's slot arithmetic only in that ADX and CARRY must not be split across sub-accounts; it says nothing about which pool they share. |
 
 ---
 
@@ -118,6 +119,8 @@ Issues found evaluating the vision itself (beyond the factual fixes above). Each
 ## Phase F — Sub-account go-live wiring (far gate)
 
 *Blocked by [[bot-not-close-to-live]] until an explicit end-to-end re-audit passes (G-D plus exchange-side work that is out of this plan's scope). Designed seam: each pool variant maps 1:1 to one exchange sub-account; margin modes per S4; transfers/rebalancing between sub-accounts is new work to be specced only after G-D.*
+
+- **F-EXEC (requirements from `studies/notebooks/execution_2026_09/`, 2026-09-12).** The execution layer, when built, uses: **taker entries** (a limit at the last price fills 98–100 % of the time but improves the price by 0.02–0.05 bp — passive entry is worth ~3 bp of fees at near-certain fills, not more); **resting reduce-only take-profit limits** (100 % of historical target touches traded through on 1 m bars); **exchange-resident stop-market orders** instead of the bots' 60 s price polling (zero gap-throughs in 176 historical stops, but a live stop must not depend on a process being up); and a **fills record** — `trade_id, leg, order_type, intended_price, submitted_at, filled_at, fill_price, fee_bp, latency_s` — so live slippage becomes measurable against the constants the paper bots now book. The live quoting probe (E7 in that study's README, ≤ $50, two weeks) is the only way to measure conditional adverse selection and queue position; run it only if maker entries are actually wanted.
 
 ---
 

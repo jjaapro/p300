@@ -132,3 +132,28 @@ def test_funding_veto_z_matches_findings(candles):
     z_breakout = adx_sig._funding_z(candles[: by_dt["2024-11-09"] + 1])
     assert z_breakout == pytest.approx(0.41, abs=0.02)
     assert z_breakout < FUNDING_VETO_Z          # the healthy breakout passes
+
+
+def test_harness_funding_option_charges_settlements(candles, t2_result):
+    """`with_funding=True` (added 2026-09-12) keeps the same trades and lowers
+    the return by the settlement funding the longs paid — the whole
+    live-vs-research gap found by adx_robustness_2026_09. The default stays
+    off so the findings table above still reproduces."""
+    from studies.notebooks.adx_study.harness import run
+
+    assert t2_result["with_funding"] is False
+    m = run(candles, "2018-01-01", entry_gate=_short_filter_e150,
+            exit_mode="adx_or_atr", atr_mult=4.0, with_funding=True)
+    assert m["with_funding"] is True
+    assert m["n"] == t2_result["n"]
+    assert ([t["entry_dt"] for t in m["trades"]]
+            == [t["entry_dt"] for t in t2_result["trades"]])
+    # funding data starts 2019-09: earlier trades are charged nothing
+    assert all(t["funding_pct"] == 0.0 for t in m["trades"] if t["exit_dt"] < "2019-09")
+    longs = [t for t in m["trades"] if t["dir"] == "long" and t["entry_dt"] >= "2019-09"]
+    assert longs
+    assert sum(t["funding_pct"] for t in longs) < 0
+    assert m["funding_pct_sum"] == pytest.approx(sum(t["funding_pct"] for t in m["trades"]))
+    assert m["ret_pct"] < t2_result["ret_pct"]
+    for a, b in zip(m["trades"], t2_result["trades"]):
+        assert a["net_pct"] == pytest.approx(b["net_pct"] + a["funding_pct"])

@@ -1,8 +1,10 @@
 """Standalone runner for S-078 Carry — bot #4 of the extraction plan.
 
 Delta-neutral funding harvest: spot-long + perp-short at equal notional
-while 7d average funding is positive; exit on a 3-day negative streak
-(sleeve side-effect). Market-neutral — diversifies the long-heavy fleet.
+while 7d average funding is positive; exit when the trailing 30-day
+cumulative funding falls below -0.5 % (sleeve side-effect; replaced the
+3-day negative streak on 2026-09-12). Market-neutral — diversifies the
+long-heavy fleet.
 Replaces the stranded legacy CARRY position closed on 2026-07-22.
 
 Sizing is FIXED-NOTIONAL (capital × CARRY_NOTIONAL_X): there is no stop,

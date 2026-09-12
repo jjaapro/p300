@@ -26,9 +26,22 @@ ungated profit factor of 1.00 is the evidence that without it there is no trade
 at all.
 
 ## Exits & sizing
-Stop **−2%**, target **+3%** (1.5 R gross), time stop **48h**. Within a bar the
-stop is checked before the target. Fixed-R **1% of capital** over the 2% stop,
-so notional is 0.5× capital and the 3× cap never binds.
+Two paper variants run in one process on the same signals since 2026-09-12:
+
+- **`bot_squeeze_bull_v1`** (shipped 2026-09-09): stop **−2%**, target **+3%**
+  (1.5 R gross), time stop **48h**. Within a bar the stop is checked before the
+  target. Fixed-R **1% of capital** over the 2% stop, so notional is 0.5×
+  capital and the 3× cap never binds.
+- **`bot_squeeze_bull_nostop_v1`**: the same target and time stop, **no stop**,
+  the same 0.5× notional. The sizing study found the −2% stop sits inside the
+  flush's own noise: without it the replay went from +0.33 R to +0.53 R per
+  fire with a *smaller* mark-to-market drawdown (−3.3% vs −4.4%), at the price
+  of a −4.2 R worst trade instead of −1 R. The two ledgers decide at 20 paired
+  fires (`docs/calibration/squeeze_bull.md`).
+
+Costs booked: 7 bp per round trip, measured on the sleeve's own history (the
+flush keeps falling for a minute after the bar close the bot books, which is
+worth 2.6 bp to a real fill).
 
 ## What "quiet" looks like
 It fires roughly **25 times a year on average and zero times outside a bull

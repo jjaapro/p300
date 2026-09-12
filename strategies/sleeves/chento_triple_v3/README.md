@@ -11,7 +11,7 @@ research-only).
 | Layer | What |
 |---|---|
 | **Trigger** | Triple composite: B1 money-flow CVD divergence ∩ B5 LSR extremes ∩ B7 multi-TF CVD alignment |
-| **Math** | atr5_t6R (5×ATR stop, 6R fixed target), TIF=72h, 18bp RT cost scaled by stop distance |
+| **Math** | atr5_t6R (5×ATR stop, 6R fixed target), TIF=72h, 10bp RT cost scaled by stop distance (measured 2026-09-12; research replays used 18bp) |
 | **Filter 1** | no_tilt — skip if recent loss in this sleeve |
 | **Filter 2** | no_resist_OB_within_2R — skip if fresh opposite-direction Order Block within 2R of entry (5-bar pivot OB) |
 | **Filter 3** | okx_aligned — OKX-Binance perp delta z-score (rolling 7d window) must sign-match trade direction |

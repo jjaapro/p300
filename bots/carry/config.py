@@ -1,6 +1,6 @@
 """Bot-level config for the standalone Carry (S-078) bot.
 
-Strategy parameters (entry threshold, exit streak) live in
+Strategy parameters (entry threshold, exit rule) live in
 strategies/sleeves/carry/config.py. Changes here belong in
 docs/calibration/carry.md per the calibration-log rule.
 """
@@ -13,7 +13,7 @@ CAPITAL_USDT = 10_000.0
 
 # Fixed-notional sizing (delta-neutral: spot-long + perp-short, price P&L
 # ≈ 0, income = funding). Fixed-R doesn't apply — there is no stop; the
-# exit is the 3-day negative-funding streak. Notional = capital × this.
+# exit is the trailing 30-day cumulative-funding rule. Notional = capital × this.
 CARRY_NOTIONAL_X = 1.0
 
 TICK_SECONDS = 60

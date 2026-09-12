@@ -1,9 +1,10 @@
 """
 S-078 Filtered Carry — live paper service (delta-neutral funding harvest).
 
-Strategy (from backtest_tail_harvester.py, mode='filtered'):
+Strategy (from backtest_tail_harvester.py, mode='filtered'; exit rule
+replaced 2026-09-12 per studies/notebooks/carry_exit_rule_2026_09/):
   Entry: 7-day rolling avg of daily BTC funding rate > 0
-  Exit:  3 consecutive days of negative daily funding
+  Exit:  trailing 30-day cumulative daily funding < -0.5 % of notional
   Structure: long BTC spot + short BTC perp (delta-neutral)
   P&L: short perp collects funding; basis ~0 over open period; fees on
        entry + exit
@@ -33,7 +34,8 @@ from strategies.support import db
 log = logging.getLogger("dashboard.carry_service")
 
 from .config import (
-    FR_WINDOW_DAYS, FR_ENTRY_THRESHOLD, EXIT_NEG_DAYS, ENTRY_EXIT_COST_PCT,
+    FR_WINDOW_DAYS, FR_ENTRY_THRESHOLD, EXIT_CUM_DAYS, EXIT_CUM_THRESHOLD_PCT,
+    ENTRY_EXIT_COST_PCT,
 )
 
 
@@ -110,31 +112,31 @@ def _evaluate_today(records: list[dict]) -> dict | None:
       daily_funding_pct: today's daily funding (as % of notional),
       fr_7d_avg_pct: 7-day rolling avg,
       entry_ok: True if avg > threshold,
-      neg_streak_days: consecutive negative-funding days ending today,
-      exit_trigger: True if neg streak >= EXIT_NEG_DAYS,
+      cum_funding_pct: sum of the last EXIT_CUM_DAYS complete daily sums
+                       (% of notional), or None when fewer days are known,
+      exit_trigger: True if cum_funding_pct < EXIT_CUM_THRESHOLD_PCT,
       spot_close, perp_close
     }
-    None if insufficient history.
+    None if insufficient history for the entry average.
+
+    The window is the last EXIT_CUM_DAYS *complete* funding days the loader
+    returned, which is EXIT_CUM_DAYS calendar days unless a day is missing
+    from the table (the study's pandas rolling(30) over a gap-free series).
     """
     if len(records) < FR_WINDOW_DAYS + 1:
         return None
     funding = [r["daily_funding_pct"] for r in records]
     avg = _rolling_avg(funding, FR_WINDOW_DAYS)
     today = records[-1]
-    # Negative streak ending today
-    streak = 0
-    for r in reversed(records):
-        if r["daily_funding_pct"] < 0:
-            streak += 1
-        else:
-            break
+    cum = (sum(funding[-EXIT_CUM_DAYS:]) if len(funding) >= EXIT_CUM_DAYS
+           else None)
     return {
         "date": today["date"],
         "daily_funding_pct": today["daily_funding_pct"],
         "fr_7d_avg_pct": avg[-1],
         "entry_ok": (avg[-1] is not None and avg[-1] > FR_ENTRY_THRESHOLD),
-        "neg_streak_days": streak,
-        "exit_trigger": streak >= EXIT_NEG_DAYS,
+        "cum_funding_pct": cum,
+        "exit_trigger": cum is not None and cum < EXIT_CUM_THRESHOLD_PCT,
         "spot_close": today["spot_close"],
         "perp_close": today["perp_close"],
     }
@@ -164,8 +166,9 @@ def _open_carry_paper(variant: dict, entry_price: float, allocation_pct: float,
                        reason: dict, leverage: float = 1.0) -> str:
     """Open a CARRY paper trade — delegates to strategies.trades.open_paper_trade.
     CARRY is delta-neutral (long-spot + short-perp); the trades.direction
-    column stores 'LONG' as the spot-leg notation. Carry exits when funding
-    flips negative for ``EXIT_NEG_DAYS`` consecutive days, not on a schedule."""
+    column stores 'LONG' as the spot-leg notation. Carry exits when the
+    trailing ``EXIT_CUM_DAYS``-day cumulative funding falls below
+    ``EXIT_CUM_THRESHOLD_PCT``, not on a schedule."""
     from strategies.trades import open_paper_trade
     return open_paper_trade(
         variant=variant, sleeve_name="CARRY",
@@ -201,8 +204,8 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
     """Phase-1 of the two-phase dispatch (P2.4e/f Stage 2).
 
     Side-effect (always run, not subject to reconcile):
-      - Exit sweep: close every open carry trade when the 3-day
-        negative-streak exit signal fires.
+      - Exit sweep: close every open carry trade when the trailing 30-day
+        cumulative-funding exit signal fires.
 
     Returns ``(list[Intent], status_dict)``. Single Intent on entry
     conditions (no open trade, entry_ok, no exit_trigger, idempotency
@@ -218,7 +221,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
                                        sleeve_cfg.get("weight_pct", 0.0)))
     leverage = float(sleeve_cfg.get("_effective_leverage", 1.0))
 
-    records = _load_recent_daily_funding(days=FR_WINDOW_DAYS + EXIT_NEG_DAYS + 7)
+    records = _load_recent_daily_funding(days=EXIT_CUM_DAYS + 7)
     sig = _evaluate_today(records)
     if sig is None:
         return [], {"status": "warmup", "reason": "insufficient funding history"}
@@ -227,16 +230,21 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
     already_acted_today = _carry_action_today(variant["id"], today)
     open_trades = _get_open_carry_trades(variant["id"])
 
-    # Side-effect: exit sweep on 3-day negative-streak.
+    # Side-effect: exit sweep when the trailing cumulative funding has
+    # gone below the threshold.
+    if open_trades and sig["cum_funding_pct"] is None:
+        log.warning(f"[carry {variant['id']}] only {len(records)} complete "
+                    f"funding days loaded, fewer than EXIT_CUM_DAYS="
+                    f"{EXIT_CUM_DAYS}: the exit cannot be evaluated")
     if open_trades and sig["exit_trigger"]:
         exit_price = sig["spot_close"]
+        why = f"cum{EXIT_CUM_DAYS}d={sig['cum_funding_pct']:.3f}%"
         closed_ids = []
         for tr in open_trades:
-            _close_carry_paper(tr["id"], exit_price,
-                                f"neg_streak={sig['neg_streak_days']}d")
+            _close_carry_paper(tr["id"], exit_price, why)
             closed_ids.append(tr["id"])
             log.info(f"[carry {variant['id']}] closed {tr['id']} @ "
-                     f"{exit_price:.2f} (neg_streak={sig['neg_streak_days']}d)")
+                     f"{exit_price:.2f} ({why})")
         return [], {"status": "closed", "trade_ids": closed_ids}
 
     if (not open_trades and sig["entry_ok"]
@@ -268,7 +276,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
                  "date": today,
                  "open_count": len(open_trades),
                  "fr_7d_avg_pct": sig["fr_7d_avg_pct"],
-                 "neg_streak": sig["neg_streak_days"]}
+                 "cum_funding_pct": sig["cum_funding_pct"]}
 
 
 def execute_for_variant(variant: dict, sleeve_cfg: dict, intent) -> dict:

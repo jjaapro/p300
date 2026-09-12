@@ -37,8 +37,11 @@ ATR_PERIOD = 14                  # 14-bar ATR on 15m
 ATR_STOP_MULT = 5.0              # initial stop = entry ± 5×ATR
 TARGET_R = 6.0                   # 6R fixed target — see [[wider-tp-same-stop-is-better]]
 TIF_HOURS = 72                   # 72h hold — see [[tif-72h-optimal]]
-COST_BP_RT = 18.0                # 18bp round-trip, scaled by stop_distance in math
-SLIPPAGE_BP_RT = 0.0             # included in COST_BP_RT
+COST_BP_RT = 10.0                # round trip, scaled by stop_distance in math. MEASURED, not budgeted
+                                 # (execution_2026_09 E6, 2026-09-12): taker round trip on the sleeve's own
+                                 # 2020-2026 fires is 9.6 bp BTC [CI90 8.4, 10.8] and 10.0 bp ETH [8.0, 11.9].
+                                 # Was 18.0 (the June research convention) until 2026-09-12.
+SLIPPAGE_BP_RT = 0.0             # spread (< 1 bp) and decision-to-fill drift are inside the measured figure
 
 # ─── B1 money-flow divergence ──────────────────────────────────────────────
 B1_CVD_WINDOW_BARS = 4 * 24 * 30   # 30d at 15m

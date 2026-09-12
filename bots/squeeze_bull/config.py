@@ -6,11 +6,27 @@ docs/calibration/squeeze_bull.md per the calibration-log rule.
 """
 from pathlib import Path
 
-VARIANT_ID = "bot_squeeze_bull_v1"
+from strategies.sleeves.squeeze_bull.config import STOP_PCT
+
 BOT_NAME = "squeeze_bull"
-SHORT_NAME = "Bot: Squeeze Bull (OI flush)"
 
 CAPITAL_USDT = 10_000.0
+
+# Two paper variants in one process, on the SAME signals; only the exit
+# differs (docs/calibration/squeeze_bull.md, 2026-09-12):
+#   bot_squeeze_bull_v1         -2% stop, +3% target, 48h   (shipped 2026-09-09)
+#   bot_squeeze_bull_nostop_v1  no stop,  +3% target, 48h   (added 2026-09-12,
+#                               sizing_style_2026_09 policy P1b)
+# Each variant keeps its own ledger, single-open guard and re-cut record.
+VARIANTS = [
+    {"id": "bot_squeeze_bull_v1",
+     "short_name": "Bot: Squeeze Bull (OI flush)", "use_stop": True},
+    {"id": "bot_squeeze_bull_nostop_v1",
+     "short_name": "Bot: Squeeze Bull, no stop (OI flush)", "use_stop": False},
+]
+# The incumbent, for the dashboard registry and anything single-variant.
+VARIANT_ID = VARIANTS[0]["id"]
+SHORT_NAME = VARIANTS[0]["short_name"]
 
 # Fixed-R sizing. The sleeve's stop is a flat 2% below entry, so 1% risk maps
 # to a 0.5x notional and the 3x cap never binds — unlike short_squeeze, whose
@@ -18,6 +34,12 @@ CAPITAL_USDT = 10_000.0
 # structural guard, not as a working dial.
 RISK_PCT = 1.0
 NOTIONAL_MAX_X = 3.0
+
+# The no-stop variant is sized as if the 2% stop existed — the same 1% / 2%
+# = 0.5x capital — so both variants hold the same notional on every fire and
+# their ledgers differ only by the exit. Its R is measured against the same
+# 2% reference distance (`_reference_stop_price` in the trade notes).
+NOSTOP_NOTIONAL_X = RISK_PCT / 100.0 / STOP_PCT
 
 # 60s ticks: the sleeve prices exits off the CURRENT price rather than by
 # walking bars, so tick cadence bounds exit fidelity. Entry self-gates to one

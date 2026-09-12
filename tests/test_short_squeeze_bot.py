@@ -172,3 +172,134 @@ def test_diag_counters_flush_on_day_rollover(tmp_path, monkeypatch):
     assert rec["utc_date"] == "2026-07-21"
     assert rec["counters"] == {"no_sweep": 2, "macro_not_short": 1}
     assert ssq._diag_state["counters"] == {"cooldown": 1}
+
+
+# ─── no-stop paper variant (2026-09-12, sizing_style_2026_09 policy P1) ────
+
+def _nostop_intent(entry=100_000.0, stop=99_900.0):
+    import dataclasses
+    base = _mk_intent(entry=entry, stop=stop)
+    reason = {**base.reason, "variant_id": botcfg.VARIANTS[1]["id"],
+              "exit_policy": "time_only",
+              "_stop_price": None, "_target_price": None,
+              "_reference_stop_price": stop,
+              "_reference_target_price": base.reason["_target_price"]}
+    return dataclasses.replace(base, reason=reason)
+
+
+def test_variants_are_the_incumbent_plus_a_no_stop_twin():
+    assert [v["id"] for v in botcfg.VARIANTS] == ["bot_short_squeeze_v1",
+                                                  "bot_short_squeeze_nostop_v1"]
+    assert [v["use_stop"] for v in botcfg.VARIANTS] == [True, False]
+    assert botcfg.VARIANT_ID == "bot_short_squeeze_v1"
+    assert botcfg.NOSTOP_NOTIONAL_X == 1.0
+
+
+def test_no_stop_sizing_is_a_fixed_one_x_whatever_the_stop_width():
+    """The stop variant sizes this 0.1% stop at the 3x cap; the no-stop
+    variant has no stop to size from and takes 1x capital."""
+    resized, info = runner.size_intent(_nostop_intent(), 10_000.0, use_stop=False)
+    assert info["notional"] == pytest.approx(10_000.0)
+    assert info["at_cap"] is False
+    assert info["stop_pct"] == pytest.approx(0.001)
+    assert resized.leverage == pytest.approx(1.0)
+    assert resized.allocation_pct == 100.0
+
+
+def test_no_stop_execute_then_sweep_ignores_stop_and_target_and_closes_on_time(tmp_db):
+    from strategies.sleeves.short_squeeze import signal as ssq
+
+    v = botcfg.VARIANTS[1]
+    variant = botlib.ensure_bot_variant(
+        v["id"], short_name="t", capital_usdt=10_000.0, bot_name=botcfg.BOT_NAME)
+    resized, info = runner.size_intent(_nostop_intent(), 10_000.0, use_stop=False)
+    res = ssq.execute_for_variant(variant, {"use_stop": False}, resized)
+    tid = res["trade_id"]
+    assert res["status"] == "opened" and res["stop_price"] is None
+
+    con = sqlite3.connect(str(tmp_db))
+    size_usdt, notes = con.execute(
+        "SELECT size_usdt, notes FROM trades WHERE id=?", (tid,)).fetchone()
+    con.close()
+    blob = json.loads(notes)
+    assert size_usdt == pytest.approx(10_000.0)
+    assert blob["_stop_price"] is None and blob["_target_price"] is None
+    assert blob["_reference_stop_price"] == 99_900.0
+
+    # far through the reference stop, then far through the reference target:
+    # nothing closes
+    _seed_price(tmp_db, T0 + timedelta(minutes=4), 99_000.0)
+    clock.set_simulated_now(T0 + timedelta(minutes=5))
+    assert ssq._sweep_open_positions(variant["id"]) == 0
+    _seed_price(tmp_db, T0 + timedelta(minutes=9), 101_000.0)
+    clock.set_simulated_now(T0 + timedelta(minutes=10))
+    assert ssq._sweep_open_positions(variant["id"]) == 0
+
+    # the 6h time stop does
+    _seed_price(tmp_db, T0 + timedelta(hours=6), 100_500.0)
+    clock.set_simulated_now(T0 + timedelta(hours=6, minutes=1))
+    assert ssq._sweep_open_positions(variant["id"]) == 1
+    con = sqlite3.connect(str(tmp_db))
+    status, exit_price = con.execute(
+        "SELECT status, exit_price FROM trades WHERE id=?", (tid,)).fetchone()
+    con.close()
+    assert status == "closed"
+    assert exit_price == pytest.approx(100_500.0)
+
+
+def test_decide_honours_use_stop_and_count_diag(tmp_db, monkeypatch):
+    """The sleeve-side flags: `use_stop=False` blanks the stop and target in
+    the intent (keeping the reference levels); `count_diag=False` skips the
+    per-day gate counters so a two-variant bot counts each bar once."""
+    from strategies.sleeves.short_squeeze import signal as ssq
+
+    bar = {"ts": int((T0 - timedelta(minutes=15)).timestamp()),
+           "open": 100_050.0, "high": 100_100.0, "low": 99_900.0, "close": 100_000.0,
+           "perp_cvd": -5.0, "divergence": 9.0}
+    diag = {"status": "FIRE", "bar": bar, "perp_cvd_pct": 0.05,
+            "divergence_pct": 0.9, "close_in_range": 0.5, "prior_low": 99_950.0}
+    counted = []
+    monkeypatch.setattr(ssq, "_sweep_open_positions", lambda vid: 0)
+    monkeypatch.setattr(ssq, "_get_open_short_squeeze_trades", lambda vid: [])
+    monkeypatch.setattr(ssq, "_evaluate_trigger", lambda vid, now: (True, diag))
+    monkeypatch.setattr(ssq, "_diag_count", lambda status, now: counted.append(status))
+    variant = {"id": "v", "capital_usdt": 10_000.0}
+
+    intents, status = ssq.try_decide_for_variant(
+        variant, {"weight_pct": 100.0, "use_stop": False, "count_diag": False})
+    assert status["status"] == "decided" and len(intents) == 1
+    r = intents[0].reason
+    assert r["exit_policy"] == "time_only"
+    assert r["_stop_price"] is None and r["_target_price"] is None
+    assert r["_reference_stop_price"] == pytest.approx(99_900.0 * 0.999)
+    assert r["_reference_target_price"] == pytest.approx(
+        100_000.0 + 3.0 * (100_000.0 - 99_900.0 * 0.999))
+    assert counted == []
+
+    intents, status = ssq.try_decide_for_variant(variant, {"weight_pct": 100.0})
+    r = intents[0].reason
+    assert r["exit_policy"] == "stop_target_time"
+    assert r["_stop_price"] == pytest.approx(r["_reference_stop_price"])
+    assert r["_target_price"] == pytest.approx(r["_reference_target_price"])
+    assert counted == ["FIRE"]
+
+
+def test_tick_all_runs_both_variants_and_counts_diag_once(tmp_db, monkeypatch):
+    calls = []
+
+    def fake_decide(v, cfg):
+        calls.append((v["id"], cfg.get("use_stop", True), cfg.get("count_diag", True)))
+        return [], {"status": "no_sweep"}
+    monkeypatch.setattr(
+        "strategies.sleeves.short_squeeze.signal.try_decide_for_variant", fake_decide)
+    monkeypatch.setattr(botlib, "stale_tables", lambda tables=None: {})
+    rows = [botlib.ensure_bot_variant(v["id"], short_name="t", capital_usdt=10_000.0,
+                                      bot_name=botcfg.BOT_NAME) for v in botcfg.VARIANTS]
+    variants = [{"row": r, "use_stop": v["use_stop"]}
+                for r, v in zip(rows, botcfg.VARIANTS)]
+    out = runner.tick_all(variants, {"weight_pct": 100.0})
+    assert calls == [("bot_short_squeeze_v1", True, True),
+                     ("bot_short_squeeze_nostop_v1", False, False)]
+    assert out["status"] == "no_sweep" and out["hb_status"] == "ok"
+    assert out["evaluated"] and not out["signal"]
+    assert out["open_trades"] == 0

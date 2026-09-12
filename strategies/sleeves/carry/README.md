@@ -8,8 +8,10 @@ is dominated by funding accrual, not price.
 
 - **Entry**: 7-day rolling average daily BTC funding rate > 0 (see
   `FR_ENTRY_THRESHOLD` in [config.py](config.py)).
-- **Exit**: 3 consecutive days of negative daily funding
-  (`EXIT_NEG_DAYS`).
+- **Exit**: trailing 30-day cumulative daily funding below −0.5 % of
+  notional (`EXIT_CUM_DAYS`, `EXIT_CUM_THRESHOLD_PCT`; since 2026-09-12,
+  replacing the 3-consecutive-negative-days streak — see
+  `docs/calibration/carry.md`).
 - No regime filter — funding regime IS the signal.
 
 ## Structure

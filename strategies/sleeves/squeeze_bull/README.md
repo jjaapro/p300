@@ -2,7 +2,9 @@
 
 Long BTC perp when open interest falls >= 2% in 4 hours while price falls
 >= 0.5%, and the causal 30-day return is above +10%. Stop -2%, target +3%,
-time stop 48h.
+time stop 48h — and since 2026-09-12 a second paper variant on the same
+signals without the stop (`sleeve_cfg["use_stop"] = False`; see
+`docs/calibration/squeeze_bull.md`).
 
 **Mechanism.** A 2% fall in open interest inside four hours is forced closure,
 not repositioning: liquidation engines closing longs. Forced supply is

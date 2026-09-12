@@ -32,7 +32,7 @@ log = logging.getLogger("dashboard.adx_service")
 
 from .config import (
     ADX_PERIOD, ADX_LOW_THRESH, ADX_HIGH_THRESH,
-    EMA_LEN, TREND_EMA_LEN, WARMUP_BARS, COST_BP_RT,
+    EMA_LEN, TREND_EMA_LEN, WARMUP_BARS, COST_BP_RT, SLIPPAGE_BP_RT,
     SYMMETRIC_TREND_FILTER, ATR_TRAIL_MULT, ATR_TRAIL_PERIOD,
     FUNDING_VETO_Z, FUNDING_VETO_DAYS,
 )
@@ -374,7 +374,8 @@ def _close_adx_paper(trade_id: str, exit_price: float, reason: str, *,
     """Close with sleeve costs; central accounting resolves any earlier stop."""
     from strategies.trades import close_perp_trade
     close_perp_trade(trade_id, exit_price, reason, sleeve_name="ADX",
-                     cost_bp_rt=COST_BP_RT, apply_funding=True, exit_dt=exit_dt)
+                     cost_bp_rt=COST_BP_RT, slippage_bp_rt=SLIPPAGE_BP_RT,
+                     apply_funding=True, exit_dt=exit_dt)
 
 
 # ─── Public tick ─────────────────────────────────────────────────────────────

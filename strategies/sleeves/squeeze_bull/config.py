@@ -36,8 +36,19 @@ TIF_HOURS = 48                 # time stop
 # long). In the full sample no bar ever touched both first, so this is
 # defensive rather than load-bearing.
 
-# ── Costs (research convention; the bot books production costs) ──────────
-COST_BP_RT = 18.0              # what the study charged, for reference only
+# ── Costs ────────────────────────────────────────────────────────────────
+# Research convention: what the June study charged. Used only by
+# replay_bracket and the parity test, so the research ledger reproduces.
+COST_BP_RT = 18.0
+# What the paper bot books on close (strategies.trades.close_perp_trade).
+# MEASURED on the sleeve's own 122 historical fires over 1 m bars
+# (execution_2026_09 E6, 2026-09-12): taker round trip 6.7 bp
+# [CI90 4.5, 8.8] = 10 bp of fees and spread less a 2.6 bp favourable
+# decision-to-fill drift (the flush keeps falling for a minute after the
+# hourly close the bot books as its entry). Fee-only, drift ignored, it is
+# 8 bp. Until 2026-09-12 the bot booked the 15 bp default (10 fee + 5 slip).
+PAPER_COST_BP_RT = 7.0
+PAPER_SLIPPAGE_BP_RT = 0.0
 
 ASSET = "BTC"
 DIRECTION = "LONG"

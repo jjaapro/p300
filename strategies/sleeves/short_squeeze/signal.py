@@ -16,6 +16,15 @@ Caches (module-level, refreshed at first call after restart):
     divergence values. Refreshed once per UTC day on first 15m tick.
   - Asia macro context: per UTC date, computed at first call after
     asia ends (07:00 UTC).
+
+Exit policy (2026-09-12): `sleeve_cfg["use_stop"]` (default True) is the one
+thing the bot's two paper variants differ on. The shipped variant keeps the
+swept-low stop and the 3R target; the no-stop variant exits on the 6h time
+stop only (studies/notebooks/sizing_style_2026_09/, policy P1). The stop and
+target distances stay in the trade notes as `_reference_stop_price` /
+`_reference_target_price` for both, so R accounting is identical.
+`sleeve_cfg["count_diag"]` (default True) lets the bot count the per-day
+gate diagnostics once per tick rather than once per variant.
 """
 from __future__ import annotations
 
@@ -439,6 +448,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
     """
     variant_id = variant["id"]
     swept = _sweep_open_positions(variant_id)
+    count_diag = bool(sleeve_cfg.get("count_diag", True))
 
     now = clock.now_utc()
     if not ssq_math.is_15m_boundary(now):
@@ -446,11 +456,13 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
 
     # Already-open guard: don't stack triggers on the same variant.
     if _get_open_short_squeeze_trades(variant_id):
-        _diag_count("position_open", now)
+        if count_diag:
+            _diag_count("position_open", now)
         return [], {"status": "position_open", "swept": swept}
 
     fires, diag = _evaluate_trigger(variant_id, now)
-    _diag_count(diag.get("status", "?"), now)
+    if count_diag:
+        _diag_count(diag.get("status", "?"), now)
     if not fires:
         return [], {**diag, "swept": swept}
 
@@ -462,6 +474,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
         return [], {"status": "invalid_risk", "swept": swept}
     target_price = entry_price + TP_R * risk
     time_stop_dt = now + timedelta(hours=TIME_STOP_HOURS)
+    use_stop = bool(sleeve_cfg.get("use_stop", True))
 
     alloc_pct = float(sleeve_cfg.get("_effective_weight_pct",
                                        sleeve_cfg.get("weight_pct", 0.0)))
@@ -477,9 +490,12 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
         "divergence": bar["divergence"], "divergence_pct": diag["divergence_pct"],
         "close_in_range": diag["close_in_range"],
         "prior_low_24x15m": diag["prior_low"],
-        # Sweep needs these to evaluate exit conditions.
-        "_stop_price": stop_price,
-        "_target_price": target_price,
+        "exit_policy": "stop_target_time" if use_stop else "time_only",
+        # Sweep needs these to evaluate exit conditions; None = no such exit.
+        "_stop_price": stop_price if use_stop else None,
+        "_target_price": target_price if use_stop else None,
+        "_reference_stop_price": stop_price,
+        "_reference_target_price": target_price,
         "_time_stop_iso": time_stop_dt.isoformat(),
         "_entry_price": entry_price,
     }
@@ -516,9 +532,13 @@ def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Intent) -> dict
                          if reason.get("bar_ts") is not None else None),
     )
     _last_trigger_ts[variant["id"]] = clock.now_utc()
+
+    def _px(key: str) -> str:
+        v = reason.get(key)
+        return f"{v:.2f}" if v is not None else "none"
     log.info(f"[short_squeeze {variant['id']}] opened {tid} BTC LONG @ "
-             f"{entry_price:.2f}  stop={reason['_stop_price']:.2f}  "
-             f"target={reason['_target_price']:.2f}  "
+             f"{entry_price:.2f}  stop={_px('_stop_price')}  "
+             f"target={_px('_target_price')}  "
              f"alloc={intent.allocation_pct}%  k={intent.leverage}x")
     return {"status": "opened", "trade_id": tid, "entry_price": entry_price,
             "stop_price": reason["_stop_price"],

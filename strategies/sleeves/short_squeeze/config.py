@@ -67,7 +67,11 @@ TIME_STOP_HOURS = 6
 # 5 bp entry + 5 bp exit on BTC perps (taker).
 COST_BP_RT = 10.0
 
-# Slippage budget. Higher than FOMC's 10 bp because high-leverage scalp
-# entries at sweep lows tend to fill in fast tape; bumping to 15 bp to be
-# conservative for the simulator.
-SLIPPAGE_BP_RT = 15.0
+# Slippage: MEASURED, not budgeted (execution_2026_09 E1/E4/E6, 2026-09-12).
+# On the sleeve's own 71 historical fires over 1 m bars: half-spread < 1 bp
+# per leg, decision-to-fill drift -0.3 bp, zero stop gap-throughs in 39
+# stops, all-in taker round trip 9.3 bp [CI90 7.0, 11.6] — the 10 bp fee
+# line already covers it. The 15 bp budget used until 2026-09-12 made the
+# paper record negative by construction: 25 bp was 0.80 R per trade on a
+# +0.48 R gross edge.
+SLIPPAGE_BP_RT = 0.0

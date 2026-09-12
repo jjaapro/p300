@@ -2,7 +2,9 @@
 
 Long BTC perp after a forced-deleveraging flush, bull regime only.
 Sleeve `strategies/sleeves/squeeze_bull/`, bot `bots/squeeze_bull/`,
-variant `bot_squeeze_bull_v1`, $10,000 paper.
+two paper variants of $10,000 each in one process since 2026-09-12:
+`bot_squeeze_bull_v1` (the shipped −2 % stop) and
+`bot_squeeze_bull_nostop_v1` (no stop; see the 2026-09-12 section).
 
 ## Signal (frozen; changing any of it is a new pre-registered study)
 
@@ -101,8 +103,62 @@ The funding-plus-CVD leg of the June work is deliberately out. It has two
 out-of-sample fires at mean −0.224 R and it *lowers* combined MAR from 1.85 to
 1.60. Revisit only at ≥ 10 of its own OOS fires.
 
+## 2026-09-12 — measured cost, and a second paper variant without the stop
+
+**Cost.** The bot books **7 bp** per round trip (`PAPER_COST_BP_RT = 7.0`,
+`PAPER_SLIPPAGE_BP_RT = 0.0`) instead of the 15 bp default it booked from
+2026-09-09 to 2026-09-12. The sleeve's `COST_BP_RT = 18.0` is the research
+replay convention and is unchanged, so the parity test still reproduces the
+June ledger. Execution study `studies/notebooks/execution_2026_09/` (E6, the
+sleeve's 122 historical fires on 1 m bars): all-in taker round trip 6.7 bp,
+CI90 [4.5, 8.8] = 10 bp of fees and spread less a 2.6 bp *favourable*
+decision-to-fill drift (the flush keeps falling for a minute after the
+hourly close the bot books as its entry). Fee-only, drift ignored: 8 bp.
+The pre-registered change rule (measured differs by > 3 bp and the CI
+excludes the coded value) passed. Trades closed before 2026-09-12 carry
+15 bp; treat it as a methodology change.
+
+**Second variant `bot_squeeze_bull_nostop_v1`.** Same process, same signals,
+same 0.5× notional (sized as if the 2 % stop existed); exits on the +3 %
+target or the 48 h time stop only — no stop. Sizing study
+`studies/notebooks/sizing_style_2026_09/` (S1 policy P1b, 122 fires
+2022-01 → 2026-06 on 1 m bars, measured cost, shipped sizing):
+
+| policy | mean R | win | worst trade | MTM maxDD | MAR | halves |
+|---|---|---|---|---|---|---|
+| stop −2 % (shipped) | +0.334 | 58 % | −1.00 R | −4.4 % | 1.86 | +0.256 / +0.412 |
+| **no stop, target + 48 h (new variant)** | **+0.526** | 69 % | −4.17 R | **−3.3 %** | **4.09** | +0.544 / +0.507 |
+| no stop, 48 h only | +0.566 | 65 % | −4.17 R | −4.0 % | 3.69 | +0.556 / +0.575 |
+
+Every pre-registered clause passed (MAR and expectancy better in both
+halves, drawdown not worse by > 5 pp, zero liquidation episodes with a 2×
+safety factor on the worst move). The target-keeping form was chosen for
+its lower drawdown and higher MAR. R for both variants is measured against
+the 2 % reference distance (`_reference_stop_price` in the trade notes), so
+the two ledgers compare directly. Each variant applies its own single-open
+guard, so the no-stop variant, which holds longer, will skip some fires the
+stop variant takes; the replay in the re-cut below covers the union.
+
+**Pre-registered re-cut for the pair (written 2026-09-12, before any fire):**
+
+- The incumbent's re-cut points above (n = 20 / 30) are unchanged and apply
+  to it alone.
+- At **n = 20 fires taken by both variants on the same bar**: replay both
+  policies over the union of live fires with the sleeve's own walk. DISABLE
+  the no-stop variant if its live mean R ≤ 0, or its paired mean R is more
+  than 0.10 R below the stop variant's, or any single live trade prints
+  below −6 R (the replay's worst is −4.17 R). Otherwise CONTINUE.
+- At **n = 30**: the same, plus a deflated Sharpe ≥ 0.5 at a trial count of
+  at least 30. Make the no-stop variant the fleet default (retire the stop
+  variant) only if its paired mean R is ≥ the stop variant's + 0.10 R AND
+  its MTM drawdown is not worse by > 5 pp.
+- Any time: DISABLE a variant whose live record diverges from the sleeve's
+  own replay of the same fires by > 0.05 R on any trade. Disable via
+  `enabled = 0`; do not edit thresholds.
+
 ## Log
 
 | date | change | why |
 |---|---|---|
+| 2026-09-12 | Booked cost 15 → 7 bp (`PAPER_COST_BP_RT`); second paper variant `bot_squeeze_bull_nostop_v1` (no stop, +3 % target, 48 h, 0.5× fixed notional) in the same process; re-cut rule for the pair fixed above | `execution_2026_09` E6 (measured 6.7 bp [4.5, 8.8]); `sizing_style_2026_09` S1/S3 (BUILD-CANDIDATE on every pre-registered clause). User go-ahead 2026-09-12. |
 | 2026-09-09 | Sleeve + bot created; backward-only regime gate; OI-flush leg only; fixed-R 1% with a 3× cap; re-cut points above fixed in advance | User authorised paper deployment after `squeeze_bull_revalidation` returned BUILD. Deployed to accrue out-of-sample fires, with the statistical caveats above understood. |

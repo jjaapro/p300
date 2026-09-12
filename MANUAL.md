@@ -161,9 +161,9 @@ Execute or close per the rules.
 
 1. **Record fills in Sheet 6.**
 2. **Update Sheet 4 (Sleeve State)** for any opens/closes today.
-3. **Check daily-cadence sleeves' exit signals** (ADX < 20, CARRY 3-day
-   neg streak, CPR target/stop, EMA cross on weekly close if it's a
-   week-end).
+3. **Check daily-cadence sleeves' exit signals** (ADX < 20, CARRY 30-day
+   cumulative funding < −0.5 %, CPR target/stop, EMA cross on weekly close
+   if it's a week-end).
 4. **Plan tomorrow's intraday alarms.**
 
 ### Weekly (~30 min, Sunday)
@@ -440,7 +440,8 @@ Inputs:
   7-day rolling avg of daily funding
 
 Entry: 7d avg > 0
-Exit: 3 consecutive days of negative daily funding
+Exit: trailing 30-day cumulative daily funding < -0.5 % of notional
+      (since 2026-09-12; was 3 consecutive negative days)
 
 Structure: long BTC spot + short BTC perp (delta-neutral).
 P&L: short perp earns funding when rate > 0.

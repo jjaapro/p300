@@ -27,6 +27,13 @@ Tick model:
 Look-ahead: the regime uses `REGIME_SHIFT_DAYS = 1`, so a fire reads a daily
 close at least three hours old. The June construction read the current day's
 close and is not implementable; see config.py.
+
+Exit policy (2026-09-12): `sleeve_cfg["use_stop"]` (default True) is the one
+thing the bot's two paper variants differ on. The shipped variant keeps the
+-2% stop; the no-stop variant exits on the +3% target or the 48h time stop
+only (studies/notebooks/sizing_style_2026_09/, policy P1b). The 2% distance
+stays in the trade notes as `_reference_stop_price` for both, so sizing and
+R accounting are identical and only the exit differs.
 """
 from __future__ import annotations
 
@@ -39,7 +46,9 @@ from strategies.support import clock, db
 from strategies.support.dispatch import Intent
 
 from . import math as sb_math
-from .config import ASSET, SLEEVE_NAME, TIF_HOURS
+from .config import (
+    ASSET, PAPER_COST_BP_RT, PAPER_SLIPPAGE_BP_RT, SLEEVE_NAME, TIF_HOURS,
+)
 
 log = logging.getLogger("p300.squeeze_bull")
 
@@ -93,6 +102,8 @@ def _daily_closes(bars: list[dict]) -> dict:
 def _close_paper(trade_id: str, exit_price: float, reason: str) -> None:
     from strategies.trades import close_perp_trade
     close_perp_trade(trade_id, exit_price, reason, sleeve_name=SLEEVE_NAME,
+                     cost_bp_rt=PAPER_COST_BP_RT,
+                     slippage_bp_rt=PAPER_SLIPPAGE_BP_RT,
                      apply_funding=True)
 
 
@@ -227,6 +238,7 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
         return [], {"status": "invalid_risk", "swept": swept}
     time_stop_dt = datetime.fromtimestamp(diag["bar_ts"], tz=timezone.utc) + \
         timedelta(hours=TIF_HOURS)
+    use_stop = bool(sleeve_cfg.get("use_stop", True))
 
     reason = {
         "trigger": "squeeze_bull_oi_flush",
@@ -238,7 +250,9 @@ def try_decide_for_variant(variant: dict, sleeve_cfg: dict):
         "px_chg_4h": diag["px_chg_4h"],
         "ret_30d_backonly": diag["ret_30d_backonly"],
         "regime": diag["regime"],
-        "_stop_price": stop,
+        "exit_policy": "stop_target_time" if use_stop else "target_time",
+        "_stop_price": stop if use_stop else None,
+        "_reference_stop_price": stop,
         "_target_price": target,
         "_time_stop_iso": time_stop_dt.isoformat(),
         "_entry_price": entry_price,
@@ -271,8 +285,10 @@ def execute_for_variant(variant: dict, sleeve_cfg: dict, intent: Intent) -> dict
         regime_value=reason.get("regime", "bull_30d"),
         signal_time_iso=str(reason.get("bar_ts")),
     )
+    stop_txt = (f"{reason['_stop_price']:.2f}" if reason.get("_stop_price") is not None
+                else "none")
     log.info(f"[squeeze_bull {variant['id']}] opened {tid} BTC LONG @ "
-             f"{entry_price:.2f}  stop={reason['_stop_price']:.2f}  "
+             f"{entry_price:.2f}  stop={stop_txt}  "
              f"target={reason['_target_price']:.2f}  "
              f"alloc={intent.allocation_pct}%  k={intent.leverage}x")
     return {"status": "opened", "trade_id": tid, "entry_price": entry_price,

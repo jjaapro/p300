@@ -5,13 +5,16 @@ of each change. Update this file in the same commit as any config/sizing
 change (definition-of-done rule from the pool plan's A4, carried into the
 bot-extraction plan).
 
-## Current state (2026-07-21)
+## Current state (2026-09-12)
 
 **Strategy params** (`strategies/sleeves/chento_triple_v3/config.py`) —
-unchanged from the 2026-06-05 calibration: 5×ATR(14) stop, 6R target, 72h
-TIF, B1-anchored trigger (`b1_now & b5_w & b7_w`, 24h window), 4 filters ON
-(no_tilt, no_resist_OB_2R, okx_aligned, skip_up_30d_shorts),
+signal unchanged from the 2026-06-05 calibration: 5×ATR(14) stop, 6R target,
+72h TIF, B1-anchored trigger (`b1_now & b5_w & b7_w`, 24h window), 4 filters
+ON (no_tilt, no_resist_OB_2R, okx_aligned, skip_up_30d_shorts),
 LADDER_ENABLED=False (P1 backward-only verdict), 6h cooldown.
+**Cost `COST_BP_RT` 10 bp since 2026-09-12** (was 18, the June research
+convention): measured on the sleeve's own fires, see the log row. Both the
+BTC and ETH legs share the constant.
 
 **Bot-level** (`bots/chento_v3/config.py`, standalone bot since 2026-07-21):
 - Variant `bot_chento_v3_v1`, capital $10,000 paper.
@@ -38,6 +41,7 @@ future replay-equivalence gate.
 
 | Date | Change | Why / provenance |
 |---|---|---|
+| 2026-09-12 | `COST_BP_RT` 18 → 10 bp (`SLIPPAGE_BP_RT` stays 0) | `studies/notebooks/execution_2026_09/` E6: measured taker round trip on the sleeve's own 2020–2026 fires 9.6 bp BTC [CI90 8.4, 10.8], 10.0 bp ETH [8.0, 11.9]; half-spread < 1 bp, drift −0.5 / −0.2 bp, zero stop gap-throughs in 54 / 33 stops; the pre-registered change rule (> 3 bp and CI excludes the coded value) passed. Net expectancy on the same fires +0.685 → +0.739 R BTC, +0.563 → +0.605 R ETH. Trades closed before this date carry 18 bp, and the 2026-07-22 replay baseline (+$1,043.37) was booked at 18 bp — any later replay-equivalence gate must re-cost. User go-ahead 2026-09-12. |
 | 2026-07-22 | **P0 live boundary-eval fix**: live entry path anchors on wall-clock 15m boundaries, evaluates the JUST-CLOSED bar with final values (intraday cache refresh; forming bar never evaluated); `_just_closed_15m_ts` → last fully-closed bar (walker partial-bar protection). Replay path untouched (`clock.is_simulated()` branch). | Day-1 telemetry: 850/850 live evals `boundary_skipped` — entry path was dead (2nd live lockout after OKX). Gate: replay entries 8/8 byte-identical. |
 | 2026-07-21 | B5 `compute_lsr_extremes` min_periods `max(8, w//4)` → `w//4` | Byte-equivalence violation vs `validation_B5_lsr_extremes` caught by new `tests/test_chento_parity.py` (NaN-mask diff in warmup rows 7-8; zero live impact). Research semantics are the validated ones. |
 | 2026-07-21 | Extracted to standalone bot (`bots/chento_v3/`), fixed-R 2% sizing, diag on | Bot-extraction plan M1. Previous life inside P-300: **zero trades ever — OKX gate was stale-locked since 2026-05-27** (okx_perp_1h had no live writer). Feed now refreshes OKX hourly; runner refuses stale inputs loudly. |

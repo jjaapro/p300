@@ -139,12 +139,23 @@ def run(candles: list[dict], start_date: str = "2018-01-01", *,
         atr_period: int = 14,
         rearm_thresh: float | None = None,  # if set, was_low re-arms on adx<this (default = ADX_LOW)
         short_needs_deep: bool = False,     # if True, SHORT entries still require a deep (<ADX_LOW) arm
+        with_funding: bool = False,         # charge Binance settlement funding per trade (see below)
         verbose: bool = False) -> dict:
     """Faithful S-003 walk-forward with pluggable direction / gate / exit.
 
     Baseline (defaults) == live services/adx_service semantics:
       direction='ema50', trend_ema_len=150 (asymmetric LONG-only), exit='adx',
       sl_pct=10, allow_short=True.
+
+    with_funding=True charges each trade the BTCUSDT perp settlement funding
+    over (entry-day close, exit-day close] from cd_funding_rate, signed for
+    direction (longs pay positive funding). Off by default so the published
+    study tables reproduce, but ANY comparison with the live sleeve must
+    charge it: studies/notebooks/adx_robustness_2026_09/ found funding to
+    be the whole live-vs-research gap (-7 pp CAGR, 24.7 %/yr of long
+    exposure). An intrabar stop is charged through its day's close, at most
+    three settlements too many. Rows carry `funding_pct` and the metrics
+    `funding_pct_sum` / `with_funding`.
 
     ctx passed to entry_gate has: i, dt, close, adx, pdi, mdi, ema50,
     trend_ema, new_dir, candles, atr.
@@ -180,9 +191,11 @@ def run(candles: list[dict], start_date: str = "2018-01-01", *,
         nonlocal pos, trail
         ep = pos["entry_price"]
         g = (px-ep)/ep*100 if pos["dir"] == "long" else (ep-px)/ep*100
-        net = g - COST_BP_RT/100.0
+        fund = funding_pct(pos["entry_dt"], dt, pos["dir"]) if with_funding else 0.0
+        net = g - COST_BP_RT/100.0 + fund
         trades.append({**pos, "exit_dt": dt, "exit_price": px,
-                       "gross_pct": g, "net_pct": net, "reason": reason})
+                       "gross_pct": g, "funding_pct": fund, "net_pct": net,
+                       "reason": reason})
         pos = None
         trail = None
 
@@ -265,7 +278,27 @@ def run(candles: list[dict], start_date: str = "2018-01-01", *,
         close_pos(last["dt"]+" (open)", last["close"], "open")
         trades[-1]["still_open"] = True
 
-    return _metrics(trades, candles, start_date)
+    m = _metrics(trades, candles, start_date)
+    m["with_funding"] = with_funding
+    m["funding_pct_sum"] = float(sum(t.get("funding_pct", 0.0) for t in trades))
+    return m
+
+
+def funding_pct(entry_dt: str, exit_dt: str, direction: str) -> float:
+    """Signed settlement funding (% of notional) for a position entered at
+    the close of UTC day `entry_dt` and exited at the close of `exit_dt`
+    (ISO day strings; a trailing " (open)" marker is ignored). Reads
+    cd_funding_rate through strategies.support.funding.accrued_pct, the
+    production accessor, so the harness and the live close agree by
+    construction."""
+    from datetime import timedelta
+    from strategies.support import funding as _funding
+
+    def _close_of(d: str) -> datetime:
+        return (datetime.fromisoformat(d[:10]).replace(tzinfo=timezone.utc)
+                + timedelta(days=1))
+    return _funding.accrued_pct("BTC", _close_of(entry_dt), _close_of(exit_dt),
+                                direction.upper())
 
 
 def _metrics(trades, candles, start_date):
@@ -310,7 +343,8 @@ def fmt(m, label=""):
     return (f"{label:28} n={m['n']:>3}  WR={m['wr']:4.0f}%  "
             f"PF={m['pf']:4.2f}  ret={m['ret_pct']:+8.0f}%  "
             f"CAGR={m['cagr']:+5.1f}%  maxDD={m['max_dd']:6.1f}%  "
-            f"MAR={m['mar']:4.2f}  Sh={m['sharpe']:4.2f}")
+            f"MAR={m['mar']:4.2f}  Sh={m['sharpe']:4.2f}  "
+            f"funding={'on' if m.get('with_funding') else 'OFF'}")
 
 
 if __name__ == "__main__":

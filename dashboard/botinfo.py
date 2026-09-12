@@ -47,6 +47,8 @@ BOTS: dict[str, dict] = {
     "short_squeeze": {
         "display": "Short Squeeze (BTC)",
         "variant_id": "bot_short_squeeze_v1",
+        # Second paper variant on the same signals, no stop (2026-09-12).
+        "variant_ids": ["bot_short_squeeze_v1", "bot_short_squeeze_nostop_v1"],
         "asset": "BTC",
         "card": "short_squeeze.md",
         "calibration": "short_squeeze.md",
@@ -58,6 +60,8 @@ BOTS: dict[str, dict] = {
     "squeeze_bull": {
         "display": "Squeeze Bull (BTC OI flush)",
         "variant_id": "bot_squeeze_bull_v1",
+        # Second paper variant on the same signals, no stop (2026-09-12).
+        "variant_ids": ["bot_squeeze_bull_v1", "bot_squeeze_bull_nostop_v1"],
         "asset": "BTC",
         "card": "squeeze_bull.md",
         "calibration": "squeeze_bull.md",
@@ -166,9 +170,15 @@ def params(bot: str) -> list[dict]:
                       "strategies/sleeves/short_squeeze/config.py")
         lon, ny = s.SESSIONS["london"], s.SESSIONS["ny"]
         return [
+            _p("Variants", "stop variant", b.VARIANTS[0]["id"],
+               "swept-low stop, 3R target, 6h", bsrc),
+            _p("Variants", "no-stop variant", b.VARIANTS[1]["id"],
+               "6h time stop only (2026-09-12)", bsrc),
             _p("Sizing", "risk per trade", b.RISK_PCT, "% of capital", bsrc),
             _p("Sizing", "notional cap", b.NOTIONAL_MAX_X,
                "× capital (binds by design)", bsrc),
+            _p("Sizing", "no-stop variant notional", b.NOSTOP_NOTIONAL_X,
+               "× capital (fixed)", bsrc),
             _p("Cadence", "tick", b.TICK_SECONDS, "s", bsrc),
             _p("Cadence", "sessions", f"{lon[0]:02d}–{ny[1]:02d} UTC",
                "London+NY", ssrc),
@@ -216,7 +226,9 @@ def params(bot: str) -> list[dict]:
             _p("Exits", "regime exit", f"ADX < {s.ADX_LOW_THRESH:.0f}",
                "", ssrc),
             _p("Exits", "fixed stop-loss", b.STOP_LOSS_PCT, "%", bsrc),
-            _p("Costs", "round trip", s.COST_BP_RT, "bp", ssrc),
+            _p("Costs", "round trip + slippage",
+               f"{s.COST_BP_RT:g} + {s.SLIPPAGE_BP_RT:g}", "bp (measured 2026-09-12)",
+               ssrc),
         ]
 
     if bot == "carry":
@@ -231,21 +243,27 @@ def params(bot: str) -> list[dict]:
                "s (daily funding decision)", bsrc),
             _p("Signal", "entry", f"{s.FR_WINDOW_DAYS}d avg funding "
                f"> {s.FR_ENTRY_THRESHOLD}", "", ssrc),
-            _p("Exits", "exit", f"{s.EXIT_NEG_DAYS} consecutive "
-               f"negative-funding days", "", ssrc),
+            _p("Exits", "exit", f"trailing {s.EXIT_CUM_DAYS}d cumulative "
+               f"funding < {s.EXIT_CUM_THRESHOLD_PCT}%",
+               "of notional (since 2026-09-12)", ssrc),
             _p("Costs", "round trip", s.ENTRY_EXIT_COST_PCT, "% notional",
                ssrc),
         ]
 
     if bot == "squeeze_bull":
         from bots.squeeze_bull import config as b
-        from strategies import trades as t
         from strategies.sleeves.squeeze_bull import config as s
         bsrc = "bots/squeeze_bull/config.py"
         ssrc = "strategies/sleeves/squeeze_bull/config.py"
         return [
+            _p("Variants", "stop variant", b.VARIANTS[0]["id"],
+               "-2% stop, +3% target, 48h", bsrc),
+            _p("Variants", "no-stop variant", b.VARIANTS[1]["id"],
+               "+3% target, 48h, no stop (2026-09-12)", bsrc),
             _p("Sizing", "risk per trade", b.RISK_PCT, "% of capital over the stop", bsrc),
             _p("Sizing", "notional cap", b.NOTIONAL_MAX_X, "x capital (inert at a 2% stop)", bsrc),
+            _p("Sizing", "no-stop variant notional", b.NOSTOP_NOTIONAL_X,
+               "x capital (fixed; = the stop variant's 1%/2%)", bsrc),
             _p("Sizing", "paper capital", b.CAPITAL_USDT, "USDT", bsrc),
             _p("Cadence", "tick", b.TICK_SECONDS, "s", bsrc),
             _p("Cadence", "entry evaluation", "once per closed hourly bar", "", ssrc),
@@ -258,8 +276,8 @@ def params(bot: str) -> list[dict]:
                "1.5 R gross, stop checked first", ssrc),
             _p("Exits", "time stop", s.TIF_HOURS, "h", ssrc),
             _p("Costs", "round trip + slippage",
-               f"{t.DEFAULT_COST_BP_RT:g} + {t.DEFAULT_SLIPPAGE_BP_RT:g}", "bp",
-               "strategies/trades.py"),
+               f"{s.PAPER_COST_BP_RT:g} + {s.PAPER_SLIPPAGE_BP_RT:g}",
+               "bp (measured 2026-09-12; research replay 18)", ssrc),
             _p("Data", "mgmt / entry tables",
                f"{', '.join(b.MGMT_TABLES)} / {', '.join(b.ENTRY_TABLES)}", "", bsrc),
         ]
@@ -378,11 +396,16 @@ def summary() -> dict:
     bots = []
     for name, meta in BOTS.items():
         vid = meta["variant_id"]
-        c = counts.get(vid, {"open": 0, "total": 0})
+        vids = meta.get("variant_ids", [vid])
+        # A bot with several paper variants (squeeze bots since 2026-09-12)
+        # reports the counts over all of them; capital is per variant.
+        n_open = sum(counts.get(v, {"open": 0})["open"] for v in vids)
+        n_total = sum(counts.get(v, {"total": 0})["total"] for v in vids)
         bots.append({"name": name, "display": meta["display"],
-                     "variant_id": vid, "asset": meta["asset"],
+                     "variant_id": vid, "variant_ids": vids,
+                     "asset": meta["asset"],
                      "capital_usdt": caps.get(vid),
-                     "open_trades": c["open"], "trades_total": c["total"]})
+                     "open_trades": n_open, "trades_total": n_total})
     return {"bots": bots}
 
 
@@ -395,6 +418,7 @@ def detail(bot: str) -> dict:
         "name": bot,
         "display": meta["display"],
         "variant_id": meta["variant_id"],
+        "variant_ids": meta.get("variant_ids", [meta["variant_id"]]),
         "asset": meta["asset"],
         "cadence_note": meta["cadence_note"],
         "params": params(bot),

@@ -7,6 +7,37 @@ discussion) can pick it up.
 
 ---
 
+## Execution layer and pending re-cuts from the 2026-09 execution / sizing studies
+
+**Captured:** 2026-09-12. **Status:** open — the paper-side changes shipped
+the same day (cost constants, CARRY exit, two no-stop paper variants; see
+each `docs/calibration/*.md`); these are the parts that wait on something.
+
+1. **Live execution layer requirements** (pool plan Phase F, item F-EXEC):
+   taker entries, resting reduce-only take-profit limits, exchange-resident
+   stop-market orders instead of 60 s polling, and a fills record with
+   intended vs realised price per leg. Source:
+   [studies/notebooks/execution_2026_09/findings.md](studies/notebooks/execution_2026_09/findings.md).
+2. **E7 live quoting probe** (designed in that study's README, not run):
+   needs an API key with trade permission, ≤ $50, two weeks, explicit
+   go-ahead. Only worth running if maker entries are wanted — the on-disk
+   answer is that they are worth ~3 bp at near-certain fills.
+3. **Re-cuts fixed in advance**: SQUEEZE_BULL and SHORT_SQUEEZE stop vs
+   no-stop variants at 20 and 30 paired fires
+   ([docs/calibration/squeeze_bull.md](docs/calibration/squeeze_bull.md),
+   [docs/calibration/short_squeeze.md](docs/calibration/short_squeeze.md)).
+   A re-cut script that replays both policies over the union of live fires
+   with each sleeve's own walk does not exist yet; write it before n = 20.
+4. **ADX + CARRY in one cross-margin account** (pool plan D8) — a design
+   constraint for the restructure, nothing to do now.
+5. **Research harness hygiene**: `adx_study/harness.run(with_funding=True)`
+   exists now; any harness-vs-live comparison must use it, and the other
+   research replays (chento overlay, squeeze) should charge the measured
+   per-leg costs from `execution_2026_09` rather than their coded lumps
+   when next re-run.
+
+---
+
 ## Consolidate timing-anomaly sleeves under a single bucket ✅
 
 **Captured:** 2026-05-18.

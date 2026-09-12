@@ -11,7 +11,8 @@ divergence pct > 0.70 (90d session-filtered distributions), close-in-range
 ≥ 0.10, sweep of prior 24-bar (6h) low, London/NY sessions only, Asia
 short-macro gate (close<open + OI ≥ +0.5% + funding < 0), 4h cooldown.
 Exits: stop 10bp below swept low, target 3R, **6h time-stop** (code truth;
-PORTFOLIO.md's "session-end" wording is stale). Costs 10bp + 15bp slippage,
+PORTFOLIO.md's "session-end" wording is stale). Costs **10 bp, measured**
+(was 10 bp + 15 bp slippage until 2026-09-12 — see the 2026-09-12 section),
 funding applied.
 
 **Bot-level** (`bots/short_squeeze/config.py`, standalone bot):
@@ -62,9 +63,68 @@ mean. Slightly noisier gate timing; NOT recalibrated ad hoc — any change
 (e.g. averaging the prior 24h's three settlements) needs notebook
 validation first per the research-workflow rule.
 
+## 2026-09-12 — measured cost (25 → 10 bp) and a no-stop, 1× paper variant
+
+**Cost.** `SLIPPAGE_BP_RT` 15 → 0; the booked round trip is the 10 bp fee
+line. Execution study `studies/notebooks/execution_2026_09/` (E1/E4/E6, the
+sleeve's 71 historical fires 2022-01 → 2026-05 on 1 m bars): half-spread
+< 1 bp per leg, decision-to-fill drift −0.3 bp, zero gap-throughs in 39
+stops, all-in taker round trip 9.3 bp, CI90 [7.0, 11.6]. Under its own
+25 bp the sleeve's net expectancy was **−0.316 R per trade on a +0.481 R
+gross edge** (25 bp is 0.80 R on a bp-wide stop), so the paper record was
+negative by construction; under the measured cost it is +0.192 R with a
+60 % cost share, which the study's pre-registered viability rule labels
+"retire pending user decision". The user's 2026-09-12 decision: keep the
+stop variant running at the corrected cost and add the no-stop variant
+below; the n = 30 rule decides. Trades closed before 2026-09-12 carry
+25 bp — a methodology change, not a regime change.
+
+**Second variant `bot_short_squeeze_nostop_v1`.** Same process, same
+signals; **no stop, no target, 6 h time stop only; fixed 1× notional**
+(`NOSTOP_NOTIONAL_X = 1.0`). The 3× cap was only ever justified by a
+bp-wide stop this variant does not have, and at 1× the tail that moves from
+the stop to the account is ~1/2.5 of what the stop variant's average
+notional would carry. Sizing study `studies/notebooks/sizing_style_2026_09/`
+(S1 policy P1, measured cost, shipped 3×-capped sizing; S3b = the bot's
+single-open semantics, post-hoc):
+
+| policy | n | mean R | win | worst trade | MTM maxDD | MAR | halves |
+|---|---|---|---|---|---|---|---|
+| stop + 3R target + 6 h (shipped) | 71 | +0.481 | 45 % | −1.0 R | −7.9 % | 0.19 | +0.388 / +0.576 |
+| **no stop, 6 h only (new variant)** | 71 | **+1.164** | 63 % | −7.8 R | −12.6 % | 0.69 | +0.504 / +1.843 |
+| no stop, 6 h only, single-open (S3b) | 59 | +1.131 | — | — | −10.8 % | 0.63 | +0.531 / +1.751 |
+| no stop, 3R target, 6 h | 71 | +0.665 | 66 % | −7.8 R | −12.4 % | 0.33 | +0.372 / +0.967 |
+
+Under the research pool's overlapping fires at 3× the no-stop policy failed
+the pre-registered safety clause by 0.007 (liquidation distance 0.160 vs
+0.167 required at 6.06× peak gross); under the bot's single-open guard it
+passes (S3b), and at 1× notional gross exposure cannot exceed 1×. Both
+halves are better on every other clause. The worst-trade tail is −7.8 R
+against the stop variant's −1.0 R by construction; at the historical stop
+widths (0.1–0.7 % of entry) and 1× notional that is roughly −1 to −5 % of
+capital on one trade. R for both variants is measured against the swept-low
+reference distance (`_reference_stop_price` in the trade notes).
+
+**Pre-registered re-cut for the pair (written 2026-09-12, before any fire):**
+
+- At **n = 20 fires taken by both variants on the same bar**: replay both
+  policies over the union of live fires with the sleeve's own walk. DISABLE
+  the no-stop variant if its live mean R ≤ 0, or its paired mean R is more
+  than 0.10 R below the stop variant's, or any single live trade prints
+  below −10 R (the replay's worst is −7.8 R). Otherwise CONTINUE.
+- At **n = 30**: the same, plus a deflated Sharpe ≥ 0.5 at a trial count of
+  at least 30. If BOTH variants have mean R ≤ 0 at n = 30, retire the
+  sleeve — the execution study's verdict stands. Make the no-stop variant
+  the fleet default only if its paired mean R is ≥ the stop variant's
+  + 0.10 R AND its MTM drawdown is not worse by > 5 pp.
+- Any time: DISABLE a variant whose live record diverges from the sleeve's
+  own replay of the same fires by > 0.05 R on any trade. Disable via
+  `enabled = 0`; do not edit thresholds.
+
 ## Change history
 
 | Date | Change | Why / provenance |
 |---|---|---|
+| 2026-09-12 | `SLIPPAGE_BP_RT` 15 → 0 (booked round trip 25 → 10 bp); second paper variant `bot_short_squeeze_nostop_v1` (no stop, no target, 6 h, fixed 1× notional) in the same process; diag counters counted once per tick; re-cut rule for the pair fixed above | `execution_2026_09` E6 (measured 9.3 bp [7.0, 11.6]; sleeve −0.316 R under 25 bp); `sizing_style_2026_09` S1/S3b. User go-ahead 2026-09-12. |
 | 2026-07-21 | Deployed as standalone bot (first paper deployment ever); fixed-R 1% + 3× cap; SSQ_DIAG counters added to sleeve (env-gated, additive); README CVD-availability claim corrected | Bot-extraction plan M2. The sleeve was dispatch-registered 2026-05-18 but never composed — two months validated-but-silent (fact-sheet finding #11). |
 | 2026-05-18 | Signal thresholds frozen from percentile sweep + walk-forward | strategy_backtest.ipynb |

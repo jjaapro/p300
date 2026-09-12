@@ -30,6 +30,12 @@ WARMUP_BARS = max(ADX_PERIOD * 3, EMA_LEN + 1, TREND_EMA_LEN + 1)
 
 # Round-trip transaction cost (5bp each leg on BTC perps — taker estimate).
 COST_BP_RT = 10.0
+# Spread + decision-to-fill drift + stop slippage, MEASURED on the sleeve's
+# own entries and stops over 2020-2026 1 m bars (execution_2026_09 E6,
+# 2026-09-12): all-in taker round trip 10.5 bp, i.e. ~0.5 bp above the fee
+# line; 1 bp is the remainder rounded up. Until 2026-09-12 the close booked
+# the 5 bp default (15 bp total).
+SLIPPAGE_BP_RT = 1.0
 
 # ─── Tier-2 calibration (2026-07-22, from the 2026-06-26 adx_study) ─────────
 # Combined effect on the 2018→2026-06 backtest: maxDD −27.3% → −15.1%,
