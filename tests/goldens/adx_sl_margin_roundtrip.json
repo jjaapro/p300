@@ -1,0 +1,77 @@
+{
+ "db_after": {
+  "n_trades": 1,
+  "trades": [
+   {
+    "allocation_pct": 100.0,
+    "asset": "BTC",
+    "direction": "LONG",
+    "entry_price": 78328.01,
+    "exit_price": null,
+    "exit_time": "2099-12-31T00:00:00+00:00",
+    "leverage": 4.0,
+    "notes": {
+     "_atr_at_entry": 2124.272256,
+     "_stop_price": 70495.209,
+     "adx": 25.31,
+     "close": 78338.03,
+     "direction_rule": "close > EMA(50) AND close > EMA(150)",
+     "ema50": 65428.68,
+     "funding_z": 0.663,
+     "regime": "unknown",
+     "sl_semantic_price_thresh_pct": 2.5,
+     "sleeve": "ADX",
+     "stop_loss_pct": 10.0,
+     "trend_ema": 69332.66,
+     "trend_ema_len": 150,
+     "trigger": "S-003_ADX_entry",
+     "variant_id": "bot_adx_test"
+    },
+    "notes_tail": null,
+    "pnl_usdt": null,
+    "qty": 0.5106730019,
+    "size_usdt": 40000.0,
+    "status": "open",
+    "strategy": "ADX",
+    "strategy_variant": "bot_adx_test",
+    "unique_key_suffix": "ADX|BTC|2026-08-22"
+   }
+  ]
+ },
+ "intents": [
+  {
+   "allocation_pct": 100.0,
+   "asset": "BTC",
+   "conviction": 100,
+   "direction": "LONG",
+   "leverage": 4.0,
+   "priority": 100.0,
+   "reason": {
+    "_atr_at_entry": 2124.272256,
+    "_entry_price": 78328.01,
+    "_signal_day": "2026-08-22",
+    "_stop_price": 70495.209,
+    "adx": 25.31,
+    "close": 78338.03,
+    "direction_rule": "close > EMA(50) AND close > EMA(150)",
+    "ema50": 65428.68,
+    "funding_z": 0.663,
+    "regime": "unknown",
+    "sl_semantic_price_thresh_pct": 2.5,
+    "sleeve": "ADX",
+    "stop_loss_pct": 10.0,
+    "trend_ema": 69332.66,
+    "trend_ema_len": 150,
+    "trigger": "S-003_ADX_entry",
+    "variant_id": "bot_adx_test"
+   },
+   "scheduled_exit_dt": null
+  }
+ ],
+ "status": {
+  "adx": 25.31,
+  "direction": "LONG",
+  "ema50": 65428.68,
+  "status": "decided"
+ }
+}

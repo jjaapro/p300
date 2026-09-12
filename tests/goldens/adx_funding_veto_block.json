@@ -1,0 +1,13 @@
+{
+ "db_after": {
+  "n_trades": 0,
+  "trades": []
+ },
+ "intents": [],
+ "status": {
+  "adx": 25.31,
+  "date": "2026-08-22",
+  "funding_z": 2.0,
+  "status": "funding_veto_block"
+ }
+}

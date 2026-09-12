@@ -1,0 +1,14 @@
+{
+ "db_after": {
+  "n_trades": 0,
+  "trades": []
+ },
+ "intents": [],
+ "status": {
+  "adx": 25.34,
+  "close": 77371.32,
+  "date": "2026-04-28",
+  "status": "trend_filter_block",
+  "trend_ema": 80426.15
+ }
+}
