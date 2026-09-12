@@ -88,9 +88,9 @@ def test_stale_mgmt_tables_short_circuit_the_tick(env, monkeypatch):
     called = []
     monkeypatch.setattr(botlib, "stale_tables",
                         lambda tables=None: {"btc_1m": 999.0} if tables == botcfg.MGMT_TABLES else {})
-    monkeypatch.setattr(sleeve, "try_decide_for_variant",
+    monkeypatch.setattr(sleeve, "decide",
                         lambda *a, **k: called.append(1) or ([], {}))
-    out = runner.tick(env["variant"], env["cfg"])
+    out = runner.tick(env["variant"])
     assert out["status"] == "stale_mgmt_inputs"
     assert out["hb_status"] == "degraded"
     assert not called, "decide must not run when the price feed is stale"
@@ -104,12 +104,12 @@ def test_stale_entry_tables_block_the_entry_but_not_the_sweep(env, monkeypatch):
                     reason={"_entry_price": ENTRY, "_stop_price": ENTRY * 0.98,
                             "_target_price": ENTRY * 1.03, "bar_ts": 1},
                     scheduled_exit_dt=NOW + timedelta(hours=48))
-    monkeypatch.setattr(sleeve, "try_decide_for_variant",
+    monkeypatch.setattr(sleeve, "decide",
                         lambda *a, **k: ([intent], {"status": "decided"}))
     monkeypatch.setattr(botlib, "stale_tables",
                         lambda tables=None: {"cd_open_interest": 5.0}
                         if tables == botcfg.ENTRY_TABLES else {})
-    out = runner.tick(env["variant"], env["cfg"])
+    out = runner.tick(env["variant"])
     assert out["status"] == "entry_blocked_stale_inputs"
     assert out["hb_status"] == "degraded"
     assert not _trades(env["db"]), "no trade may open on stale positioning data"
@@ -153,7 +153,7 @@ def test_no_bars_does_not_burn_the_hour(env, monkeypatch):
 def test_flush_in_bull_regime_fires_and_opens_one_trade(env, monkeypatch):
     monkeypatch.setattr(sleeve, "_load_hourly",
                         lambda now, lookback_days=45: _bars(now))
-    out = runner.tick(env["variant"], env["cfg"])
+    out = runner.tick(env["variant"])
     assert out["status"] == "decided", out
     rows = _trades(env["db"])
     assert len(rows) == 1
@@ -169,7 +169,7 @@ def test_flush_in_bull_regime_fires_and_opens_one_trade(env, monkeypatch):
 def test_flat_regime_does_not_fire(env, monkeypatch):
     monkeypatch.setattr(sleeve, "_load_hourly",
                         lambda now, lookback_days=45: _bars(now, bull=False))
-    out = runner.tick(env["variant"], env["cfg"])
+    out = runner.tick(env["variant"])
     assert out["status"] == "regime_not_bull"
     assert not _trades(env["db"])
 
@@ -177,7 +177,7 @@ def test_flat_regime_does_not_fire(env, monkeypatch):
 def test_no_flush_does_not_fire(env, monkeypatch):
     monkeypatch.setattr(sleeve, "_load_hourly",
                         lambda now, lookback_days=45: _bars(now, flush_at_last=False))
-    out = runner.tick(env["variant"], env["cfg"])
+    out = runner.tick(env["variant"])
     assert out["status"] == "no_flush"
     assert not _trades(env["db"])
 
@@ -185,11 +185,11 @@ def test_no_flush_does_not_fire(env, monkeypatch):
 def test_open_position_blocks_a_second_entry(env, monkeypatch):
     monkeypatch.setattr(sleeve, "_load_hourly",
                         lambda now, lookback_days=45: _bars(now))
-    runner.tick(env["variant"], env["cfg"])
+    runner.tick(env["variant"])
     assert len(_trades(env["db"])) == 1
     sleeve._last_eval_hour.clear()
     clock.set_simulated_now(NOW + timedelta(hours=1))
-    out = runner.tick(env["variant"], env["cfg"])
+    out = runner.tick(env["variant"])
     assert out["status"] == "position_open"
     assert len(_trades(env["db"])) == 1
 
@@ -200,7 +200,7 @@ def test_open_position_blocks_a_second_entry(env, monkeypatch):
 def test_sweep_closes_on_stop_and_target(env, monkeypatch, side, kind):
     monkeypatch.setattr(sleeve, "_load_hourly",
                         lambda now, lookback_days=45: _bars(now))
-    runner.tick(env["variant"], env["cfg"])
+    runner.tick(env["variant"])
     assert len(_trades(env["db"])) == 1
     # price relative to the ACTUAL entry (the flush bar closes below ENTRY)
     price = float(_trades(env["db"])[0]["entry_price"]) * side
@@ -215,7 +215,7 @@ def test_sweep_closes_on_stop_and_target(env, monkeypatch, side, kind):
 def test_sweep_closes_on_time_stop(env, monkeypatch):
     monkeypatch.setattr(sleeve, "_load_hourly",
                         lambda now, lookback_days=45: _bars(now))
-    runner.tick(env["variant"], env["cfg"])
+    runner.tick(env["variant"])
     clock.set_simulated_now(NOW + timedelta(hours=49))
     closed = sleeve._sweep_open_positions(env["variant"]["id"])
     assert closed == 1
@@ -226,7 +226,7 @@ def test_sweep_skips_when_price_is_unavailable(env, monkeypatch):
     """No price means no exit decision — never close at a guessed price."""
     monkeypatch.setattr(sleeve, "_load_hourly",
                         lambda now, lookback_days=45: _bars(now))
-    runner.tick(env["variant"], env["cfg"])
+    runner.tick(env["variant"])
     monkeypatch.setattr(price_feed, "get_current_price", lambda a: None)
     assert sleeve._sweep_open_positions(env["variant"]["id"]) == 0
     assert _trades(env["db"])[0]["status"] == "open"
@@ -287,7 +287,7 @@ def test_no_stop_variant_opens_without_a_stop_and_survives_the_stop_price(env, m
     monkeypatch.setattr(sleeve, "_load_hourly",
                         lambda now, lookback_days=45: _bars(now))
     v = _nostop_variant()
-    out = runner.tick(v, {**env["cfg"], "use_stop": False})
+    out = runner.tick(v, use_stop=False)
     assert out["status"] == "decided", out
     rows = _rows_for(env["db"], v["id"])
     assert len(rows) == 1
@@ -314,7 +314,7 @@ def test_no_stop_variant_time_stop_still_closes_a_loser(env, monkeypatch):
     monkeypatch.setattr(sleeve, "_load_hourly",
                         lambda now, lookback_days=45: _bars(now))
     v = _nostop_variant()
-    runner.tick(v, {**env["cfg"], "use_stop": False})
+    runner.tick(v, use_stop=False)
     tr = _rows_for(env["db"], v["id"])[0]
     monkeypatch.setattr(price_feed, "get_current_price",
                         lambda a: float(tr["entry_price"]) * 0.95)
@@ -331,7 +331,7 @@ def test_tick_all_runs_both_variants_on_the_same_bar_and_diags_once(env, monkeyp
     v2 = _nostop_variant()
     variants = [{"row": env["variant"], "use_stop": True},
                 {"row": v2, "use_stop": False}]
-    out = runner.tick_all(variants, env["cfg"])
+    out = runner.tick_all(variants)
     assert out["status"] == "decided"
     assert out["signal"] and out["evaluated"] and out["hb_status"] == "ok"
     assert out["open_trades"] == 2

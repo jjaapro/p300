@@ -201,8 +201,9 @@ BOT_ENTRYPOINTS: dict[str, tuple[str, tuple[str, ...]]] = {
                   ("try_decide_for_variant", "execute_for_variant")),
     "short_squeeze": ("strategies.sleeves.short_squeeze.signal",
                       ("try_decide_for_variant", "execute_for_variant")),
+    # Repointed to the plain-argument surface (phase C step 15).
     "squeeze_bull": ("strategies.sleeves.squeeze_bull.signal",
-                     ("try_decide_for_variant", "execute_for_variant")),
+                     ("decide", "execute")),
     # The r4 runner calls the four window deciders directly, plus the shared
     # private executor.
     "r4": ("strategies.sleeves.timing_anomalies.internal.r4.signal",

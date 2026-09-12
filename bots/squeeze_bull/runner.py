@@ -5,7 +5,7 @@ Same skeleton as bots/short_squeeze: one process, one strategy, and since
 2026-09-12 TWO paper variants on the same signals (`bots/squeeze_bull/config.py`
 VARIANTS): the shipped `bot_squeeze_bull_v1` with the -2% stop and
 `bot_squeeze_bull_nostop_v1` without it. The sleeve package is imported
-unchanged; the exit policy is passed per variant as `sleeve_cfg["use_stop"]`.
+unchanged; the exit policy is passed per variant as the `use_stop` keyword.
 
 Bot-side responsibilities:
   - fixed-R sizing        1% risk over the sleeve's 2% stop (= 0.5x notional),
@@ -93,14 +93,14 @@ def size_intent(intent, capital: float, *, use_stop: bool = True):
                      "notional": notional, "at_cap": False}
 
 
-def tick(variant: dict, sleeve_cfg: dict, *, diag: bool = True) -> dict:
-    """One tick for one variant. `sleeve_cfg["use_stop"]` selects the exit
-    policy; `diag` writes the evaluation record (once per tick, not once per
-    variant — both variants evaluate the same bar)."""
+def tick(variant: dict, *, use_stop: bool = True, diag: bool = True) -> dict:
+    """One tick for one variant. `use_stop` selects the exit policy — it is
+    what separates `bot_squeeze_bull_v1` from `bot_squeeze_bull_nostop_v1`,
+    which run on the same signals in one process. `diag` writes the
+    evaluation record (once per tick, not once per variant — both variants
+    evaluate the same bar)."""
     from strategies.sleeves.squeeze_bull import signal as sleeve
     from strategies.support import clock
-
-    use_stop = bool(sleeve_cfg.get("use_stop", True))
 
     stale_mgmt = botlib.stale_tables(botcfg.MGMT_TABLES)
     if stale_mgmt:
@@ -108,7 +108,10 @@ def tick(variant: dict, sleeve_cfg: dict, *, diag: bool = True) -> dict:
                 "hb_status": "degraded",
                 "hb_note": f"mgmt tables stale: {sorted(stale_mgmt)}"}
 
-    intents, status = sleeve.try_decide_for_variant(variant, sleeve_cfg)
+    # Sizing is the runner's job (size_intent below overwrites both), so the
+    # sleeve is handed the placeholders the cfg dict used to carry.
+    intents, status = sleeve.decide(variant, weight_pct=100.0, leverage=1.0,
+                                    use_stop=use_stop)
     st = status.get("status", "?")
     out = {"status": st, "detail": status, "hb_status": "ok", "hb_note": "",
            "evaluated": st != "already_evaluated_this_hour"}
@@ -129,7 +132,7 @@ def tick(variant: dict, sleeve_cfg: dict, *, diag: bool = True) -> dict:
             for intent in intents:
                 resized, info = size_intent(intent, float(variant["capital_usdt"]),
                                             use_stop=use_stop)
-                res = sleeve.execute_for_variant(variant, sleeve_cfg, resized)
+                res = sleeve.execute(variant, resized)
                 log.info(f"OPENED {res.get('trade_id')} LONG [{variant['id']}] "
                          f"notional=${info['notional']:,.0f} "
                          f"(stop_pct={info['stop_pct']:.2%}, "
@@ -144,7 +147,7 @@ def tick(variant: dict, sleeve_cfg: dict, *, diag: bool = True) -> dict:
     return out
 
 
-def tick_all(variants: list[dict], sleeve_cfg: dict) -> dict:
+def tick_all(variants: list[dict]) -> dict:
     """One tick over every variant, in config order. `variants` items are
     {"row": <variants table row>, "use_stop": bool}. Returns what the
     heartbeat needs (worst status, joined notes, any evaluated / signalled,
@@ -152,8 +155,8 @@ def tick_all(variants: list[dict], sleeve_cfg: dict) -> dict:
     first variant's, which drives the idle-vs-info log decision."""
     per: dict[str, dict] = {}
     for k, v in enumerate(variants):
-        cfg = {**sleeve_cfg, "use_stop": bool(v["use_stop"])}
-        per[v["row"]["id"]] = tick(v["row"], cfg, diag=(k == 0))
+        per[v["row"]["id"]] = tick(v["row"], use_stop=bool(v["use_stop"]),
+                                   diag=(k == 0))
     outs = list(per.values())
     rank = {"ok": 0, "degraded": 1, "error": 2}
     hb_status = max((o.get("hb_status", "ok") for o in outs), key=lambda s: rank.get(s, 2))
@@ -204,9 +207,6 @@ def main(argv: list[str] | None = None) -> int:
         log.info(f"variant {row['id']} capital=${row['capital_usdt']:,.0f} "
                  f"{sizing} open_trades={botlib.count_open_trades(row['id'])}")
 
-    sleeve_cfg = {"weight_pct": 100.0, "_effective_leverage": 1.0,
-                  "priority": 100}
-
     _signal.signal(_signal.SIGINT, _signal_handler)
     _signal.signal(_signal.SIGTERM, _signal_handler)
 
@@ -217,7 +217,7 @@ def main(argv: list[str] | None = None) -> int:
         t0 = time.time()
         hb_status, hb_note, evaluated, signalled, open_n = "ok", "", False, False, None
         try:
-            out = tick_all(variants, sleeve_cfg)
+            out = tick_all(variants)
             hb_status = out["hb_status"]
             hb_note = out["hb_note"]
             evaluated = bool(out["evaluated"])
