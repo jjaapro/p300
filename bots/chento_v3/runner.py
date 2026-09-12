@@ -148,6 +148,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--interval", type=int, default=botcfg.TICK_SECONDS)
     ap.add_argument("--verbose", action="store_true",
                     help="Log idle tick statuses at INFO instead of DEBUG.")
+    botlib.add_dry_run_flags(ap)
     args = ap.parse_args(argv)
 
     logging.basicConfig(
@@ -156,6 +157,10 @@ def main(argv: list[str] | None = None) -> int:
 
     from strategies.support.env import load_env_file
     load_env_file()
+    # Before the sleeve is imported: it resolves CHENTO_V3_DIAG_PATH at
+    # import, and bots/chento_v3_eth/runner.py has already assigned it
+    # unconditionally by this point, so a dry run must override it here.
+    botlib.apply_dry_run_flags(ap, args, botcfg)
 
     Path(botcfg.DIAG_PATH).parent.mkdir(parents=True, exist_ok=True)
     botlib.ensure_wal()

@@ -34,7 +34,6 @@ import sqlite3
 import sys
 import threading
 import time
-from datetime import datetime, timezone
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
@@ -246,32 +245,14 @@ def tick(variant: dict, sleeve_cfg: dict) -> dict:
     return out
 
 
-def _point_at_db(path: Path) -> None:
-    """Dry-run only: redirect every DB constant at a copy, refusing prod.db."""
-    from strategies.support import db, trade_db
-    target = path.resolve()
-    if target == db.PROD_DB.resolve():
-        raise SystemExit(f"--db {path} is the live prod.db; dry runs need a copy")
-    if not target.exists():
-        raise SystemExit(f"--db {path} does not exist")
-    db.PROD_DB = db.DASH_DB = db.TRADER_DB = target
-    trade_db.DB_PATH = target
-    log.warning(f"DRY RUN against {target}")
-
-
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="R4 calendar standalone bot")
     ap.add_argument("--once", action="store_true")
     ap.add_argument("--interval", type=int, default=botcfg.TICK_SECONDS)
     ap.add_argument("--verbose", action="store_true",
                     help="Log idle tick statuses at INFO instead of DEBUG.")
-    ap.add_argument("--db", type=Path, default=None,
-                    help="Dry run against a COPY of prod.db (requires --once).")
-    ap.add_argument("--sim-now", default=None,
-                    help="ISO UTC timestamp to simulate (requires --once).")
+    botlib.add_dry_run_flags(ap)
     args = ap.parse_args(argv)
-    if (args.db or args.sim_now) and not args.once:
-        ap.error("--db / --sim-now are only valid with --once")
 
     logging.basicConfig(
         level=logging.INFO,
@@ -280,14 +261,7 @@ def main(argv: list[str] | None = None) -> int:
     from strategies.support.env import load_env_file
     load_env_file()
     from strategies.support import clock
-    if args.db:
-        _point_at_db(args.db)
-    if args.sim_now:
-        dt = datetime.fromisoformat(args.sim_now)
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        clock.set_simulated_now(dt)
-        log.warning(f"SIMULATED CLOCK {dt.isoformat()}")
+    botlib.apply_dry_run_flags(ap, args, botcfg)
 
     botlib.ensure_wal()
     botlib.init_heartbeat_schema()

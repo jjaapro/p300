@@ -417,6 +417,86 @@ def close_due_trades(variant_id: str,
     return closed
 
 
+def point_at_db_copy(path, *, diag_dir=None, botcfg=None) -> None:
+    """Dry-run only: redirect every DB constant at a COPY of prod.db, refusing
+    the live file, and redirect the sleeves' diagnostic JSONL alongside it.
+
+    Shared by every bot runner so there is one definition of "dry run" rather
+    than one per bot. Two things it must get right:
+
+    * **Refuse prod.db.** A dry run writes trades; pointed at the live file it
+      would inject rows into the paper ledger the fleet is accruing.
+    * **Redirect the diagnostics.** Redirecting the DB alone is not isolation:
+      the chento and short_squeeze sleeves append a JSONL that the dashboard
+      reads, and the paths come from env vars the sleeve modules resolve at
+      IMPORT. This is called from ``main()``, before the first tick imports a
+      sleeve, which is the only window where setting them still takes effect.
+      chento_v3_eth assigns ``CHENTO_V3_DIAG_PATH`` unconditionally at module
+      import, so this must run after that — it does.
+
+    Copy prod.db with ``sqlite3 .backup``, never ``shutil.copy``: eight
+    processes write it every 60 s and it is in WAL, so a byte copy taken
+    without its ``-wal`` is not a guaranteed-consistent snapshot.
+    """
+    import os
+    from pathlib import Path
+
+    from strategies.support import db, trade_db
+    target = Path(path).resolve()
+    if target == Path(db.PROD_DB).resolve():
+        raise SystemExit(f"--db {path} is the live prod.db; dry runs need a copy")
+    if not target.exists():
+        raise SystemExit(f"--db {path} does not exist")
+    db.PROD_DB = db.DASH_DB = db.TRADER_DB = target
+    trade_db.DB_PATH = target
+
+    diag = Path(diag_dir) if diag_dir else target.parent / "diagnostics"
+    diag.mkdir(parents=True, exist_ok=True)
+    # Sleeve-level diagnostics, resolved from env at sleeve import.
+    os.environ["CHENTO_V3_DIAG_PATH"] = str(diag / "chento_v3_diag.jsonl")
+    os.environ["SSQ_DIAG_PATH"] = str(diag / "short_squeeze_diag.jsonl")
+    # Runner-level diagnostics. squeeze_bull and r4 append to
+    # botcfg.DIAG_PATH directly — a module constant, not an env var — so the
+    # env redirect above does not reach them. Without this a dry run appends
+    # to the live JSONL the dashboard reads, which the step-3 gate caught.
+    if botcfg is not None:
+        orig = getattr(botcfg, "DIAG_PATH", None)
+        if orig is not None:
+            dest = diag / Path(str(orig)).name
+            botcfg.DIAG_PATH = dest if isinstance(orig, Path) else str(dest)
+        if getattr(botcfg, "LOGS_DIR", None) is not None:
+            botcfg.LOGS_DIR = diag
+    log.warning(f"DRY RUN against {target} (diagnostics -> {diag})")
+
+
+def add_dry_run_flags(ap) -> None:
+    """The --db / --sim-now pair, identical on every bot."""
+    from pathlib import Path
+    ap.add_argument("--db", type=Path, default=None,
+                    help="Dry run against a COPY of prod.db (requires --once).")
+    ap.add_argument("--sim-now", default=None,
+                    help="ISO UTC timestamp to simulate (requires --once).")
+
+
+def apply_dry_run_flags(ap, args, botcfg=None) -> None:
+    """Validate and apply --db / --sim-now. Call from main() BEFORE the first
+    tick, because the sleeve modules read their diagnostics env at import.
+    Pass the bot's config module so runner-level diagnostics are redirected
+    too."""
+    from datetime import datetime, timezone
+    if (args.db or args.sim_now) and not args.once:
+        ap.error("--db / --sim-now are only valid with --once")
+    if args.db:
+        point_at_db_copy(args.db, botcfg=botcfg)
+    if args.sim_now:
+        from strategies.support import clock
+        dt = datetime.fromisoformat(args.sim_now)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        clock.set_simulated_now(dt)
+        log.warning(f"SIMULATED CLOCK {dt.isoformat()}")
+
+
 def size_intent_fixed_r(intent, capital: float, *, risk_pct: float,
                         notional_max_x: float):
     """Fixed-R sizing shared by all bots: risk `risk_pct`% of capital over

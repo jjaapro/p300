@@ -98,6 +98,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--interval", type=int, default=botcfg.TICK_SECONDS)
     ap.add_argument("--verbose", action="store_true",
                     help="Log idle tick statuses at INFO instead of DEBUG.")
+    botlib.add_dry_run_flags(ap)
     args = ap.parse_args(argv)
 
     logging.basicConfig(
@@ -106,6 +107,7 @@ def main(argv: list[str] | None = None) -> int:
 
     from strategies.support.env import load_env_file
     load_env_file()
+    botlib.apply_dry_run_flags(ap, args, botcfg)
 
     botlib.ensure_wal()
     botlib.init_heartbeat_schema()
