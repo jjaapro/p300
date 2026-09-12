@@ -62,8 +62,10 @@ def _has_trade_for_day(variant_id: str, strategy: str, day_iso: str) -> bool:
 # ─── Shared decide / execute helpers ────────────────────────────────────────
 
 
-def _r4_decide(variant: dict, sleeve_cfg: dict, *, asset: str, strategy: str,
-                weight_key: str, exit_dt) -> tuple[list, dict]:
+def _r4_decide(variant: dict, *, asset: str, strategy: str,
+                weight_key: str, exit_dt, weight_pct: float | None = None,
+                gate=None, vol_scalar: float | None = None,
+                priority: float = 100.0) -> tuple[list, dict]:
     """Phase-1 of the two-phase dispatch for R4 sleeves.
 
     Pure entry — no maintenance side-effects. Reads the regime weight /
@@ -82,19 +84,22 @@ def _r4_decide(variant: dict, sleeve_cfg: dict, *, asset: str, strategy: str,
     if ti is None:
         return [], {"status": "no_inputs"}
 
-    eff_w = sleeve_cfg.get("_effective_weight_pct")
-    weight = ((eff_w / 100.0) if eff_w is not None
+    # `weight_pct is None` means ABSENT, not zero, and that is the live
+    # path: bots/r4/runner.py passes no weight, so the fallback arm — the
+    # timing-anomaly weights table, including its bear-regime zero — is what
+    # actually runs. Defaulting this to a number would silently disable the
+    # regime kill switch. Same for gate and vol_scalar below.
+    weight = ((weight_pct / 100.0) if weight_pct is not None
               else ti["weights"].get(weight_key, 0.0))
     if weight <= 0:
         return [], {"status": "regime_zero_weight", "mode": ti["mode"]}
 
-    eff_gate = sleeve_cfg.get("_effective_gate")
-    if eff_gate is not None:
-        inner_lev = R4_INNER_LEV_UNGATED * eff_gate.leverage_mult
+    if gate is not None:
+        # UNGATED, deliberately: the supplied gate carries its own multiplier.
+        inner_lev = R4_INNER_LEV_UNGATED * gate.leverage_mult
     else:
         inner_lev = R4_INNER_LEV_GATED if ti["gated"] else R4_INNER_LEV_UNGATED
-    eff_vol = sleeve_cfg.get("_effective_vol_scalar")
-    vol_lev = float(eff_vol) if eff_vol is not None else float(ti["lev"])
+    vol_lev = float(vol_scalar) if vol_scalar is not None else float(ti["lev"])
     stacked_lev = inner_lev * vol_lev
 
     price = price_feed.get_current_price(asset)
@@ -123,14 +128,14 @@ def _r4_decide(variant: dict, sleeve_cfg: dict, *, asset: str, strategy: str,
         allocation_pct=weight * 100.0,
         leverage=stacked_lev,
         conviction=100,
-        priority=float(sleeve_cfg.get("priority", 100)),
+        priority=float(priority),
         reason=reason, scheduled_exit_dt=exit_dt,
     )
     return [intent], {"status": "decided", "weight": weight,
                        "stacked_lev": stacked_lev}
 
 
-def _r4_execute(variant: dict, sleeve_cfg: dict, intent) -> dict:
+def execute(variant: dict, intent) -> dict:
     """Phase-2 of the two-phase dispatch for R4 sleeves — open the
     calendar-bounded LONG described by ``intent`` (post-reconcile)."""
     from datetime import datetime
@@ -166,15 +171,8 @@ def _r4_execute(variant: dict, sleeve_cfg: dict, intent) -> dict:
 # ─── R4 BTC V1 (Mon wk1-2, 06:00 → 18:00 UTC) ───────────────────────────────
 
 
-def r4_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
-    """Variant-engine dispatch entry. Backward-compatible wrapper."""
-    intents, status = r4_btc_decide(variant, sleeve_cfg)
-    if not intents:
-        return status
-    return _r4_execute(variant, sleeve_cfg, intents[0])
-
-
-def r4_btc_decide(variant: dict, sleeve_cfg: dict):
+def decide_btc(variant: dict, *, weight_pct: float | None = None, gate=None,
+                   vol_scalar: float | None = None, priority: float = 100.0):
     """Open R4_BTC LONG at 06:00 UTC on Mon wk1-2, scheduled to close at
     18:00 UTC same day. Mon-only since 2026-05-08; Wednesdays moved to
     r4_btc_v2 at the era-stable 04:00→14:00 window."""
@@ -194,23 +192,17 @@ def r4_btc_decide(variant: dict, sleeve_cfg: dict):
 
     exit_dt = now.replace(hour=R4_BTC_EXIT_HOUR, minute=0,
                            second=0, microsecond=0)
-    return _r4_decide(variant, sleeve_cfg, asset="BTC",
+    return _r4_decide(variant, asset="BTC",
                        strategy=STRATEGY_R4_BTC, weight_key="r4_btc",
-                       exit_dt=exit_dt)
+                       exit_dt=exit_dt, weight_pct=weight_pct, gate=gate,
+        vol_scalar=vol_scalar, priority=priority,)
 
 
 # ─── R4 ETH V1 (Tue 20:00 → Wed 20:00 UTC) ──────────────────────────────────
 
 
-def r4_eth_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
-    """Variant-engine dispatch entry. Backward-compatible wrapper."""
-    intents, status = r4_eth_decide(variant, sleeve_cfg)
-    if not intents:
-        return status
-    return _r4_execute(variant, sleeve_cfg, intents[0])
-
-
-def r4_eth_decide(variant: dict, sleeve_cfg: dict):
+def decide_eth(variant: dict, *, weight_pct: float | None = None, gate=None,
+                   vol_scalar: float | None = None, priority: float = 100.0):
     """Open R4_ETH LONG at Tue 20:00 UTC if next-day Wed has day ≤ 14,
     scheduled to close at Wed 20:00 UTC. Live-realism convention: sizes
     the position using TODAY's inputs (Tue's regime/lev), not tomorrow's."""
@@ -230,7 +222,7 @@ def r4_eth_decide(variant: dict, sleeve_cfg: dict):
     exit_dt = tomorrow.replace(hour=R4_ETH_EXIT_HOUR, minute=0,
                                  second=0, microsecond=0)
     intents, status = _r4_decide(
-        variant, sleeve_cfg, asset="ETH",
+        variant, asset="ETH",
         strategy=STRATEGY_R4_ETH, weight_key="r4_eth", exit_dt=exit_dt,
     )
     if intents:
@@ -242,20 +234,9 @@ def r4_eth_decide(variant: dict, sleeve_cfg: dict):
 # ─── R4 V2 (Wed/Fri wk1-2, 04:00 → 14:00 UTC) ───────────────────────────────
 
 
-def _r4_v2_try_fire(variant: dict, asset: str, strategy: str,
-                    weight_key: str, sleeve_cfg: dict | None = None) -> dict:
-    """Backward-compatible legacy entry for the V2 pair. Used by direct
-    callers (tests) and the dispatch wrappers below."""
-    sleeve_cfg = sleeve_cfg or {}
-    intents, status = _r4_v2_decide(variant, sleeve_cfg, asset=asset,
-                                      strategy=strategy, weight_key=weight_key)
-    if not intents:
-        return status
-    return _r4_execute(variant, sleeve_cfg, intents[0])
-
-
-def _r4_v2_decide(variant: dict, sleeve_cfg: dict, *,
-                   asset: str, strategy: str, weight_key: str):
+def _r4_v2_decide(variant: dict, *, asset: str, strategy: str,
+                   weight_key: str, weight_pct: float | None = None, gate=None,
+                   vol_scalar: float | None = None, priority: float = 100.0):
     """Shared decide for R4_BTC_V2 / R4_ETH_V2. Wed+Fri wk1-2 04:00→14:00
     UTC entry window with scheduled 14:00 close."""
     now = clock.now_utc()
@@ -275,38 +256,102 @@ def _r4_v2_decide(variant: dict, sleeve_cfg: dict, *,
     exit_dt = now.replace(hour=R4_V2_EXIT_HOUR, minute=0,
                            second=0, microsecond=0)
     intents, status = _r4_decide(
-        variant, sleeve_cfg, asset=asset, strategy=strategy,
-        weight_key=weight_key, exit_dt=exit_dt,
+        variant, asset=asset, strategy=strategy,
+        weight_key=weight_key, exit_dt=exit_dt, weight_pct=weight_pct, gate=gate,
+        vol_scalar=vol_scalar, priority=priority,
     )
     if intents:
         intents[0].reason["window"] = "wed_fri_wk1-2_04-14_v2"
     return intents, status
 
 
-def r4_btc_v2_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
-    """R4_BTC_V2 — Wed+Fri wk1-2 04:00→14:00 UTC. Backward-compatible
-    wrapper."""
-    return _r4_v2_try_fire(variant, asset="BTC",
-                            strategy=STRATEGY_R4_BTC_V2,
-                            weight_key="r4_btc_v2",
-                            sleeve_cfg=sleeve_cfg)
-
-
-def r4_btc_v2_decide(variant: dict, sleeve_cfg: dict):
-    return _r4_v2_decide(variant, sleeve_cfg, asset="BTC",
+def decide_btc_v2(variant: dict, *, weight_pct: float | None = None, gate=None,
+                   vol_scalar: float | None = None, priority: float = 100.0):
+    return _r4_v2_decide(variant, asset="BTC", weight_pct=weight_pct, gate=gate,
+        vol_scalar=vol_scalar, priority=priority,
                           strategy=STRATEGY_R4_BTC_V2,
                           weight_key="r4_btc_v2")
 
 
-def r4_eth_v2_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
-    """R4_ETH_V2 — Wed+Fri wk1-2 04:00→14:00 UTC on ETH. Wrapper."""
-    return _r4_v2_try_fire(variant, asset="ETH",
-                            strategy=STRATEGY_R4_ETH_V2,
-                            weight_key="r4_eth_v2",
-                            sleeve_cfg=sleeve_cfg)
+def decide_eth_v2(variant: dict, *, weight_pct: float | None = None, gate=None,
+                   vol_scalar: float | None = None, priority: float = 100.0):
+    return _r4_v2_decide(variant, asset="ETH", weight_pct=weight_pct, gate=gate,
+        vol_scalar=vol_scalar, priority=priority,
+                          strategy=STRATEGY_R4_ETH_V2,
+                          weight_key="r4_eth_v2")
+
+
+# ─── Legacy orchestrator interface ───────────────────────────────────────
+# Thin adapters over the plain-keyword deciders above and execute(); no logic
+# of their own, so the two surfaces cannot diverge. Deleted in phase D once
+# nothing calls them.
+#
+# R4 is the sleeve where this matters most: bots/r4/runner.py calls the four
+# *_decide names AND the private `_r4_execute`, and its next enabled fire is
+# 2026-10-02 — a regression here has no live output to diff until October.
+
+def _unpack(sleeve_cfg: dict) -> dict:
+    """sleeve_cfg -> decider keywords. Note weight_pct/gate/vol_scalar stay
+    None when ABSENT: their fallback arms are r4's live behaviour."""
+    return {
+        "weight_pct": sleeve_cfg.get("_effective_weight_pct"),
+        "gate": sleeve_cfg.get("_effective_gate"),
+        "vol_scalar": sleeve_cfg.get("_effective_vol_scalar"),
+        "priority": float(sleeve_cfg.get("priority", 100)),
+    }
+
+
+def r4_btc_decide(variant: dict, sleeve_cfg: dict):
+    """Legacy adapter — see decide_btc()."""
+    return decide_btc(variant, **_unpack(sleeve_cfg))
+
+
+def r4_eth_decide(variant: dict, sleeve_cfg: dict):
+    """Legacy adapter — see decide_eth()."""
+    return decide_eth(variant, **_unpack(sleeve_cfg))
+
+
+def r4_btc_v2_decide(variant: dict, sleeve_cfg: dict):
+    """Legacy adapter — see decide_btc_v2()."""
+    return decide_btc_v2(variant, **_unpack(sleeve_cfg))
 
 
 def r4_eth_v2_decide(variant: dict, sleeve_cfg: dict):
-    return _r4_v2_decide(variant, sleeve_cfg, asset="ETH",
-                          strategy=STRATEGY_R4_ETH_V2,
-                          weight_key="r4_eth_v2")
+    """Legacy adapter — see decide_eth_v2()."""
+    return decide_eth_v2(variant, **_unpack(sleeve_cfg))
+
+
+def _r4_execute(variant: dict, sleeve_cfg: dict, intent) -> dict:
+    """Legacy adapter — see execute(). bots/r4/runner.py still calls THIS
+    name, so it stays until that runner is repointed."""
+    return execute(variant, intent)
+
+
+def _fire(decide_fn, variant: dict, sleeve_cfg: dict) -> dict:
+    intents, status = decide_fn(variant, sleeve_cfg)
+    if not intents:
+        return status
+    return _r4_execute(variant, sleeve_cfg, intents[0])
+
+
+def r4_btc_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
+    return _fire(r4_btc_decide, variant, sleeve_cfg)
+
+
+def r4_eth_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
+    return _fire(r4_eth_decide, variant, sleeve_cfg)
+
+
+def r4_btc_v2_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
+    return _fire(r4_btc_v2_decide, variant, sleeve_cfg)
+
+
+def r4_eth_v2_try_fire(variant: dict, sleeve_cfg: dict) -> dict:
+    return _fire(r4_eth_v2_decide, variant, sleeve_cfg)
+
+
+def _r4_v2_try_fire(variant: dict, asset: str, strategy: str,
+                    weight_key: str, sleeve_cfg: dict | None = None) -> dict:
+    """Legacy shared V2 entry, kept for direct callers (tests)."""
+    fn = r4_btc_v2_decide if asset == "BTC" else r4_eth_v2_decide
+    return _fire(fn, variant, sleeve_cfg or {})

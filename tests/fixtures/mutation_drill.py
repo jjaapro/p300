@@ -12,10 +12,15 @@ PY = REPO / "venv" / "Scripts" / "python.exe"
 
 MUTATIONS = [
     # (label, file, before, after, test file)
+    ("r4: legacy adapter substitutes 0.0 for an absent weight",
+     "strategies/sleeves/timing_anomalies/internal/r4/signal.py",
+     '"weight_pct": sleeve_cfg.get("_effective_weight_pct"),',
+     '"weight_pct": sleeve_cfg.get("_effective_weight_pct", 0.0) or 0.0,',
+     "tests/test_sleeve_adapter_equivalence.py"),
     ("r4: gate arm uses GATED not UNGATED",
      "strategies/sleeves/timing_anomalies/internal/r4/signal.py",
-     "inner_lev = R4_INNER_LEV_UNGATED * eff_gate.leverage_mult",
-     "inner_lev = R4_INNER_LEV_GATED * eff_gate.leverage_mult",
+     "inner_lev = R4_INNER_LEV_UNGATED * gate.leverage_mult",
+     "inner_lev = R4_INNER_LEV_GATED * gate.leverage_mult",
      "tests/test_golden_r4.py"),
     ("r4: weights fallback becomes a subscript",
      "strategies/sleeves/timing_anomalies/internal/r4/signal.py",

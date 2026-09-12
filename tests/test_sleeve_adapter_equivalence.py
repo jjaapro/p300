@@ -19,6 +19,8 @@ from __future__ import annotations
 
 from tests import _golden_guard  # noqa: F401  — MUST be first
 
+import pathlib
+
 import pytest
 
 VARIANT = {"id": "v_equiv", "capital_usdt": 10_000.0}
@@ -308,3 +310,78 @@ def test_adx_adapter_keeps_leverage_reaching_the_stop_semantics(monkeypatch):
 def test_adx_exposes_both_surfaces(name):
     from strategies.sleeves.adx import signal as sleeve
     assert callable(getattr(sleeve, name, None)),         f"adx lost {name}; both surfaces must stay live until phase D"
+
+
+# ── r4 ─────────────────────────────────────────────────────────────────────
+#
+# The one sleeve where the adapter must forward ABSENCE, not a default. Its
+# runner passes only {"priority": 100}, so weight/gate/vol_scalar arrive as
+# None and the fallback arms — the timing-anomaly weights table with its
+# bear-regime zero, the gated inner leverage, the vol leverage — are the live
+# behaviour. An adapter that substituted numbers would disable the regime
+# kill switch, and r4's next enabled fire is 2026-10-02, so nothing live
+# would show it until October.
+
+def _r4():
+    from strategies.sleeves.timing_anomalies.internal.r4 import signal
+    return signal
+
+
+@pytest.mark.parametrize("legacy, new", [
+    ("r4_btc_decide", "decide_btc"),
+    ("r4_eth_decide", "decide_eth"),
+    ("r4_btc_v2_decide", "decide_btc_v2"),
+    ("r4_eth_v2_decide", "decide_eth_v2"),
+])
+def test_r4_adapters_forward_the_full_cfg_surface(monkeypatch, legacy, new):
+    sleeve = _r4()
+    gate = object()
+    seen = _capture(monkeypatch, sleeve, new)
+    getattr(sleeve, legacy)(VARIANT, {
+        "_effective_weight_pct": 25.0, "_effective_gate": gate,
+        "_effective_vol_scalar": 1.5, "priority": 7.0})
+    assert seen["kwargs"] == {"weight_pct": 25.0, "gate": gate,
+                              "vol_scalar": 1.5, "priority": 7.0}
+
+
+@pytest.mark.parametrize("legacy, new", [
+    ("r4_btc_decide", "decide_btc"),
+    ("r4_eth_decide", "decide_eth"),
+    ("r4_btc_v2_decide", "decide_btc_v2"),
+    ("r4_eth_v2_decide", "decide_eth_v2"),
+])
+def test_r4_adapters_forward_absence_as_none(monkeypatch, legacy, new):
+    """THE r4 invariant. An empty cfg — which is what the bot sends — must
+    arrive as None, never as 0.0 or a substituted default."""
+    sleeve = _r4()
+    seen = _capture(monkeypatch, sleeve, new)
+    getattr(sleeve, legacy)(VARIANT, {})
+    assert seen["kwargs"] == {"weight_pct": None, "gate": None,
+                              "vol_scalar": None, "priority": 100.0}
+
+
+def test_r4_execute_adapter_keeps_its_private_name(monkeypatch):
+    """bots/r4/runner.py calls r4._r4_execute by that exact private name. If
+    the strip renames it without updating the runner, the bot raises on its
+    first fire — in October, with no other coverage."""
+    sleeve = _r4()
+    seen = {}
+    monkeypatch.setattr(sleeve, "execute",
+                        lambda variant, intent: seen.update(
+                            variant=variant, intent=intent) or {"status": "ok"})
+    sentinel = object()
+    sleeve._r4_execute(VARIANT, {"anything": "at all"}, sentinel)
+    assert seen == {"variant": VARIANT, "intent": sentinel}
+
+    src = (pathlib.Path(__file__).resolve().parents[1]
+           / "bots" / "r4" / "runner.py").read_text(encoding="utf-8")
+    assert "_r4_execute" in src
+
+
+@pytest.mark.parametrize("name", [
+    "decide_btc", "decide_eth", "decide_btc_v2", "decide_eth_v2", "execute",
+    "r4_btc_decide", "r4_eth_decide", "r4_btc_v2_decide", "r4_eth_v2_decide",
+    "_r4_execute", "r4_btc_try_fire", "r4_eth_try_fire",
+    "r4_btc_v2_try_fire", "r4_eth_v2_try_fire", "_r4_v2_try_fire"])
+def test_r4_exposes_both_surfaces(name):
+    assert callable(getattr(_r4(), name, None)),         f"r4 lost {name}; both surfaces must stay live until phase D"
