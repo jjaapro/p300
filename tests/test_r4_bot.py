@@ -323,3 +323,56 @@ def test_next_windows_are_future_and_sorted():
     assert all(w["close_utc"] > now for w in ws)
     assert [w["open_utc"] for w in ws] == sorted(w["open_utc"] for w in ws)
     assert ws[0]["strategy"] == STRATEGY_R4_BTC and ws[0]["open_utc"] == MON.replace(hour=6)
+
+
+# ─── shipped config: ETH windows only (2026-09-12) ────────────────────────────
+
+def test_shipped_config_enables_only_the_eth_windows():
+    """User decision 2026-09-12 (docs/calibration/r4.md): the BTC windows stay
+    wired but off. The `env` fixture forces all four on, so this test reads
+    the module as shipped."""
+    from bots.r4 import config as shipped
+    on = {k for k, v in shipped.ENABLED.items() if v}
+    assert on == {STRATEGY_R4_ETH, STRATEGY_R4_ETH_V2}
+    assert set(shipped.ENABLED) == {STRATEGY_R4_BTC, STRATEGY_R4_ETH,
+                                    STRATEGY_R4_BTC_V2, STRATEGY_R4_ETH_V2}
+    assert "ETH" in shipped.SHORT_NAME and "BTC" not in shipped.SHORT_NAME
+    # the weight table still covers every window, so re-enabling one is a flag flip
+    assert set(shipped.VARIANT_WEIGHT) == set(shipped.ENABLED)
+
+
+def test_next_windows_lists_only_the_requested_strategies():
+    now = datetime(2026, 9, 6, 15, 0, tzinfo=timezone.utc)
+    eth_only = r4cal.next_windows(now, 6, strategies=[STRATEGY_R4_ETH, STRATEGY_R4_ETH_V2])
+    assert len(eth_only) == 6
+    assert {w["strategy"] for w in eth_only} <= {STRATEGY_R4_ETH, STRATEGY_R4_ETH_V2}
+    assert all(w["asset"] == "ETH" for w in eth_only)
+    assert eth_only[0]["strategy"] == STRATEGY_R4_ETH
+    assert eth_only[0]["open_utc"] == TUE.replace(hour=20)
+    # the default still lists every window, so the calendar-parity test keeps its meaning
+    assert {w["strategy"] for w in r4cal.next_windows(now, 8)} == {
+        STRATEGY_R4_BTC, STRATEGY_R4_ETH, STRATEGY_R4_BTC_V2, STRATEGY_R4_ETH_V2}
+
+
+def test_shipped_config_skips_monday_and_trades_the_eth_pair(env, monkeypatch):
+    monkeypatch.setattr(botcfg, "ENABLED", {
+        STRATEGY_R4_BTC: False, STRATEGY_R4_ETH: True,
+        STRATEGY_R4_BTC_V2: False, STRATEGY_R4_ETH_V2: True})
+    _at(MON.replace(hour=6, minute=1))
+    out = runner.tick(_variant(), {})
+    assert out["status"] == "no_action"
+    assert STRATEGY_R4_BTC not in out["detail"] and STRATEGY_R4_BTC_V2 not in out["detail"]
+    assert _rows(env) == []
+    _at(TUE.replace(hour=20, minute=1))
+    out = runner.tick(_variant(), {})
+    assert out["status"] == "opened"
+    rows = _rows(env, STRATEGY_R4_ETH)
+    assert len(rows) == 1 and rows[0]["asset"] == "ETH"
+    assert rows[0]["exit_time"].startswith("2026-09-09T20:00")
+    # Wednesday: only the ETH V2 joins the open ETH V1 — two legs, never three
+    _at(WED.replace(hour=4, minute=1))
+    out = runner.tick(_variant(), {})
+    assert out["status"] == "opened"
+    assert _rows(env, STRATEGY_R4_BTC_V2) == []
+    assert len(_rows(env, STRATEGY_R4_ETH_V2)) == 1
+    assert botlib.open_gross_usdt("bot_r4_test") <= botcfg.GROSS_MAX_X * CAPITAL

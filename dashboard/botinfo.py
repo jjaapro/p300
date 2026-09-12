@@ -89,15 +89,16 @@ BOTS: dict[str, dict] = {
         "cadence_note": "daily funding decision; positions held for weeks",
     },
     "r4": {
-        "display": "R4 calendar (BTC+ETH)",
+        "display": "R4 calendar (ETH windows)",
         "variant_id": "bot_r4_v1",
-        "asset": "BTC/ETH",
+        "asset": "ETH",
         "card": "r4.md",
         "calibration": "r4.md",
         "diag": REPO / "bots" / "r4" / "logs" / "diag.jsonl",
-        "cadence_note": ("fires only inside the Mon/Tue/Wed/Fri windows of "
-                         "days 1-14; 0-3 positions/day, ~12 fires/month max; "
-                         "silence on other days is designed behavior"),
+        "cadence_note": ("fires only inside the Tue/Wed/Fri ETH windows of "
+                         "days 1-14 (BTC windows disabled 2026-09-12); 0-2 "
+                         "positions/day, ~6 fires/month max, none in bear "
+                         "regimes; silence on other days is designed behavior"),
     },
 }
 
@@ -442,9 +443,11 @@ def _upcoming_windows(bot: str) -> list[dict] | None:
     if bot != "r4":
         return None
     import sqlite3
+    from bots.r4 import config as r4cfg
     from bots.r4 import windows as r4cal
     from strategies.support import clock, db
     now = clock.now_utc()
+    enabled = [k for k, v in r4cfg.ENABLED.items() if v]
     fired: set[str] = set()
     try:
         con = sqlite3.connect(str(db.PROD_DB))
@@ -462,4 +465,4 @@ def _upcoming_windows(bot: str) -> list[dict] | None:
              "close_utc": w["close_utc"].isoformat(),
              "fired_today": (w["strategy"] in fired
                              and w["open_utc"].date() == now.date())}
-            for w in r4cal.next_windows(now, 8)]
+            for w in r4cal.next_windows(now, 8, strategies=enabled)]

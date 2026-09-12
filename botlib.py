@@ -343,7 +343,18 @@ def ensure_bot_variant(variant_id: str, *, short_name: str,
         con.commit()
         if cur.rowcount:
             log.info(f"variant {variant_id}: enabled NULL -> 1")
-            v = variant_registry.get_variant(variant_id)
+        # The config's SHORT_NAME is the bot's label in every variant list;
+        # follow it when it changes (r4 -> "ETH windows", 2026-09-12) and
+        # leave the same audit trail register_variant does.
+        if v is not None and short_name and v.get("short_name") != short_name:
+            con.execute("UPDATE variants SET short_name=? WHERE id=?",
+                        (short_name, variant_id))
+            con.commit()
+            variant_registry._record_event(
+                variant_id, "renamed", "bot",
+                summary=f"short_name {v.get('short_name')!r} -> {short_name!r}")
+            log.info(f"variant {variant_id}: short_name -> {short_name!r}")
+        v = variant_registry.get_variant(variant_id)
     finally:
         con.close()
     return v

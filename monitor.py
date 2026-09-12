@@ -57,12 +57,11 @@ from strategies.support import db  # noqa: E402
 # as HELD. The moment a process for it IS seen, every normal check applies
 # again — holding suppresses "it should be running", never "it is misbehaving".
 #
-# Keep the reason here rather than in a comment: it is what the dashboard shows.
-HELD_UNITS: dict[str, str] = {
-    "r4": ("held 2026-09-09 pending a mechanism — a calendar anomaly with no "
-           "explanation for why it works or decays. Built, wired and tested; "
-           "start with .\\start_fleet.ps1 -Units r4"),
-}
+# Keep the reason here rather than in a comment: it is what the dashboard shows,
+# e.g. {"r4": "held 2026-09-09 pending a mechanism ..."}. Empty since 2026-09-12:
+# r4 rejoined the fleet defaults with only its ETH windows enabled
+# (bots/r4/config.py ENABLED; docs/calibration/r4.md).
+HELD_UNITS: dict[str, str] = {}
 
 # bot name -> max seconds since last_eval_utc before it counts as silent.
 # Chento evaluates every 15m bar; Short Squeeze evaluates 15m bars inside

@@ -23,9 +23,10 @@
     they log stale-input skips until the tables are fresh.
 
 .PARAMETER Units
-    Which units to start. Default: all of them (feed, the five bots, the
+    Which units to start. Default: all of them (feed, the seven bots, the
     dashboard). Names: feed chento_v3 chento_v3_eth short_squeeze adx carry
-    dashboard monitor. `monitor` is only started when named here or via -Monitor.
+    squeeze_bull r4 dashboard monitor. `monitor` is only started when named
+    here or via -Monitor.
 
 .PARAMETER Monitor
     Also open a console that runs `python monitor.py` once an hour (there is
@@ -59,12 +60,11 @@
 #>
 [CmdletBinding()]
 param(
-    # r4 is deliberately NOT in the defaults (2026-09-09). It is built, wired and
-    # tested, but held pending a mechanism: it is a calendar timing anomaly with no
-    # explanation for why it works or decays, so it is opt-in only until that call
-    # is made. Start it with:  .\start_fleet.ps1 -Units r4
+    # r4 was held out of the defaults 2026-09-09 (a calendar anomaly with no
+    # mechanism) and rejoined them 2026-09-12 with ONLY its ETH windows enabled
+    # (bots/r4/config.py ENABLED; reasoning in docs/calibration/r4.md).
     [string[]]$Units = @("feed", "chento_v3", "chento_v3_eth", "short_squeeze",
-                         "adx", "carry", "squeeze_bull", "dashboard"),
+                         "adx", "carry", "squeeze_bull", "r4", "dashboard"),
     [switch]$Monitor,
     [switch]$SkipGapFix,
     [switch]$ForceFeed,

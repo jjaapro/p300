@@ -139,16 +139,24 @@ def test_held_unit_that_is_actually_running_is_checked_normally(monkeypatch):
     assert "DEAD" in _codes_for(alerts, "adx")
 
 
-def test_r4_is_the_held_unit_and_squeeze_bull_is_not():
-    """The live registry, so removing r4 from the fleet defaults without
-    declaring the hold (or vice versa) fails here."""
+def test_nothing_is_held_and_any_held_unit_would_be_known():
+    """The live registry: r4 rejoined the fleet defaults 2026-09-12 (ETH
+    windows only), so nothing is held today. Holding a unit again without
+    taking it out of the defaults (or vice versa) is caught here together
+    with start_fleet.ps1's default list."""
+    import re
     import monitor
     import dashboard.procscan as procscan
-    assert "r4" in monitor.HELD_UNITS
+    assert "r4" not in monitor.HELD_UNITS
     assert "squeeze_bull" not in monitor.HELD_UNITS
     # a held unit must still be a known unit, or nothing would render it
     for unit in monitor.HELD_UNITS:
         assert unit in procscan.UNIT_SCRIPTS
+    ps1 = (Path(__file__).resolve().parents[1] / "start_fleet.ps1").read_text(encoding="utf-8")
+    m = re.search(r"\[string\[\]\]\$Units = @\((.*?)\)", ps1, re.S)
+    defaults = set(re.findall(r'"([a-z0-9_]+)"', m.group(1)))
+    assert "r4" in defaults
+    assert not (defaults & set(monitor.HELD_UNITS)), "a held unit must not be a default"
 
 
 def test_writer_unseen_when_fresh_but_no_process():

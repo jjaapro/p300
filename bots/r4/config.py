@@ -7,6 +7,9 @@ which variants run, how a fire is sized inside one variant, the late-entry
 grace, and the stale-input policy. Changes here belong in
 docs/calibration/r4.md per the calibration-log rule.
 
+Which windows run: the ETH pair only, since 2026-09-12 (user decision — the
+BTC windows are wired and tested but disabled in ENABLED below).
+
 Calibration provenance: studies/notebooks/r4_bot_prep/findings.md (2026-09-06)
 — STOP_LOSS_PCT = None (no stop level passed the pre-registered rule) and
 LATE_ENTRY_MAX_S = 300 (5-minute grace from the late-entry cost curve).
@@ -19,16 +22,20 @@ from strategies.sleeves.timing_anomalies.internal.r4.config import (
 
 VARIANT_ID = "bot_r4_v1"
 BOT_NAME = "r4"
-SHORT_NAME = "Bot: R4 calendar (BTC+ETH)"
+SHORT_NAME = "Bot: R4 calendar (ETH windows)"
 
 CAPITAL_USDT = 10_000.0
 
-# Which of the four sleeve variants this bot evaluates. Flip to False (and log
-# it in docs/calibration/r4.md) when the disable rule fires.
+# Which of the four sleeve variants this bot evaluates. Flip a value (and log
+# it in docs/calibration/r4.md) when the disable rule fires or the operator
+# decides. 2026-09-12: only the ETH windows run — R4_ETH (Tue -> Wed) is the
+# era-stable window (r4_study §4, ranked first in both eras) while the BTC
+# windows are post-perp emergent (§1). The BTC pair stays wired; a False
+# entry is never evaluated (runner.tick skips it).
 ENABLED = {
-    STRATEGY_R4_BTC: True,
+    STRATEGY_R4_BTC: False,
     STRATEGY_R4_ETH: True,
-    STRATEGY_R4_BTC_V2: True,
+    STRATEGY_R4_BTC_V2: False,
     STRATEGY_R4_ETH_V2: True,
 }
 
@@ -40,9 +47,10 @@ VARIANT_WEIGHT = {k: 0.20 for k in ENABLED}
 LEV_CAP = 7.5                 # sleeve max: inner 2.5 × H_CAPS strong_bull 3.0
 
 # Co-fire budget: sum of open R4 notional ≤ GROSS_MAX_X × capital. Wednesdays
-# in week 1-2 can hold three positions (ETH V1 still open + both V2s); a new
-# fire is scaled DOWN to the remaining budget, never skipped, unless the
-# remainder is below MIN_NOTIONAL_USDT.
+# in week 1-2 can hold two positions with the ETH pair (ETH V1 still open +
+# ETH V2; three when the BTC V2 is enabled too); a new fire is scaled DOWN to
+# the remaining budget, never skipped, unless the remainder is below
+# MIN_NOTIONAL_USDT.
 GROSS_MAX_X = 3.0
 MIN_NOTIONAL_USDT = 250.0
 

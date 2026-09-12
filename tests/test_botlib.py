@@ -143,6 +143,25 @@ def test_ensure_bot_variant_idempotent_and_enabled(tmp_db):
     assert n == 1
 
 
+def test_ensure_bot_variant_refreshes_short_name_from_config(tmp_db):
+    """The config's SHORT_NAME is the label; a changed label is applied on the
+    next start with an audit event, and an unchanged one writes nothing
+    (r4 -> "ETH windows", 2026-09-12)."""
+    botlib.ensure_bot_variant("bot_x_v1", short_name="Bot X (BTC+ETH)",
+                              capital_usdt=5000.0, bot_name="x")
+    v = botlib.ensure_bot_variant("bot_x_v1", short_name="Bot X (ETH windows)",
+                                  capital_usdt=5000.0, bot_name="x")
+    assert v["short_name"] == "Bot X (ETH windows)"
+    botlib.ensure_bot_variant("bot_x_v1", short_name="Bot X (ETH windows)",
+                              capital_usdt=5000.0, bot_name="x")
+    con = sqlite3.connect(str(tmp_db))
+    rows = con.execute("SELECT event_type, summary FROM variant_events "
+                       "WHERE variant_id='bot_x_v1' ORDER BY id").fetchall()
+    con.close()
+    assert [r[0] for r in rows] == ["registered", "renamed"]
+    assert "ETH windows" in rows[1][1]
+
+
 # ─── Scheduled-exit backstop ──────────────────────────────────────────────────
 
 def test_close_due_trades_closes_only_overdue(tmp_db):

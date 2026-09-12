@@ -59,13 +59,18 @@ def _w(strategy: str, day: datetime, entry_hour: int) -> dict:
             "close_utc": open_dt + timedelta(hours=HOLD_HOURS[strategy])}
 
 
-def next_windows(now: datetime, n: int = 6, horizon_days: int = 45) -> list[dict]:
-    """The next `n` windows whose close is still in the future, oldest first."""
+def next_windows(now: datetime, n: int = 6, horizon_days: int = 45,
+                 strategies=None) -> list[dict]:
+    """The next `n` windows whose close is still in the future, oldest first.
+    `strategies` (an iterable of strategy names) restricts the listing to
+    those windows — the runner and the dashboard pass the ENABLED set so a
+    disabled window is never announced as upcoming; None lists all four."""
     day0 = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    keep = None if strategies is None else set(strategies)
     out = []
     for i in range(horizon_days):
         for w in windows_on(day0 + timedelta(days=i)):
-            if w["close_utc"] > now:
+            if w["close_utc"] > now and (keep is None or w["strategy"] in keep):
                 out.append(w)
     out.sort(key=lambda w: (w["open_utc"], w["strategy"]))
     return out[:n]

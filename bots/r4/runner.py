@@ -1,10 +1,11 @@
 """Standalone runner for the R4 calendar family — one process, four windows,
-one variant (`bot_r4_v1`).
+one variant (`bot_r4_v1`). Which windows are live is config.ENABLED: since
+2026-09-12 only the ETH pair.
 
 Windows (UTC, week 1-2 of the month = day <= 14):
-  JPLUS_R4_BTC     Mon 06:00 -> 18:00
+  JPLUS_R4_BTC     Mon 06:00 -> 18:00                      (disabled 2026-09-12)
   JPLUS_R4_ETH     Tue 20:00 -> Wed 20:00 (Wed must be day <= 14)
-  JPLUS_R4_BTC_V2  Wed+Fri 04:00 -> 14:00
+  JPLUS_R4_BTC_V2  Wed+Fri 04:00 -> 14:00                  (disabled 2026-09-12)
   JPLUS_R4_ETH_V2  Wed+Fri 04:00 -> 14:00
 
 The sleeve package is imported unchanged: each variant's decide function
@@ -302,7 +303,7 @@ def main(argv: list[str] | None = None) -> int:
              f"gross_cap={botcfg.GROSS_MAX_X}x grace={botcfg.LATE_ENTRY_MAX_S}s "
              f"stop={botcfg.STOP_LOSS_PCT} enabled={enabled} "
              f"open_trades={botlib.count_open_trades(variant['id'])}")
-    for w in r4cal.next_windows(clock.now_utc(), 4):
+    for w in r4cal.next_windows(clock.now_utc(), 4, strategies=enabled):
         log.info(f"next window {w['strategy']} {w['open_utc'].isoformat()} -> "
                  f"{w['close_utc'].isoformat()}")
 
