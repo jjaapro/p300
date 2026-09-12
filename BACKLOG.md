@@ -298,7 +298,14 @@ gateable at all.
   The disable belongs to step 3.
 - Go-ahead needed before phase C (the first live strategy-module edit).
 
-### Phase A — make it safe to work (fleet keeps running)
+### Phase A — make it safe to work (fleet keeps running) ✅ DONE 2026-09-12
+
+Commits `9d80dd0` (step 1), `4b59b29` (step 2), `80ad875` (step 3). Fleet
+untouched: all eight heartbeats stayed `ok` on their original pids. Suite
+1366 → 1398, `health.py` exits 0. Two real defects surfaced while doing it —
+`--with-fomc` had always produced a run *without* FOMC and reported success,
+and the step-3 dry-run gate caught both a leaked diagnostics write and a
+NameError I had just introduced in the r4 runner.
 
 1. **Make every dispatch miss loud.** In `backtest_runner.py:257-259` keep the existing
    `STRATEGY_DISPATCH` resolution and replace only `continue` with a `raise` naming the
@@ -313,12 +320,13 @@ gateable at all.
 2. **Repoint `health.py`** off the dead composition onto the bot fleet: assert the nine
    `bot_*` variants are registered and that each runner's actual entry points exist. Prove
    it bites by renaming one in a scratch worktree and confirming a non-zero exit.
-3. **Port `--db` / `--sim-now`** to the five runners that lack them (only `bots/r4/runner.py`
-   has them today), including its refusal to accept prod.db. The dry-run helper must also
-   redirect `CHENTO_V3_DIAG_PATH` and `SSQ_DIAG_PATH` into a scratch dir, or every chento /
-   short_squeeze dry run appends to the live JSONL the dashboard reads. Note
-   `bots/chento_v3_eth/runner.py` sets `CHENTO_V3_DIAG=1` *unconditionally*, so the redirect
-   must follow that import.
+3. **Port `--db` / `--sim-now`** to the five runners that lack them. Done as
+   `botlib.point_at_db_copy` / `add_dry_run_flags` / `apply_dry_run_flags` — one definition,
+   six call sites. It redirects three layers, not one: the DB constants, the sleeve-level
+   `CHENTO_V3_DIAG_PATH` / `SSQ_DIAG_PATH` env vars (resolved at sleeve import, hence called
+   from `main()`), **and** the runner-level `botcfg.DIAG_PATH` / `LOGS_DIR` that squeeze_bull
+   and r4 append to directly — the env redirect alone left a live JSONL being written, which
+   the gate caught.
 
 ### Phase B — build a net that can actually fail (fleet keeps running)
 
