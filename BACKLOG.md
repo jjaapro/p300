@@ -302,8 +302,7 @@ cap — the multi-asset plan's Phase B as written.
    Drill rebuilt 22 → 16: the eight `cfg_adapter` mutations went with their subject, and two
    of the semantics they pinned moved to the runner level where the per-variant flags are now
    literal keywords. Zero golden churn, 16/16, `health.py` 0, fleet 8/8.
-4. ~~Archive the eight dormant sleeves~~ — **DONE 2026-09-13** (commits `1f58b5e`,
-   `<archive>`). EMA_BTC, ETH_DAILY, THU_BEAR, PDO, CPR, FOMC, AI_QUANT and
+4. ~~Archive the eight dormant sleeves~~ — **DONE 2026-09-13** (commits `1f58b5e`, `f553b56`). EMA_BTC, ETH_DAILY, THU_BEAR, PDO, CPR, FOMC, AI_QUANT and
    chento_limit_bid now live under `studies/material/archive/` — 45 files, 7,406 lines.
    `strategies/sleeves/` is deleted outright; what was left of it was scaffolding.
 
