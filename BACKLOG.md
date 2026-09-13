@@ -540,7 +540,7 @@ cap — the multi-asset plan's Phase B as written.
    historical R4_ETH rows; R4_ETH's research contribution overstated ~6% (39.985 vs
    37.447 pct-pts). Since 7a, live is causal on those rows and research is not.
 10. **Hazard: a plain `pytest` run can write to the live prod.db.** **DONE 2026-09-13**
-    (`<fix10>`). Worse than first reported, on every axis, all measured:
+    (`a942cf1`). Worse than first reported, on every axis, all measured:
     - **Two** modules wrote on import, not one: `trade_db.py` (BEGIN + CREATE ... IF NOT
       EXISTS + INSERT OR IGNORE, 16 statements) and `variant_registry.py` (6).
     - **12** test files fail collection against a read-only prod.db, not 2.
