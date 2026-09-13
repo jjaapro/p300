@@ -14,17 +14,25 @@ BTC twice. That import-time coupling is also what the refactor intends to
 remove (asset becomes a call-time parameter), which makes these two goldens
 the evidence that the move preserved behaviour.
 
-**The ledger is not a golden source.** Production booked three signals on
-2026-08-21/22 (SJ-4243..SJ-4249, doubled by the 2026-08-15..24 incident). Run
-against today's data, two of the three reproduce as `decided` — and the third,
-2026-08-21T06:00, now comes back `filter_blocked` on the OKX cross-exchange
-gate. That is expected, not a defect: the feed upserted those bars after the
-fires (SJ-4243's notes record `_entry_price` 75256.8 where prod.db now holds
-close 75255.8), and a marginal z-score gate flips on exactly that kind of
-revision. The goldens therefore freeze what TODAY's code does on hash-pinned
-data; the ledger is a structural cross-check only. Anyone who seeds a golden
-from the notes blob gets a test that fails on day one and "fixes" it by
-loosening a tolerance.
+**The live ledger is the ground truth, and these goldens now agree with it.**
+Production booked three signals on 2026-08-21/22 (SJ-4243..SJ-4249, doubled by
+the 2026-08-15..24 incident) and recorded the `okx_delta_z` each fired on:
+1.4609786480 (bar 06:00), 0.1437340057 (19:30), 1.6751492272 (03:45). The
+goldens below reproduce all three to ten significant figures.
+
+Until 2026-09-13 they did not, and this paragraph used to explain the gap
+away. It said the 06:00 signal "now comes back filter_blocked" because "the
+feed upserted those bars after the fires", and warned that anyone seeding a
+golden from the notes blob "gets a test that fails on day one". That was
+wrong, and the reasoning is worth keeping as a warning: a plausible
+explanation in a docstring steered readers AWAY from the one check that
+exposed the bug. The real cause was look-ahead. chento's three loaders had no
+upper clock bound, so a frozen-clock golden read the fixture's tail — 59
+minutes of future OKX data at the 06:00 bar — and recorded okx_delta_z -0.73
+for a bar live had actually traded at +1.46. The $1 entry-price difference it
+cited is the live fill against the 1m feed; it cannot flip a z-score's sign.
+
+So: when a golden and the live ledger disagree, suspect the golden. BACKLOG 7b.
 """
 from __future__ import annotations
 
@@ -47,10 +55,22 @@ REPO = Path(__file__).resolve().parents[1]
 GOLDENS = Path(__file__).resolve().parent / "goldens"
 VARIANT = {"id": "bot_chento_btc_test", "capital_usdt": 10_000.0}
 
-# Clocks at which today's code reproduces production's signals.
-FIRE_A = datetime(2026, 8, 21, 19, 30, 5, tzinfo=timezone.utc)
-FIRE_B = datetime(2026, 8, 22, 3, 45, 5, tzinfo=timezone.utc)
-OKX_BLOCKED = datetime(2026, 8, 21, 6, 0, 5, tzinfo=timezone.utc)
+# The three bars production actually traded, each reproduced by today's code.
+FIRE_0600 = datetime(2026, 8, 21, 6, 0, 5, tzinfo=timezone.utc)     # SJ-4243/4244
+FIRE_A = datetime(2026, 8, 21, 19, 30, 5, tzinfo=timezone.utc)      # SJ-4245/4246
+FIRE_B = datetime(2026, 8, 22, 3, 45, 5, tzinfo=timezone.utc)       # SJ-4248/4249
+
+#: The okx_delta_z the running bot recorded in trades.notes for each fire.
+LIVE_OKX_Z = {FIRE_0600: 1.4609786480063527, FIRE_A: 0.14373400566189817,
+              FIRE_B: 1.675149227184317}
+
+# A bar where the OKX gate genuinely blocks. It was 2026-08-21 06:00 until
+# 2026-09-13 — but that "block" existed only with future data, and live traded
+# the signal (see FIRE_0600). 2026-07-16 06:30 blocks on the causal
+# information set (z -2.66) AND blocked on the old peeking one (z -0.59), so it
+# is a real gate event rather than a boundary artifact. Needs the fixture's
+# 45-day OKX carve.
+OKX_BLOCKED = datetime(2026, 7, 16, 6, 30, 5, tzinfo=timezone.utc)
 
 
 #: The 2026-08-21 close. chento's sweep prices open positions off the live 1m
@@ -70,6 +90,16 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setattr(price_feed, "_get_current_price", lambda a=None: SWEEP_PRICE)
     yield db
     clock.set_simulated_now(None)
+
+
+def _decided_okx_z(intents) -> float:
+    """okx_delta_z for a DECIDED signal. It is not on the status dict — only a
+    filter_blocked status carries it at the top level — but on the intent's
+    filter diagnostics, the same blob the ledger writes to trades.notes."""
+    assert intents, "no intent — the signal did not decide"
+    reason = intents[0].reason
+    reason = reason if isinstance(reason, dict) else vars(reason)
+    return reason["_filter_diag"]["okx_delta_z"]
 
 
 def _check(name, at, db_path, *, execute=False, **kw):
@@ -112,14 +142,58 @@ def test_golden_chento_btc_bar_keyed_idempotency(env):
 
 
 def test_golden_chento_btc_okx_gate_blocks(env):
-    """The cross-exchange OKX gate — worth -25% drawdown and +34% OOS
-    expectancy in the study that added it. At this bar today's data has the
-    delta z misaligned with the signal direction, so the gate refuses it."""
+    """The cross-exchange OKX gate refuses a Triple whose delta z is
+    misaligned with the signal direction.
+
+    The VALUE is pinned, not just the key. At this anchor the gate blocks on
+    both the causal information set (z -2.66) and the old peeking one (z
+    -0.59), so `filter_blocked` alone cannot tell a correctly bounded loader
+    from an unbounded one — only the number can. The old assertion here was
+    `"okx_delta_z" in doc["status"]`, which passes for any value at all
+    (memory feedback_characterization_gates_not_arithmetic).
+
+    The gate's own study claimed -25% drawdown and +34% OOS expectancy, on
+    same-hour complete bars from both venues that live can never see; it is
+    scheduled for re-validation on the causal information set (BACKLOG).
+    """
     doc = _check("btc_okx_blocked", OKX_BLOCKED, env)
     assert doc["status"]["status"] == "filter_blocked"
     assert doc["status"]["reason"] == "okx_misaligned"
-    assert "okx_delta_z" in doc["status"]
+    assert doc["status"]["okx_delta_z"] == pytest.approx(-2.6609709957818866,
+                                                          abs=1e-9)
     assert doc["intents"] == []
+
+
+def test_golden_chento_btc_the_signal_the_old_golden_wrongly_blocked(env):
+    """2026-08-21 06:00: production TRADED this Triple (SJ-4243/4244). Until
+    2026-09-13 the golden at this bar said the OKX gate blocked it, because
+    the unbounded loaders let it see 59 minutes of future OKX data.
+
+    This is the most direct guard against that look-ahead coming back: remove
+    the loader bounds and this flips to filter_blocked again. It also pins
+    agreement with the live ledger, to ten significant figures.
+    """
+    doc = _check("btc_fire_0600", FIRE_0600, env)
+    assert doc["status"]["status"] == "decided"
+    assert doc["status"]["direction"] == "long"
+    z = doc["intents"][0]["reason"]["_filter_diag"]["okx_delta_z"]
+    assert z == pytest.approx(LIVE_OKX_Z[FIRE_0600], rel=1e-9), (
+        f"okx_delta_z {z} no longer matches what the live bot recorded "
+        f"(SJ-4243: {LIVE_OKX_Z[FIRE_0600]})")
+
+
+@pytest.mark.parametrize("at", [FIRE_A, FIRE_B])
+def test_golden_chento_btc_fires_match_the_live_ledger(env, at):
+    """The other two production fires, checked against the okx_delta_z the
+    running bot actually recorded — the cross-check the old docstring told
+    readers not to make."""
+    surface.reset_module_state("chento_btc")
+    clock.set_simulated_now(at)
+    intents, status = surface.decide("chento_btc", variant=VARIANT)
+    assert status["status"] == "decided"
+    z = _decided_okx_z(intents)
+    assert z == pytest.approx(LIVE_OKX_Z[at], rel=1e-9), (
+        f"{at:%Y-%m-%d %H:%M}: okx_delta_z {z} != live ledger {LIVE_OKX_Z[at]}")
 
 
 def test_golden_chento_btc_no_triple(env):

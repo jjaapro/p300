@@ -136,6 +136,41 @@ MUTATIONS = [
      "WHERE p.timestamp >= ? AND p.timestamp <= ?+8640000",
      "tests/test_bot_lookahead.py::"
      "test_short_squeeze_percentile_pool_is_clock_bounded"),
+    # BACKLOG 7b. chento's loaders were unbounded until 2026-09-13 and the
+    # goldens recorded the future. Both directions are pinned: a bound that is
+    # loosened reads the future, one that is tightened drops the forming bar
+    # (killing replay entries) or a closed OKX hour (a live behaviour change).
+    # Binding-preserving on purpose — see the jplus note above.
+    ("lookahead: chento 15m loader upper bound removed",
+     "bots/chento_v3/strategy/signal.py",
+     "params=(cutoff, upto))", "params=(cutoff, 99999999999))",
+     "tests/test_chento_clock_bound.py::test_chento_loaders_are_clock_bounded"),
+    ("lookahead: chento LSR loader upper bound removed",
+     "bots/chento_v3/strategy/signal.py",
+     "params=(LSR_ASSET, cutoff, upto))", "params=(LSR_ASSET, cutoff, 99999999999))",
+     "tests/test_chento_clock_bound.py::test_chento_loaders_are_clock_bounded"),
+    ("lookahead: chento OKX bound loses its -3600 (mixed-hour artifact)",
+     "bots/chento_v3/strategy/signal.py",
+     "upto = int(now.timestamp()) - 3600       # last fully closed hour",
+     "upto = int(now.timestamp())",
+     "tests/test_chento_clock_bound.py::"
+     "test_chento_bound_keeps_the_forming_bar_and_the_last_closed_okx_hour"),
+    ("lookahead: chento replay stale-frame rebuild removed",
+     "bots/chento_v3/strategy/signal.py",
+     'if df.index[-1] < pd.Timestamp(now).floor("15min"):', "if False:",
+     "tests/test_chento_clock_bound.py::"
+     "test_chento_walking_replay_reaches_every_boundary"),
+    # The most direct guard of all: unbound the OKX loader and the signal live
+    # actually traded (SJ-4243) flips back to the false OKX block. It is the
+    # OKX bound specifically — verified: removing only the 15m bound leaves
+    # this golden green, because the future that leaked into the 06:00 bar was
+    # OKX's hour-06 candle (closing 06:59), not the Binance frame.
+    ("lookahead: chento OKX bound removed -> the traded 06:00 signal re-blocks",
+     "bots/chento_v3/strategy/signal.py",
+     "upto = int(now.timestamp()) - 3600       # last fully closed hour",
+     "upto = 99999999999",
+     "tests/test_golden_chento.py::"
+     "test_golden_chento_btc_the_signal_the_old_golden_wrongly_blocked"),
     # BACKLOG 7a. Reverting the partial-day drop is the exact bug that
     # bypassed r4's bear-regime kill switch on 2026-03-03 and 2026-03-31.
     ("lookahead: r4 sizing reads today's partial daily bar again",

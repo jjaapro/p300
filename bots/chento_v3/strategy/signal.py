@@ -167,23 +167,35 @@ def _diag_flush(new_day_iso: str) -> None:
 # ─── Data loaders ──────────────────────────────────────────────────────────
 
 def _load_15m_btc(now: datetime, days_back: int) -> pd.DataFrame:
-    """Load BTC perp 15m OHLCV with taker buy/sell split.
+    """Load BTC perp 15m OHLCV with taker buy/sell split, bounded at `now`.
 
-    Deliberately NO upper timestamp clamp: in live the frame may therefore
-    include the still-forming bar (the feed upserts in-progress candles).
-    That is safe because every feature is a TRAILING computation — a later
-    row never changes an earlier row's values — and the live entry path
-    explicitly selects the just-closed bar, never the forming one."""
+    `<= now` still INCLUDES the still-forming bar — rows are stamped at bar
+    OPEN and the feed upserts in-progress candles — so in live this bound
+    drops nothing (measured 2026-09-13: 0 rows stamped past the clock in any
+    of the five chento tables, and all 36 feature columns identical with and
+    without it). The live entry path selects the just-closed bar itself.
+
+    Until 2026-09-13 there was NO upper bound, and the old docstring said that
+    was safe because "every feature is a TRAILING computation". It was not:
+    `ret_30d` and `okx_delta_z` come off resamples whose last bucket reaches
+    past the bar. Under a frozen clock (--sim-now, replays, re-cuts, the
+    goldens) the frame ran to the DB tail — 5,751 bars past a 2026-07-15
+    clock — and the committed goldens recorded that future. BACKLOG 7b.
+
+    Do NOT tighten this to the last CLOSED bar (`< floor(now, 15m)`): the
+    replay branch of _evaluate_trigger selects the bar whose open == now and
+    would find nothing, killing replay entries outright."""
     con = sqlite3.connect(str(db.TRADER_DB))
     try:
         cutoff = int((now - timedelta(days=days_back)).timestamp())
+        upto = int(now.timestamp())
         df = pd.read_sql(f"""
             SELECT timestamp, open, high, low, close, volume, quote_volume,
                    volume_buy, quote_volume_buy, volume_sell, quote_volume_sell
             FROM {PERP_15M_TABLE}
-            WHERE timestamp >= ?
+            WHERE timestamp >= ? AND timestamp <= ?
             ORDER BY timestamp
-        """, con, params=(cutoff,))
+        """, con, params=(cutoff, upto))
     finally:
         con.close()
     if df.empty:
@@ -193,16 +205,18 @@ def _load_15m_btc(now: datetime, days_back: int) -> pd.DataFrame:
 
 
 def _load_lsr_btc(now: datetime, days_back: int) -> pd.DataFrame:
-    """Load BTC long_short_ratio."""
+    """Load BTC long_short_ratio, bounded at `now`. Unbounded until
+    2026-09-13 — see _load_15m_btc."""
     con = sqlite3.connect(str(db.TRADER_DB))
     try:
         cutoff = int((now - timedelta(days=days_back)).timestamp())
+        upto = int(now.timestamp())
         df = pd.read_sql("""
             SELECT timestamp, ratio, long_pct, short_pct
             FROM ca_long_short_ratio
-            WHERE asset=? AND timestamp >= ?
+            WHERE asset=? AND timestamp >= ? AND timestamp <= ?
             ORDER BY timestamp
-        """, con, params=(LSR_ASSET, cutoff))
+        """, con, params=(LSR_ASSET, cutoff, upto))
     finally:
         con.close()
     if df.empty:
@@ -212,15 +226,29 @@ def _load_lsr_btc(now: datetime, days_back: int) -> pd.DataFrame:
 
 
 def _load_okx_1h(now: datetime, days_back: int) -> pd.Series:
-    """Load OKX BTC-USDT-SWAP 1h close."""
+    """Load OKX BTC-USDT-SWAP 1h close, bounded at the last CLOSED hour.
+
+    A row stamped T is the bar [T, T+1h). data/sources/okx_perp.py writes
+    confirmed bars only (refresh_latest skips c[8] != "1"), so live never
+    holds a row with T > now - 1h and this bound drops nothing there.
+
+    The -3600 is load-bearing, not defensive. `<= now` would pair a COMPLETE
+    OKX hour with the Binance hour truncated at the clock, and that mismatch
+    alone moves |okx_delta_z| from a 0.84 mean to 5.7 and flips the OKX gate
+    on ~36% of bars. Measured 2026-09-13 against the live ledger: with -3600
+    the replay reproduces the okx_delta_z the running bot recorded
+    (SJ-4243..4249) to 10 significant figures; with `<= now` it gives -11.34
+    at a bar live traded. If okx_perp ever starts storing unconfirmed candles,
+    this bound starts dropping a live row — review both together."""
     con = sqlite3.connect(str(db.TRADER_DB))
     try:
         cutoff = int((now - timedelta(days=days_back)).timestamp())
+        upto = int(now.timestamp()) - 3600       # last fully closed hour
         df = pd.read_sql(f"""
             SELECT timestamp, close FROM {OKX_1H_TABLE}
-            WHERE timestamp >= ?
+            WHERE timestamp >= ? AND timestamp <= ?
             ORDER BY timestamp
-        """, con, params=(cutoff,))
+        """, con, params=(cutoff, upto))
     finally:
         con.close()
     if df.empty:
@@ -737,6 +765,22 @@ def _evaluate_trigger(now: datetime, variant: dict,
         # slice is final by construction. Keep the historical selection
         # semantics untouched (bar open == now, final values) — the recorded
         # replay baselines are byte-anchored to this path.
+        #
+        # Stale-frame rebuild, 2026-09-13 (BACKLOG 7b). _rebuild_daily_cache
+        # is date-keyed, so a walking replay builds the frame ONCE per UTC day.
+        # While the loaders were unbounded that frame ran to the DB tail and
+        # every later tick found its bar in it. Now that they stop at the
+        # clock, the day's first frame ends at the first tick, and without
+        # this every later boundary that day returns not_at_15m_boundary —
+        # measured on a 121-tick walk: 2 decided entries became 0. Replay-only
+        # (is_simulated branch), so it cannot touch live. Costs ~0.2s a
+        # rebuild, roughly 15x on a walking replay.
+        if df.index[-1] < pd.Timestamp(now).floor("15min"):
+            _rebuild_daily_cache(now, force=True)
+            df = _cached_features.get("df")
+            if df is None or df.empty:
+                _diag_inc("no_data")
+                return [], {"status": "no_data"}
         idx = df.index.searchsorted(now, side="right") - 1
         if idx < 0:
             _diag_inc("no_bar")

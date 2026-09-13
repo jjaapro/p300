@@ -66,9 +66,15 @@ SPECS = {
     },
     "chento": {
         "anchor": "2026-08-21T06:15:00",
+        # okx 31 -> 45 days on 2026-09-13 (BACKLOG 7b), a deliberate SPEC
+        # change, not a re-baseline of moved rows. The OKX-gate golden's
+        # anchor moved to 2026-07-16 06:30 because the old one only blocked
+        # on future data; with a 31-day carve the OKX table starts 07-21 and
+        # that anchor's okx_delta_z would be NaN — a fixture artifact, not a
+        # gate. 45 days reaches back to 07-07. The loader reads 30 days.
         "tables": {"cd_futures_15m": 91, "cd_futures_eth_15m": 91,
-                   "ca_long_short_ratio": 95, "okx_perp_1h": 31,
-                   "okx_perp_eth_1h": 31},
+                   "ca_long_short_ratio": 95, "okx_perp_1h": 45,
+                   "okx_perp_eth_1h": 45},
     },
     "short_squeeze": {
         # No production fire has ever happened; this anchor is a DISCOVERED

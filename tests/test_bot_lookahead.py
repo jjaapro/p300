@@ -44,6 +44,12 @@ writing it.
 """
 from __future__ import annotations
 
+# MUST be first: short_squeeze resolves SSQ_DIAG at import. It never leaked
+# here — diag is on only when SSQ_DIAG is exactly "1", and the loader these
+# arms call makes no diag writes — but a shell that exports SSQ_DIAG=1 would
+# have this module appending to the RUNNING bot's JSONL. Added 2026-09-13.
+from tests import _golden_guard  # noqa: F401
+
 from datetime import datetime, timezone
 
 import pytest

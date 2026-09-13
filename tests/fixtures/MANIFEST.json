@@ -20,14 +20,14 @@
  },
  "chento": {
   "anchor": "2026-08-21T06:15:00",
-  "sha256": "ec4b62ac0bf769a821b726a63305e797fe3602515a8788eecce0e6da28d9a574",
-  "size_bytes": 1990656,
+  "sha256": "bd926c099107f1c16fc0dbbd846e30493280776b673f46e0f659a28789f9912d",
+  "size_bytes": 2039808,
   "tables": {
    "ca_long_short_ratio": 95,
    "cd_futures_15m": 91,
    "cd_futures_eth_15m": 91,
-   "okx_perp_1h": 31,
-   "okx_perp_eth_1h": 31
+   "okx_perp_1h": 45,
+   "okx_perp_eth_1h": 45
   }
  },
  "short_squeeze": {

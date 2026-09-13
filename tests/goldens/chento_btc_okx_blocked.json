@@ -5,7 +5,7 @@
  },
  "intents": [],
  "status": {
-  "okx_delta_z": -0.7299044539,
+  "okx_delta_z": -2.660970996,
   "reason": "okx_misaligned",
   "status": "filter_blocked",
   "swept": 0

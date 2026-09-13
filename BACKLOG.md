@@ -380,7 +380,8 @@ cap — the multi-asset plan's Phase B as written.
    and `health.py` recommending a `binance_feed.py` that does not exist — both fixed.
    Links now resolve 0 broken across the five primary docs.
 6. Port the two-clock look-ahead contract to the four running bots that had none.
-   **3 of 4 DONE 2026-09-13** (`9010f86`, `6f6eba1`); chento is blocked on 7b below.
+   **DONE 2026-09-13, all four bots** (`9010f86`, `6f6eba1`, `<fix7b>`). chento was
+   blocked on 7b and landed with it: `tests/test_chento_clock_bound.py`.
    New `tests/test_bot_lookahead.py`; drill 16 -> 25 mutations, 25/25 caught.
 
    **The existing guard was the first finding.** `test_adx_signal_no_lookahead` called
@@ -409,8 +410,8 @@ cap — the multi-asset plan's Phase B as written.
    filesystem's mtime granularity leaves a stale `.pyc` that CPython keeps using — it failed
    nine unrelated tests and would have been very hard to attribute. `_restore` now drops the
    bytecode too. With the fleet running, a bot restarted in that window would have loaded it.
-7. **Fix the two live-code defects step 6 found.** Neither is a future peek. 7a is DONE;
-   7b is HELD for the user because it re-baselines goldens.
+7. **Fix the two live-code defects step 6 found.** Neither is a future peek. **Both DONE
+   2026-09-13.**
 
    **7a — DONE 2026-09-13** (`a547893`). r4 restarted onto it the same day: stopped alone (0 open r4 trades; the other six bots and the feed untouched), started via `start_fleet.ps1 -Units r4`, fresh heartbeat from the new pid, one unit per fleet member, 8/8 heartbeats ok, `health.py` 0. Go-ahead: user
    2026-09-13, "Proceed with next steps". What shipped differs from what this entry first
@@ -463,7 +464,27 @@ cap — the multi-asset plan's Phase B as written.
    **live sizing depends on when the process last restarted**. Both promises in the docstring
    at :320-322 are false.
 
-   **7b — HELD for the user 2026-09-13: fixing it re-baselines six goldens.** Designed and
+   **7b — DONE 2026-09-13** (`<fix7b>`). User go-ahead 2026-09-13 for the golden
+   re-baseline, after it was held and brought back as its own decision. Shipped as designed
+   below, with one correction found in execution: the drill entry guarding the traded
+   06:00 signal first targeted the 15m bound, and that MISSED — the future that leaked into
+   the 06:00 bar was OKX's hour-06 candle, so it is the OKX bound that golden depends on.
+
+   Evidence the re-baseline moved toward the truth rather than just moving: of the five
+   goldens re-recorded at an unchanged anchor, **every changed line is `okx_delta_z`** —
+   entry, stop, target, risk, direction, status all identical — and every new value is the
+   live ledger's. A walking replay of 2026-08-21 00:00 -> 08-22 06:00 now decides at exactly
+   the three bars live traded. Live frames at a live clock: identical, both assets.
+
+   **Found in execution — the fixture hash alarm is sensitive to page layout, not data.**
+   Rebuilding the chento fixture with its UNCHANGED spec reported "HASH MISMATCH — the
+   historical rows moved". They had not: zero rows added, removed or changed, identical
+   `typeof()` and `quote()` on every column, identical DDL, pragmas, page count and size.
+   Fifty bytes on two pages differ — B-tree layout. So that message can be a false alarm;
+   the check that means something is the logical diff, which is how the 45-day OKX widening
+   was verified (336 rows added per OKX table, nothing existing moved). Not fixed.
+
+   **As designed and reviewed before shipping** (kept for the record): Designed and
    adversarially reviewed, not applied. The loader bounds are a measured LIVE NO-OP (all 36
    feature columns identical at real now) but they are not the whole fix, and the goldens
    are the reason it is held rather than shipped:
@@ -497,6 +518,30 @@ cap — the multi-asset plan's Phase B as written.
    replays, parity checks, re-cuts). This is why chento has no arm yet: the correct boundary
    assertion is red today, and a test pinning the defect instead would punish whoever fixes
    it. Port the contract to chento once this lands.
+8. **Re-validate the OKX cross-exchange gate on the causal information set.** Scheduled
+   2026-09-13 (user decision). The gate is chento's strongest filter on paper — its study
+   claimed −25% drawdown and +34% OOS expectancy (memory `project_cross_exchange_okx_gate`)
+   — but that study (`validation_C4`) merged `cd_futures_ohlcv` 1h with `okx_perp_1h`, both
+   COMPLETE bars of the same hour. Live can never see that: at a decision the current OKX
+   hour has not closed. 7b made the gap visible and put a number on it — the gate's sign
+   differs from its same-hour value on ~31% of bars. This is the
+   `project_chento_v3_lookahead_unrecoverable` family, now measured.
+   **Pre-register before running** (DSR, N_TRIALS, the decision rule), use the bounded
+   loaders' information set (`okx now − 1h`), and state in advance what result retires the
+   gate. Nothing in the running bot changes until it reports.
+9. **Research defect: the R4_ETH weights correction is partial.** Found reviewing 7a, not
+   fixed — fixing it moves `simulate()` and anything calibrated on it, so it needs its own
+   decision. The AUDIT_2026_05_13 correction (jplus_inputs.py, the `prev_rec` block) lags
+   `weights` for the Wed-keyed R4_ETH row but still applies that row's gate and vol-lev,
+   both built from Tuesday's close, which a Tuesday 20:00 entry cannot know. 33 of 170
+   historical R4_ETH rows; R4_ETH's research contribution overstated ~6% (39.985 vs
+   37.447 pct-pts). Since 7a, live is causal on those rows and research is not.
+10. **Hazard: a plain `pytest` run can write to the live prod.db.** Found reviewing 7a.
+    Importing `strategies/support/trade_db.py` runs `init_db()` at import against whatever
+    `db.PROD_DB` points to, and several test modules import it before repointing — so a
+    suite run migrates the running fleet's database. `tests/_chento_golden_runner.py` does
+    it too. `CREATE TABLE IF NOT EXISTS` makes it usually harmless, which is exactly how it
+    has gone unnoticed. Move `init_db()` out of import time, or repoint before import.
 
 **Gates:** parity tests byte-equal before and after every step; the full suite green;
 fleet restarted from the new paths with fresh heartbeats; one definition per rule (no

@@ -29,18 +29,29 @@ BTC and ETH legs share the constant.
 
 ## Replay baseline (shipped config: ladder OFF)
 
+> **SUPERSEDED 2026-09-13 — do NOT use `__replay_p0gate` as a gate, and do not
+> diff a new replay against it.** It was recorded while the three feature loaders
+> had no upper clock bound, so every tick of that replay could read the whole
+> database's future. The OKX gate's sign differs from its peeking value on ~31% of
+> bars, and `ret_30d` by 1.4 pp on average (8 pp at p99), so the +$1,043.37 below
+> measures a different information set from anything the live bot can see — a new
+> baseline can move in EITHER direction by more than noise, and that move is not a
+> regression. No dial may be re-tuned to recover the old number. A new baseline
+> needs re-recording on the bounded loaders (and, per the 2026-09-12 row, at 10 bp).
+> Walking replays are ~15x slower since the same fix (replay-only frame rebuild).
+
 `__replay_p0gate` (2026-07-22, window 2025-06-06 → 2025-12-06, 15m ticks,
 chento-only): **8 trades, +$1,043.37, WR 62.5%**. Supersedes
 `__replay__rgap_fix_a` (+$962.28), which pre-dated the 2026-06-05
 LADDER_ENABLED=False ship — all 8 entries byte-identical between the two;
 the 3 exit diffs are exactly the baseline's ladder-widened (1.5R) stops
-firing where the shipped 1R stop exits earlier. Use p0gate numbers for any
-future replay-equivalence gate.
+firing where the shipped 1R stop exits earlier.
 
 ## Change history
 
 | Date | Change | Why / provenance |
 |---|---|---|
+| 2026-09-13 | **Loaders bounded at the clock — no parameter changed, live unchanged, replay and goldens corrected.** `_load_15m_btc` and `_load_lsr_btc` now stop at `now` (still including the forming 15m bar); `_load_okx_1h` stops at `now − 3600`, the last CLOSED hour. Replay-only stale-frame rebuild added. **Live: measured no-op** — at a live clock the BTC and ETH frames are identical to before (8,640 bars, same last bar, all 36 columns and every order block). **Goldens: six BTC re-recorded, one moved.** Every changed line is `okx_delta_z`, and every new value equals what the live bot recorded in `trades.notes`: SJ-4243 1.4609786480, SJ-4245 0.1437340057, SJ-4248 1.6751492272. The old values (−0.7299, 0.4754, 0.9437) matched none. `chento_btc_okx_blocked` asserted the OKX gate blocked 2026-08-21 06:00 — **live traded that signal**; its anchor moved to 2026-07-16 06:30, which blocks on both information sets. A walking replay of 2026-08-21 00:00 → 08-22 06:00 now decides at exactly the three bars live traded (06:00, 19:30, 03:45), where before it blocked 06:00 on 59 minutes of future OKX data. ETH goldens unchanged | BACKLOG 7b. User go-ahead 2026-09-13. The old docstring claimed a trailing-only frame was safe unbounded; `ret_30d` and `okx_delta_z` come off resamples whose last bucket reaches past the bar. The `-3600` is load-bearing: `<= now` pairs a complete OKX hour with a truncated Binance hour and flips the gate on ~36% of bars. **Open consequence:** the OKX gate's study (−25% DD, +34% OOS) used same-hour complete bars on both venues, which live never sees — scheduled for re-validation on the causal information set. Guards: `tests/test_chento_clock_bound.py` (4 arms, both directions) and five drill mutations. Restart of both chento bots needed to put the code on disk into the running processes |
 | 2026-09-12 | `COST_BP_RT` 18 → 10 bp (`SLIPPAGE_BP_RT` stays 0) | `studies/notebooks/execution_2026_09/` E6: measured taker round trip on the sleeve's own 2020–2026 fires 9.6 bp BTC [CI90 8.4, 10.8], 10.0 bp ETH [8.0, 11.9]; half-spread < 1 bp, drift −0.5 / −0.2 bp, zero stop gap-throughs in 54 / 33 stops; the pre-registered change rule (> 3 bp and CI excludes the coded value) passed. Net expectancy on the same fires +0.685 → +0.739 R BTC, +0.563 → +0.605 R ETH. Trades closed before this date carry 18 bp, and the 2026-07-22 replay baseline (+$1,043.37) was booked at 18 bp — any later replay-equivalence gate must re-cost. User go-ahead 2026-09-12. |
 | 2026-07-22 | **P0 live boundary-eval fix**: live entry path anchors on wall-clock 15m boundaries, evaluates the JUST-CLOSED bar with final values (intraday cache refresh; forming bar never evaluated); `_just_closed_15m_ts` → last fully-closed bar (walker partial-bar protection). Replay path untouched (`clock.is_simulated()` branch). | Day-1 telemetry: 850/850 live evals `boundary_skipped` — entry path was dead (2nd live lockout after OKX). Gate: replay entries 8/8 byte-identical. |
 | 2026-07-21 | B5 `compute_lsr_extremes` min_periods `max(8, w//4)` → `w//4` | Byte-equivalence violation vs `validation_B5_lsr_extremes` caught by new `tests/test_chento_parity.py` (NaN-mask diff in warmup rows 7-8; zero live impact). Research semantics are the validated ones. |
