@@ -1,5 +1,17 @@
 """EMA(5/21) weekly crossover on BTC — position map per day.
 
+Lived at ``strategies/sleeves/ema/math.py`` until 2026-09-13. It moved down to
+the support layer because it is not EMA-sleeve code: ``jplus_inputs`` — which
+sizes the LIVE r4 bot — calls ``compute_ema_position_map`` on every decide, and
+the EMA sleeve's own ``signal.py`` never imported it at all. Leaving it under a
+dormant sleeve would have meant archiving a module the fleet depends on, and
+the r4 runner catches ImportError and writes a degraded heartbeat rather than
+crashing, so that failure would have been silent.
+
+It belongs here on its own merits, next to ``r4_windows`` and ``regime_jplus``:
+generic hourly→weekly bucketing plus an EMA crossover position map, importing
+nothing above the support layer.
+
 Ported from upstream's `validate_s100_mom_gold.get_ema_pos` → which calls
 `backtest_ema.aggregate_candles(htf=168h)` and `backtest_ema.run_backtest(
 5, 21, mode='long_short')`, then spreads each closed trade's direction

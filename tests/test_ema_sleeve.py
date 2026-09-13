@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 
-from strategies.sleeves.ema import math as ema_sleeve
+from strategies.support import ema_position as ema_sleeve
 
 
 def _mk_hourly(n_bars: int, base_price: float = 50_000.0, start_ts: int = 1577836800):

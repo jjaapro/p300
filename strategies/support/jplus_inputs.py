@@ -24,7 +24,7 @@ from data import loaders as data
 from strategies.support import gate, voltarget
 from strategies.support import regime_jplus as regime
 from strategies.support import r4_windows as r4
-from strategies.sleeves.ema import math as ema_sleeve
+from strategies.support import ema_position as ema_sleeve
 
 
 R4_EXTRA_LEV_UNGATED = 2.5

@@ -22,7 +22,7 @@ if str(REPO) not in sys.path:
 
 from strategies.support import db                                  # noqa: E402
 from strategies.support.indicators import ema as ema_calc          # noqa: E402
-from strategies.sleeves.ema.math import aggregate_weekly           # noqa: E402
+from strategies.support.ema_position import aggregate_weekly      # noqa: E402
 from studies.lib.validation import bootstrap, dsr_pbo, metrics     # noqa: E402
 
 # --- frozen constants (README section 2) -------------------------------------

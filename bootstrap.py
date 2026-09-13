@@ -109,6 +109,31 @@ SCHEMAS: dict[str, str] = {
             fr_open REAL, fr_high REAL, fr_low REAL, fr_close REAL
         )
     """,
+    # Audit trail of the FOMC sleeve's 22 historical decisions. The sleeve
+    # was archived on 2026-09-13 and owned this DDL in its own init_schema();
+    # the DDL moved here so the table — which holds history no longer
+    # reproducible from anywhere else — survives a fresh bootstrap without
+    # the archived code being imported. Nothing writes it any more.
+    "fomc_observer": """
+        CREATE TABLE IF NOT EXISTS fomc_observer (
+            fomc_date TEXT PRIMARY KEY,
+            announcement_utc TEXT NOT NULL,
+            decision TEXT NOT NULL,
+            reason TEXT NOT NULL,
+            target_rate_pct REAL,
+            phase TEXT,
+            expected_action TEXT,
+            expected_action_meta TEXT,
+            fear_greed INTEGER,
+            fear_greed_bucket TEXT,
+            entry_planned_utc TEXT,
+            exit_planned_utc TEXT,
+            entry_price REAL,
+            exit_price REAL,
+            return_pct REAL,
+            recorded_at TEXT NOT NULL
+        )
+    """,
 }
 
 
@@ -241,20 +266,23 @@ def backfill_from_binance(since: str, skip_klines: bool) -> None:
         print(f"  {tbl}: {n:,} rows")
 
 
-def fetch_fomc_sleeve_inputs() -> None:
-    """Daily-cadence external feeds the FOMC observer sleeve needs:
+def fetch_macro_sentiment_inputs() -> None:
+    """Daily-cadence external macro feeds:
       - Crypto Fear & Greed Index (alternative.me, free, no auth)
       - NY Fed Reference Rates XML (Fed Funds target band)
       - Polymarket "How many Fed rate cuts in 2026" market
 
+    These were fetched for the FOMC sleeve, archived 2026-09-13. They are kept
+    because they are data, not strategy: the dashboard reads fear & greed, and
+    the macro_daily feed and any future study would have to re-acquire them.
+    The fomc_observer table they fed is now created by ensure_db_and_schemas()
+    like every other table.
+
     Each is best-effort; failure is logged but doesn't abort bootstrap. The
     binance_feed loop also refreshes them daily, so a transient miss here
     self-heals on the next live tick."""
-    print("\n=== Fetching FOMC sleeve inputs ===")
+    print("\n=== Fetching macro / sentiment inputs ===")
     from data.sources import sentiment as sentiment_index_service, fed_funds as fed_funds_service, polymarket as polymarket_service
-    from strategies.sleeves.timing_anomalies.internal.fomc import signal as fomc_sleeve
-    fomc_sleeve.init_schema()
-    print("  fomc_observer table ensured")
     print(f"  fear_greed:    {'ok' if sentiment_index_service.refresh() else 'FAILED'}")
     print(f"  fed_funds:     {'ok' if fed_funds_service.refresh_xml() else 'FAILED'}")
     print(f"  polymarket:    {'ok' if polymarket_service.refresh() else 'FAILED'}")
@@ -288,10 +316,10 @@ def main(argv: list[str] | None = None) -> int:
     fetch_lsr_history(skip=args.skip_coinalyze)
     if not args.skip_binance:
         backfill_from_binance(since=args.since, skip_klines=args.skip_klines)
-    fetch_fomc_sleeve_inputs()
+    fetch_macro_sentiment_inputs()
     print("\nBootstrap complete. Next:")
     print("  python health.py           # confirm everything is wired up")
-    print("  python bot.py              # starts the bot; auto-registers the variant")
+    print("  .\\start_fleet.ps1          # starts the feed, the bots and the dashboard")
     return 0
 
 

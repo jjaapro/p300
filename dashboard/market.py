@@ -17,10 +17,16 @@ the two labels each bar:
 The passive side is invisible in this data, and every attempt to mine new
 predictive edge from these inputs has died (Chento Rule 1, whale
 absorption, footprint, LVN, FVG — see studies/). The panes exist so the
-operator can see what the bots see: short_squeeze's percentile gauges,
-CPR's positioning gate and the regime J+ circuit breaker are replicated
-here with the sleeves' own SQL and constants and pinned to them by
-tests/test_dashboard_market.py.
+operator can see what the bots see: short_squeeze's percentile gauges and
+the regime J+ circuit breaker are replicated here with the live sleeve's
+own SQL and constants and pinned to them by tests/test_dashboard_market.py.
+
+The crowd-positioning gate is the exception: it replicated the CPR sleeve,
+which was archived on 2026-09-13, so its two constants now live in this
+file (CPR_PCTILE_WINDOW / CPR_PCTILE_THRESHOLD) rather than being imported
+from strategy code that no longer runs. The panel stayed because a
+crowd-short, low-funding reading is worth seeing whether or not anything
+trades it.
 
 Conventions
 -----------
@@ -34,7 +40,8 @@ Conventions
   labels are null for ETH.
 - Sleeve loader functions are NOT imported: they open read-write
   connections on TRADER_DB. Only config constants are imported, so the
-  gauges cannot drift from the bots.
+  gauges cannot drift from the bots — and only from LIVE bots, never from
+  anything under studies/material/archive/.
 """
 from __future__ import annotations
 
@@ -46,7 +53,6 @@ import numpy as np
 import botlib
 from dashboard import queries
 from bots.short_squeeze.strategy import config as ssq_cfg
-from strategies.sleeves.timing_anomalies.internal.cpr import config as cpr_cfg
 from strategies.support import db
 from strategies.support.funding import SETTLEMENT_PERIOD_SECONDS
 
@@ -543,15 +549,27 @@ def _decile(rank: float) -> int:
     return min(10, int(rank * 10) + 1)
 
 
+#: Percentile window (days) and threshold for the crowd-positioning panel.
+#: These were `timing_anomalies/internal/cpr/config.py` until that sleeve was
+#: archived on 2026-09-13; copied here with their values so a live display
+#: never depends on archived strategy code. They are display parameters now —
+#: changing them changes what the panel shows and nothing that trades.
+CPR_PCTILE_WINDOW = 180
+CPR_PCTILE_THRESHOLD = 0.20
+
+
 def _cpr_gate(lsr_by_date: dict[str, float], fund_daily: dict[str, float],
               panel_date: date) -> dict:
-    """The two positioning conditions of CPR (timing_anomalies/internal/
-    cpr/signal.py::_evaluate_today), same conventions: percentile LEVEL
-    over the PCTILE_WINDOW dates before the panel date (np.percentile,
-    linear), today <= level; 3-day funding mean over three consecutive
-    keys of the sorted daily-means map. Trend conditions (EMA20/50) are
-    not replicated — this is the positioning view only."""
-    window, thr = cpr_cfg.PCTILE_WINDOW, cpr_cfg.PCTILE_THRESHOLD
+    """The two crowd-positioning conditions CPR used to trade on: percentile
+    LEVEL over the CPR_PCTILE_WINDOW dates before the panel date
+    (np.percentile, linear), today <= level; 3-day funding mean over three
+    consecutive keys of the sorted daily-means map. Trend conditions
+    (EMA20/50) are not replicated — this is the positioning view only.
+
+    The CPR sleeve was archived on 2026-09-13 and this panel outlived it: a
+    crowd-short, low-funding reading is market context worth seeing whether or
+    not anything trades it."""
+    window, thr = CPR_PCTILE_WINDOW, CPR_PCTILE_THRESHOLD
     pd_iso = panel_date.isoformat()
     out = {"date": pd_iso, "window": window, "threshold": thr,
            "ls_ratio": None, "ls_p20": None, "ls_ok": None,
