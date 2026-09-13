@@ -7,7 +7,6 @@ import sqlite3
 
 import pytest
 
-from strategies.support import cfg_adapter as _ca
 
 
 def _decide(sleeve, cfg, variant_id="v"):
@@ -16,7 +15,14 @@ def _decide(sleeve, cfg, variant_id="v"):
     still takes (variant, sleeve_cfg)."""
     variant = {"id": variant_id}
     if hasattr(sleeve, "decide"):
-        return sleeve.decide(variant, **_ca.adx(cfg))
+        params = cfg.get("params") or {}
+        return sleeve.decide(
+            variant,
+            weight_pct=float(cfg.get("_effective_weight_pct",
+                                     cfg.get("weight_pct", 0.0))),
+            leverage=float(cfg.get("_effective_leverage", 1.0)),
+            priority=float(cfg.get("priority", 100)),
+            stop_loss_pct=float(params.get("stop_loss_pct", 10.0)))
     return sleeve.try_decide_for_variant(variant, cfg)
 
 from strategies.support import clock, db, stop_path, trade_db

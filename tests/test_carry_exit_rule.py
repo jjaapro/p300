@@ -17,9 +17,11 @@ import pytest
 
 from bots.carry.strategy import config as cfg
 from bots.carry.strategy import signal as carry
-from strategies.support import cfg_adapter as ca
 
 CFG = {"weight_pct": 100.0, "_effective_leverage": 1.0, "priority": 100}
+#: What CFG translated to before the orchestrator was retired. Inlined rather
+#: than computed, because nothing in production translates a cfg dict now.
+_CFG_KW = {"weight_pct": 100.0, "leverage": 1.0, "priority": 100.0}
 
 
 def _records(values, start="2026-01-01"):
@@ -115,7 +117,7 @@ def test_decide_closes_an_open_trade_when_the_month_breaks(env, monkeypatch):
     _open(env)
     assert len(carry._get_open_carry_trades(env["id"])) == 1
 
-    intents, status = carry.decide(env, **ca.carry(CFG))
+    intents, status = carry.decide(env, **_CFG_KW)
     assert seen["days"] >= cfg.EXIT_CUM_DAYS, "the loader window must cover the exit window"
     assert status["status"] == "closed" and not intents
     assert carry._get_open_carry_trades(env["id"]) == []
@@ -128,7 +130,7 @@ def test_decide_does_not_enter_while_the_exit_is_active(env, monkeypatch):
     monkeypatch.setattr(carry, "_load_recent_daily_funding",
                         lambda days=30: _records([-0.05] * 23 + [0.02] * 7,
                                                  start="2026-02-08"))
-    intents, status = carry.decide(env, **ca.carry(CFG))
+    intents, status = carry.decide(env, **_CFG_KW)
     assert not intents
     assert status["status"] == "no_action"
     assert status["cum_funding_pct"] == pytest.approx(-1.01)
@@ -138,7 +140,7 @@ def test_decide_does_not_enter_while_the_exit_is_active(env, monkeypatch):
 def test_decide_enters_when_the_mean_is_positive_and_no_exit(env, monkeypatch):
     monkeypatch.setattr(carry, "_load_recent_daily_funding",
                         lambda days=30: _records([0.01] * 37, start="2026-02-01"))
-    intents, status = carry.decide(env, **ca.carry(CFG))
+    intents, status = carry.decide(env, **_CFG_KW)
     assert len(intents) == 1 and status["status"] == "decided"
 
 

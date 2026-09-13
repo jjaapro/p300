@@ -22,7 +22,6 @@ from datetime import datetime, timedelta, timezone
 
 import pytest
 
-from strategies.support import cfg_adapter as _ca
 from strategies.support import clock
 
 from bots.r4.strategy import signal as _r4_signal
@@ -30,12 +29,37 @@ from strategies.sleeves.ema import signal as _ema_signal
 from strategies.sleeves.eth_daily import signal as _eth_daily_signal
 
 
+def _r4_cfg(sleeve_cfg: dict) -> dict:
+    """sleeve_cfg -> r4 decider keywords, kept local to this file.
+
+    A verbatim copy of what strategies/support/cfg_adapter.r4 did before the
+    orchestrator was retired. It lives here now because nothing in PRODUCTION
+    translates a cfg dict any more — only these 40 tests, which were written
+    against the (variant, sleeve_cfg) shape.
+
+    The None-passthrough is the part that matters and must not be "tidied":
+    absent weight / gate / vol_scalar is r4's live path, and it is what makes
+    the sleeve fall back to the timing-anomaly weights table including its
+    bear-regime zero. Coercing any of them to a number disables the regime
+    gate — see bots/r4/strategy/signal.py.
+    """
+    return {
+        "weight_pct": sleeve_cfg.get("_effective_weight_pct"),
+        "gate": sleeve_cfg.get("_effective_gate"),
+        "vol_scalar": sleeve_cfg.get("_effective_vol_scalar"),
+        "priority": float(sleeve_cfg.get("priority", 100)),
+    }
+
+
 def _r4_fire(decide_fn):
-    """(variant, sleeve_cfg) -> decide-then-execute, the shape these 28 tests
-    were written against. Built from the plain decider and the central cfg
-    adapter rather than from the sleeve's own try_fire wrapper, so the tests
-    keep their call sites when phase D deletes those wrappers."""
-    return staticmethod(_ca.fire_entry(decide_fn, _r4_signal.execute, _ca.r4))
+    """(variant, sleeve_cfg) -> decide-then-execute, the shape these tests
+    were written against."""
+    def _fire(variant: dict, sleeve_cfg: dict):
+        intents, status = decide_fn(variant, **_r4_cfg(sleeve_cfg))
+        if not intents:
+            return status
+        return _r4_signal.execute(variant, intents[0])
+    return staticmethod(_fire)
 
 
 class jplus_live:  # noqa: N801 — test-only convenience namespace
