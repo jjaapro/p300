@@ -240,12 +240,36 @@ cap — the multi-asset plan's Phase B as written.
    byte-identical for all seven bots against a baseline captured before the first move.
    Fleet stopped 05:00:46Z → 05:22:41Z (~22 min) and restarted from the new paths with all
    three open positions intact.
-3. Retire the legacy path: `bot.py`, `strategies/orchestrator.py`, `strategies/p300_spec.py`,
-   `backtest_runner.py`, `studies/simulation/sim.py` and its DB builder, the
-   `TIMING_ANOMALIES` meta-sleeve, the allocation / weight tables, `tests/test_sim_mode.py`
-   (the 1.5 GB-per-test copy); set the legacy variant row `p300_aggressive_v2_v1_0` to
-   `enabled = 0` with a note. Each bot's `--once --db <copy> --sim-now` dry run is the
-   simulator; research replays use the study harnesses.
+3. ~~Retire the legacy path~~ — **DONE 2026-09-13** (commits `0088162`, `08182a6`,
+   `2a4a4fe`). All of it: `bot.py`, the orchestrator, `p300_spec.py`, `backtest_runner.py`,
+   `studies/simulation/{sim,build_sim_trader_db}.py`, the TIMING_ANOMALIES meta-sleeve
+   dispatcher, and the support modules whose only callers were those — `allocation.py`,
+   `gating.py`, `portfolio_vol.py`, `margin_check.py` and `cfg_adapter.py`. **−6,831 lines.**
+   The legacy variant row is `enabled = 0` with a note and a `variant_events` row; its 27
+   closed trades are kept deliberately.
+
+   **`tests/test_sim_mode.py` is gone** — the one that copied the whole 1.5 GB prod.db per
+   test, ~6 GB a run, and filled C: to zero bytes on 2026-09-09. The suite now runs with no
+   deselect at all: 1349 passed, nothing skipped, nothing deselected (was 1584/54/4).
+
+   **Five things were KEPT against the first instinct**, each load-bearing in a way a grep
+   would not show: `margin_headroom.py` and `conflict_resolver.py` (reached by
+   `strategy_health` inside a bare `try/except`, so deleting them would have silently
+   dropped a section of the weekly report rather than failing); `margin_sim.py` (the only
+   liquidation model, and pool-plan S4 is open and names it); `risk_caps.py` (cpr and pdo
+   import it and survive to step 4); and **`gate.py` — which is not `gating.py`**. Both
+   existed; `jplus_inputs` imports `gate` on r4's live path, and a fuzzy grep conflates them.
+
+   `build_daily_nav` / `compute_metrics` moved verbatim into `equity.py` rather than being
+   dropped: `tests/test_equity.py` uses `compute_metrics` as an INDEPENDENT second max-drawdown
+   implementation cross-checked against `strategy_health`, so collapsing them would make that
+   assertion tautological. Three `test_stop_path` tests were **repointed, not deleted** — the
+   behaviour they pinned (a scheduled backstop cannot bypass a stop the path already hit) is
+   live via `botlib.close_due_trades`.
+
+   Drill rebuilt 22 → 16: the eight `cfg_adapter` mutations went with their subject, and two
+   of the semantics they pinned moved to the runner level where the per-variant flags are now
+   literal keywords. Zero golden churn, 16/16, `health.py` 0, fleet 8/8.
 4. Archive the eight dormant sleeves (EMA_BTC, ETH_DAILY, THU_BEAR, PDO, CPR, FOMC,
    AI_QUANT, chento_limit_bid) under `studies/material/archive/` — git keeps the history;
    any of them returns only through a study and a bot of its own. The pending PDO / CPR
