@@ -1,0 +1,114 @@
+{
+  "P0": true,
+  "P1": true,
+  "P2": true,
+  "P3": true,
+  "POWER": true,
+  "diagnostics": {
+    "nonfinite_prices_on_off_paths": {
+      "BTC": 0,
+      "ETH": 0
+    },
+    "p2_min": 0.8,
+    "p3_ids_expected": [
+      "SJ-4243",
+      "SJ-4244",
+      "SJ-4245",
+      "SJ-4246",
+      "SJ-4248",
+      "SJ-4249"
+    ],
+    "p3_tolerance_s": 180.0,
+    "p3_trades": [
+      {
+        "dt_s": -25.252,
+        "id": "SJ-4243",
+        "kind_match": true,
+        "live_kind": "tif",
+        "pass": true,
+        "price_ok": null,
+        "reference": "_time_stop_iso",
+        "time_ok": true,
+        "walker_kind": "tif"
+      },
+      {
+        "dt_s": -57.911,
+        "id": "SJ-4244",
+        "kind_match": true,
+        "live_kind": "tif",
+        "pass": true,
+        "price_ok": null,
+        "reference": "_time_stop_iso",
+        "time_ok": true,
+        "walker_kind": "tif"
+      },
+      {
+        "dt_s": -12.165,
+        "id": "SJ-4245",
+        "kind_match": true,
+        "live_kind": "tif",
+        "pass": true,
+        "price_ok": null,
+        "reference": "_time_stop_iso",
+        "time_ok": true,
+        "walker_kind": "tif"
+      },
+      {
+        "dt_s": -45.186,
+        "id": "SJ-4246",
+        "kind_match": true,
+        "live_kind": "tif",
+        "pass": true,
+        "price_ok": null,
+        "reference": "_time_stop_iso",
+        "time_ok": true,
+        "walker_kind": "tif"
+      },
+      {
+        "dt_s": -17.881,
+        "id": "SJ-4248",
+        "kind_match": true,
+        "live_kind": "stop",
+        "pass": true,
+        "price_ok": true,
+        "reference": "actual_exit_time",
+        "time_ok": true,
+        "walker_kind": "stop"
+      },
+      {
+        "dt_s": -17.901,
+        "id": "SJ-4249",
+        "kind_match": true,
+        "live_kind": "stop",
+        "pass": true,
+        "price_ok": true,
+        "reference": "actual_exit_time",
+        "time_ok": true,
+        "walker_kind": "stop"
+      }
+    ],
+    "pooled_fidelity": 0.9870317002881844,
+    "power_counts_R1": {
+      "BTC": {
+        "n_B": 115,
+        "n_K": 93,
+        "n_off": 208
+      },
+      "ETH": {
+        "n_B": 103,
+        "n_K": 81,
+        "n_off": 184
+      },
+      "pooled": {
+        "n_B": 218,
+        "n_K": 174,
+        "n_off": 392
+      }
+    }
+  },
+  "run": {
+    "head": "b8ab717f82c1383560cf657bc422f2ec8d1dd8dd",
+    "phase": "A",
+    "snapshot_sha256": "f3decffe3e5d740bf2678a9f6db29997ace4731ea0655a25274e71aa56b75c81"
+  }
+}

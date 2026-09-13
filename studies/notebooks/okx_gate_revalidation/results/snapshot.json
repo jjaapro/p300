@@ -1,0 +1,174 @@
+{
+  "captured_utc": "2026-09-13T21:18:42.715725+00:00",
+  "file_bytes": 58892288,
+  "file_sha256": "f3decffe3e5d740bf2678a9f6db29997ace4731ea0655a25274e71aa56b75c81",
+  "p3_ledger_ids": [
+    "SJ-4243",
+    "SJ-4244",
+    "SJ-4245",
+    "SJ-4246",
+    "SJ-4248",
+    "SJ-4249"
+  ],
+  "repo": {
+    "dirty": true,
+    "head": "b8ab717f82c1383560cf657bc422f2ec8d1dd8dd"
+  },
+  "row_cutoff_epoch": 1789171200,
+  "row_cutoff_utc": "2026-09-12T00:00:00+00:00",
+  "snapshot_path": "C:\\Source\\Repos\\p300-study-snapshots\\okx_gate_revalidation\\snapshot.db",
+  "source": "C:\\Source\\Repos\\p300\\data\\databases\\prod.db",
+  "tables": {
+    "ca_long_short_ratio": {
+      "columns": [
+        "asset",
+        "timestamp",
+        "ratio",
+        "long_pct",
+        "short_pct"
+      ],
+      "ddl": "CREATE TABLE \"ca_long_short_ratio\" (\n                asset TEXT NOT NULL,\n                timestamp INTEGER NOT NULL,\n                ratio REAL,\n                long_pct REAL,\n                short_pct REAL,\n                UNIQUE (asset, timestamp)\n            )",
+      "duplicate_asset_ts": 0,
+      "indexes": [],
+      "logical_sha256": "ca33116fca64edcc250f7fe3d65b4e6b05ee97de41662e9a689f0a5d15bc02b7",
+      "max_ts": 1789084800,
+      "min_ts": 1609459200,
+      "rows": 4144,
+      "rows_by_asset": {
+        "BTC": 2072,
+        "ETH": 2072
+      }
+    },
+    "cd_futures_15m": {
+      "columns": [
+        "timestamp",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "quote_volume",
+        "volume_buy",
+        "quote_volume_buy",
+        "volume_sell",
+        "quote_volume_sell",
+        "total_trades",
+        "trades_buy",
+        "trades_sell"
+      ],
+      "ddl": "CREATE TABLE cd_futures_15m (\n            timestamp INTEGER PRIMARY KEY, open REAL, high REAL, low REAL, close REAL,\n            volume REAL, quote_volume REAL,\n            volume_buy REAL, quote_volume_buy REAL,\n            volume_sell REAL, quote_volume_sell REAL,\n            total_trades INTEGER, trades_buy INTEGER, trades_sell INTEGER\n        )",
+      "duplicate_ts": 0,
+      "indexes": [],
+      "logical_sha256": "e81a8535083af3f77a603238ad8650c1912e2c2165c46c1351b103ffa0689767",
+      "max_ts": 1789170300,
+      "min_ts": 1567964700,
+      "missing_bars_since_2021_01_01": 0,
+      "off_grid_ts": 0,
+      "rows": 245785
+    },
+    "cd_futures_eth_15m": {
+      "columns": [
+        "timestamp",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "quote_volume",
+        "volume_buy",
+        "quote_volume_buy",
+        "volume_sell",
+        "quote_volume_sell",
+        "total_trades",
+        "trades_buy",
+        "trades_sell"
+      ],
+      "ddl": "CREATE TABLE cd_futures_eth_15m (\n            timestamp           INTEGER PRIMARY KEY,\n            open                REAL,\n            high                REAL,\n            low                 REAL,\n            close               REAL,\n            volume              REAL,\n            quote_volume        REAL,\n            volume_buy          REAL,\n            quote_volume_buy    REAL,\n            volume_sell         REAL,\n            quote_volume_sell   REAL,\n            total_trades        INTEGER,\n            trades_buy          INTEGER,\n            trades_sell         INTEGER\n        )",
+      "duplicate_ts": 0,
+      "indexes": [
+        "CREATE INDEX ix_cd_futures_eth_15m_ts ON cd_futures_eth_15m(timestamp)"
+      ],
+      "logical_sha256": "7a9bc59f85f6825bbf5e8c42ecb6c8764e44461eb8311215eff2d43535bed865",
+      "max_ts": 1789170300,
+      "min_ts": 1609459200,
+      "missing_bars_since_2021_01_01": 0,
+      "off_grid_ts": 0,
+      "rows": 199680
+    },
+    "okx_perp_1h": {
+      "columns": [
+        "timestamp",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume_contracts",
+        "volume_base",
+        "volume_usd"
+      ],
+      "ddl": "CREATE TABLE okx_perp_1h (\n    timestamp           INTEGER PRIMARY KEY,\n    open                REAL,\n    high                REAL,\n    low                 REAL,\n    close               REAL,\n    volume_contracts    REAL,\n    volume_base          REAL,\n    volume_usd          REAL\n)",
+      "duplicate_ts": 0,
+      "indexes": [
+        "CREATE INDEX ix_okxperp1h_ts ON okx_perp_1h(timestamp)",
+        "CREATE INDEX ix_okx_perp_1h_ts ON okx_perp_1h(timestamp)"
+      ],
+      "logical_sha256": "d0d0434c0ca21f2d968776db908183f30d0583f4d7f0f07874150d172ad508af",
+      "max_ts": 1789167600,
+      "min_ts": 1609459200,
+      "missing_bars_since_2021_01_01": 0,
+      "off_grid_ts": 0,
+      "rows": 49920
+    },
+    "okx_perp_eth_1h": {
+      "columns": [
+        "timestamp",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume_contracts",
+        "volume_base",
+        "volume_usd"
+      ],
+      "ddl": "CREATE TABLE okx_perp_eth_1h (\n    timestamp           INTEGER PRIMARY KEY,\n    open                REAL,\n    high                REAL,\n    low                 REAL,\n    close               REAL,\n    volume_contracts    REAL,\n    volume_base         REAL,\n    volume_usd          REAL\n)",
+      "duplicate_ts": 0,
+      "indexes": [
+        "CREATE INDEX ix_okx_perp_eth_1h_ts ON okx_perp_eth_1h(timestamp)"
+      ],
+      "logical_sha256": "8756b557aa53eac6794a05d66c676ea31a51b39db72787c21a6e8d91fabbf04b",
+      "max_ts": 1789167600,
+      "min_ts": 1609459200,
+      "missing_bars_since_2021_01_01": 0,
+      "off_grid_ts": 0,
+      "rows": 49920
+    },
+    "p0_bars": {
+      "columns": [
+        "asset",
+        "ts",
+        "direction",
+        "okx_delta_z",
+        "source"
+      ],
+      "ddl": "CREATE TABLE p0_bars (asset TEXT, ts TEXT, direction TEXT, okx_delta_z REAL, source TEXT, PRIMARY KEY (asset, ts))",
+      "indexes": [],
+      "logical_sha256": "d776fb7af376f8a7ad098cfe6e94d35f667c269852129035aa0417c8abab211b",
+      "rows": 3
+    },
+    "p3_ledger": {
+      "columns": [
+        "id",
+        "strategy_variant",
+        "direction",
+        "actual_entry_time",
+        "actual_exit_time",
+        "exit_price",
+        "notes"
+      ],
+      "ddl": "CREATE TABLE p3_ledger (id TEXT PRIMARY KEY, strategy_variant TEXT, direction TEXT, actual_entry_time TEXT, actual_exit_time TEXT, exit_price REAL, notes TEXT)",
+      "indexes": [],
+      "logical_sha256": "a028c371ee6faa0de63e0bccd96352b18af283cb96be8720a8cb93fea45f6e29",
+      "rows": 6
+    }
+  }
+}

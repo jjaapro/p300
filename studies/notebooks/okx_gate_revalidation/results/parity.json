@@ -1,0 +1,108 @@
+{
+  "bars": [
+    {
+      "abs_diff_R1": 4.440892098500626e-16,
+      "asset": "BTC",
+      "decision_ok": true,
+      "decision_pass": true,
+      "direction": "long",
+      "frames_end_at_clock": true,
+      "newest_R1_ok": true,
+      "newest_R2_ok": true,
+      "recorded_equals_readme": true,
+      "source": "SJ-4243",
+      "t": "2026-08-21T06:00:00+00:00",
+      "z_ok": true
+    },
+    {
+      "abs_diff_R1": 0.0,
+      "asset": "BTC",
+      "decision_ok": true,
+      "decision_pass": true,
+      "direction": "long",
+      "frames_end_at_clock": true,
+      "newest_R1_ok": true,
+      "newest_R2_ok": true,
+      "recorded_equals_readme": true,
+      "source": "SJ-4245",
+      "t": "2026-08-21T19:30:00+00:00",
+      "z_ok": true
+    },
+    {
+      "abs_diff_R1": 0.0,
+      "asset": "BTC",
+      "decision_ok": true,
+      "decision_pass": true,
+      "direction": "long",
+      "frames_end_at_clock": true,
+      "newest_R1_ok": true,
+      "newest_R2_ok": true,
+      "recorded_equals_readme": true,
+      "source": "SJ-4248",
+      "t": "2026-08-22T03:45:00+00:00",
+      "z_ok": true
+    },
+    {
+      "abs_diff_R1": 0.0,
+      "asset": "BTC",
+      "decision_ok": true,
+      "decision_pass": false,
+      "direction": "long",
+      "frames_end_at_clock": true,
+      "newest_R1_ok": true,
+      "newest_R2_ok": true,
+      "recorded_equals_readme": true,
+      "source": "diag",
+      "t": "2026-08-22T09:45:00+00:00",
+      "z_ok": true
+    },
+    {
+      "abs_diff_R1": 0.0,
+      "asset": "ETH",
+      "decision_ok": true,
+      "decision_pass": false,
+      "direction": "short",
+      "frames_end_at_clock": true,
+      "newest_R1_ok": true,
+      "newest_R2_ok": true,
+      "recorded_equals_readme": true,
+      "source": "diag",
+      "t": "2026-09-02T02:15:00+00:00",
+      "z_ok": true
+    },
+    {
+      "abs_diff_R1": 0.0,
+      "asset": "ETH",
+      "decision_ok": true,
+      "decision_pass": false,
+      "direction": "short",
+      "frames_end_at_clock": true,
+      "newest_R1_ok": true,
+      "newest_R2_ok": true,
+      "recorded_equals_readme": true,
+      "source": "diag",
+      "t": "2026-09-02T23:45:00+00:00",
+      "z_ok": true
+    }
+  ],
+  "checks": [
+    "z_ok",
+    "recorded_equals_readme",
+    "decision_ok",
+    "newest_R1_ok",
+    "newest_R2_ok",
+    "frames_end_at_clock"
+  ],
+  "pass": true,
+  "provenance": {
+    "code_sha256": {
+      "okxlib.py": "1b00a6787df06cca86f9ce3ca07b783595ff863585082b1a636b077e757adc3d",
+      "parity_check.py": "15eed181b1d0c4b285c4ad3f3834aee62c48dce62de6e814e37da54ab509991a"
+    },
+    "dirty": true,
+    "head": "b8ab717f82c1383560cf657bc422f2ec8d1dd8dd",
+    "inputs_sha256": {},
+    "snapshot_sha256": "f3decffe3e5d740bf2678a9f6db29997ace4731ea0655a25274e71aa56b75c81"
+  },
+  "tolerance": 1e-09
+}

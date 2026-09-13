@@ -569,6 +569,18 @@ cap — the multi-asset plan's Phase B as written.
    opening t+72h, which matches all three ledger trades within 28 s, stop price exactly.
    That look is disclosed in §7.11: three pooled HOLDOUT trades' exits were read to set P3.
 
+   **Addendum 1 (`d1d9808`) and the implementation — run commit made 2026-09-13.** Scripts
+   and 66 synthetic tests committed before any outcome exists. Development runs, all on the
+   one snapshot (taken once, 58.9 MB, outside the repo, sha256 in `results/snapshot.json`):
+   P1 reproduces the overlay pool exactly (204 BTC / 189 ETH rows, max relative diff 0.0);
+   P0 all six live z values (max diff 4.4e-16); P2 fidelity 0.983 / 0.991; precision 1.0;
+   P3 all six ledger trades under A1; POWER met (feature-level membership only). Steps 3–4
+   rerun byte-identical; phase B exercised end to end on SYNTHETIC prices only. An independent
+   pre-run code review found no blocker; its should-fix items (step-output provenance, a
+   run-commit check over all imported code, a phase-B-started marker, a NaN-price refusal,
+   and seven tests that passed without testing their clause) were fixed and each re-proven
+   by mutation (19/19). **The study run — outcomes.py phase B — is next.**
+
    **OPS follow-up, whatever the verdict:** the OKX refresh is an elapsed-time throttle
    (`data/sources/binance.py:1096-1105`, >= 3300 s), not hour-aligned, so each closed hour
    lands 0–56 min late and live sometimes sees an hour older than the 7b bound assumes.

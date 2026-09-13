@@ -1,0 +1,55 @@
+{
+  "assets": {
+    "BTC": {
+      "first_mismatch_index": null,
+      "max_rel_diff": {
+        "entry": 0.0,
+        "stop": 0.0,
+        "target": 0.0
+      },
+      "n_csv": 204,
+      "n_pool_in_window": 357,
+      "n_research": 204,
+      "n_triple_all": 361,
+      "order_ok": true,
+      "pass": true,
+      "price_ok": true,
+      "set_ok": true
+    },
+    "ETH": {
+      "first_mismatch_index": null,
+      "max_rel_diff": {
+        "entry": 0.0,
+        "stop": 0.0,
+        "target": 0.0
+      },
+      "n_csv": 189,
+      "n_pool_in_window": 337,
+      "n_research": 189,
+      "n_triple_all": 344,
+      "order_ok": true,
+      "pass": true,
+      "price_ok": true,
+      "set_ok": true
+    }
+  },
+  "outputs_sha256": {
+    "pool_BTC.csv": "1063f2f501199d6c508d018b1045276ac4fb51b5cbb9052350e4e0db1d9587d2",
+    "pool_ETH.csv": "15f41e5af9e3616743446929be6db177edc279b83bb787a604a0fdd0fe8d44e9"
+  },
+  "p1_cutoff_utc": "2026-07-20T23:59:59+00:00",
+  "pass": true,
+  "provenance": {
+    "code_sha256": {
+      "gen_pool.py": "24a96ad02ab61be491b7f64dadbeb6fef027822ab21e7f3afae8277cc7bec11c",
+      "okxlib.py": "1b00a6787df06cca86f9ce3ca07b783595ff863585082b1a636b077e757adc3d"
+    },
+    "dirty": true,
+    "head": "b8ab717f82c1383560cf657bc422f2ec8d1dd8dd",
+    "inputs_sha256": {
+      "reference_trades_BTC.csv": "84ad77a9c170dfc70ae51b327109867ebed9b0eea1d533549c1c52f5a8ecfbfd",
+      "reference_trades_ETH.csv": "59823a01e71fe610c46deb15826df0d45b8131f4dc7503ca5e5f7adc5b890903"
+    },
+    "snapshot_sha256": "f3decffe3e5d740bf2678a9f6db29997ace4731ea0655a25274e71aa56b75c81"
+  }
+}

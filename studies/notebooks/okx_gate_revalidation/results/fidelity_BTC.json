@@ -1,0 +1,64 @@
+{
+  "asset": "BTC",
+  "atr_drops": 0,
+  "disagreement_R1_vs_R2": {
+    "gate_decision_rate": 0.3081232492997199,
+    "n": 357,
+    "n_both_finite": 357,
+    "nan_a": 0,
+    "nan_b": 0,
+    "sign_rate_both_finite": 0.3081232492997199
+  },
+  "disagreement_R1_vs_same_hour": {
+    "gate_decision_rate": 0.3081232492997199,
+    "n": 357,
+    "n_both_finite": 357,
+    "nan_a": 0,
+    "nan_b": 0,
+    "sign_rate_both_finite": 0.3081232492997199
+  },
+  "fidelity": 0.9831932773109243,
+  "nan_z_R1_off": 0,
+  "nan_z_R1_pool": 0,
+  "nan_z_R2_off": 0,
+  "nan_z_R2_pool": 0,
+  "okx_newest_R1_not_floor_minus_1h": 0,
+  "okx_newest_R2_not_floor_minus_2h": 0,
+  "outputs_sha256": {
+    "features_BTC.csv": "c1762d577495b9b75a9fce3c97c227e1524e33b5cfdd5f1a43f55e946ba7f81c",
+    "features_sh_BTC.csv": "f9ec0fb918d722556bd355f8eda284e763746e1ebbe410cf727408622ba75f5d"
+  },
+  "p2_denominator": 357,
+  "p2_numerator": 351,
+  "power_R1": {
+    "n_B": 115,
+    "n_K": 93,
+    "n_off": 208
+  },
+  "power_R2": {
+    "n_B": 118,
+    "n_K": 90
+  },
+  "precision": {
+    "anchor_bars": 351,
+    "days": 1986,
+    "pool_triggers_eod_anchor_differs": 0,
+    "pool_triggers_without_eod_frame": 0,
+    "precision": 1.0,
+    "retained_after_cooldown": 351,
+    "retained_in_pool": 351
+  },
+  "provenance": {
+    "code_sha256": {
+      "bot_features.py": "a4118c1fae46e93dcb6f6d8d370a564522d3a2a8468ff11fc7e571a6055b8739",
+      "okxlib.py": "1b00a6787df06cca86f9ce3ca07b783595ff863585082b1a636b077e757adc3d"
+    },
+    "dirty": true,
+    "head": "b8ab717f82c1383560cf657bc422f2ec8d1dd8dd",
+    "inputs_sha256": {
+      "pool_BTC.csv": "1063f2f501199d6c508d018b1045276ac4fb51b5cbb9052350e4e0db1d9587d2"
+    },
+    "snapshot_sha256": "f3decffe3e5d740bf2678a9f6db29997ace4731ea0655a25274e71aa56b75c81"
+  },
+  "same_hour_attach_not_floor": 0
+}
