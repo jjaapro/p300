@@ -802,7 +802,7 @@ def _main() -> None:
     import argparse
     p = argparse.ArgumentParser(
         description="Print strategy health metrics for a P-300 variant.")
-    p.add_argument("--variant", default="p300_aggressive_v2_v1_0",
+    p.add_argument("--variant", default="bot_adx_v1",
                    help="Variant ID (default: live variant).")
     p.add_argument("--capital", type=float, default=None,
                    help="Override capital (default: paper_account_usdt config).")

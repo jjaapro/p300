@@ -392,6 +392,9 @@ def run_decision(
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(
         description="Run one AI_QUANT daily decision (no trade emission).")
+    # AI_QUANT is dormant: this default names the variant retired on
+    # 2026-09-13 (enabled = 0). Kept so the archived tool still reproduces its
+    # own history; BACKLOG step 4 archives this sleeve.
     p.add_argument("--variant", default="p300_aggressive_v2_v1_0",
                     help="variant_id to use for the context lookup")
     p.add_argument("--asset", default="BTC")

@@ -8,8 +8,8 @@ Checks:
   1. Both databases exist and are readable.
   2. Required trader.db tables are present and reasonably fresh.
   3. Required dashboard.db tables are present.
-  4. Variant p300_aggressive_v2_v1_0 is registered and enabled.
-  5. Every strategy_id in the variant spec is wired into STRATEGY_DISPATCH.
+  4. Every variant the fleet is configured to trade is registered and enabled.
+  5. Every bot runner's strategy entry points exist and are callable.
   6. Data coverage is sufficient for Core J+ regime classifier (≥ 80d of BTC
      daily closes from cd_futures_ohlcv).
   7. CPR warmup OK (≥ 210d of ca_long_short_ratio rows).
@@ -20,8 +20,8 @@ Checks:
 Non-zero exit codes:
   1  Database missing
   2  Schema mismatch (required table absent)
-  3  Variant not registered
-  4  Dispatch not wired
+  3  A configured bot variant is not registered
+  4  A bot's strategy entry point is missing
   5  Data too stale / insufficient
   6  Invariant violation (multi-open trades)
   7  Data continuity / candle resolution violation
