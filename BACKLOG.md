@@ -628,6 +628,80 @@ cap — the multi-asset plan's Phase B as written.
     suite run migrates the running fleet's database. `tests/_chento_golden_runner.py` does
     it too. `CREATE TABLE IF NOT EXISTS` makes it usually harmless, which is exactly how it
     has gone unnoticed. Move `init_db()` out of import time, or repoint before import.
+11. **Study: are the time stops worth anything, or arbitrary numbers that looked good in
+    training?** Added 2026-09-13 at the user's request, prompted by SJ-4250 (SQUEEZE_BULL)
+    closing on its time stop. **Not started.** A census of every time-based exit in the running
+    bots was taken first — code and provenance only, deliberately computing **no** outcome,
+    because a study that has to be pre-registered cannot be designed by someone who peeked.
+
+    **Three true time stops** — a max-hold cap on a trade that would otherwise wait for its stop
+    or target:
+
+    | bot | value | where it came from | ever tested on its own? |
+    |---|---|---|---|
+    | chento_v3 BTC+ETH | `TIF_HOURS = 72` | grid {6,12,24,48,72,168}h, study A2 2026-05-26, picked IN-SAMPLE as the "MAR-optimal compromise"; its "OOS" column was visible during selection; the pool had the ±24h intersect look-ahead AND the same-hour OKX attach (BACKLOG 8). A backward-only rerun re-picked 72h, still in-sample. The causal story ("setups take 1–3 days to resolve") was written after the number. | No walk-forward on the TIF. |
+    | squeeze_bull | `TIF_HOURS = 48` | joint 80-combo stop×target×TIF grid, `oi_flush/phase2_backtest.py`; best full-sample MAR among combos with OOS mean > 0, so the OOS was consumed by the selection. The bull gate was added AFTER 48h was chosen; the later threshold change held it fixed. | Never. |
+    | short_squeeze | `TIME_STOP_HOURS = 6` | **never swept.** Declared up front in the spec; no rationale recorded anywhere. | Never. |
+
+    **Out of scope — these exits ARE the strategy, not a cap on it:** R4's calendar window close
+    (though its exit hours came out of a ~7,500-config grid — "definitional" is not "unfitted";
+    any change there is a window study), CARRY's funding exit (its own study rejected a time rule),
+    ADX's regime exits (no time element).
+
+    **Why it is not a cosmetic dial:**
+    - For both **no-stop paper twins** the time stop is the ONLY loss exit. "No time stop" is
+      undefined for `short_squeeze_nostop` — it would never close — so it needs a catastrophe-stop
+      or longer-hold arm instead.
+    - The squeeze bots' single-open guard means a longer hold also changes WHICH signals trade,
+      and chento has no guard at all: with a 6h cooldown under a 72h TIF, positions stack (up to
+      ~12 per bot in principle), so the TIF sets gross exposure too.
+    - Longer holds pay more perp funding, which was unmodelled when 72h was picked.
+
+    **What live says: nothing yet.** Closed bot trades by exit kind: time stop 5, stop 2, target
+    0 — which is 3 time-stopped signals and 1 stopped signal after the doubled-fleet
+    de-duplication. That cannot answer the question in either direction.
+
+    **Design requirements (to pre-register, not yet written):**
+    - Counterfactual arms on IDENTICAL entries: A0 the shipped value; A1 no time stop — hold to
+      stop or target, with a declared censoring horizon and the unresolved count reported; A2 a
+      grid bracketing the shipped value that REUSES the historical grids, so the trial count stays
+      honest. Plus a mechanism diagnostic: what the A0-time-stopped trades do if held, and the
+      signal's forward-return half-life, as the causal case for any finite hold.
+    - Simulate what hold length changes: funding, the single-open guard, chento's stacking,
+      cooldowns, the no-tilt / half-after-loss rules. Measured costs (chento 10, SS 10, SB 7 bp).
+    - Honest N_TRIALS: chento ≥ 6 on the dial (12 with the backward-only rerun, 19 with the
+      v1-family sweep), inside a joint exit search; squeeze_bull 80 joint combos + 30 thresholds;
+      short_squeeze 1 value inside a larger exit-policy space.
+    - **No clean historical holdout exists** — every pool is in-sample for its TIF. Use
+      walk-forward re-selection, or a pre-set "change only if A1 or a grid value beats A0 by X in
+      both halves and the walk-forward" rule.
+    - **Sequencing:** the chento arm reads the same backward-only Triple pool as the frozen OKX
+      study's OFF arm, so it must wait for the OKX `verdict.json`, or it peeks at that study. The
+      squeeze arms must not change a live TIF before the n = 20/30 paired re-cuts, which assume
+      48h / 6h. Item 12's first defect must be fixed first, or the study's "shipped" arm is not
+      the live rule.
+12. **Two live defects found by the item-11 census.** Both verified 2026-09-13. Both change live
+    behaviour when fixed, so neither is fixed without a go-ahead.
+
+    **12a — squeeze_bull's live time stop is 47h, not 48h.** `signal.py:246-247` measures the
+    time stop from the trigger bar's OPEN (`bar_ts + TIF_HOURS`), but entry happens at that bar's
+    CLOSE, an hour later — so every live hold is 47h. The research walker (`math.py:121`) and the
+    re-cut replay (`recut_lib.py:365-366`, `sig_ts = bar + bar_step`) both use 48h from entry.
+    SJ-4250 held exactly 47.0h. This matters beyond one hour of price: the pre-registered rule
+    "DISABLE a variant whose live record diverges from the sleeve's own replay by > 0.05 R on any
+    trade" (`docs/calibration/squeeze_bull.md:91, :156`) is comparing a 47h live exit against a
+    48h replay on EVERY time-stop trade, so it can trip on the timing bug rather than on a real
+    divergence — or the n = 20 re-cut pairs two different rules. Affects both squeeze_bull
+    variants. Fix (1h later exits) and a boundary test at 47h59m, before the n = 20 re-cut. Not
+    computed: whether SJ-4250 already crosses 0.05 R — that needs its R.
+
+    **12b — chento ETH's half-after-loss reads the wrong "last closed trade".**
+    `bots/chento_v3/runner.py:74-77` orders by `exit_time DESC`, but `exit_time` holds the
+    SCHEDULED time stop and is never overwritten on close; the real close is
+    `actual_exit_time`. SJ-4248 stopped out 2026-08-22 05:15 yet carries `exit_time`
+    2026-08-25. So a trade that stops out early sorts as if it closed three days later, and can
+    wrongly halve the next ETH position. Latent: `bot_chento_v3_eth` has no closed trades yet.
+    Fix: order by `actual_exit_time`, which is what the function's own docstring promises.
 
 **Gates:** parity tests byte-equal before and after every step; the full suite green;
 fleet restarted from the new paths with fresh heartbeats; one definition per rule (no
