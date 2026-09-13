@@ -40,7 +40,7 @@ def ro_conn() -> sqlite3.Connection:
 
 def assert_config_parity() -> dict:
     """The study's frozen constants must equal the live sleeve's."""
-    from strategies.sleeves.timing_anomalies.internal.pdo import config as cfg
+    from studies.material.archive.pdo import config as cfg
     assert cfg.GAP_THRESHOLD_PCT == GAP_THRESHOLD_PCT, cfg.GAP_THRESHOLD_PCT
     assert cfg.TOUCH_TOL_PCT == TOUCH_TOL_PCT, cfg.TOUCH_TOL_PCT
     assert cfg.HOLD_BARS_BY_ASSET == HOLD_BARS_BY_ASSET, cfg.HOLD_BARS_BY_ASSET

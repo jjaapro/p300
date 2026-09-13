@@ -51,8 +51,8 @@ from studies.notebooks.chento_journal.validation_A_sleeve_tuning import (
     replay_exits, summarize, print_summary,
     _entry_cache_key, _load_cached_entries,
 )
-from strategies.sleeves.chento_limit_bid import config as cli_cfg
-from strategies.sleeves.chento_limit_bid import math as cli_math
+from studies.material.archive.chento_limit_bid import config as cli_cfg
+from studies.material.archive.chento_limit_bid import math as cli_math
 
 
 # === Bounded ladder replay (LONG side) =====================================

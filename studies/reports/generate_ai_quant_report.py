@@ -39,7 +39,7 @@ if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
 from strategies.support import clock, db  # noqa: E402
-from strategies.sleeves.ai_quant import archive, chart, context as ctx_mod, decision as decision_mod  # noqa: E402
+from studies.material.archive.ai_quant import archive, chart, context as ctx_mod, decision as decision_mod  # noqa: E402
 from strategies.support.env import load_env_file  # noqa: E402
 
 DEFAULT_VARIANT = "p300_aggressive_v2_v1_0"

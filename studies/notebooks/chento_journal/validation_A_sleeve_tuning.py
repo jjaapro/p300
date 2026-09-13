@@ -59,8 +59,8 @@ if sys.platform == 'win32':
 else:
     sys.stdout.reconfigure(line_buffering=True)
 
-from strategies.sleeves.chento_limit_bid import config as cli_cfg
-from strategies.sleeves.chento_limit_bid import math as cli_math
+from studies.material.archive.chento_limit_bid import config as cli_cfg
+from studies.material.archive.chento_limit_bid import math as cli_math
 
 ASSETS = ('BTC', 'OP')  # chento universe — ETH dropped 2026-05-23 per ruleset
 RISK_PER_TRADE_NAV = 0.02

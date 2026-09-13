@@ -1049,12 +1049,12 @@ def refresh_all() -> dict[str, int]:
         log.warning(f"binance_quarterly refresh failed: {e}")
         results["binance_quarterly_1h"] = -1
     # AI_QUANT-only feeds (news headlines + CoinDesk liquidations/DVOL). These
-    # exclusively feed strategies.sleeves.ai_quant.context, so we skip them
+    # exclusively feed studies.material.archive.ai_quant.context, so we skip them
     # entirely when the sleeve is disabled — no point spending CryptoPanic /
     # CoinDesk API quota on data nobody reads. CoinDesk's data-api now requires
     # a paid key (free tier ~100 calls/month vs our cadence), so leaving it
     # wired while AI_QUANT is off just spams 401 warnings. Gate mirrors
-    # strategies.sleeves.ai_quant.signal._kill_switch_on(). Manual CLI backfill
+    # studies.material.archive.ai_quant.signal._kill_switch_on(). Manual CLI backfill
     # (`python data/sources/coindesk.py --backfill`) is unaffected.
     # NOTE: cd_open_interest is NOT here — it moved to fetch_open_interest()
     # above (always-on, native Binance) because two non-AI_QUANT sleeves need

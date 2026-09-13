@@ -14,8 +14,8 @@ sys.path.insert(0, 'c:/Source/Repos/p300')
 sys.stdout.reconfigure(encoding='utf-8')
 
 DB = Path('c:/Source/Repos/p300/data/databases/prod.db')
-from strategies.sleeves.chento_limit_bid import math as cli_math
-from strategies.sleeves.chento_limit_bid import config as cli_cfg
+from studies.material.archive.chento_limit_bid import math as cli_math
+from studies.material.archive.chento_limit_bid import config as cli_cfg
 
 
 def _load_table(table, ts_col='timestamp', ts_unit='s'):

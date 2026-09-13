@@ -85,7 +85,7 @@ def save_decision(
     *,
     variant_id: str,
     asset: str,
-    decision_result: Any,  # strategies.sleeves.ai_quant.decision.DecisionResult
+    decision_result: Any,  # studies.material.archive.ai_quant.decision.DecisionResult
     context_bundle: dict | None = None,
     trade_action: str = "noop",
     defer_until_utc: int | None = None,

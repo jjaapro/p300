@@ -22,9 +22,7 @@ from pathlib import Path
 
 import pytest
 
-from strategies.support import clock, strategy_health
-from strategies.sleeves.ai_quant import journal
-from strategies.sleeves.ai_quant.decision import DecisionResult
+from strategies.support import clock, db, strategy_health
 
 
 # ─── Fixture: dashboard.db with trades + ai_quant_decisions schemas ────────
@@ -56,6 +54,21 @@ def _seed_minimal_dash(p: Path) -> None:
                 updated_at TEXT
             );
             INSERT INTO config VALUES ('paper_account_usdt', '10000', datetime('now'));
+            -- Created on demand by the AI_QUANT journal until that sleeve was
+            -- archived on 2026-09-13. strategy_health reads this table by
+            -- plain SQL and never imported the sleeve, so the fixture owns
+            -- the DDL now. Only the columns the reader selects, plus the
+            -- NOT NULLs, are reproduced.
+            CREATE TABLE ai_quant_decisions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                decision_utc INTEGER NOT NULL,
+                decision_date TEXT NOT NULL,
+                variant_id TEXT NOT NULL,
+                asset TEXT NOT NULL,
+                decided TEXT NOT NULL,
+                conviction INTEGER,
+                cost_usd REAL
+            );
         """)
         con.commit()
     finally:
@@ -83,24 +96,34 @@ def test_known_sleeves_includes_ai_quant():
 
 def _save_decision(variant_id: str, *, direction: str, conviction: int | None,
                     cost_usd: float, when: datetime) -> None:
-    """Helper: persist one ai_quant_decisions row at the given clock time."""
+    """Helper: persist one ai_quant_decisions row at the given clock time.
+
+    Drove the AI_QUANT journal's ``save_decision`` until that sleeve was
+    archived on 2026-09-13. It writes the row directly now: everything under
+    test here is LIVE code in ``strategies/support/strategy_health.py``, which
+    reads this table by plain SQL and never imported the sleeve. Keeping the
+    import would have made a test of the live weekly report depend on
+    unmaintained archived code, and deleting the file — the obvious move for
+    something named ``test_..._ai_quant`` — would have silently dropped the
+    only coverage of ``ai_quant_window_stats``, ``HealthReport.ai_quant`` and
+    the report's decision footnote.
+
+    ``decided`` mirrors what the journal wrote: the direction, or the literal
+    ``ERROR`` when the decision payload was absent (journal.py:125).
+    """
     clock.set_simulated_now(when)
-    payload = (None if direction == "ERROR" else {
-        "direction": direction,
-        "conviction_0_100": conviction or 0,
-        "time_horizon_days": 1, "key_drivers": [],
-        "exit_conditions": "", "confidence_caveats": "", "rationale_md": "",
-    })
-    res = DecisionResult(
-        decision=payload,
-        error=("synthetic" if direction == "ERROR" else None),
-        turns=1, tool_calls=[], usage={},
-        cost_usd=cost_usd, model_id="claude-opus-4-7",
-    )
-    journal.save_decision(
-        variant_id=variant_id, asset="BTC", decision_result=res,
-        trade_action="opened:SJ-X" if direction in ("LONG", "SHORT") else "noop",
-    )
+    con = sqlite3.connect(str(db.DASH_DB))
+    try:
+        con.execute(
+            "INSERT INTO ai_quant_decisions "
+            "(decision_utc, decision_date, variant_id, asset, decided, "
+            " conviction, cost_usd) VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (int(when.timestamp()), when.date().isoformat(), variant_id,
+             "BTC", direction, conviction, cost_usd),
+        )
+        con.commit()
+    finally:
+        con.close()
 
 
 def test_ai_quant_window_stats_returns_zeros_when_table_missing(dash_db, monkeypatch):

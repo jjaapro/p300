@@ -34,7 +34,7 @@ configurable safety floor (default 48h for OI / liquidations, 14d for
 DVOL). Use `backfill()` for the one-time deeper history pull.
 
 Reader functions (`latest_oi`, `latest_liquidations`, `latest_dvol`)
-are exposed so strategies.sleeves.ai_quant.context can read recent rows without
+are exposed so studies.material.archive.ai_quant.context can read recent rows without
 re-implementing SQL.
 
 At our hourly cadence with four requests per refresh we use ~96

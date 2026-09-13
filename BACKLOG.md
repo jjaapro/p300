@@ -7,12 +7,44 @@ discussion) can pick it up.
 
 ---
 
-## Project status and roadmap — 2026-09-12
+## Project status and roadmap — 2026-09-13
 
 **This section is the roadmap.** It is updated in the same commit as anything that ships,
 is held, is killed or is decided (user request 2026-09-12: the roadmap must reflect the
 current project state). Add a new dated block above the previous one; the topic entries
 further down stay as they are.
+
+### Where we are
+
+- **The "bot = directory = strategy" refactor is through step 4 of 5.** A bot is now a
+  directory: `bots/<name>/` holds its runner, its config and its strategy, and that is the
+  only place its logic exists. The orchestrator, `bot.py`, `p300_spec.py`,
+  `backtest_runner.py`, the simulation harness and five support modules are gone
+  (−6,831 lines), and the eight dormant sleeves are archived under
+  `studies/material/archive/` (−7,406 more from the live tree). `strategies/` no longer
+  contains a single strategy — only `trades.py` (the ledger-write layer) and `support/`.
+- **Nothing that runs imports anything dormant**, and a test enforces it by parsing
+  imports rather than grepping. This was not hygiene: `jplus_inputs` imported the EMA
+  sleeve on the live r4 sizing path, and the r4 runner catches ImportError and writes a
+  degraded heartbeat — archiving naively would have left a bot reporting healthy while
+  evaluating nothing. See step 4 for the other two edges.
+- **The suite is smaller and stricter:** 1584 → 1128 passed, and for the first time
+  nothing is skipped and nothing deselected. Mutation drill 16/16 with zero golden churn,
+  so the shrinkage is dead weight leaving, not coverage.
+- **Fleet unaffected throughout.** `feed.py` (one unit, no zombies), seven bot units and
+  the dashboard have been up since 2026-09-12 17:11–17:12Z; the three open positions
+  (SJ-4242, SJ-4247, SJ-4250) are intact and `health.py` is green. `monitor.py` is still
+  not running and still has no scheduled task — deferred by the operator.
+- **Correction to the 2026-09-12 block below:** the legacy variant row is no longer
+  `enabled = 1`. Step 3 set it to `0` with a `variant_events` row; its 27 closed trades
+  are kept deliberately.
+- **Next:** step 5, the doc sweep (README, OPERATIONS, PORTFOLIO §2, dashboard cards,
+  calibration-log paths — memory `project-doc-cleanup-planned`), then step 6, porting the
+  two-clock look-ahead contract to the four running bots that have none.
+
+---
+
+## Project status and roadmap — 2026-09-12
 
 ### Where we are
 
@@ -270,11 +302,60 @@ cap — the multi-asset plan's Phase B as written.
    Drill rebuilt 22 → 16: the eight `cfg_adapter` mutations went with their subject, and two
    of the semantics they pinned moved to the runner level where the per-variant flags are now
    literal keywords. Zero golden churn, 16/16, `health.py` 0, fleet 8/8.
-4. Archive the eight dormant sleeves (EMA_BTC, ETH_DAILY, THU_BEAR, PDO, CPR, FOMC,
-   AI_QUANT, chento_limit_bid) under `studies/material/archive/` — git keeps the history;
-   any of them returns only through a study and a bot of its own. The pending PDO / CPR
-   re-validation and THU_BEAR OOS questions stay open as research items, archiving does not
-   answer them.
+4. ~~Archive the eight dormant sleeves~~ — **DONE 2026-09-13** (commits `1f58b5e`,
+   `<archive>`). EMA_BTC, ETH_DAILY, THU_BEAR, PDO, CPR, FOMC, AI_QUANT and
+   chento_limit_bid now live under `studies/material/archive/` — 45 files, 7,406 lines.
+   `strategies/sleeves/` is deleted outright; what was left of it was scaffolding.
+
+   **Three live edges had to be cut first, and one would have failed silently.**
+   `strategies/support/jplus_inputs.py` imported `strategies/sleeves/ema/math.py` at module
+   scope, and `today_inputs()` sizes the live r4 bot. Archiving EMA naively would have
+   raised ImportError inside a runner that *catches* ImportError, writes a degraded
+   heartbeat and keeps ticking — a bot reporting healthy while evaluating nothing. The
+   module moved down to `strategies/support/ema_position.py`, where it belonged anyway: the
+   EMA sleeve's own `signal.py` never imported it. The dashboard's CPR percentile constants
+   were copied into `dashboard/market.py` (display parameters, not strategy), and the
+   `fomc_observer` DDL moved into `bootstrap.SCHEMAS` so 22 rows of decision history
+   survive a fresh bootstrap. `tests/test_orchestrator_interface_gone.py` now makes that
+   permanent with an **AST** scan — a string grep red-fails on the prose that legitimately
+   names these paths.
+
+   **Three test files were traps** — they look like sleeve coverage and are not.
+   `test_strategy_health_ai_quant.py` (13) tests the LIVE weekly report but *seeded*
+   through the archived journal; it was rewritten to INSERT rows directly.
+   `test_fomc_service.py`'s `test_phase_classifier_known_dates` is the only assertion
+   anywhere that `data/sources/fed_funds.py` reads its live JSON correctly — salvaged into
+   a new `tests/test_fed_funds.py`. And `test_basis_and_oi_match_chento_limit_bid` was the
+   only coverage of the dashboard's basis/OI loaders, so it was **re-pinned against the
+   fixture's own generators** instead of deleted; the new version is strictly stronger,
+   pinning the ffill boundary exactly (the old `oi_gap <= 1` tolerance hid that three of
+   the four gap bars are null). Both replacements were mutation-checked.
+
+   The four clock-invariance tests for the archived sleeves were **relocated, not deleted**,
+   to `studies/material/archive/tests/` with their own conftest — out of the default suite
+   (`testpaths = tests`) but runnable on demand, because the PDO/CPR/THU_BEAR questions
+   below need them. `studies/notebooks/pdo_adjacents/parity_check.py` still exits 0 against
+   the archived sleeve's real functions over 4,224 timestamps — that is the evidence the
+   archive stayed usable rather than merely stored.
+
+   **What was lost, stated plainly:** the precedence ordering between the conflict and
+   headroom checks was only observable through AI_QUANT's signal, so it goes with it
+   (`test_margin_headroom.py` + `test_conflict_resolver.py` keep 52 tests on the live
+   modules themselves). Suite 1349 → **1128 passed, nothing skipped**; drill 16/16; zero
+   golden churn; `health.py` 0; fleet untouched and green, one feed, no zombies.
+
+   **Found while archiving, not yet fixed:** four of the six RUNNING bots — chento_v3,
+   short_squeeze, squeeze_bull and r4 — have **no clock-invariance coverage at all**. The
+   two-clock contract is the repo's strongest look-ahead guard and it currently reaches
+   only ADX and carry. That is where the guard budget belongs next; see step 6.
+
+   Still open, and archiving did **not** answer them: the PDO / CPR re-validation and the
+   THU_BEAR OOS question remain research items.
+6. Port the two-clock look-ahead contract to chento_v3, short_squeeze, squeeze_bull and r4.
+   Surfaced by step 4: `tests/test_jplus_lookahead.py` calls itself "the single most
+   important integration test in the repo" and covers `jplus.simulate`, ADX, the regime
+   classifier and carry — four of the six running bots have nothing. Until step 4 the
+   dormant sleeves were subsidising the appearance of coverage.
 5. Docs: README, OPERATIONS, PORTFOLIO §2, dashboard cards, calibration-log paths — this is
    where the deferred doc cleanup happens (memory `project-doc-cleanup-planned`).
 

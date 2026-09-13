@@ -1,4 +1,4 @@
-"""CLI front-end to strategies.sleeves.ai_quant.chart.render_chart for visual sanity-checking.
+"""CLI front-end to studies.material.archive.ai_quant.chart.render_chart for visual sanity-checking.
 
 Examples:
     python strategies/sleeves/ai_quant/chart_cli.py --out c:/tmp/sample.png
@@ -14,11 +14,14 @@ import sys
 from pathlib import Path
 
 # Allow running from repo root without installing the package.
-_REPO = Path(__file__).resolve().parents[3]
+# parents[4]: this file sits four levels below the repo root at
+# studies/material/archive/ai_quant/. It was parents[3] until the
+# 2026-09-13 archive moved it one level deeper.
+_REPO = Path(__file__).resolve().parents[4]
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
-from strategies.sleeves.ai_quant.chart import render_chart
+from studies.material.archive.ai_quant.chart import render_chart
 
 
 def main(argv: list[str] | None = None) -> int:

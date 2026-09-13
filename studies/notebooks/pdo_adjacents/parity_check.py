@@ -32,7 +32,7 @@ if str(REPO) not in sys.path:
 from studies.notebooks.pdo_adjacents import common as C            # noqa: E402
 from studies.notebooks.pdo_adjacents import question_a_regime as QA  # noqa: E402
 from strategies.support import clock, db                            # noqa: E402
-import strategies.sleeves.timing_anomalies.internal.pdo.signal as SLEEVE  # noqa: E402
+import studies.material.archive.pdo.signal as SLEEVE  # noqa: E402
 
 RESULTS = HERE / "results"
 RESULTS.mkdir(exist_ok=True)

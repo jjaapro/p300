@@ -21,7 +21,7 @@ hard-coded ``_PRICING`` table. Rates are approximate; treat the value as
 a tracking aid, not a billing authority.
 
 Persistence (writing the decision to ``ai_quant_decisions`` and emitting
-trades) lives in strategies.sleeves.ai_quant.signal — this module is pure
+trades) lives in studies.material.archive.ai_quant.signal — this module is pure
 orchestration and can be exercised end-to-end via the CLI without
 touching dashboard.db.
 """

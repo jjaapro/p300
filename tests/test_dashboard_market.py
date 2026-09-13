@@ -235,28 +235,65 @@ def test_ssq_pool_matches_sleeve_loader(fixture_db):
             ssq_math.percentile_rank(sl["divergence"], div), 3)
 
 
-def test_basis_and_oi_match_chento_limit_bid(fixture_db):
-    pytest.importorskip("pandas")
-    from strategies.sleeves.chento_limit_bid import signal as clb
-    now = datetime.now(timezone.utc)
-    df = clb._load_15m_enriched(now, hours_back=26)
-    assert len(df) > 50
-    by = _by_time(market.flow("BTC", "15m"))
-    checked, oi_gap = 0, 0
-    for idx, row in df.iterrows():
-        ts = int(idx.timestamp()) if hasattr(idx, "timestamp") else int(idx)
-        b = by.get(ts)
+def test_basis_and_oi_match_the_fixture_generators(fixture_db):
+    """Basis and carried OI, checked against the fixture's own generators.
+
+    Cross-checked against chento_limit_bid's `_load_15m_enriched` until
+    2026-09-13, when that sleeve was archived. Re-pinned rather than deleted:
+    this is the ONLY coverage of the dashboard's live basis/OI loaders, and
+    `_dashboard_fixture` is a genuine second source — it DEFINES the rows,
+    so market.py reproducing them is a real assertion, not a tautology.
+
+    Two things the old test could only express as tolerances are now exact.
+    Spot is `perp - 20` at every bar, so basis is 20/spot*1e4. And the OI
+    gap the fixture deliberately drills at i=5 pins the ffill limit at its
+    boundary: `_oi_carry` allows 4 bars on 15m, so the first bar of the
+    missing hour still carries the i=6 value and the remaining three go
+    null. The old test asserted only `oi_gap <= 1` and could not see that
+    three of the four bars were null, nor that the one carried value was
+    right.
+    """
+    bars = _by_time(market.flow("BTC", "15m"))
+    assert len(bars) > 50
+
+    rt = datetime.now(timezone.utc).timestamp()
+    q15 = int(rt // 900) * 900
+    hour = int(rt // 3600) * 3600
+
+    checked_basis = checked_oi = 0
+    for k in range(104):
+        b = bars.get(q15 - k * 900)
         if b is None:
             continue
-        assert b["basis_bp"] == pytest.approx(row["basis_bp"], abs=0.01), ts
-        if b["oi_close"] is None:
-            oi_gap += 1                     # positional vs bar-count ffill at the gap
-        else:
-            assert b["oi_close"] == pytest.approx(row["oi"]), ts
-        checked += 1
-    assert checked > 50 and oi_gap <= 1
-    # funding is deliberately NOT compared: the sleeve reads raw rows while
-    # the dashboard keeps settlements only (strategies/support/funding.py).
+        if fx.spot15(k) is None:            # every 10th bar: no spot row
+            assert b["basis_bp"] is None, k
+            assert b["spot_cvd"] is None, k
+            continue
+        perp_px = fx.perp15(k)[0]
+        spot_px = perp_px - 20.0
+        assert b["basis_bp"] == pytest.approx(
+            (perp_px - spot_px) / spot_px * 1e4, abs=0.01), k
+        checked_basis += 1
+
+    gap_hour: list[float | None] = []
+    for b in sorted(bars.values(), key=lambda x: x["time"]):
+        i = (hour - (b["time"] // 3600) * 3600) // 3600
+        if not 0 <= i < 30:
+            continue
+        if i == 5:                          # the drilled gap, asserted below
+            gap_hour.append(b["oi_close"])
+            continue
+        assert b["oi_close"] == pytest.approx(fx.oi_close(i)), (b["time"], i)
+        checked_oi += 1
+
+    # One hour of 15m bars = 4. The carry reaches exactly the first of them.
+    assert gap_hour == [pytest.approx(fx.oi_close(6)), None, None, None], gap_hour
+
+    assert checked_basis > 50, checked_basis
+    assert checked_oi > 50, checked_oi
+    # Funding is deliberately NOT compared here: the dashboard keeps
+    # settlements only (strategies/support/funding.py), and
+    # test_funding_daily_means_replica covers that path.
 
 
 def test_funding_daily_means_replica(fixture_db):
@@ -273,7 +310,7 @@ def test_funding_daily_means_replica(fixture_db):
 
 
 def test_cpr_gate_replica():
-    from strategies.sleeves.timing_anomalies.internal.cpr.config import (
+    from studies.material.archive.cpr.config import (
         PCTILE_THRESHOLD, PCTILE_WINDOW)
     panel = date(2026, 8, 31)
     dates = [(panel - timedelta(days=k)).isoformat() for k in range(220)]

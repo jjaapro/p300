@@ -48,7 +48,7 @@ from studies.notebooks.chento_journal.validation_A_sleeve_tuning import (
 from studies.notebooks.chento_journal.validation_A4_bounded_ladder import (
     replay_one_ladder_long,
 )
-from strategies.sleeves.chento_limit_bid import config as cli_cfg
+from studies.material.archive.chento_limit_bid import config as cli_cfg
 
 
 COST_PER_UNIT = (cli_cfg.COST_BP_RT + cli_cfg.SLIPPAGE_BP_RT) / 10000.0

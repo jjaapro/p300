@@ -1,4 +1,10 @@
-"""strategies.sleeves.ema.math — weekly aggregation + EMA(5/21) crossover position map.
+"""strategies.support.ema_position — weekly aggregation + EMA(5/21) crossover
+position map.
+
+Named test_ema_sleeve.py against strategies/sleeves/ema/math.py until
+2026-09-13. The EMA sleeve was archived; this module was not, because
+jplus_inputs calls it on the live r4 bot's sizing path. The tests follow the
+code — these guard live arithmetic now, not a dormant sleeve.
 
 Properties under test:
   - Weekly aggregation produces 168h-bucketed candles (first-bucket open,

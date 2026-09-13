@@ -234,12 +234,13 @@ def test_adx_trail_is_effective_only_after_daily_close(ledger, monkeypatch):
 
 @pytest.mark.parametrize("strategy,direction,low,high,expected", [
     ("ADX", "LONG", 85, 113, 90),
-    ("THU_BEAR", "SHORT", 87, 108, 105),
 ])
 def test_sleeve_closes_recovered_wick_with_historical_accounting(
         ledger, monkeypatch, strategy, direction, low, high, expected):
+    """A THU_BEAR/SHORT arm ran here until 2026-09-13; that sleeve was
+    archived and the arm went with it. The ADX arm is the one that guards a
+    running bot, and it is the reason this test exists."""
     from bots.adx.strategy import signal as adx
-    from strategies.sleeves.timing_anomalies.internal.thu_bear import signal as thu
     from strategies.support import funding, price_feed
     _seed(ledger, direction=direction, strategy=strategy)
     _bar(ledger, 0, l=low, h=high)
@@ -251,8 +252,7 @@ def test_sleeve_closes_recovered_wick_with_historical_accounting(
     monkeypatch.setattr(adx, "_load_btc_daily_candles", lambda: [])
     monkeypatch.setattr(adx, "_current_signal", lambda candles: None)
     monkeypatch.setattr(adx, "ATR_TRAIL_MULT", 0)
-    sleeve = adx if strategy == "ADX" else thu
-    _decide(sleeve, {"weight_pct": 100, "_effective_leverage": 1,
+    _decide(adx, {"weight_pct": 100, "_effective_leverage": 1,
                      "params": {"assets": ["BTC"], "version": "V3_enhanced",
                                 "stop_loss_pct": 10 if strategy == "ADX" else 5}})
     row = _trade(ledger)
@@ -277,12 +277,12 @@ def test_close_rejects_exit_before_entry_or_after_clock(ledger, exit_time):
 
 @pytest.mark.parametrize("strategy,direction,low,high,stored", [
     ("ADX", "LONG", 95, 101, 10),
-    ("THU_BEAR", "SHORT", 99, 103, 5),
 ])
 def test_historical_path_uses_entry_stop_not_new_config(
         ledger, monkeypatch, strategy, direction, low, high, stored):
+    """THU_BEAR arm dropped 2026-09-13 with the sleeve — see the sibling
+    test above."""
     from bots.adx.strategy import signal as adx
-    from strategies.sleeves.timing_anomalies.internal.thu_bear import signal as thu
     from strategies.support import price_feed
     _seed(ledger, strategy=strategy, direction=direction,
           notes=json.dumps({"sl_semantic_price_thresh_pct": stored, "stop_loss_pct": stored}))
@@ -293,8 +293,7 @@ def test_historical_path_uses_entry_stop_not_new_config(
     monkeypatch.setattr(adx, "_current_signal", lambda candles: None)
     monkeypatch.setattr(adx, "ATR_TRAIL_MULT", 0)
     monkeypatch.setenv("P300_STOP_SEMANTICS", "margin")
-    sleeve = adx if strategy == "ADX" else thu
-    _decide(sleeve, {"weight_pct": 100, "_effective_leverage": 10,
+    _decide(adx, {"weight_pct": 100, "_effective_leverage": 10,
                      "params": {"stop_loss_pct": 2, "assets": ["BTC"]}})
     assert _trade(ledger)["status"] == "open"
 

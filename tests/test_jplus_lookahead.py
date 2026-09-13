@@ -12,14 +12,24 @@ Uses the real data/trader.db so the test exercises the actual data
 loaders (not synthetic fixtures). It's slow-ish (~15s) but runs once.
 
 Coverage:
-  - jplus.simulate (Core J+, 50% portfolio weight)
-  - bots.adx.strategy.signal._current_signal (S-003 ADX, 15%)
-  - regime_classifier.classify_regime (gates S-096 Thu Bear, 6%)
-  - bots.carry.strategy.signal._load_recent_daily_funding (S-078 Carry, 12%)
-  - strategies.sleeves.timing_anomalies.internal.cpr.signal._load_daily_closes (CPR, 8%)
-  - strategies.sleeves.timing_anomalies.internal.pdo.signal._btc_30d_return_pct (PDO, 4%)
-  - strategies.sleeves.timing_anomalies.internal.thu_bear.signal._get_regime_for_prev_day (Thu Bear, 6%)
-  - strategies.sleeves.timing_anomalies.internal.fomc.signal.evaluate (FOMC, 5%)
+  - jplus.simulate (Core J+)
+  - bots.adx.strategy.signal._current_signal (S-003 ADX)
+  - regime_classifier.classify_regime
+  - bots.carry.strategy.signal._load_recent_daily_funding (S-078 Carry)
+
+Four more arms covered CPR, PDO, THU_BEAR and FOMC until 2026-09-13. Those
+sleeves were archived and the arms went with them, to
+studies/material/archive/tests/test_lookahead.py — still runnable, on demand,
+by whoever picks up the open PDO/CPR/THU_BEAR re-validations. They are out of
+the default suite because pytest.ini sets `testpaths = tests`, and because the
+archive is explicitly unsupported: a main-suite test must not go red when
+unmaintained code drifts.
+
+KNOWN GAP, 2026-09-13: four of the six RUNNING bots — chento_v3,
+short_squeeze, squeeze_bull and r4 — have no clock-invariance coverage at all.
+This contract is the repo's strongest guard against look-ahead and it does not
+currently reach most of the fleet. Porting it is a roadmap item, and that is
+where the guard budget belongs now — not on the dormant four.
 """
 from __future__ import annotations
 
@@ -188,128 +198,3 @@ def test_carry_funding_no_lookahead(early_clock, late_clock):
             if abs(early[d][k] - late[d][k]) > 1e-9:
                 diffs.append((d, k, early[d][k], late[d][k]))
     assert not diffs, f"carry funding look-ahead divergences (first 5): {diffs[:5]}"
-
-
-# ─── CPR daily-close look-ahead ─────────────────────────────────────────────
-
-@pytest.mark.slow
-@pytest.mark.parametrize("early_clock,late_clock", [
-    (datetime(2024, 6, 1, tzinfo=timezone.utc), datetime(2024, 10, 1, tzinfo=timezone.utc)),
-])
-def test_cpr_daily_closes_no_lookahead(early_clock, late_clock):
-    """CPR _load_daily_closes must produce identical OHLC on common dates at
-    two different clock positions. CPR's lookback is 240d, so the two clocks
-    are 4 months apart to guarantee meaningful overlap. CPR caches per
-    (asset, UTC-day), so we clear the cache between clocks to actually
-    exercise the loader path."""
-    from strategies.sleeves.timing_anomalies.internal.cpr.signal import _daily_closes_cache, _load_daily_closes
-
-    _daily_closes_cache.clear()
-    clock.set_simulated_now(early_clock)
-    e_dates, e_o, e_h, e_l, e_c = _load_daily_closes("BTC")
-    early = {d: (e_o[i], e_h[i], e_l[i], e_c[i]) for i, d in enumerate(e_dates)}
-
-    _daily_closes_cache.clear()
-    clock.set_simulated_now(late_clock)
-    l_dates, l_o, l_h, l_l, l_c = _load_daily_closes("BTC")
-    late = {d: (l_o[i], l_h[i], l_l[i], l_c[i]) for i, d in enumerate(l_dates)}
-    clock.set_simulated_now(None)
-    _daily_closes_cache.clear()
-
-    common = sorted(set(early) & set(late))
-    assert len(common) > 50, "need enough common daily closes"
-
-    diffs = []
-    for d in common:
-        for k, ev, lv in zip(("open", "high", "low", "close"),
-                              early[d], late[d]):
-            if abs(ev - lv) > 1e-6:
-                diffs.append((d, k, ev, lv))
-    assert not diffs, f"CPR daily-close look-ahead divergences (first 5): {diffs[:5]}"
-
-
-# ─── PDO 30d-return clock-bounded round-trip ────────────────────────────────
-
-@pytest.mark.slow
-def test_pdo_30d_return_clock_bounded():
-    """PDO _btc_30d_return_pct must be a pure function of the clock — calling
-    it at clock=T, then at T2 > T, then back at T must yield the same value
-    for T both times. Catches accidental global mutation or peeking past the
-    clock bound."""
-    from strategies.sleeves.timing_anomalies.internal.pdo.signal import _btc_30d_return_pct
-
-    t1 = datetime(2024, 6, 1, 12, tzinfo=timezone.utc)
-    t2 = datetime(2025, 6, 1, 12, tzinfo=timezone.utc)
-
-    clock.set_simulated_now(t1)
-    v1 = _btc_30d_return_pct()
-    clock.set_simulated_now(t2)
-    v2 = _btc_30d_return_pct()
-    clock.set_simulated_now(t1)
-    v1_again = _btc_30d_return_pct()
-    clock.set_simulated_now(None)
-
-    assert v1 is not None and v2 is not None, "needs cd_spot_binance coverage"
-    assert v1 == v1_again, \
-        f"PDO 30d return mutated across clock changes: T1={v1} -> T2={v2} -> T1'={v1_again}"
-
-
-# ─── Thu Bear regime-lookup look-ahead ──────────────────────────────────────
-
-@pytest.mark.slow
-def test_thu_bear_regime_lookup_no_lookahead():
-    """Thu Bear's _get_regime_for_prev_day must return the same prev-day
-    regime label at two different clock positions, both well after the target
-    Thursday. The cache is keyed per UTC day so we clear it between clocks to
-    force a fresh regime_map load each time."""
-    from strategies.sleeves.timing_anomalies.internal.thu_bear import signal as tb
-    from strategies.sleeves.timing_anomalies.internal.thu_bear.signal import _get_regime_for_prev_day
-
-    target_thursday = datetime(2024, 5, 9, 0, tzinfo=timezone.utc)
-    t1 = datetime(2024, 6, 1, tzinfo=timezone.utc)
-    t2 = datetime(2025, 6, 1, tzinfo=timezone.utc)
-
-    tb._regime_map_cache = {}
-    tb._regime_map_cache_day = ""
-    clock.set_simulated_now(t1)
-    label_a = _get_regime_for_prev_day(target_thursday)
-
-    tb._regime_map_cache = {}
-    tb._regime_map_cache_day = ""
-    clock.set_simulated_now(t2)
-    label_b = _get_regime_for_prev_day(target_thursday)
-    clock.set_simulated_now(None)
-
-    assert label_a is not None, "regime_classifier must label May 2024 Wed"
-    assert label_a == label_b, \
-        f"Thu Bear regime lookup diverged across clocks: {label_a} vs {label_b}"
-
-
-# ─── FOMC evaluate post-meeting stability ───────────────────────────────────
-
-@pytest.mark.slow
-def test_fomc_evaluate_past_meeting_clock_stable():
-    """For an FOMC meeting in the past, evaluate(fomc_date) is built from
-    historical inputs (target rate, phase, fear_greed, ex-post realized
-    polymarket proxy for pre-2026). Re-evaluating at a later clock must
-    yield the same decision and inputs — anything else means a service is
-    leaking present-day state into a past-date lookup."""
-    from strategies.sleeves.timing_anomalies.internal.fomc.signal import evaluate
-
-    fomc_date = "2024-12-18"  # past, pre-2026 -> ex-post polymarket proxy
-
-    t1 = datetime(2025, 6, 1, tzinfo=timezone.utc)
-    t2 = datetime(2026, 4, 1, tzinfo=timezone.utc)
-
-    clock.set_simulated_now(t1)
-    a = evaluate(fomc_date)
-    clock.set_simulated_now(t2)
-    b = evaluate(fomc_date)
-    clock.set_simulated_now(None)
-
-    diffs = []
-    for k in ("decision", "phase", "expected_action", "target_rate_pct",
-              "fear_greed", "fear_greed_bucket"):
-        if a[k] != b[k]:
-            diffs.append((k, a[k], b[k]))
-    assert not diffs, f"FOMC past-meeting evaluate diverged: {diffs}"

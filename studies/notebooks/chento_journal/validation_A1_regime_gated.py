@@ -49,8 +49,8 @@ from studies.notebooks.chento_journal.validation_A_sleeve_tuning import (
     summarize, evaluate_gate, print_summary,
     _entry_cache_key, _load_cached_entries, _save_cached_entries,
 )
-from strategies.sleeves.chento_limit_bid import config as cli_cfg
-from strategies.sleeves.chento_limit_bid import math as cli_math
+from studies.material.archive.chento_limit_bid import config as cli_cfg
+from studies.material.archive.chento_limit_bid import math as cli_math
 from studies.lib.regime_adx import classify_regime
 
 

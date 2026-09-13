@@ -4,7 +4,7 @@ Use cases:
 - Backfill the archive when the table already has rows from before the
   archive feature shipped.
 - Re-render every file after changing the markdown template in
-  ``strategies.sleeves.ai_quant.archive._render_markdown``.
+  ``studies.material.archive.ai_quant.archive._render_markdown``.
 - Rebuild after a clean checkout where ``data/ai_quant_archive/`` was
   not committed.
 
@@ -27,12 +27,15 @@ import sys
 from pathlib import Path
 
 # Allow ``py strategies/sleeves/ai_quant/archive_rebuild.py`` from the repo root.
-_REPO = Path(__file__).resolve().parents[3]
+# parents[4]: this file sits four levels below the repo root at
+# studies/material/archive/ai_quant/. It was parents[3] until the
+# 2026-09-13 archive moved it one level deeper.
+_REPO = Path(__file__).resolve().parents[4]
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))
 
 from strategies.support import db  # noqa: E402
-from strategies.sleeves.ai_quant import archive  # noqa: E402
+from studies.material.archive.ai_quant import archive  # noqa: E402
 
 
 def _build_query(variant: str | None, since: str | None) -> tuple[str, list]:
