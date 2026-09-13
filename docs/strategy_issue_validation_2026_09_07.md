@@ -103,7 +103,7 @@ Repair requires replacing affected rows from genuine minute history, verifying c
 
 The current ADX and Thursday paths do not use the reported completed-trade clipping adapter:
 
-- [ADX management](../strategies/sleeves/adx/signal.py#L387) checks the current price against the stop on each evaluation and closes at the observed price.
+- [ADX management](../bots/adx/strategy/signal.py#L387) checks the current price against the stop on each evaluation and closes at the observed price.
 - [Enhanced Thursday management](../strategies/sleeves/timing_anomalies/internal/thu_bear/signal.py#L242) does the same.
 - [Trade close accounting](../strategies/trades.py#L317) computes P&L from the actual supplied exit price with costs/funding, without a desired-loss floor.
 - The current [ADX research harness](../studies/notebooks/adx_study/harness.py#L190) checks each bar's low/high against the hard stop before processing later decisions.
@@ -154,7 +154,7 @@ WHERE timestamp >= 1705276800 AND timestamp < 1705363200;
 -- 24 | 0.24 | 3 | 0.03
 ```
 
-Commit `2ca7cdc7f61d3a04fc49de745834175ceec93b71`, dated **4 May 2026**, removed the faulty formula from the former `services/carry_service.py`. Current [carry loading](../strategies/sleeves/carry/signal.py#L59) delegates to [funding.daily_sums_pct](../strategies/support/funding.py#L161), which sums boundary-hour values and requires three samples for a complete day. Trade closing uses the similarly filtered `accrued_pct`.
+Commit `2ca7cdc7f61d3a04fc49de745834175ceec93b71`, dated **4 May 2026**, removed the faulty formula from the former `services/carry_service.py`. Current [carry loading](../bots/carry/strategy/signal.py#L59) delegates to [funding.daily_sums_pct](../strategies/support/funding.py#L161), which sums boundary-hour values and requires three samples for a complete day. Trade closing uses the similarly filtered `accrued_pct`.
 
 Executing current `daily_sums_pct`, `accrued_pct("SHORT")`, and carry `_load_recent_daily_funding` for the January example returned **0.03%**. Carry also excludes the current incomplete day. **All 20 existing funding tests passed**, including hourly-data and non-boundary-sentinel regressions, using temporary databases and disabled pytest cache.
 

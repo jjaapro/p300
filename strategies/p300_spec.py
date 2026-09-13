@@ -109,7 +109,7 @@ def build_spec() -> dict:
             # (no_tilt, no_resist_OB, okx_aligned, skip_up_30d_shorts) + A4
             # ladder with adaptive H_B sizing. 5.4y backtest: 20 trades/yr,
             # mean R +4.13, WR 82%, max-DD −4.52R, MAR 18.4 — see
-            # strategies/sleeves/chento_triple_v3/README.md for full
+            # bots/chento_v3/strategy/README.md for full
             # provenance and `studies/material/chento/validation/
             # findings_decisions.md` for the per-rule audit.
             {"strategy_id": "CHENTO_TRIPLE_V3", "weight_pct": 10.0,

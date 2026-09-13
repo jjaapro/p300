@@ -371,7 +371,7 @@ evidence in this study is the ten fires of clause (a).
 ## What happens next
 
 The pre-registered rule returns **BUILD**. That is a recommendation to the user and nothing has
-been built - no `strategies/sleeves/squeeze_bull/`, no `bots/squeeze_bull/`.
+been built - no `bots/squeeze_bull/strategy/`, no `bots/squeeze_bull/`.
 
 What the numbers actually support, in order:
 

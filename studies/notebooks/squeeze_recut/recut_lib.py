@@ -176,7 +176,7 @@ def load_live(cfg: SleeveCfg, as_of: datetime,
             # Rows opened before 2026-09-12 predate the key. The sleeve's stop
             # was a flat 2% below entry throughout, so the reference distance
             # is recoverable exactly.
-            from strategies.sleeves.squeeze_bull import config as sb_cfg
+            from bots.squeeze_bull.strategy import config as sb_cfg
             ref_stop, legacy = entry * (1.0 - sb_cfg.STOP_PCT), True
         risk_pct = (abs(entry - float(ref_stop)) / entry
                     if ref_stop and entry > 0 else float("nan"))
@@ -222,7 +222,7 @@ def reconstruct_fires(cfg: SleeveCfg, t0: datetime, as_of: datetime) -> list[int
     """
     lo, hi = int(t0.timestamp()), int(as_of.timestamp())
     if cfg.key == "squeeze_bull":
-        from strategies.sleeves.squeeze_bull import math as sb_math
+        from bots.squeeze_bull.strategy import math as sb_math
         con = ro_prod()
         try:
             # Transcribed from the sleeve's own _load_hourly (squeeze_bull/

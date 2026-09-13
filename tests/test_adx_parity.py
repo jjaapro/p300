@@ -83,8 +83,8 @@ def test_harness_t2_reproduces_findings_table(t2_result):
 def test_sleeve_signal_matches_t2_entries(candles, t2_result):
     """The sleeve state machine (symmetric filter ON) must fire exactly
     where the harness T2 run entered, evaluated bar-by-bar on slices."""
-    from strategies.sleeves.adx import signal as adx_sig
-    from strategies.sleeves.adx.config import SYMMETRIC_TREND_FILTER
+    from bots.adx.strategy import signal as adx_sig
+    from bots.adx.strategy.config import SYMMETRIC_TREND_FILTER
 
     assert SYMMETRIC_TREND_FILTER, "production flag must be ON for T2"
 
@@ -100,7 +100,7 @@ def test_sleeve_signal_matches_t2_entries(candles, t2_result):
 def test_sleeve_blocks_countertrend_shorts(candles, t2_result):
     """Shorts the asymmetric baseline took above EMA150 must now be blocked
     (the funding-harvest shorts T2 deliberately forfeits)."""
-    from strategies.sleeves.adx import signal as adx_sig
+    from bots.adx.strategy import signal as adx_sig
     from studies.notebooks.adx_study.harness import run
 
     base = run(candles, "2018-01-01")           # asymmetric live baseline
@@ -120,8 +120,8 @@ def test_sleeve_blocks_countertrend_shorts(candles, t2_result):
 def test_funding_veto_z_matches_findings(candles):
     """findings.md addendum 2: Oct-5-2025 funding z=1.53 (vetoed),
     Nov-9-2024 z=0.41 (kept)."""
-    from strategies.sleeves.adx import signal as adx_sig
-    from strategies.sleeves.adx.config import FUNDING_VETO_Z
+    from bots.adx.strategy import signal as adx_sig
+    from bots.adx.strategy.config import FUNDING_VETO_Z
 
     by_dt = {c["dt"]: i for i, c in enumerate(candles)}
 

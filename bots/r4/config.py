@@ -1,7 +1,7 @@
 """Bot-level config for the standalone R4 calendar bot (S-099 / S-001 family).
 
 Strategy parameters (windows, weekday and day-of-month rules, inner leverage,
-vol gate) live in strategies/sleeves/timing_anomalies/internal/r4/config.py
+vol gate) live in bots/r4/strategy/config.py
 and are NOT duplicated here. This file only holds what the BOT decides:
 which variants run, how a fire is sized inside one variant, the late-entry
 grace, and the stale-input policy. Changes here belong in
@@ -16,7 +16,7 @@ LATE_ENTRY_MAX_S = 300 (5-minute grace from the late-entry cost curve).
 """
 from pathlib import Path
 
-from strategies.sleeves.timing_anomalies.internal.r4.config import (
+from bots.r4.strategy.config import (
     STRATEGY_R4_BTC, STRATEGY_R4_BTC_V2, STRATEGY_R4_ETH, STRATEGY_R4_ETH_V2,
 )
 

@@ -199,7 +199,7 @@ def test_label_rule():
 # ─── byte-equivalence with the sleeves ───────────────────────────────────────
 
 def test_pct_rank_matches_short_squeeze_math():
-    from strategies.sleeves.short_squeeze import math as ssq_math
+    from bots.short_squeeze.strategy import math as ssq_math
     dist = np.array([-3.0, -1.0, 0.0, 0.0, 2.0, 5.0])
     for v in (-4.0, -1.0, 0.0, 0.5, 5.0, 9.0):
         assert market._pct_rank_incl(v, dist) == ssq_math.percentile_rank(v, dist)
@@ -208,9 +208,9 @@ def test_pct_rank_matches_short_squeeze_math():
 
 
 def test_ssq_pool_matches_sleeve_loader(fixture_db):
-    from strategies.sleeves.short_squeeze import math as ssq_math
-    from strategies.sleeves.short_squeeze import signal as ssq_signal
-    from strategies.sleeves.short_squeeze.config import WINDOW_DAYS
+    from bots.short_squeeze.strategy import math as ssq_math
+    from bots.short_squeeze.strategy import signal as ssq_signal
+    from bots.short_squeeze.strategy.config import WINDOW_DAYS
     now = datetime.now(timezone.utc)
     con = queries._ro_con()
     try:

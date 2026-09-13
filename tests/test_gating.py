@@ -92,7 +92,7 @@ def test_r4_inner_lev_equivalence(monkeypatch):
       R4_INNER_LEV_GATED        == R4_INNER_LEV_UNGATED * 0.4
       R4_INNER_LEV_UNGATED      == R4_INNER_LEV_UNGATED * 1.0
     """
-    from strategies.sleeves.timing_anomalies.internal.r4.signal import R4_INNER_LEV_GATED, R4_INNER_LEV_UNGATED
+    from bots.r4.strategy.signal import R4_INNER_LEV_GATED, R4_INNER_LEV_UNGATED
     assert R4_INNER_LEV_UNGATED * 0.4 == pytest.approx(R4_INNER_LEV_GATED)
     assert R4_INNER_LEV_UNGATED * 1.0 == pytest.approx(R4_INNER_LEV_UNGATED)
 

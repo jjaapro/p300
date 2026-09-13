@@ -48,22 +48,22 @@ AS_BOT = object()
 
 def _module(key: str):
     if key == "adx":
-        from strategies.sleeves.adx import signal
+        from bots.adx.strategy import signal
         return signal
     if key == "carry":
-        from strategies.sleeves.carry import signal
+        from bots.carry.strategy import signal
         return signal
     if key in ("chento_btc", "chento_eth"):
-        from strategies.sleeves import chento_triple_v3
-        return chento_triple_v3
+        from bots.chento_v3 import strategy as chento
+        return chento
     if key == "short_squeeze":
-        from strategies.sleeves.short_squeeze import signal
+        from bots.short_squeeze.strategy import signal
         return signal
     if key == "squeeze_bull":
-        from strategies.sleeves.squeeze_bull import signal
+        from bots.squeeze_bull.strategy import signal
         return signal
     if key in R4_KEYS:
-        from strategies.sleeves.timing_anomalies.internal.r4 import signal
+        from bots.r4.strategy import signal
         return signal
     raise KeyError(key)
 
@@ -79,7 +79,7 @@ def _state_module(key: str):
     expected, intermittently, depending on test order.
     """
     if key in ("chento_btc", "chento_eth"):
-        from strategies.sleeves.chento_triple_v3 import signal
+        from bots.chento_v3.strategy import signal
         return signal
     return _module(key)
 

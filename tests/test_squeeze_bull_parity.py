@@ -7,7 +7,7 @@ implementations of the same formula agree.
 The research ledger is
 studies/notebooks/squeeze_bull_revalidation/results/full_oi_flush_ledger.csv,
 produced by the frozen June code path. These tests drive
-strategies.sleeves.squeeze_bull.math over the same prod.db frame and require:
+bots.squeeze_bull.strategy.math over the same prod.db frame and require:
 
   1. the kept-flush event set is exactly the ledger's fire set;
   2. the backward-only regime label matches the ledger's `regime_backonly`
@@ -26,8 +26,8 @@ from pathlib import Path
 
 import pytest
 
-from strategies.sleeves.squeeze_bull import math as sb_math
-from strategies.sleeves.squeeze_bull.config import COST_BP_RT, TIF_HOURS
+from bots.squeeze_bull.strategy import math as sb_math
+from bots.squeeze_bull.strategy.config import COST_BP_RT, TIF_HOURS
 from strategies.support import db
 
 LEDGER = (Path(__file__).resolve().parents[1] / "studies" / "notebooks" /
@@ -149,7 +149,7 @@ def test_regime_shift_is_what_makes_the_gate_causal():
     """A shift of 1 day must read a strictly earlier close. This is the whole
     reason the production gate differs from the June one."""
     from datetime import date, timedelta
-    from strategies.sleeves.squeeze_bull import config as cfg
+    from bots.squeeze_bull.strategy import config as cfg
     assert cfg.REGIME_SHIFT_DAYS == 1, "the causal guarantee was changed"
 
     d0 = date(2026, 3, 1)

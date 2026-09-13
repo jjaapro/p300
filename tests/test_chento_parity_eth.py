@@ -36,8 +36,8 @@ def eth_15m():
 def test_b1_moneyflow_parity_eth(eth_15m):
     from studies.notebooks.chento_journal import (
         validation_B1_moneyflow_divergence as research)
-    from strategies.sleeves.chento_triple_v3 import math as sleeve
-    from strategies.sleeves.chento_triple_v3.config import (
+    from bots.chento_v3.strategy import math as sleeve
+    from bots.chento_v3.strategy.config import (
         B1_CVD_WINDOW_BARS, B1_VEL_WINDOW_BARS)
 
     r = research.compute_moneyflow_signal(
@@ -54,8 +54,8 @@ def test_b5_lsr_parity_eth():
     from studies.notebooks.chento_journal import (
         validation_B5_lsr_extremes as research)
     from studies.notebooks.chento_journal.validation_multi_asset import load_lsr_asset
-    from strategies.sleeves.chento_triple_v3 import math as sleeve
-    from strategies.sleeves.chento_triple_v3.config import B5_ROLLING_DAYS
+    from bots.chento_v3.strategy import math as sleeve
+    from bots.chento_v3.strategy.config import B5_ROLLING_DAYS
 
     lsr = load_lsr_asset("ETH")
     assert len(lsr) > 1000, "ETH rows in ca_long_short_ratio unexpectedly few"
@@ -68,8 +68,8 @@ def test_b5_lsr_parity_eth():
 def test_b7_multitf_cvd_parity_eth(eth_15m):
     from studies.notebooks.chento_journal import (
         validation_B7_multitf_cvd as research)
-    from strategies.sleeves.chento_triple_v3 import math as sleeve
-    from strategies.sleeves.chento_triple_v3.config import B7_TIMEFRAMES
+    from bots.chento_v3.strategy import math as sleeve
+    from bots.chento_v3.strategy.config import B7_TIMEFRAMES
 
     r = research.compute_multitf_cvd(eth_15m)
     s = sleeve.compute_multitf_cvd_z(eth_15m, B7_TIMEFRAMES)
@@ -84,7 +84,7 @@ def test_asset_config_resolution():
     import subprocess
     import sys
     code = ("import os; os.environ['CHENTO_V3_ASSET']='ETH'; "
-            "from strategies.sleeves.chento_triple_v3 import config as c; "
+            "from bots.chento_v3.strategy import config as c; "
             "print(c.PERP_15M_TABLE, c.OKX_1H_TABLE, c.LSR_ASSET, c.FILTER_NO_TILT)")
     out = subprocess.run([sys.executable, "-c", code], capture_output=True,
                          text=True, cwd=str(_db_mod.PROD_DB.parents[2]))
@@ -92,6 +92,6 @@ def test_asset_config_resolution():
     assert out.stdout.split() == [
         "cd_futures_eth_15m", "okx_perp_eth_1h", "ETH", "False"]
 
-    from strategies.sleeves.chento_triple_v3 import config as c
+    from bots.chento_v3.strategy import config as c
     assert c.PERP_15M_TABLE == "cd_futures_15m"
     assert c.FILTER_NO_TILT is True

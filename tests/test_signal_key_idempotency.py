@@ -88,7 +88,7 @@ def test_short_squeeze_keys_on_the_trigger_bar(ledger):
     """Regression: this read reason["bar_ts"] while the dict it is handed
     carries "bar_ts_utc". The name never matched, so every SHORT_SQUEEZE open
     silently fell back to the fill instant."""
-    from strategies.sleeves.short_squeeze import signal as sleeve
+    from bots.short_squeeze.strategy import signal as sleeve
 
     exit_dt = T0 + timedelta(hours=6)
     intent = _intent({
@@ -108,7 +108,7 @@ def test_short_squeeze_keys_on_the_trigger_bar(ledger):
 
 
 def test_squeeze_bull_keys_on_the_trigger_bar(ledger):
-    from strategies.sleeves.squeeze_bull import signal as sleeve
+    from bots.squeeze_bull.strategy import signal as sleeve
 
     exit_dt = T0 + timedelta(hours=48)
     intent = _intent({
@@ -132,7 +132,7 @@ def test_squeeze_bull_without_a_bar_never_keys_on_the_string_none(ledger):
     """A bar-less reason must fall back to the fill instant, NOT to the
     literal "None" — a "None" key would be identical on every future open
     and the UNIQUE index would block this variant's second trade forever."""
-    from strategies.sleeves.squeeze_bull import signal as sleeve
+    from bots.squeeze_bull.strategy import signal as sleeve
 
     def _mk():
         return _intent({
@@ -153,7 +153,7 @@ def test_squeeze_bull_without_a_bar_never_keys_on_the_string_none(ledger):
 
 
 def test_adx_keys_on_the_signal_day(ledger):
-    from strategies.sleeves.adx import signal as sleeve
+    from bots.adx.strategy import signal as sleeve
 
     intent = _intent({
         "trigger": "S-003_ADX_entry", "sleeve": "ADX",
@@ -169,7 +169,7 @@ def test_adx_keys_on_the_signal_day(ledger):
 
 
 def test_carry_keys_on_the_signal_day(ledger):
-    from strategies.sleeves.carry import signal as sleeve
+    from bots.carry.strategy import signal as sleeve
 
     intent = _intent({
         "trigger": "S-078_carry_entry", "sleeve": "CARRY",
@@ -189,7 +189,7 @@ def test_r4_keys_on_the_signal_day_per_window(ledger):
     """R4's windows overlap by design (up to three concurrent positions), so
     the key must separate them. The window is already in sleeve_name, which
     makes (variant | window | asset | day) the correct granularity."""
-    from strategies.sleeves.timing_anomalies.internal.r4 import signal as sleeve
+    from bots.r4.strategy import signal as sleeve
 
     exit_dt = T0 + timedelta(hours=12)
 

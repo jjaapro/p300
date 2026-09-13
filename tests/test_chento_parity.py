@@ -53,8 +53,8 @@ def btc_15m():
 def test_b1_moneyflow_parity(btc_15m):
     from studies.notebooks.chento_journal import (
         validation_B1_moneyflow_divergence as research)
-    from strategies.sleeves.chento_triple_v3 import math as sleeve
-    from strategies.sleeves.chento_triple_v3.config import (
+    from bots.chento_v3.strategy import math as sleeve
+    from bots.chento_v3.strategy.config import (
         B1_CVD_WINDOW_BARS, B1_VEL_WINDOW_BARS)
 
     r = research.compute_moneyflow_signal(
@@ -70,8 +70,8 @@ def test_b1_moneyflow_parity(btc_15m):
 def test_atr_parity(btc_15m):
     from studies.notebooks.chento_journal import (
         validation_B1_moneyflow_divergence as research)
-    from strategies.sleeves.chento_triple_v3 import math as sleeve
-    from strategies.sleeves.chento_triple_v3.config import ATR_PERIOD
+    from bots.chento_v3.strategy import math as sleeve
+    from bots.chento_v3.strategy.config import ATR_PERIOD
 
     _assert_series_equal(
         "atr",
@@ -82,8 +82,8 @@ def test_atr_parity(btc_15m):
 def test_b5_lsr_parity():
     from studies.notebooks.chento_journal import (
         validation_B5_lsr_extremes as research)
-    from strategies.sleeves.chento_triple_v3 import math as sleeve
-    from strategies.sleeves.chento_triple_v3.config import B5_ROLLING_DAYS
+    from bots.chento_v3.strategy import math as sleeve
+    from bots.chento_v3.strategy.config import B5_ROLLING_DAYS
 
     lsr = research.load_lsr("BTC")
     assert len(lsr) > 1000, "ca_long_short_ratio unexpectedly small"
@@ -96,8 +96,8 @@ def test_b5_lsr_parity():
 def test_b7_multitf_cvd_parity(btc_15m):
     from studies.notebooks.chento_journal import (
         validation_B7_multitf_cvd as research)
-    from strategies.sleeves.chento_triple_v3 import math as sleeve
-    from strategies.sleeves.chento_triple_v3.config import B7_TIMEFRAMES
+    from bots.chento_v3.strategy import math as sleeve
+    from bots.chento_v3.strategy.config import B7_TIMEFRAMES
 
     r = research.compute_multitf_cvd(btc_15m)
     s = sleeve.compute_multitf_cvd_z(btc_15m, B7_TIMEFRAMES)

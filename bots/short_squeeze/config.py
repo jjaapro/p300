@@ -1,6 +1,6 @@
 """Bot-level config for the standalone Short Squeeze bot.
 
-Strategy parameters stay in strategies/sleeves/short_squeeze/config.py —
+Strategy parameters stay in bots/short_squeeze/strategy/config.py —
 this file only holds what the BOT decides. Changes here belong in
 docs/calibration/short_squeeze.md per the calibration-log rule.
 """

@@ -94,7 +94,7 @@ def size_intent(intent, capital: float, risk_scale: float = 1.0):
 
 def tick(variant: dict) -> dict:
     """One bot tick. Returns a status dict for logging/heartbeat."""
-    from strategies.sleeves import chento_triple_v3 as sleeve
+    from bots.chento_v3 import strategy as sleeve
 
     stale_mgmt = botlib.stale_tables(botcfg.MGMT_TABLES)
     if stale_mgmt:

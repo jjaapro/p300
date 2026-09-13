@@ -7,7 +7,7 @@ bot-extraction plan).
 
 ## Current state (2026-09-12)
 
-**Strategy params** (`strategies/sleeves/chento_triple_v3/config.py`) —
+**Strategy params** (`bots/chento_v3/strategy/config.py`) —
 signal unchanged from the 2026-06-05 calibration: 5×ATR(14) stop, 6R target,
 72h TIF, B1-anchored trigger (`b1_now & b5_w & b7_w`, 24h window), 4 filters
 ON (no_tilt, no_resist_OB_2R, okx_aligned, skip_up_30d_shorts),

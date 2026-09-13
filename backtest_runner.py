@@ -52,8 +52,8 @@ from strategies.support import db, strategy_health
 #: research layer, which may, supplies them here. Resolved lazily to keep this
 #: module importable when a sleeve is mid-move.
 def _live_close_fns() -> dict:
-    from strategies.sleeves.adx.signal import _close_adx_paper
-    from strategies.sleeves.carry.signal import _close_carry_paper
+    from bots.adx.strategy.signal import _close_adx_paper
+    from bots.carry.strategy.signal import _close_carry_paper
     return {"ADX": _close_adx_paper, "CARRY": _close_carry_paper}
 
 

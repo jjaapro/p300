@@ -89,7 +89,7 @@ def tick(variant: dict, *, use_stop: bool = True,
     """One tick for one variant. `use_stop` selects the exit policy and
     `count_diag` whether this call counts the per-day gate diagnostics (once
     per tick: both variants see the same bar)."""
-    from strategies.sleeves.short_squeeze import signal as sleeve
+    from bots.short_squeeze.strategy import signal as sleeve
 
     stale_mgmt = botlib.stale_tables(botcfg.MGMT_TABLES)
     if stale_mgmt:

@@ -249,7 +249,7 @@ def test_the_executor_the_bot_calls_exists():
     name the runner calls must exist, or the bot raises on its first fire —
     in October, with no other coverage. The `_r4_execute` adapter was deleted
     in phase D step 23; `execute` is the only surface now."""
-    from strategies.sleeves.timing_anomalies.internal.r4 import signal
+    from bots.r4.strategy import signal
     assert callable(getattr(signal, "execute", None))
     assert not hasattr(signal, "_r4_execute"),         "the legacy adapter should be gone after phase D"
     src = (Path(__file__).resolve().parents[1]

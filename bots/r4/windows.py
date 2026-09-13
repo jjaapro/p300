@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from datetime import datetime, timedelta
 
-from strategies.sleeves.timing_anomalies.internal.r4.config import (
+from bots.r4.strategy.config import (
     R4_BTC_ENTRY_HOUR, R4_BTC_EXIT_HOUR, R4_ETH_ENTRY_HOUR, R4_ETH_EXIT_HOUR,
     R4_V2_ENTRY_HOUR, R4_V2_EXIT_HOUR,
     STRATEGY_R4_BTC, STRATEGY_R4_BTC_V2, STRATEGY_R4_ETH, STRATEGY_R4_ETH_V2,

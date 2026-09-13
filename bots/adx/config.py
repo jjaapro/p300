@@ -2,7 +2,7 @@
 
 Strategy parameters (incl. the 2026-07-22 Tier-2 calibration: symmetric
 trend filter, ATR×4 trail, funding veto) live in
-strategies/sleeves/adx/config.py. Changes here belong in
+bots/adx/strategy/config.py. Changes here belong in
 docs/calibration/adx.md per the calibration-log rule.
 """
 from pathlib import Path

@@ -62,13 +62,13 @@ def _signal_handler(signum, frame):
 
 
 def _sleeve():
-    from strategies.sleeves.timing_anomalies.internal.r4 import signal as r4
+    from bots.r4.strategy import signal as r4
     return r4
 
 
 def deciders() -> dict:
     r4 = _sleeve()
-    from strategies.sleeves.timing_anomalies.internal.r4.config import (
+    from bots.r4.strategy.config import (
         STRATEGY_R4_BTC, STRATEGY_R4_BTC_V2, STRATEGY_R4_ETH, STRATEGY_R4_ETH_V2,
     )
     return {

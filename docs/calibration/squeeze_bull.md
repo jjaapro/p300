@@ -1,7 +1,7 @@
 # SQUEEZE_BULL (S-107) — calibration log
 
 Long BTC perp after a forced-deleveraging flush, bull regime only.
-Sleeve `strategies/sleeves/squeeze_bull/`, bot `bots/squeeze_bull/`,
+Sleeve `bots/squeeze_bull/strategy/`, bot `bots/squeeze_bull/`,
 two paper variants of $10,000 each in one process since 2026-09-12:
 `bot_squeeze_bull_v1` (the shipped −2 % stop) and
 `bot_squeeze_bull_nostop_v1` (no stop; see the 2026-09-12 section).

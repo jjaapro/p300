@@ -35,10 +35,10 @@ SETTLEMENT = 8 * 3600
 SEED = 42
 
 # ── sleeve / bot constants, imported from the live code ──────────────────────
-from strategies.sleeves.carry.config import (  # noqa: E402
+from bots.carry.strategy.config import (  # noqa: E402
     FR_WINDOW_DAYS, FR_ENTRY_THRESHOLD, EXIT_NEG_DAYS,
 )
-from strategies.sleeves.carry.signal import _evaluate_today  # noqa: E402
+from bots.carry.strategy.signal import _evaluate_today  # noqa: E402
 from strategies.trades import CARRY_COST_PCT, CARRY_SLIPPAGE_PCT  # noqa: E402
 from bots.carry.config import CAPITAL_USDT, CARRY_NOTIONAL_X  # noqa: E402
 

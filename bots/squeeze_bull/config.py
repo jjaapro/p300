@@ -1,12 +1,12 @@
 """Bot-level config for the standalone Squeeze Bull bot.
 
-Strategy parameters stay in strategies/sleeves/squeeze_bull/config.py — this
+Strategy parameters stay in bots/squeeze_bull/strategy/config.py — this
 file holds only what the BOT decides. Changes here belong in
 docs/calibration/squeeze_bull.md per the calibration-log rule.
 """
 from pathlib import Path
 
-from strategies.sleeves.squeeze_bull.config import STOP_PCT
+from bots.squeeze_bull.strategy.config import STOP_PCT
 
 BOT_NAME = "squeeze_bull"
 

@@ -140,7 +140,7 @@ def test_tick_stale_mgmt_skips_everything(tmp_db, monkeypatch):
     def boom(*a, **k):
         raise AssertionError("decide must not run on stale mgmt tables")
     monkeypatch.setattr(
-        "strategies.sleeves.chento_triple_v3.decide", boom)
+        "bots.chento_v3.strategy.decide", boom)
     monkeypatch.setattr(
         botlib, "stale_tables",
         lambda tables=None: {"cd_futures_15m": 7200.0}
@@ -166,10 +166,10 @@ def test_tick_stale_entry_drops_intent_keeps_sweep(tmp_db, monkeypatch):
         raise AssertionError("execute must not run on stale entry tables")
 
     monkeypatch.setattr(
-        "strategies.sleeves.chento_triple_v3.decide",
+        "bots.chento_v3.strategy.decide",
         fake_decide)
     monkeypatch.setattr(
-        "strategies.sleeves.chento_triple_v3.execute", boom)
+        "bots.chento_v3.strategy.execute", boom)
     monkeypatch.setattr(
         botlib, "stale_tables",
         lambda tables=None: {"okx_perp_1h": None}
@@ -215,7 +215,7 @@ def _seed_15m_range(db_path, start: datetime, n_bars: int, price=100_000.0):
 def live_clock(tmp_db, monkeypatch):
     """Live-mode time control: now_utc follows the simulated value but
     is_simulated() reports False, so the sleeve takes the LIVE branch."""
-    from strategies.sleeves.chento_triple_v3 import signal as ch_sig
+    from bots.chento_v3.strategy import signal as ch_sig
     monkeypatch.setattr(clock, "is_simulated", lambda: False)
     monkeypatch.setattr(ch_sig, "_cache_date", None)
     monkeypatch.setattr(ch_sig, "_cache_built_at", None)
@@ -302,7 +302,7 @@ def test_live_bar_not_ready_then_recovers(tmp_db, live_clock):
 
 
 def test_just_closed_15m_ts_never_returns_forming_bar():
-    from strategies.sleeves.chento_triple_v3 import signal as ch_sig
+    from bots.chento_v3.strategy import signal as ch_sig
     # live mid-bar: 10:08:33 -> last FULLY closed bar opened 09:45
     assert ch_sig._just_closed_15m_ts(
         T0 + timedelta(minutes=8, seconds=33)).to_pydatetime() \
@@ -317,7 +317,7 @@ def test_just_closed_15m_ts_never_returns_forming_bar():
 
 def test_replay_path_selection_unchanged(tmp_db, monkeypatch):
     """Simulated clock keeps the historical semantics: bar open == now."""
-    from strategies.sleeves.chento_triple_v3 import signal as ch_sig
+    from bots.chento_v3.strategy import signal as ch_sig
     monkeypatch.setattr(ch_sig, "_cache_date", None)
     monkeypatch.setattr(ch_sig, "_cache_built_at", None)
     monkeypatch.setattr(ch_sig, "_cached_features", {})
@@ -340,7 +340,7 @@ def test_replay_path_selection_unchanged(tmp_db, monkeypatch):
 def test_diag_flush_accumulates_within_day(tmp_path, monkeypatch):
     """Same-day cache rebuilds must NOT fragment the diag JSONL (regression:
     the P0 15m rebuild flushed ~96 fragment lines/day until 2026-07-30)."""
-    from strategies.sleeves.chento_triple_v3 import signal as ch_sig
+    from bots.chento_v3.strategy import signal as ch_sig
     diag_path = tmp_path / "diag.jsonl"
     monkeypatch.setattr(ch_sig, "_DIAG_ENABLED", True)
     monkeypatch.setattr(ch_sig, "_DIAG_PATH", diag_path)
@@ -369,7 +369,7 @@ def test_diag_b5_context_is_json_safe_and_flushed(tmp_path, monkeypatch):
     (lsr_b5_study 2026-09-01). NaN must become null: the dashboard's
     JSON.parse rejects a bare NaN and the whole bot card would fail."""
     import pandas as pd
-    from strategies.sleeves.chento_triple_v3 import signal as ch_sig
+    from bots.chento_v3.strategy import signal as ch_sig
     diag_path = tmp_path / "diag.jsonl"
     monkeypatch.setattr(ch_sig, "_DIAG_ENABLED", True)
     monkeypatch.setattr(ch_sig, "_DIAG_PATH", diag_path)
@@ -458,7 +458,7 @@ def test_execute_same_signal_twice_is_one_trade(tmp_db):
     """Review 2026-09-06 finding 4: the same trigger bar executed again
     seconds later (retry, restart inside the eval window, a second
     instance) must not open a second position."""
-    from strategies.sleeves.chento_triple_v3 import signal as ch_sig
+    from bots.chento_v3.strategy import signal as ch_sig
     variant = botlib.ensure_bot_variant(
         botcfg.VARIANT_ID, short_name="t", capital_usdt=10_000.0,
         bot_name=botcfg.BOT_NAME)
@@ -473,7 +473,7 @@ def test_execute_same_signal_twice_is_one_trade(tmp_db):
 def test_cooldown_survives_restart(tmp_db, monkeypatch):
     """Review 2026-09-06 finding 4: the cooldown is seeded from the
     ledger, so a process restart right after an entry cannot re-fire."""
-    from strategies.sleeves.chento_triple_v3 import signal as ch_sig
+    from bots.chento_v3.strategy import signal as ch_sig
     variant = botlib.ensure_bot_variant(
         botcfg.VARIANT_ID, short_name="t", capital_usdt=10_000.0,
         bot_name=botcfg.BOT_NAME)
@@ -487,7 +487,7 @@ def test_cooldown_survives_restart(tmp_db, monkeypatch):
 
 
 def test_execute_then_sweep_stop_hit(tmp_db):
-    from strategies.sleeves.chento_triple_v3 import signal as ch_sig
+    from bots.chento_v3.strategy import signal as ch_sig
 
     variant = botlib.ensure_bot_variant(
         botcfg.VARIANT_ID, short_name="t", capital_usdt=10_000.0,

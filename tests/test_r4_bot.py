@@ -18,7 +18,7 @@ import botlib
 from bots.r4 import windows as r4cal
 from bots.r4 import config as botcfg
 from bots.r4 import runner
-from strategies.sleeves.timing_anomalies.internal.r4.config import (
+from bots.r4.strategy.config import (
     STRATEGY_R4_BTC, STRATEGY_R4_BTC_V2, STRATEGY_R4_ETH, STRATEGY_R4_ETH_V2,
 )
 from strategies.support import clock

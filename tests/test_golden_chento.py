@@ -60,7 +60,7 @@ SWEEP_PRICE = 75_255.8
 
 @pytest.fixture
 def env(tmp_path, monkeypatch):
-    from strategies.sleeves.chento_triple_v3 import config as ch_cfg
+    from bots.chento_v3.strategy import config as ch_cfg
     from strategies.support import price_feed
     if ch_cfg.ASSET != "BTC":
         pytest.skip(f"chento imported as {ch_cfg.ASSET}; BTC goldens need a "

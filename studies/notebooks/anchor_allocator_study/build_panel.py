@@ -41,7 +41,7 @@ from strategies.support import db as _db                                   # noq
 from strategies.support import funding as _funding                          # noqa: E402
 from strategies.support import jplus_inputs                                 # noqa: E402
 from strategies.support import r4_windows as r4math  # noqa: E402
-from strategies.sleeves.carry.config import (                               # noqa: E402
+from bots.carry.strategy.config import (                               # noqa: E402
     ENTRY_EXIT_COST_PCT, EXIT_NEG_DAYS, FR_ENTRY_THRESHOLD, FR_WINDOW_DAYS,
 )
 from studies.notebooks.adx_study import harness as adx_harness              # noqa: E402

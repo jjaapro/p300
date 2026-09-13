@@ -1,6 +1,6 @@
 """Produce one chento golden document in a FRESH process, then print it.
 
-`CHENTO_V3_ASSET` is read at IMPORT (strategies/sleeves/chento_triple_v3/
+`CHENTO_V3_ASSET` is read at IMPORT (bots/chento_v3/strategy/
 config.py), and it drives both the table names and `FILTER_NO_TILT`, so the
 two assets are behaviourally different, not merely table-different. A single
 pytest process cannot hold both goldens: a `monkeypatch.setenv` plus
@@ -61,8 +61,8 @@ def main(argv=None) -> int:
         price_feed.get_current_price = lambda _a=None: a.price
         price_feed._get_current_price = lambda _a=None: a.price
 
-    from strategies.sleeves import chento_triple_v3 as sleeve
-    from strategies.sleeves.chento_triple_v3 import config as ch_cfg
+    from bots.chento_v3 import strategy as sleeve
+    from bots.chento_v3.strategy import config as ch_cfg
     if ch_cfg.ASSET != a.asset:
         print(f"asset is {ch_cfg.ASSET}, expected {a.asset}", file=sys.stderr)
         return 2

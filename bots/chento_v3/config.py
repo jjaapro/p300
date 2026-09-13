@@ -1,6 +1,6 @@
 """Bot-level config for the standalone Chento Triple v3 bot.
 
-Strategy parameters stay in strategies/sleeves/chento_triple_v3/config.py —
+Strategy parameters stay in bots/chento_v3/strategy/config.py —
 this file only holds what the BOT decides: capital, risk sizing, cadence,
 and which tables gate evaluation. Changes here belong in
 docs/calibration/chento_triple_v3.md per the calibration-log rule.

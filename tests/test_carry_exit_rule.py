@@ -15,8 +15,8 @@ from pathlib import Path
 
 import pytest
 
-from strategies.sleeves.carry import config as cfg
-from strategies.sleeves.carry import signal as carry
+from bots.carry.strategy import config as cfg
+from bots.carry.strategy import signal as carry
 from strategies.support import cfg_adapter as ca
 
 CFG = {"weight_pct": 100.0, "_effective_leverage": 1.0, "priority": 100}

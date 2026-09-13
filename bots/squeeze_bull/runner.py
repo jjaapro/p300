@@ -99,7 +99,7 @@ def tick(variant: dict, *, use_stop: bool = True, diag: bool = True) -> dict:
     which run on the same signals in one process. `diag` writes the
     evaluation record (once per tick, not once per variant — both variants
     evaluate the same bar)."""
-    from strategies.sleeves.squeeze_bull import signal as sleeve
+    from bots.squeeze_bull.strategy import signal as sleeve
     from strategies.support import clock
 
     stale_mgmt = botlib.stale_tables(botcfg.MGMT_TABLES)

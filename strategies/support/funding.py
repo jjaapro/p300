@@ -2,7 +2,7 @@
 
 Replaces three separate per-caller implementations that previously lived in:
   services/funding_util.py:accrued_funding_pct           (point lookup over a window)
-  strategies/sleeves/carry/signal.py:_load_recent_daily_funding   (daily sum)
+  bots/carry/strategy/signal.py:_load_recent_daily_funding   (daily sum)
   strategies/sleeves/timing_anomalies/internal/cpr/signal.py:_load_funding_daily   (daily mean)
 
 All three had their own SQL against cd_funding_rate / cd_funding_rate_eth.

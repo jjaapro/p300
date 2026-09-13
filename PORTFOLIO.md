@@ -37,22 +37,22 @@ first-come-first-served on the margin pool and conflict resolution.
 
 | Sleeve | Pre-lev alloc | Leverage | Asset | Direction | Hold |
 |---|---|---|---|---|---|
-| [S-003 ADX](strategies/sleeves/adx/signal.py) | 15% | 5× | BTC | LONG / SHORT | days–weeks |
-| [S-078 Carry](strategies/sleeves/carry/signal.py) | 8% | 5× | BTC (delta-neutral) | n/a | days |
+| [S-003 ADX](bots/adx/strategy/signal.py) | 15% | 5× | BTC | LONG / SHORT | days–weeks |
+| [S-078 Carry](bots/carry/strategy/signal.py) | 8% | 5× | BTC (delta-neutral) | n/a | days |
 | [JPLUS_EMA_BTC](strategies/sleeves/ema/signal.py) | regime-keyed | vol-lev | BTC | LONG / SHORT | continuous |
 | [JPLUS_ETH_DAILY](strategies/sleeves/eth_daily/signal.py) | regime-keyed | vol-lev | ETH | LONG | continuous in bull |
-| [SHORT_SQUEEZE](strategies/sleeves/short_squeeze/signal.py) | regime-keyed | regime-keyed | BTC | LONG | scalp (15m signal, fixed R) |
+| [SHORT_SQUEEZE](bots/short_squeeze/strategy/signal.py) | regime-keyed | regime-keyed | BTC | LONG | scalp (15m signal, fixed R) |
 | [AI_QUANT](strategies/sleeves/ai_quant/signal.py) *(experimental, default-OFF)* | 2% × conviction | 3× | BTC | LONG / SHORT / FLAT | LLM-discretionary |
-| [**CHENTO_TRIPLE_V3**](strategies/sleeves/chento_triple_v3/signal.py) | 10% | 5× | BTC | LONG / SHORT | ~3 days (TIF=72h) |
+| [**CHENTO_TRIPLE_V3**](bots/chento_v3/strategy/signal.py) | 10% | 5× | BTC | LONG / SHORT | ~3 days (TIF=72h) |
 | [**TIMING_ANOMALIES**](strategies/sleeves/timing_anomalies/) (meta) | sum-of-substrategies | per-sub | BTC + ETH | mixed | per-sub |
 | &nbsp;&nbsp;&nbsp;↳ [FOMC](strategies/sleeves/timing_anomalies/internal/fomc/signal.py) | 5% | 10× | BTC | LONG | ~10.5h (FOMC days) |
 | &nbsp;&nbsp;&nbsp;↳ [THU_BEAR](strategies/sleeves/timing_anomalies/internal/thu_bear/signal.py) (S-096 V4) | 6% (3% BTC + 3% ETH) | 5× | BTC + ETH | SHORT | 24h (Thu) |
 | &nbsp;&nbsp;&nbsp;↳ [PDO_L_RF](strategies/sleeves/timing_anomalies/internal/pdo/signal.py) (S-102) | 9% (4.5/asset) | 1× | BTC + ETH | LONG | 24h |
 | &nbsp;&nbsp;&nbsp;↳ [CPR](strategies/sleeves/timing_anomalies/internal/cpr/signal.py) (S-101) | 5% (2.5/asset) | 1× | BTC + ETH | LONG | ≤15 days |
-| &nbsp;&nbsp;&nbsp;↳ [R4_BTC](strategies/sleeves/timing_anomalies/internal/r4/signal.py) | regime-keyed | 2.5× inner × vol-lev | BTC | LONG | 12h (Mon 06→18 UTC, wk1-2) |
-| &nbsp;&nbsp;&nbsp;↳ [R4_ETH](strategies/sleeves/timing_anomalies/internal/r4/signal.py) | regime-keyed | 2.5× inner × vol-lev | ETH | LONG | 24h (Tue 20→Wed 20 UTC, wk1-2) |
-| &nbsp;&nbsp;&nbsp;↳ [R4_BTC_V2](strategies/sleeves/timing_anomalies/internal/r4/signal.py) | regime-keyed | 2.5× inner × vol-lev | BTC | LONG | 10h (Wed/Fri 04→14 UTC, wk1-2) |
-| &nbsp;&nbsp;&nbsp;↳ [R4_ETH_V2](strategies/sleeves/timing_anomalies/internal/r4/signal.py) | regime-keyed | 2.5× inner × vol-lev | ETH | LONG | 10h (Wed/Fri 04→14 UTC, wk1-2) |
+| &nbsp;&nbsp;&nbsp;↳ [R4_BTC](bots/r4/strategy/signal.py) | regime-keyed | 2.5× inner × vol-lev | BTC | LONG | 12h (Mon 06→18 UTC, wk1-2) |
+| &nbsp;&nbsp;&nbsp;↳ [R4_ETH](bots/r4/strategy/signal.py) | regime-keyed | 2.5× inner × vol-lev | ETH | LONG | 24h (Tue 20→Wed 20 UTC, wk1-2) |
+| &nbsp;&nbsp;&nbsp;↳ [R4_BTC_V2](bots/r4/strategy/signal.py) | regime-keyed | 2.5× inner × vol-lev | BTC | LONG | 10h (Wed/Fri 04→14 UTC, wk1-2) |
+| &nbsp;&nbsp;&nbsp;↳ [R4_ETH_V2](bots/r4/strategy/signal.py) | regime-keyed | 2.5× inner × vol-lev | ETH | LONG | 10h (Wed/Fri 04→14 UTC, wk1-2) |
 
 Allocations come from [`strategies/support/allocation.py`](strategies/support/allocation.py)'s
 `WEIGHT_TABLE`. Rows that don't vary by regime (S-003, S-078, AI_QUANT, and the
@@ -104,7 +104,7 @@ TIMING_ANOMALIES's 8 substrategies live in §3.8.
 
 - **Signal**: bar-level LONG trigger. All four conditions must agree on a 15m bar:
   1. Session gate — London or NY (07:00–21:00 UTC).
-  2. Asia-grind macro — slow drift up overnight (criteria in [strategies/sleeves/short_squeeze/config.py](strategies/sleeves/short_squeeze/config.py)).
+  2. Asia-grind macro — slow drift up overnight (criteria in [bots/short_squeeze/strategy/config.py](bots/short_squeeze/strategy/config.py)).
   3. Sweep — current bar takes out the prior session low.
   4. Perp/spot CVD divergence — spot CVD positive while perp CVD negative on the sweep bar.
 - **Entry**: at the sweep bar close.
@@ -150,7 +150,7 @@ TIMING_ANOMALIES's 8 substrategies live in §3.8.
   - The 30d-return threshold (+10%) is calibrated on BTC volatility; for ETH or alts this needs re-tuning.
   - Backtest replay at 1h ticks misses 75% of 15m signals (same limitation as v2 / SHORT_SQUEEZE). For full backtest parity, run with `--interval-minutes 15` once that flag is added.
 - **Edge thesis**: at confluence-of-three-extremes points, BTC mean-reverts toward equilibrium with high probability. The asymmetric regime filter avoids the one regime (bull rally + short trigger) where the strategy structurally fails. The A4 ladder converts the inevitable adverse wicks into a sizing advantage rather than a cost. Validated against 5+ years of cleanly-separated IS/OOS data with extraordinary stability (OOS = IS within 5% on every key metric).
-- **Provenance**: Triple composite emerged from validating 39 chento-stated rules and 5 dxFeed-trader hypotheses — see [studies/material/chento/validation/findings_decisions.md](studies/material/chento/validation/findings_decisions.md) for the per-rule audit and [strategies/sleeves/chento_triple_v3/README.md](strategies/sleeves/chento_triple_v3/README.md) for the consolidated finding-to-parameter trace.
+- **Provenance**: Triple composite emerged from validating 39 chento-stated rules and 5 dxFeed-trader hypotheses — see [studies/material/chento/validation/findings_decisions.md](studies/material/chento/validation/findings_decisions.md) for the per-rule audit and [bots/chento_v3/strategy/README.md](bots/chento_v3/strategy/README.md) for the consolidated finding-to-parameter trace.
 
 ### 3.8 TIMING_ANOMALIES — Meta-sleeve over 8 calendar/clock substrategies
 
@@ -760,18 +760,18 @@ concurrent exposure comparable to the pre-V2 baseline.
 
 | Sleeve | File |
 |---|---|
-| S-003 ADX | [strategies/sleeves/adx/](strategies/sleeves/adx/) |
-| S-078 Carry | [strategies/sleeves/carry/](strategies/sleeves/carry/) |
+| S-003 ADX | [bots/adx/strategy/](bots/adx/strategy/) |
+| S-078 Carry | [bots/carry/strategy/](bots/carry/strategy/) |
 | JPLUS_EMA_BTC | [strategies/sleeves/ema/](strategies/sleeves/ema/) |
 | JPLUS_ETH_DAILY | [strategies/sleeves/eth_daily/](strategies/sleeves/eth_daily/) |
-| SHORT_SQUEEZE | [strategies/sleeves/short_squeeze/](strategies/sleeves/short_squeeze/) |
+| SHORT_SQUEEZE | [bots/short_squeeze/strategy/](bots/short_squeeze/strategy/) |
 | AI_QUANT | [strategies/sleeves/ai_quant/](strategies/sleeves/ai_quant/) |
 | TIMING_ANOMALIES (meta) | [strategies/sleeves/timing_anomalies/](strategies/sleeves/timing_anomalies/) |
 | &nbsp;&nbsp;↳ FOMC | [strategies/sleeves/timing_anomalies/internal/fomc/](strategies/sleeves/timing_anomalies/internal/fomc/) |
 | &nbsp;&nbsp;↳ THU_BEAR | [strategies/sleeves/timing_anomalies/internal/thu_bear/](strategies/sleeves/timing_anomalies/internal/thu_bear/) |
 | &nbsp;&nbsp;↳ PDO_L_RF | [strategies/sleeves/timing_anomalies/internal/pdo/](strategies/sleeves/timing_anomalies/internal/pdo/) |
 | &nbsp;&nbsp;↳ CPR | [strategies/sleeves/timing_anomalies/internal/cpr/](strategies/sleeves/timing_anomalies/internal/cpr/) |
-| &nbsp;&nbsp;↳ R4 family | [strategies/sleeves/timing_anomalies/internal/r4/](strategies/sleeves/timing_anomalies/internal/r4/) |
+| &nbsp;&nbsp;↳ R4 family | [bots/r4/strategy/](bots/r4/strategy/) |
 
 **Plumbing (see §6 for full ownership matrix)**
 

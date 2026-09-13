@@ -1,6 +1,6 @@
 """ADX-based regime classifier (long / short / range / None) per timestamp.
 
-Mirrors S-003's signal logic (strategies/sleeves/adx/signal.py) but extracted
+Mirrors S-003's signal logic (bots/adx/strategy/signal.py) but extracted
 as a pure function with no DB / no live state, so validation notebooks and
 multi-asset screening can use the same regime definition without going through
 the S-003 sleeve.

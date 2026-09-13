@@ -137,7 +137,7 @@ reducers are toggles (default OFF); funding-harvest shorts drawn dim red.
 Validated against live TradingView.
 
 **No production sleeve code was changed** (per research-workflow rule). Awaiting
-go-ahead on Tier 1 / Tier 2 / half-size before touching `strategies/sleeves/adx/`.
+go-ahead on Tier 1 / Tier 2 / half-size before touching `bots/adx/strategy/`.
 
 ---
 

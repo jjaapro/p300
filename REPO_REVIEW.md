@@ -20,7 +20,7 @@ The builder resolves `--source` and `--output`, checks that the source exists, t
 
 ### 2. P1 — Cached forming candles can permanently hide Chento stop or target hits
 
-**Location:** [strategies/sleeves/chento_triple_v3/signal.py](strategies/sleeves/chento_triple_v3/signal.py#L490), lines 490–507, 650–653, and 891–896.
+**Location:** [bots/chento_v3/strategy/signal.py](bots/chento_v3/strategy/signal.py#L490), lines 490–507, 650–653, and 891–896.
 
 The feature loader includes the forming 15-minute candle. `_bar_ohlc_for()` prefers its cached OHLC values without checking whether that candle was complete when cached. Position management runs **before** trigger evaluation can rebuild the cache, and then saves `last_walked_ts` as though the completed candle had been processed. A later refresh cannot recover the missed stop/target because that candle is no longer walked. The early cooldown return in trigger evaluation also prevents its refresh from being a reliable safeguard.
 
@@ -30,7 +30,7 @@ The feature loader includes the forming 15-minute candle. `_bar_ohlc_for()` pref
 
 ### 3. P1 — Simulation redirection leaves production database consumers attached
 
-**Location:** [studies/simulation/sim.py](studies/simulation/sim.py#L143), lines 143–160; [strategies/support/trade_db.py](strategies/support/trade_db.py#L28), lines 28–35; [strategies/sleeves/chento_triple_v3/signal.py](strategies/sleeves/chento_triple_v3/signal.py#L163), lines 163–176 and 189–217.
+**Location:** [studies/simulation/sim.py](studies/simulation/sim.py#L143), lines 143–160; [strategies/support/trade_db.py](strategies/support/trade_db.py#L28), lines 28–35; [bots/chento_v3/strategy/signal.py](bots/chento_v3/strategy/signal.py#L163), lines 163–176 and 189–217.
 
 The simulator redirects `db.TRADER_DB` and `db.DASH_DB`, but `trade_db.DB_PATH` was captured from `db.PROD_DB` at import time. Consequently, `trade_db.init_db()` targets production rather than the requested simulation ledger. A fresh simulation ledger receives the variant schema but lacks the `trades` table. Meanwhile, Chento loaders and its OHLC fallback read `db.PROD_DB` directly, which is also left pointing at production. Simulated Chento decisions can therefore use data outside the supplied slice.
 
@@ -40,7 +40,7 @@ The simulator redirects `db.TRADER_DB` and `db.DASH_DB`, but `trade_db.DB_PATH` 
 
 ### 4. P1 — Duplicate-signal protection changes on every execution attempt
 
-**Location:** [strategies/trades.py](strategies/trades.py#L179), lines 179–185; [strategies/sleeves/chento_triple_v3/signal.py](strategies/sleeves/chento_triple_v3/signal.py#L900), lines 900–914.
+**Location:** [strategies/trades.py](strategies/trades.py#L179), lines 179–185; [bots/chento_v3/strategy/signal.py](bots/chento_v3/strategy/signal.py#L900), lines 900–914.
 
 `open_paper_trade()` derives its uniqueness key from `clock.now_iso()` unless an entry timestamp is supplied. Chento passes neither a stable entry timestamp nor a separate signal identifier, even though its Intent contains `bar_ts`. Two bot instances executing the same signal at different seconds, or a retry after a commit, receive different uniqueness keys. The in-memory evaluation/cooldown dictionaries do not coordinate separate processes or survive a restart.
 

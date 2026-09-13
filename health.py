@@ -193,17 +193,17 @@ def check_dashboard_tables() -> None:
 # point is renamed (the bot = directory = strategy refactor renames r4's,
 # BACKLOG.md "Step 1 re-planned" steps 18 and 23).
 BOT_ENTRYPOINTS: dict[str, tuple[str, tuple[str, ...]]] = {
-    "adx": ("strategies.sleeves.adx.signal", ("decide", "execute")),
-    "carry": ("strategies.sleeves.carry.signal", ("decide", "execute")),
-    "chento_v3": ("strategies.sleeves.chento_triple_v3", ("decide", "execute")),
-    "short_squeeze": ("strategies.sleeves.short_squeeze.signal",
+    "adx": ("bots.adx.strategy.signal", ("decide", "execute")),
+    "carry": ("bots.carry.strategy.signal", ("decide", "execute")),
+    "chento_v3": ("bots.chento_v3.strategy", ("decide", "execute")),
+    "short_squeeze": ("bots.short_squeeze.strategy.signal",
                       ("decide", "execute")),
     # Repointed to the plain-argument surface (phase C step 15).
-    "squeeze_bull": ("strategies.sleeves.squeeze_bull.signal",
+    "squeeze_bull": ("bots.squeeze_bull.strategy.signal",
                      ("decide", "execute")),
     # The r4 runner calls the four window deciders directly, plus the shared
     # executor. Repointed to the plain-argument surface (phase C step 20).
-    "r4": ("strategies.sleeves.timing_anomalies.internal.r4.signal",
+    "r4": ("bots.r4.strategy.signal",
            ("decide_btc", "decide_eth", "decide_btc_v2",
             "decide_eth_v2", "execute")),
 }

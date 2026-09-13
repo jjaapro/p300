@@ -4,7 +4,7 @@ Single source of truth for the bar-level indicators used across sleeves,
 validators, and backtests. Replaces four byte-identical EMA copies and two
 byte-identical ADX copies that previously lived in:
 
-  strategies/sleeves/adx/signal.py   (_calc_ema, _calc_adx)
+  bots/adx/strategy/signal.py   (_calc_ema, _calc_adx)
   bitstamp_adx_backtest.ipynb        (calc_ema, calc_adx)
   bitstamp_thu_bear_backtest.ipynb   (calc_ema)
   jplus/regime.py                    (ema_calc)

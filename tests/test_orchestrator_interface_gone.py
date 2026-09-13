@@ -23,12 +23,12 @@ import pytest
 
 #: The six modules the fleet runs, and the entry points each must expose.
 MIGRATED = {
-    "strategies.sleeves.adx.signal": ("decide", "execute"),
-    "strategies.sleeves.carry.signal": ("decide", "execute"),
-    "strategies.sleeves.chento_triple_v3.signal": ("decide", "execute"),
-    "strategies.sleeves.short_squeeze.signal": ("decide", "execute"),
-    "strategies.sleeves.squeeze_bull.signal": ("decide", "execute"),
-    "strategies.sleeves.timing_anomalies.internal.r4.signal": (
+    "bots.adx.strategy.signal": ("decide", "execute"),
+    "bots.carry.strategy.signal": ("decide", "execute"),
+    "bots.chento_v3.strategy.signal": ("decide", "execute"),
+    "bots.short_squeeze.strategy.signal": ("decide", "execute"),
+    "bots.squeeze_bull.strategy.signal": ("decide", "execute"),
+    "bots.r4.strategy.signal": (
         "decide_btc", "decide_eth", "decide_btc_v2", "decide_eth_v2",
         "execute"),
 }
@@ -81,9 +81,9 @@ def test_unmigrated_sleeves_keep_the_old_interface(modpath):
 
 def test_chento_package_reexports_only_the_plain_surface():
     """The bot imports the PACKAGE, so its re-exports are the real contract."""
-    from strategies.sleeves import chento_triple_v3 as pkg
+    from bots.chento_v3 import strategy as pkg
     assert pkg.decide is importlib.import_module(
-        "strategies.sleeves.chento_triple_v3.signal").decide
+        "bots.chento_v3.strategy.signal").decide
     assert callable(pkg.execute)
     for banned in ("try_decide_for_variant", "execute_for_variant",
                    "try_fire_for_variant"):

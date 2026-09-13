@@ -213,7 +213,7 @@ on the pre-specified default rule: regime-dependent split, gross cap 2×).
   compound back to each trade's harness return (parity assertion).
 - Chento: see interpretation 13; `r_outcome` is already net of 18 bp
   (`validation_C5_smc_features.replay_one`).
-- Carry: sleeve rule from `strategies/sleeves/carry/{config,signal}.py` on
+- Carry: sleeve rule from `bots/carry/strategy/{config,signal}.py` on
   `strategies.support.funding.daily_sums_pct("BTC", …)`; entry when the 7-day
   average daily funding > 0, exit after 3 consecutive negative days;
   0.20 % round trip split over entry and exit days.

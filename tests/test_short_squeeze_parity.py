@@ -82,7 +82,7 @@ def universe():
 def test_raw_features_match_sleeve_loader(universe):
     """Sleeve's _load_recent_15m_bars must produce the exact same
     perp_cvd/divergence per timestamp as the notebook formulas."""
-    from strategies.sleeves.short_squeeze import signal as ssq
+    from bots.short_squeeze.strategy import signal as ssq
 
     now = datetime.fromtimestamp(int(universe.index.max()), tz=timezone.utc)
     rows = ssq._load_recent_15m_bars(now, 90)
@@ -102,7 +102,7 @@ def test_raw_features_match_sleeve_loader(universe):
 def test_percentile_function_semantics(universe):
     """Sleeve math.rolling_percentile == notebook definition, and
     percentile_rank uses the same <= semantics."""
-    from strategies.sleeves.short_squeeze import math as ssq_math
+    from bots.short_squeeze.strategy import math as ssq_math
 
     s = universe["perp_cvd"].iloc[-2000:]
     ours = ssq_math.rolling_percentile(s.to_numpy(dtype=float), 500)
@@ -120,7 +120,7 @@ def test_live_snapshot_vs_research_trailing_quantified(universe):
     """Quantify the structural approximation: daily-frozen 90d snapshot
     (live path) vs per-bar trailing WINDOW_BARS (research). Loose tripwire
     bounds; the measured numbers go into the calibration log."""
-    from strategies.sleeves.short_squeeze.config import (
+    from bots.short_squeeze.strategy.config import (
         DIVERGENCE_PCT_MIN, PERP_CVD_PCT_MAX)
 
     df = universe.copy()

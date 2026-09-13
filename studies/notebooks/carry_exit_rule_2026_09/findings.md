@@ -1,6 +1,6 @@
 STATUS: CONCLUDED — RECOMMEND replacing S-078's three-negative-day exit: ALWAYS-ON beats it by +0.85 %/yr (CI90 [+0.60, +1.11]) and a 30-day cumulative-funding exit by +0.74 %/yr (CI90 [+0.44, +1.04]), both with a better worst calendar year; the shipped exit bought no tail protection in any of the worst funding stretches
 
-OUTCOME (2026-09-12, user go-ahead): the CUM-30D rule shipped — `strategies/sleeves/carry/config.py` `EXIT_CUM_DAYS = 30`, `EXIT_CUM_THRESHOLD_PCT = -0.5`, streak exit removed; chosen over always-on to keep a defined tail exit; per-day parity with `rule_states("CUM30D")` pinned by tests/test_carry_exit_rule.py (the sleeve additionally does not enter while the exit is active). Takes effect on the carry bot's next restart.
+OUTCOME (2026-09-12, user go-ahead): the CUM-30D rule shipped — `bots/carry/strategy/config.py` `EXIT_CUM_DAYS = 30`, `EXIT_CUM_THRESHOLD_PCT = -0.5`, streak exit removed; chosen over always-on to keep a defined tail exit; per-day parity with `rule_states("CUM30D")` pinned by tests/test_carry_exit_rule.py (the sleeve additionally does not enter while the exit is active). Takes effect on the carry bot's next restart.
 
 # CARRY (S-078) exit rule 2026-09
 
@@ -50,7 +50,7 @@ one that keeps a defined exit for a regime the data has not seen.
 
 ## What this changes (for the user's decision; nothing implemented)
 
-`strategies/sleeves/carry/config.py` `EXIT_NEG_DAYS = 3` → either disable the streak exit (always-on while
+`bots/carry/strategy/config.py` `EXIT_NEG_DAYS = 3` → either disable the streak exit (always-on while
 the 7-day average entry condition holds) or replace it with "exit when the trailing 30-day cumulative funding
 < −0.5 %" (`CUM30_EXIT`), expected +0.74–0.85 %/yr on the sleeve's notional with the same or a better worst
 year. The bot and calibration log (`docs/calibration/carry.md`) would change with it. Caveat: seven years,

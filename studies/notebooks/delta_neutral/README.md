@@ -222,7 +222,7 @@ percentile should therefore raise risk-adjusted return even though it gives up g
 ### How Carry is replayed (existing path, not a re-implementation)
 
 There is no `studies/` carry study and the calibration source named in
-`strategies/sleeves/carry/README.md` (`backtest_tail_harvester.py`) **no longer exists in
+`bots/carry/strategy/README.md` (`backtest_tail_harvester.py`) **no longer exists in
 the repo** (verified: no file, no reference outside the two doc strings). The two live
 replay paths are `backtest_runner.py` and `studies/simulation/sim.py`; both **write** trades
 into a database (`backtest_runner.py` writes replay rows straight into `prod.db`), which the
@@ -236,7 +236,7 @@ with the P&L computed by the sleeve's own accounting constants, and *nothing re-
   `strategies.support.funding.daily_sums_pct` (`ts % 28800 == 0`, `SUM(fr_close)` per UTC
   date, complete days only = 3 settlements, ×100 → percent), read `mode=ro`, and asserted
   byte-equal to the live function's output over the whole overlap before anything is scored.
-* Signal state: `strategies.sleeves.carry.signal._evaluate_today` and `._rolling_avg`,
+* Signal state: `bots.carry.strategy.signal._evaluate_today` and `._rolling_avg`,
   imported and called directly, fed an expanding record window exactly as
   `_load_recent_daily_funding` builds it (days strictly before the decision day; spot and
   perp closes joined from `cd_spot_binance` / `cd_futures_ohlcv` so the day-set intersection

@@ -131,7 +131,7 @@ from the last trades' 72h windows completing), ETH pool 182 → 191 trades, OKX-
 | half-risk tag | unstable across pools; rejected | still helps the backward-only pool (ETH skip+H 8.6, half+H 9.4; combined skip+H 23.8) | unchanged verdict (the instability is vs the bidirectional pool) |
 
 Consequence: the per-asset tilt (BTC skip / ETH half-after-loss, shipped in
-`strategies/sleeves/chento_triple_v3/config.py`) was justified by an ETH tie that the
+`bots/chento_v3/strategy/config.py`) was justified by an ETH tie that the
 complete data does not reproduce. Both remain defensible — half-after-loss for
 steady flow (+47 % ETH income), skip-after-loss for MAR and OOS — but it is now a
 trade-off, not a free lunch. Decision left to the operator; no config change made here.

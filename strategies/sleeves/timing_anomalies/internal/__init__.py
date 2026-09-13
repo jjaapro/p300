@@ -23,6 +23,14 @@ log = logging.getLogger("dashboard.timing_anomalies.internal")
 
 # Each resolver is a callable returning (decide_fn, execute_fn).
 # Lazy-imported so circular-import edge cases don't break module load.
+#
+# The four R4 resolvers import from bots/r4/strategy/ as of 2026-09-13: R4 is
+# the one substrategy here that a live bot also runs, so its code moved under
+# that bot with the rest of step 2. This is a dormant -> application edge and
+# it is deliberate and temporary — BACKLOG step 3 retires this meta-sleeve and
+# these four entries together. Keeping them until then is what stops
+# tests/test_sim_mode.py (the only thing pinning that TIMING_ANOMALIES fires
+# R4 at all) going red inside a refactor billed as location-only.
 
 def _resolve_fomc() -> tuple[Callable, Callable]:
     from .fomc import signal as fomc
@@ -46,28 +54,28 @@ def _resolve_cpr() -> tuple[Callable, Callable]:
 
 def _resolve_r4_btc() -> tuple[Callable, Callable]:
     from strategies.support import cfg_adapter as ca
-    from .r4 import signal as r4
+    from bots.r4.strategy import signal as r4
     return (ca.decide_entry(r4.decide_btc, ca.r4),
             ca.execute_entry(r4.execute))
 
 
 def _resolve_r4_eth() -> tuple[Callable, Callable]:
     from strategies.support import cfg_adapter as ca
-    from .r4 import signal as r4
+    from bots.r4.strategy import signal as r4
     return (ca.decide_entry(r4.decide_eth, ca.r4),
             ca.execute_entry(r4.execute))
 
 
 def _resolve_r4_btc_v2() -> tuple[Callable, Callable]:
     from strategies.support import cfg_adapter as ca
-    from .r4 import signal as r4
+    from bots.r4.strategy import signal as r4
     return (ca.decide_entry(r4.decide_btc_v2, ca.r4),
             ca.execute_entry(r4.execute))
 
 
 def _resolve_r4_eth_v2() -> tuple[Callable, Callable]:
     from strategies.support import cfg_adapter as ca
-    from .r4 import signal as r4
+    from bots.r4.strategy import signal as r4
     return (ca.decide_entry(r4.decide_eth_v2, ca.r4),
             ca.execute_entry(r4.execute))
 

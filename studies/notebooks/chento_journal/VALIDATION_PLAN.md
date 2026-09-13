@@ -280,7 +280,7 @@ Outputs: [studies/material/chento/validation/A_results.json](../../material/chen
 
 **Stubbed → next session (Notebook 1 NOT yet complete):**
 
-- **A1 — regime-gated direction (corrected design).** Not blind direction-mirror. Use S-003 ADX (`strategies/sleeves/adx/signal.py:99-200`) as regime classifier: `ADX(14)≥25 ∧ close>EMA(50) → 'long'`; `≥25 ∧ close<EMA(50) → 'short'`; `<20 → None`. Fire long-side swing-base entries only when regime='long'; short-side swing-peak entries only when regime='short'. Three variants: A1a long-gated, A1b short-only, A1c combined.
+- **A1 — regime-gated direction (corrected design).** Not blind direction-mirror. Use S-003 ADX (`bots/adx/strategy/signal.py:99-200`) as regime classifier: `ADX(14)≥25 ∧ close>EMA(50) → 'long'`; `≥25 ∧ close<EMA(50) → 'short'`; `<20 → None`. Fire long-side swing-base entries only when regime='long'; short-side swing-peak entries only when regime='short'. Three variants: A1a long-gated, A1b short-only, A1c combined.
 - **A4 — 2-rung ladder-add** at −0.75R / −1.0R, 0.5× size per rung. Combined hard-stop at −1.5R.
 - **A8 — trim/DCA cycling** — re-entry within +0.25R of entry after T1, bounded one cycle.
 - **A9 — dynamic TP adjust** — if trail-watermark > 1.5R when T1 fires, move T2 from 3R → 2R.

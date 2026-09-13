@@ -45,7 +45,7 @@ def test_adx_close_helper_supplies_a_resolver():
     """Every real ADX close goes through _close_adx_paper — the sleeve's own
     sweep, its direction flip, its ADX-exit, and backtest_runner via
     _load_close_fn. So building the resolver there covers all of them."""
-    from strategies.sleeves.adx import signal as adx
+    from bots.adx.strategy import signal as adx
 
     assert callable(adx._stop_resolver())
     src = pathlib.Path(adx.__file__).read_text(encoding="utf-8")
@@ -125,7 +125,7 @@ def test_the_generic_backstops_cannot_reach_an_adx_trade():
         "ADX relies on the distant sentinel to stay out of the scheduled-exit path"
     # ADX passes scheduled_exit_dt=None, which becomes the sentinel.
     assert re.search(r"scheduled_exit_dt=None", src) or True
-    from strategies.sleeves.adx import signal as adx
+    from bots.adx.strategy import signal as adx
     adx_src = pathlib.Path(adx.__file__).read_text(encoding="utf-8")
     assert "scheduled_exit_dt=None" in adx_src, \
         "ADX must keep writing no scheduled exit, or the backstop could reach it"

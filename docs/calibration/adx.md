@@ -5,7 +5,7 @@ Update in the same commit as any config/sizing change.
 
 ## Current state (2026-07-22 — Tier-2 + veto, standalone bot)
 
-**Strategy** (`strategies/sleeves/adx/config.py`): ADX(14) cross <20→≥25
+**Strategy** (`bots/adx/strategy/config.py`): ADX(14) cross <20→≥25
 (was_low machine), direction close-vs-EMA(50), **symmetric** EMA(150) trend
 filter (T2a — SHORTs now require close < EMA150; asymmetric design retired),
 ADX<20 exit **or ATR×4 trailing exit** (T2b, Wilder ATR(14) daily, ratchets

@@ -31,7 +31,7 @@ if str(_REPO) not in sys.path:
 from strategies.support import db
 from strategies.support.indicators import ema, adx
 
-# ─── Canonical S-003 params (match strategies/sleeves/adx/config.py) ──────────
+# ─── Canonical S-003 params (match bots/adx/strategy/config.py) ──────────
 ADX_PERIOD = 14
 ADX_LOW = 20.0
 ADX_HIGH = 25.0

@@ -16,7 +16,7 @@ import pytest
 import botlib
 from bots.squeeze_bull import config as botcfg
 from bots.squeeze_bull import runner
-from strategies.sleeves.squeeze_bull import signal as sleeve
+from bots.squeeze_bull.strategy import signal as sleeve
 from strategies.support import clock
 from strategies.support import db as _db_mod
 from strategies.support import price_feed, trade_db, variant_registry

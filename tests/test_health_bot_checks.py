@@ -25,7 +25,7 @@ def test_entrypoint_check_fails_when_a_runner_entry_point_is_renamed(monkeypatch
     """The refactor renames r4's entry points (BACKLOG step 18/23). If this
     check cannot see that, it is not protecting the repoint."""
     monkeypatch.setitem(health.BOT_ENTRYPOINTS, "r4", (
-        "strategies.sleeves.timing_anomalies.internal.r4.signal",
+        "bots.r4.strategy.signal",
         ("r4_btc_decide", "r4_eth_decide_RENAMED", "_r4_execute")))
     with pytest.raises(health.HealthError) as e:
         health.check_bot_entrypoints()
@@ -45,7 +45,7 @@ def test_entrypoint_check_fails_when_the_module_will_not_import(monkeypatch):
 def test_entrypoint_check_rejects_a_non_callable_attribute(monkeypatch):
     """A name that exists but is a constant is not an entry point."""
     monkeypatch.setitem(health.BOT_ENTRYPOINTS, "adx",
-                        ("strategies.sleeves.adx.signal", ("COST_BP_RT",)))
+                        ("bots.adx.strategy.signal", ("COST_BP_RT",)))
     with pytest.raises(health.HealthError):
         health.check_bot_entrypoints()
 

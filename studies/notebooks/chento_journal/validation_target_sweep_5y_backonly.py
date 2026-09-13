@@ -6,7 +6,7 @@ backward-only `[-24h, 0]` (matching production CHENTO_TRIPLE_V3
 compute_triple_windowed). Audit hypothesis: optimum drifts from
 atr5/t6R toward atr4/t5R (or similar). Decision: if a different
 (atr_mult, target_r) pair wins on OOS mean R AND MAR with adequate n,
-update strategies/sleeves/chento_triple_v3/config.py.
+update bots/chento_v3/strategy/config.py.
 """
 from __future__ import annotations
 

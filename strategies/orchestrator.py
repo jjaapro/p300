@@ -312,14 +312,14 @@ def _load_dispatch():
     global STRATEGY_DISPATCH, STRATEGY_TWO_PHASE_DISPATCH
     if STRATEGY_DISPATCH:
         return
-    from strategies.sleeves.adx import signal as adx_sleeve
-    from strategies.sleeves.carry import signal as carry_sleeve
+    from bots.adx.strategy import signal as adx_sleeve
+    from bots.carry.strategy import signal as carry_sleeve
     from strategies.sleeves.ai_quant import signal as ai_quant_sleeve
     from strategies.sleeves.ema import signal as ema_sleeve
     from strategies.sleeves.eth_daily import signal as eth_daily_sleeve
-    from strategies.sleeves.short_squeeze import signal as short_squeeze_sleeve
+    from bots.short_squeeze.strategy import signal as short_squeeze_sleeve
     from strategies.sleeves.timing_anomalies import signal as timing_anomalies_sleeve
-    from strategies.sleeves.chento_triple_v3 import signal as chento_triple_v3_sleeve
+    from bots.chento_v3.strategy import signal as chento_triple_v3_sleeve
     from strategies.support import cfg_adapter as ca
     # The six refactored sleeves are dispatched through closures over their
     # plain-keyword decide()/execute(); the cfg->kwargs translation lives in
@@ -347,7 +347,7 @@ def _load_dispatch():
         "TIMING_ANOMALIES": timing_anomalies_sleeve.try_fire_for_variant,
         # CHENTO_TRIPLE_V3 — mean-reversion-into-extreme on BTC perp 15m
         # with Triple composite (B1∩B5∩B7) + 4 filter gates + A4 ladder.
-        # See strategies/sleeves/chento_triple_v3/README.md.
+        # See bots/chento_v3/strategy/README.md.
         "CHENTO_TRIPLE_V3": ca.fire_entry(chento_triple_v3_sleeve.decide,
                                           chento_triple_v3_sleeve.execute,
                                           ca.chento),
@@ -641,8 +641,8 @@ def _check_liquidations_all_variants(now_utc) -> int:
     def _live_close_fns() -> dict:
         # See backtest_runner._live_close_fns: support/ may not import bots/,
         # so this layer supplies the six moved sleeves' close functions.
-        from strategies.sleeves.adx.signal import _close_adx_paper
-        from strategies.sleeves.carry.signal import _close_carry_paper
+        from bots.adx.strategy.signal import _close_adx_paper
+        from bots.carry.strategy.signal import _close_carry_paper
         return {"ADX": _close_adx_paper, "CARRY": _close_carry_paper}
 
     total = 0

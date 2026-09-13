@@ -55,7 +55,7 @@ def size_intent(intent, capital: float):
 
 
 def tick(variant: dict) -> dict:
-    from strategies.sleeves.carry import signal as sleeve
+    from bots.carry.strategy import signal as sleeve
 
     stale_mgmt = botlib.stale_tables(botcfg.MGMT_TABLES)
     if stale_mgmt:

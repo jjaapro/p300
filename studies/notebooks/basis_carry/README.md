@@ -140,7 +140,7 @@ net      = gross - fees + funding
 * `funding` uses the **realised** Binance settlement rates at 00:00 / 08:00 / 16:00
   UTC, marked at the perp close of that hour, summed over settlements in
   `(entry_ts, exit_ts]`. Source `cd_funding_rate` (BTC) / `cd_funding_rate_eth` (ETH),
-  the same 3-settlements-per-day convention `strategies/sleeves/carry` uses. The
+  the same 3-settlements-per-day convention `bots/carry/strategy` uses. The
   long-perp leg **pays** positive funding; the short-perp leg **receives** it.
 * Per-trade annualised: `net_ann = net * 365 / hold_days`.
 * If any settlement inside the window is missing from the funding table the trade is

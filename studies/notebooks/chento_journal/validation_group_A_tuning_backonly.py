@@ -5,7 +5,7 @@ Mirrors validation_group_A_tuning.py but patches `intersect_triggers` to
 backward-only `[-24h, 0]` (matching production CHENTO_TRIPLE_V3
 compute_triple_windowed). Audit hypothesis: TIF optimum drifts from
 72h toward 48h. Decision: if MAR-optimal TIF differs from 72h, update
-TIF_HOURS in strategies/sleeves/chento_triple_v3/config.py.
+TIF_HOURS in bots/chento_v3/strategy/config.py.
 """
 from __future__ import annotations
 

@@ -95,13 +95,13 @@ def test_tick_stale_entry_drops_intent(tmp_db, monkeypatch):
         bot_name=botcfg.BOT_NAME)
 
     monkeypatch.setattr(
-        "strategies.sleeves.short_squeeze.signal.decide",
+        "bots.short_squeeze.strategy.signal.decide",
         lambda v, **kw: ([_mk_intent()], {"status": "decided"}))
 
     def boom(*a, **k):
         raise AssertionError("execute must not run on stale entry tables")
     monkeypatch.setattr(
-        "strategies.sleeves.short_squeeze.signal.execute", boom)
+        "bots.short_squeeze.strategy.signal.execute", boom)
     monkeypatch.setattr(
         botlib, "stale_tables",
         lambda tables=None: {"cd_open_interest": 9999.0}
@@ -115,7 +115,7 @@ def test_tick_stale_entry_drops_intent(tmp_db, monkeypatch):
 # ─── Forced-fire integration: execute → price-sweep stop close ────────────────
 
 def test_execute_then_sweep_stop_hit(tmp_db):
-    from strategies.sleeves.short_squeeze import signal as ssq
+    from bots.short_squeeze.strategy import signal as ssq
 
     variant = botlib.ensure_bot_variant(
         botcfg.VARIANT_ID, short_name="t", capital_usdt=10_000.0,
@@ -151,7 +151,7 @@ def test_execute_then_sweep_stop_hit(tmp_db):
 # ─── SSQ_DIAG counters ────────────────────────────────────────────────────────
 
 def test_diag_counters_flush_on_day_rollover(tmp_path, monkeypatch):
-    from strategies.sleeves.short_squeeze import signal as ssq
+    from bots.short_squeeze.strategy import signal as ssq
 
     diag_path = tmp_path / "diag.jsonl"
     monkeypatch.setattr(ssq, "_DIAG_ENABLED", True)
@@ -207,7 +207,7 @@ def test_no_stop_sizing_is_a_fixed_one_x_whatever_the_stop_width():
 
 
 def test_no_stop_execute_then_sweep_ignores_stop_and_target_and_closes_on_time(tmp_db):
-    from strategies.sleeves.short_squeeze import signal as ssq
+    from bots.short_squeeze.strategy import signal as ssq
 
     v = botcfg.VARIANTS[1]
     variant = botlib.ensure_bot_variant(
@@ -251,7 +251,7 @@ def test_decide_honours_use_stop_and_count_diag(tmp_db, monkeypatch):
     """The sleeve-side flags: `use_stop=False` blanks the stop and target in
     the intent (keeping the reference levels); `count_diag=False` skips the
     per-day gate counters so a two-variant bot counts each bar once."""
-    from strategies.sleeves.short_squeeze import signal as ssq
+    from bots.short_squeeze.strategy import signal as ssq
 
     bar = {"ts": int((T0 - timedelta(minutes=15)).timestamp()),
            "open": 100_050.0, "high": 100_100.0, "low": 99_900.0, "close": 100_000.0,
@@ -292,7 +292,7 @@ def test_tick_all_runs_both_variants_and_counts_diag_once(tmp_db, monkeypatch):
                       kw.get("count_diag", True)))
         return [], {"status": "no_sweep"}
     monkeypatch.setattr(
-        "strategies.sleeves.short_squeeze.signal.decide", fake_decide)
+        "bots.short_squeeze.strategy.signal.decide", fake_decide)
     monkeypatch.setattr(botlib, "stale_tables", lambda tables=None: {})
     rows = [botlib.ensure_bot_variant(v["id"], short_name="t", capital_usdt=10_000.0,
                                       bot_name=botcfg.BOT_NAME) for v in botcfg.VARIANTS]

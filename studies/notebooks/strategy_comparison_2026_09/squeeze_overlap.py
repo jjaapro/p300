@@ -2,7 +2,7 @@
 
 ShortSqueeze S-105 requires an Asia-session SHORT-SQUEEZE SETUP on the fire's
 UTC date: Asia OI up >= 0.5%, Asia mean funding < 0, Asia close below Asia open
-(strategies/sleeves/short_squeeze/README.md, "Macro context").
+(bots/short_squeeze/strategy/README.md, "Macro context").
 
 SqueezeBull requires OI DOWN 2% over 4h with price down 0.5%, bull-gated.
 

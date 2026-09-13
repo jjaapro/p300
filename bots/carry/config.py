@@ -1,7 +1,7 @@
 """Bot-level config for the standalone Carry (S-078) bot.
 
 Strategy parameters (entry threshold, exit rule) live in
-strategies/sleeves/carry/config.py. Changes here belong in
+bots/carry/strategy/config.py. Changes here belong in
 docs/calibration/carry.md per the calibration-log rule.
 """
 

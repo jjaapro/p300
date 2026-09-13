@@ -114,9 +114,9 @@ def params(bot: str) -> list[dict]:
     imported config modules at call time — they cannot drift from the code
     that runs (imports are cached; configs are constants)."""
     if bot in ("chento_v3", "chento_v3_eth"):
-        from strategies.sleeves.chento_triple_v3 import config as s
+        from bots.chento_v3.strategy import config as s
         bsrc = f"bots/{bot}/config.py"
-        ssrc = "strategies/sleeves/chento_triple_v3/config.py"
+        ssrc = "bots/chento_v3/strategy/config.py"
         if bot == "chento_v3":
             from bots.chento_v3 import config as b
             tables = (s.PERP_15M_TABLE, s.OKX_1H_TABLE)
@@ -166,9 +166,9 @@ def params(bot: str) -> list[dict]:
 
     if bot == "short_squeeze":
         from bots.short_squeeze import config as b
-        from strategies.sleeves.short_squeeze import config as s
+        from bots.short_squeeze.strategy import config as s
         bsrc, ssrc = ("bots/short_squeeze/config.py",
-                      "strategies/sleeves/short_squeeze/config.py")
+                      "bots/short_squeeze/strategy/config.py")
         lon, ny = s.SESSIONS["london"], s.SESSIONS["ny"]
         return [
             _p("Variants", "stop variant", b.VARIANTS[0]["id"],
@@ -204,8 +204,8 @@ def params(bot: str) -> list[dict]:
 
     if bot == "adx":
         from bots.adx import config as b
-        from strategies.sleeves.adx import config as s
-        bsrc, ssrc = "bots/adx/config.py", "strategies/sleeves/adx/config.py"
+        from bots.adx.strategy import config as s
+        bsrc, ssrc = "bots/adx/config.py", "bots/adx/strategy/config.py"
         return [
             _p("Sizing", "risk per trade", b.RISK_PCT, "% of capital", bsrc),
             _p("Sizing", "notional cap", b.NOTIONAL_MAX_X, "× capital", bsrc),
@@ -234,9 +234,9 @@ def params(bot: str) -> list[dict]:
 
     if bot == "carry":
         from bots.carry import config as b
-        from strategies.sleeves.carry import config as s
+        from bots.carry.strategy import config as s
         bsrc, ssrc = ("bots/carry/config.py",
-                      "strategies/sleeves/carry/config.py")
+                      "bots/carry/strategy/config.py")
         return [
             _p("Sizing", "notional", b.CARRY_NOTIONAL_X,
                "× capital (fixed, no stop — delta-neutral)", bsrc),
@@ -253,9 +253,9 @@ def params(bot: str) -> list[dict]:
 
     if bot == "squeeze_bull":
         from bots.squeeze_bull import config as b
-        from strategies.sleeves.squeeze_bull import config as s
+        from bots.squeeze_bull.strategy import config as s
         bsrc = "bots/squeeze_bull/config.py"
-        ssrc = "strategies/sleeves/squeeze_bull/config.py"
+        ssrc = "bots/squeeze_bull/strategy/config.py"
         return [
             _p("Variants", "stop variant", b.VARIANTS[0]["id"],
                "-2% stop, +3% target, 48h", bsrc),
@@ -286,9 +286,9 @@ def params(bot: str) -> list[dict]:
     if bot == "r4":
         from bots.r4 import config as b
         from strategies import trades as t
-        from strategies.sleeves.timing_anomalies.internal.r4 import config as s
+        from bots.r4.strategy import config as s
         bsrc = "bots/r4/config.py"
-        ssrc = "strategies/sleeves/timing_anomalies/internal/r4/config.py"
+        ssrc = "bots/r4/strategy/config.py"
         weight = next(iter(b.VARIANT_WEIGHT.values()))
         enabled = ", ".join(k.replace("JPLUS_", "") for k, v in b.ENABLED.items() if v)
         return [

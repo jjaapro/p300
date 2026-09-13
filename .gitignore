@@ -58,3 +58,6 @@ studies/notebooks/execution_2026_09/cache/
 # Golden fixtures: carved from prod.db, hash-pinned in MANIFEST.json.
 # Rebuild with tests/fixtures/build_sleeve_fixtures.py
 tests/fixtures/*.db
+
+# repoint_baseline.py run artefacts (DB copies + captured trade rows)
+tests/fixtures/repoint/

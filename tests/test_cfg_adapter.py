@@ -19,12 +19,12 @@ from strategies.support import cfg_adapter as ca
 
 # (central unpacker, module path, the sleeve's own _unpack)
 PAIRS = [
-    ("adx", ca.adx, "strategies.sleeves.adx.signal"),
-    ("carry", ca.carry, "strategies.sleeves.carry.signal"),
-    ("chento", ca.chento, "strategies.sleeves.chento_triple_v3.signal"),
-    ("short_squeeze", ca.short_squeeze, "strategies.sleeves.short_squeeze.signal"),
-    ("squeeze_bull", ca.squeeze_bull, "strategies.sleeves.squeeze_bull.signal"),
-    ("r4", ca.r4, "strategies.sleeves.timing_anomalies.internal.r4.signal"),
+    ("adx", ca.adx, "bots.adx.strategy.signal"),
+    ("carry", ca.carry, "bots.carry.strategy.signal"),
+    ("chento", ca.chento, "bots.chento_v3.strategy.signal"),
+    ("short_squeeze", ca.short_squeeze, "bots.short_squeeze.strategy.signal"),
+    ("squeeze_bull", ca.squeeze_bull, "bots.squeeze_bull.strategy.signal"),
+    ("r4", ca.r4, "bots.r4.strategy.signal"),
 ]
 
 CFGS = [

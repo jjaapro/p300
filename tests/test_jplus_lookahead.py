@@ -13,9 +13,9 @@ loaders (not synthetic fixtures). It's slow-ish (~15s) but runs once.
 
 Coverage:
   - jplus.simulate (Core J+, 50% portfolio weight)
-  - strategies.sleeves.adx.signal._current_signal (S-003 ADX, 15%)
+  - bots.adx.strategy.signal._current_signal (S-003 ADX, 15%)
   - regime_classifier.classify_regime (gates S-096 Thu Bear, 6%)
-  - strategies.sleeves.carry.signal._load_recent_daily_funding (S-078 Carry, 12%)
+  - bots.carry.strategy.signal._load_recent_daily_funding (S-078 Carry, 12%)
   - strategies.sleeves.timing_anomalies.internal.cpr.signal._load_daily_closes (CPR, 8%)
   - strategies.sleeves.timing_anomalies.internal.pdo.signal._btc_30d_return_pct (PDO, 4%)
   - strategies.sleeves.timing_anomalies.internal.thu_bear.signal._get_regime_for_prev_day (Thu Bear, 6%)
@@ -102,7 +102,7 @@ def test_simulate_on_tiny_window_doesnt_crash():
 def test_adx_signal_no_lookahead(early_clock, late_clock):
     """ADX _current_signal must produce identical results at two different
     clock positions for dates available to both."""
-    from strategies.sleeves.adx.signal import _load_btc_daily_candles, _current_signal
+    from bots.adx.strategy.signal import _load_btc_daily_candles, _current_signal
 
     clock.set_simulated_now(early_clock)
     early_candles = _load_btc_daily_candles(limit_days=400)
@@ -170,7 +170,7 @@ def test_carry_funding_no_lookahead(early_clock, late_clock):
     """Carry _load_recent_daily_funding must produce identical bars on common
     dates at two different clock positions. Uses days=400 to force overlap
     (default 30d would give zero overlap a year apart)."""
-    from strategies.sleeves.carry.signal import _load_recent_daily_funding
+    from bots.carry.strategy.signal import _load_recent_daily_funding
 
     clock.set_simulated_now(early_clock)
     early = {r["date"]: r for r in _load_recent_daily_funding(days=400)}

@@ -32,7 +32,7 @@ def test_tick_stale_mgmt_skips(monkeypatch):
     def boom(*a, **k):
         raise AssertionError("decide must not run on stale mgmt tables")
     monkeypatch.setattr(
-        "strategies.sleeves.adx.signal.decide", boom)
+        "bots.adx.strategy.signal.decide", boom)
     monkeypatch.setattr(
         botlib, "stale_tables",
         lambda tables=None: {"cd_spot_binance": 99999.0}
@@ -45,7 +45,7 @@ def test_tick_stale_mgmt_skips(monkeypatch):
 def test_atr_trail_level_ratchets():
     """Hand-computed trail on synthetic candles: seeds at the anchor bar's
     close - 4*ATR and ratchets up with later closes (LONG)."""
-    from strategies.sleeves.adx import signal as adx_sig
+    from bots.adx.strategy import signal as adx_sig
     from strategies.support.indicators import atr as atr_fn
 
     candles = []

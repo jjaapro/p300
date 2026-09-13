@@ -5,7 +5,7 @@ Update in the same commit as any config/sizing change.
 
 ## Current state (2026-07-21 — first-ever paper deployment)
 
-**Strategy params** (`strategies/sleeves/short_squeeze/config.py`) — frozen
+**Strategy params** (`bots/short_squeeze/strategy/config.py`) — frozen
 from the 2026-05-18 notebook sweep, unchanged: perp_cvd pct < 0.15,
 divergence pct > 0.70 (90d session-filtered distributions), close-in-range
 ≥ 0.10, sweep of prior 24-bar (6h) low, London/NY sessions only, Asia

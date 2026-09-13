@@ -6,7 +6,7 @@ cold-fill incident (both V2 losers entered 127 min after the window opened).
 
 Scope is deliberately narrow: the four shipped windows are NOT re-optimised here. Windows,
 weekday and day-of-month rules are the ones in
-`strategies/sleeves/timing_anomalies/internal/r4/config.py` and `math.py`:
+`bots/r4/strategy/config.py` and `math.py`:
 
 | strategy | days | entry → exit (UTC) | hold |
 |---|---|---|---|

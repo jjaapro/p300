@@ -1,6 +1,6 @@
 """ADX robustness pack — shared code (read-only).
 
-Signal machine = the shipped sleeve's state machine (strategies/sleeves/adx/signal.py:160-198, Tier-2:
+Signal machine = the shipped sleeve's state machine (bots/adx/strategy/signal.py:160-198, Tier-2:
 symmetric EMA(150) gate, no funding veto), indicators from the adx_study harness. `live_walk` prices the
 machine the way the live bot does: enter at the first 1 m close after the day boundary, stops checked minute
 by minute with stop_path semantics (wick -> stop, gap -> open), a day's trail level valid from the next day,

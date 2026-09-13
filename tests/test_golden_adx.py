@@ -186,8 +186,8 @@ def test_golden_adx_funding_veto_blocks_a_crowded_long(env, monkeypatch):
     what a strip would delete; the z-score's own arithmetic is covered by
     test_adx_parity. Labelled so nobody later reads this as a historical
     event."""
-    from strategies.sleeves.adx import signal as adx_sig
-    from strategies.sleeves.adx.config import FUNDING_VETO_Z
+    from bots.adx.strategy import signal as adx_sig
+    from bots.adx.strategy.config import FUNDING_VETO_Z
 
     monkeypatch.setattr(adx_sig, "_funding_z",
                         lambda candles: FUNDING_VETO_Z + 0.5)

@@ -115,7 +115,7 @@ Issues found evaluating the vision itself (beyond the factual fixes above). Each
 
 *Production absorption of validated research — allowed once Phase A gates close; lands in the Standard pool variant.*
 
-*Status 2026-09-12: shipped as `strategies/sleeves/squeeze_bull` + `bots/squeeze_bull` on 2026-09-09 (S-107, Rule A OI-flush with a causal regime gate; Rule B funding+CVD deferred — `studies/notebooks/squeeze_bull_revalidation/`), paper, with a no-stop twin variant since 2026-09-12. E2 byte-equivalence and E3 day-1 requirements were met on the bot path rather than in a pool variant.*
+*Status 2026-09-12: shipped as `bots/squeeze_bull/strategy` + `bots/squeeze_bull` on 2026-09-09 (S-107, Rule A OI-flush with a causal regime gate; Rule B funding+CVD deferred — `studies/notebooks/squeeze_bull_revalidation/`), paper, with a no-stop twin variant since 2026-09-12. E2 byte-equivalence and E3 day-1 requirements were met on the bot path rather than in a pool variant.*
 
 - **E1.** Composite sleeve per the fact-sheet spec (Rule A OI-flush + Rule B funding+CVD, shared bull gate + 24h cross-rule cooldown). First deliverable is the **combined backtest** (C8) — if it can't reproduce ≈ the claimed +9.4R/yr / MAR 1.77, recalibrate or descope to Rule A only.
 - **E2.** Byte-equivalence harness per [[verify-byte-equivalence-when-porting]]: produced feature values asserted against the research notebooks at known timestamps before any paper trade.

@@ -2,7 +2,7 @@
 
 ## Current state (2026-09-12 — cumulative-funding exit)
 
-**Strategy** (`strategies/sleeves/carry/config.py`): enter delta-neutral
+**Strategy** (`bots/carry/strategy/config.py`): enter delta-neutral
 (spot-long + perp-short, equal notional) when 7d average BTC perp funding
 > 0; **exit when the trailing 30-day cumulative daily funding is below
 −0.5 % of notional** (`EXIT_CUM_DAYS = 30`, `EXIT_CUM_THRESHOLD_PCT = -0.5`,

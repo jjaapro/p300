@@ -208,7 +208,7 @@ def test_coarse_and_minute_ticks_find_same_first_crossing(ledger):
 
 
 def test_adx_trail_is_effective_only_after_daily_close(ledger, monkeypatch):
-    from strategies.sleeves.adx import signal as adx
+    from bots.adx.strategy import signal as adx
     from strategies.support import indicators
     trade = _seed(ledger)
     candles = [
@@ -232,7 +232,7 @@ def test_adx_trail_is_effective_only_after_daily_close(ledger, monkeypatch):
 ])
 def test_sleeve_closes_recovered_wick_with_historical_accounting(
         ledger, monkeypatch, strategy, direction, low, high, expected):
-    from strategies.sleeves.adx import signal as adx
+    from bots.adx.strategy import signal as adx
     from strategies.sleeves.timing_anomalies.internal.thu_bear import signal as thu
     from strategies.support import funding, price_feed
     _seed(ledger, direction=direction, strategy=strategy)
@@ -275,7 +275,7 @@ def test_close_rejects_exit_before_entry_or_after_clock(ledger, exit_time):
 ])
 def test_historical_path_uses_entry_stop_not_new_config(
         ledger, monkeypatch, strategy, direction, low, high, stored):
-    from strategies.sleeves.adx import signal as adx
+    from bots.adx.strategy import signal as adx
     from strategies.sleeves.timing_anomalies.internal.thu_bear import signal as thu
     from strategies.support import price_feed
     _seed(ledger, strategy=strategy, direction=direction,
@@ -360,7 +360,7 @@ def test_scheduled_backstops_cannot_bypass_recovered_thursday_stop(ledger, monke
 def test_runner_end_window_close_cannot_bypass_stop(
         ledger, monkeypatch, strategy, direction, ohlc, expected):
     import backtest_runner
-    from strategies.sleeves.adx import signal as adx
+    from bots.adx.strategy import signal as adx
     from strategies.support import funding
     _seed(ledger, direction=direction, strategy=strategy)
     _bar(ledger, 0, **dict(zip(("o", "h", "l", "c"), ohlc)))

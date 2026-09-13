@@ -1,4 +1,4 @@
-"""Unit tests for strategies.sleeves.short_squeeze.
+"""Unit tests for bots.short_squeeze.strategy.
 
 Coverage:
   - math.percentile_rank, math.rolling_percentile
@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 import numpy as np
 import pytest
 
-from strategies.sleeves.short_squeeze import math as ssq_math
+from bots.short_squeeze.strategy import math as ssq_math
 
 
 # ─── math.percentile_rank ────────────────────────────────────────────────────
@@ -190,7 +190,7 @@ def test_feb11_15m_close_satisfies_all_percentile_gates():
     div_pct  = ssq_math.percentile_rank(+1125.9, div_dist)
 
     # Reflect the live gates:
-    from strategies.sleeves.short_squeeze.config import (
+    from bots.short_squeeze.strategy.config import (
         PERP_CVD_PCT_MAX, DIVERGENCE_PCT_MIN, CLOSE_IN_RANGE_MIN,
     )
     assert perp_pct < PERP_CVD_PCT_MAX, f"perp_pct={perp_pct}"
@@ -209,5 +209,5 @@ def test_borderline_perp_misses_threshold():
     # Pick a value at the 20th percentile
     p20 = float(np.percentile(perp_dist, 20))
     pct = ssq_math.percentile_rank(p20, perp_dist)
-    from strategies.sleeves.short_squeeze.config import PERP_CVD_PCT_MAX
+    from bots.short_squeeze.strategy.config import PERP_CVD_PCT_MAX
     assert pct >= PERP_CVD_PCT_MAX, f"pct={pct} should not pass threshold {PERP_CVD_PCT_MAX}"

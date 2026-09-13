@@ -45,7 +45,7 @@ import numpy as np
 
 import botlib
 from dashboard import queries
-from strategies.sleeves.short_squeeze import config as ssq_cfg
+from bots.short_squeeze.strategy import config as ssq_cfg
 from strategies.sleeves.timing_anomalies.internal.cpr import config as cpr_cfg
 from strategies.support import db
 from strategies.support.funding import SETTLEMENT_PERIOD_SECONDS

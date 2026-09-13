@@ -1,7 +1,7 @@
 """Bot-level config for the Chento Triple v3 ETH leg (multi-asset plan,
 studies/material/plans/multi_asset_chento_plan.md, 2026-08-23).
 
-Strategy parameters live in strategies/sleeves/chento_triple_v3/config.py
+Strategy parameters live in bots/chento_v3/strategy/config.py
 and resolve per-asset from CHENTO_V3_ASSET (set by runner.py before the
 sleeve is imported). Changes here belong in
 docs/calibration/chento_triple_v3.md per the calibration-log rule.
