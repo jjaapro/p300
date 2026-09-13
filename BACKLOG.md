@@ -380,7 +380,7 @@ cap — the multi-asset plan's Phase B as written.
    and `health.py` recommending a `binance_feed.py` that does not exist — both fixed.
    Links now resolve 0 broken across the five primary docs.
 6. Port the two-clock look-ahead contract to the four running bots that had none.
-   **3 of 4 DONE 2026-09-13** (`9010f86`, `<step6>`); chento is blocked on 7b below.
+   **3 of 4 DONE 2026-09-13** (`9010f86`, `6f6eba1`); chento is blocked on 7b below.
    New `tests/test_bot_lookahead.py`; drill 16 -> 25 mutations, 25/25 caught.
 
    **The existing guard was the first finding.** `test_adx_signal_no_lookahead` called
