@@ -1,0 +1,2 @@
+{"utc": "2026-09-11T18:00:31+00:00", "status": "decided", "bar_iso": "2026-09-11T17:00:00+00:00", "oi_chg_4h": -0.024780777117212383, "px_chg_4h": -0.021640490859509254, "ret_30d_backonly": 0.20392153778393007, "regime": "bull_30d", "swept": 0}
+{"ts": "2026-09-08T20:01:00+00:00", "event": "opened", "trade_id": "SJ-0001", "late_s": 60, "strategy": "JPLUS_R4_ETH", "weight": 0.2, "sleeve_lev": 2.0, "lev": 2.0, "notional": 4000.0, "budget": 30000.0, "capped": false, "utc_date": "2026-09-08", "counters": {"opened": 1}}

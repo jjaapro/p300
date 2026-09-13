@@ -1,0 +1,49 @@
+[
+ {
+  "allocation_pct": 100.0,
+  "asset": "ETH",
+  "direction": "SHORT",
+  "entry_price": 1846.82,
+  "exit_price": null,
+  "exit_time": "2026-08-05T00:00:05+00:00",
+  "leverage": 1.8356129462222897,
+  "notes": {
+   "_atr_at_entry": 4.024421387527843,
+   "_entry_price": 1846.82,
+   "_filter_diag": {
+    "okx_delta_z": -1.1490121651280025,
+    "resist_ob_dist_R": 2.418732797257957,
+    "ret_30d": 0.07224267530058426
+   },
+   "_inside_va": false,
+   "_ladder_size_frac": 0.5,
+   "_risk": 20.122106937639217,
+   "_state": {
+    "atr_at_entry": 4.024421387527843,
+    "entry_bar_ts": "2026-08-02T00:00:00+00:00",
+    "entry_price": 1846.82,
+    "ladder_added": false,
+    "ladder_entry": null,
+    "ladder_size_frac": 0.5,
+    "last_walked_ts": "2026-08-02T00:00:00+00:00",
+    "risk": 20.122106937639217,
+    "stop_price": 1866.9421069376392,
+    "target_price": 1726.0873583741645
+   },
+   "_stop_price": 1866.9421069376392,
+   "_target_price": 1726.0873583741645,
+   "_time_stop_iso": "2026-08-05T00:00:05+00:00",
+   "bar_ts": "2026-08-02T00:00:00+00:00",
+   "sleeve": "CHENTO_TRIPLE_V3",
+   "trigger": "chento_triple_v3",
+   "variant_id": "bot_chento_v3_eth"
+  },
+  "pnl_usdt": null,
+  "qty": 9.939317021812032,
+  "size_usdt": 18356.129462222896,
+  "status": "open",
+  "strategy": "CHENTO_TRIPLE_V3",
+  "strategy_variant": "bot_chento_v3_eth",
+  "unique_key": "CHENTO_TRIPLE_V3|ETH|2026-08-02T00:00:00+00:00"
+ }
+]

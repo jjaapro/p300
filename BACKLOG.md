@@ -342,7 +342,7 @@ Suite 1398 → 1464, fleet untouched.
 Run it before and after every phase-C commit:
 
     python tests/fixtures/build_sleeve_fixtures.py     # verify fixture hashes
-    python tests/fixtures/mutation_drill.py            # must be 14/14, tree clean
+    python tests/fixtures/mutation_drill.py            # must be 22/22, tree clean
 
 The drill found **six goldens that were decorative**, and the pattern held
 every time: the arithmetic was covered, the *calibrated gates* were not —
