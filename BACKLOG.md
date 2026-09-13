@@ -210,14 +210,36 @@ cap — the multi-asset plan's Phase B as written.
    was unsafe (its gate did not work, and the obvious edit silently broke research replay),
    so it became four phases and 20 commits. All six sleeves now expose plain-keyword
    `decide()`/`execute()`, all seven bots call them, and no runner carries a `sleeve_cfg`.
-   **Step 2 — moving each module under its bot — is next, and is the one that needs the
-   fleet stopped.**
-2. `git mv` each module under its bot and re-point the importers (~50 files: the tests
-   above, `studies/notebooks/adx_study/harness.py`, `adx_robustness_2026_09/adx_lib.py`,
-   the chento_journal validations, `strategy_comparison_2026_09/squeeze_overlap.py`,
-   `dashboard/botinfo.py` and `dashboard/market.py`, `strategies/support/{stop_path,
-   margin_check,indicators,funding}.py`). Fleet stopped for this step, restarted from the
-   new paths after it.
+2. ~~`git mv` each module under its bot and re-point the importers~~ — **DONE 2026-09-13**
+   (commits `f8caa34`, `0784950`, `5cec0ae`, `e9bd48e`). Each of the six is now
+   `bots/<name>/strategy/` — a PACKAGE holding signal.py, config.py, math.py and its README,
+   beside the bot's own config.py and runner.py. **Shape deviation, taken on a go-ahead:**
+   the literal `{config,runner,strategy}.py` has three slots for four-to-five files, and
+   every destination already had a `config.py` (squeeze_bull's even imported the sleeve's,
+   which would have become self-referential). The package form also made the move
+   content-free — every intra-sleeve import is already relative, so not one line inside a
+   moved file changed, and git records all six as renames.
+
+   **The layering had to be fixed first, in three commits, before any file moved**, or
+   `strategies/support/` — a shared library — would have been importing `bots/`:
+   r4's window math moved down to `strategies/support/r4_windows.py` (it is parameter-free
+   calendar arithmetic and `jplus_inputs` imports it at module scope); ADX's stop levels
+   became a resolver the sleeve supplies to `close_perp_trade`, with support keeping the
+   path walk; and `margin_check` kept only the dormant sleeves' close functions, with
+   `backtest_runner` and the orchestrator injecting ADX's and CARRY's.
+
+   **A dotted-path search is not enough** — three of the four import forms are invisible to
+   it: the slash paths in `mutation_drill.py`, the parent-package form in
+   `bots/chento_v3/runner.py` (the live BTC+ETH runner), and r4's four relative imports in
+   the timing-anomaly registry. Those four resolvers now point at `bots/r4/strategy` — a
+   deliberate, temporary dormant → application edge that step 3 removes along with the
+   meta-sleeve, and which is what keeps `tests/test_sim_mode.py` green.
+
+   Gates: suite 1584 green on the first run after the move, **zero churn in
+   `tests/goldens/`**, drill 22/22, `health.py` 0, and the `--sim-now` dry run
+   byte-identical for all seven bots against a baseline captured before the first move.
+   Fleet stopped 05:00:46Z → 05:22:41Z (~22 min) and restarted from the new paths with all
+   three open positions intact.
 3. Retire the legacy path: `bot.py`, `strategies/orchestrator.py`, `strategies/p300_spec.py`,
    `backtest_runner.py`, `studies/simulation/sim.py` and its DB builder, the
    `TIMING_ANOMALIES` meta-sleeve, the allocation / weight tables, `tests/test_sim_mode.py`
