@@ -532,6 +532,37 @@ cap — the multi-asset plan's Phase B as written.
    **Pre-register before running** (DSR, N_TRIALS, the decision rule), use the bounded
    loaders' information set (`okx now − 1h`), and state in advance what result retires the
    gate. Nothing in the running bot changes until it reports.
+
+   **PRE-REGISTERED AND FROZEN 2026-09-13** (`<freeze8>`) at
+   `studies/notebooks/okx_gate_revalidation/README.md`, committed with no analysis script
+   present. **Not yet run.** Premise confirmed first, against code and data: C4 read OKX hour
+   `floor_hour(t)` as a complete bar, so its z embedded 0–45 minutes of prices from after the
+   decision; live reproduces hour H−1 at all six bars where it recorded a z, and the same-hour
+   values match none.
+
+   **User decisions encoded:** RETIRE is discrimination-based (blocked set profitable AND the
+   paired block-bootstrap 90 % CI of kept−blocked includes 0), with a same-hour control arm;
+   pooled BTC+ETH with a per-asset direction clause; drawdown report-only, stated;
+   **INCONCLUSIVE switches the gate off** — chosen against the recommendation. Consequence,
+   written into the document: KEEP is the only verdict that leaves the gate on and its power
+   analysis rates KEEP near-unreachable, so **gate-off is the most likely end state**.
+
+   **Hardened in three review rounds before freezing.** Added an INVALID outcome so a
+   pipeline failure can never read as INCONCLUSIVE and switch a live gate off; made a written
+   verdict final (no post-hoc "found a bug" rerun); bounded the two delays that would have
+   been a de facto KEEP (control step, gate-off commit — 30 days); block bootstrap per
+   GATE_VALIDATION §8.7; P3 walker parity and a degenerate-metrics check. **One review fix
+   was wrong as written:** P3 demanded live exit prices within 1e-9, which can never pass —
+   live TIF exits price a tick, the study a 15m close — and would have made every run INVALID.
+   Measuring it exposed a real error: the draft's frozen TIF convention was ~30 minutes LATE
+   against the live ledger (bar t+72h30m vs live exits at entry+72h). Corrected to the bar
+   opening t+72h, which matches all three ledger trades within 28 s, stop price exactly.
+   That look is disclosed in §7.11: three pooled HOLDOUT trades' exits were read to set P3.
+
+   **OPS follow-up, whatever the verdict:** the OKX refresh is an elapsed-time throttle
+   (`data/sources/binance.py:1096-1105`, >= 3300 s), not hour-aligned, so each closed hour
+   lands 0–56 min late and live sometimes sees an hour older than the 7b bound assumes.
+   Aligning it to HH:01 makes live equal the causal information set on every bar.
 9. **Research defect: the R4_ETH weights correction is partial.** Found reviewing 7a, not
    fixed — fixing it moves `simulate()` and anything calibrated on it, so it needs its own
    decision. The AUDIT_2026_05_13 correction (jplus_inputs.py, the `prev_rec` block) lags
@@ -539,6 +570,20 @@ cap — the multi-asset plan's Phase B as written.
    both built from Tuesday's close, which a Tuesday 20:00 entry cannot know. 33 of 170
    historical R4_ETH rows; R4_ETH's research contribution overstated ~6% (39.985 vs
    37.447 pct-pts). Since 7a, live is causal on those rows and research is not.
+
+   **Checked 2026-09-13 before scoping a fix — two things change how this item reads:**
+   - *It is not a pure research correction.* `recent_1x` appends the pre-leverage sum `rl`
+     every day, and `rl` includes `c_r4e`. Changing how the R4_ETH row's gate is applied
+     changes `rl`, which changes `recent_1x`, which is what `voltarget.leverage_for_day`
+     reads in `today_inputs()` — i.e. **live** vol-target leverage. A fix must be measured
+     on the live projection as well as on `simulate()`.
+   - *It is not a one-field lag.* The row's leverage is a single multiplier over the whole
+     portfolio (`r_strat = rl * 100 * lev`), so R4_ETH cannot be given a lagged vol-lev
+     without a per-sub-sleeve leverage — a structural change to the simulator.
+   - *Blast radius is small.* R4's own validation numbers (`r4_study`, `r4_bot_prep`) come
+     from their own harness, not this simulator. The only other consumer of
+     `_run_decision_loop` is `anchor_allocator_study/build_panel.py`, a concluded KILL.
+   Needs its own measured analysis and a decision; not scheduled.
 10. **Hazard: a plain `pytest` run can write to the live prod.db.** **DONE 2026-09-13**
     (`a942cf1`). Worse than first reported, on every axis, all measured:
     - **Two** modules wrote on import, not one: `trade_db.py` (BEGIN + CREATE ... IF NOT
