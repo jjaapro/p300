@@ -378,13 +378,29 @@ def _open_adx_paper(variant: dict, direction: str, entry_price: float,
     )
 
 
+def _stop_resolver():
+    """This sleeve's stop resolver, handed to the central close pipeline.
+
+    The levels come from ADX's own candle loader and ATR ladder, so the sleeve
+    owns them; the path walk and the finalisation guard stay in
+    strategies/support/stop_path.py. The 10.0 is the sleeve's configured stop
+    and matches what stop_path passed before the inversion — `entry_stop_pct`
+    prefers the value recorded in the trade's own notes and falls back to this
+    only when the notes carry neither threshold.
+    """
+    from strategies.support.stop_path import build_level_resolver
+    return build_level_resolver(_load_btc_daily_candles, _stop_levels_at, 10.0)
+
+
 def _close_adx_paper(trade_id: str, exit_price: float, reason: str, *,
                      exit_dt: datetime | None = None) -> None:
-    """Close with sleeve costs; central accounting resolves any earlier stop."""
+    """Close with sleeve costs; central accounting resolves any earlier stop
+    using the resolver this sleeve supplies."""
     from strategies.trades import close_perp_trade
     close_perp_trade(trade_id, exit_price, reason, sleeve_name="ADX",
                      cost_bp_rt=COST_BP_RT, slippage_bp_rt=SLIPPAGE_BP_RT,
-                     apply_funding=True, exit_dt=exit_dt)
+                     apply_funding=True, exit_dt=exit_dt,
+                     stop_resolver=_stop_resolver())
 
 
 # ─── Public tick ─────────────────────────────────────────────────────────────

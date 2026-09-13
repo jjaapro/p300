@@ -106,25 +106,45 @@ def completed_price_at(asset: str, at: datetime) -> float:
     return float(row[1])
 
 
-def resolve_sleeve_close(trade: dict, price: float, now: datetime) -> StopExit | None:
-    """Resolve stops for every ADX/Thursday close caller, including backstops.
+#: Strategies that MUST supply their own resolver to close_perp_trade, because
+#: their stop levels come from sleeve-owned data (a candle loader, a ladder)
+#: this layer must not import. ADX is the only one; THU_BEAR's levels are a
+#: flat percentage computed below.
+#:
+#: Until 2026-09-13 this module imported ADX's privates directly, so
+#: strategies/support/ — a shared library — reached up into a sleeve. With the
+#: sleeves moving under bots/, that would have become support/ importing bots/.
+STOP_PATH_REQUIRED = {"ADX"}
 
-    Called by the central close pipeline before it computes or persists P&L.
-    Returning a fill leaves the caller's configured fee/slippage model intact.
-    Other strategies retain their own execution logic.
+
+def build_level_resolver(load_candles, levels_at, default_pct: float):
+    """Return a `resolve(trade, price, now)` that a sleeve hands to
+    close_perp_trade.
+
+    The sleeve supplies its own candle loader and level math; the path walk and
+    the finalisation guard stay here, which is the genuinely shared half.
     """
-    strategy = trade["strategy"].upper()
-    if strategy == "ADX":
-        from strategies.sleeves.adx.signal import _load_btc_daily_candles, _stop_levels_at
+    def _resolve(trade: dict, price: float, now: datetime) -> StopExit | None:
         hit = check_stop_path(
             trade, trade["asset"],
-            _stop_levels_at(_load_btc_daily_candles(), trade, entry_stop_pct(trade, 10.0)),
+            levels_at(load_candles(), trade, entry_stop_pct(trade, default_pct)),
             now=now, current_price=price, save_progress=False)
         if hit is None and not clock.is_simulated():
             # Do not book a recovered scheduled/signal winner before the
             # delayed final refresh can reveal the exit minute's stop wick.
             completed_price_at(trade["asset"], now)
         return hit
+    return _resolve
+
+
+def resolve_sleeve_close(trade: dict, price: float, now: datetime) -> StopExit | None:
+    """Resolve stops for the sleeves whose levels this layer can compute.
+
+    Called by the central close pipeline before it computes or persists P&L.
+    Returning a fill leaves the caller's configured fee/slippage model intact.
+    ADX is NOT here — it supplies its own resolver (see STOP_PATH_REQUIRED).
+    """
+    strategy = trade["strategy"].upper()
     if strategy == "THU_BEAR":
         bound = scheduled_close_bound(trade, now)
         pct = entry_stop_pct(trade, 5.0)

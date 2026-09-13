@@ -451,10 +451,17 @@ def _format_perp_notes(sleeve_name: str, reason: str,
     return suffix
 
 
+#: Strategies whose close resolves an earlier stop before pricing the exit.
+#: THU_BEAR's levels are a flat pct the support layer computes itself; ADX's
+#: come from its own candle loader and ladder, so ADX must supply a resolver.
+_STOP_PATH_STRATEGIES = {"ADX", "THU_BEAR"}
+
+
 def close_perp_trade(trade_id: str, exit_price: float, reason: str,
                      sleeve_name: str, *,
                      cost_bp_rt: float = DEFAULT_COST_BP_RT,
                      slippage_bp_rt: float = DEFAULT_SLIPPAGE_BP_RT,
+                     stop_resolver=None,
                      apply_funding: bool = True,
                      exit_dt: datetime | None = None) -> None:
     """End-to-end close for ADX / THU_BEAR / FOMC / CPR / PDO.
@@ -507,9 +514,20 @@ def close_perp_trade(trade_id: str, exit_price: float, reason: str,
                     raise ValueError("Cannot backdate a close across a later trade adjustment")
 
         validate_event_time(now)
-        if exit_dt is None and row["strategy"].upper() in {"ADX", "THU_BEAR"}:
-            from strategies.support.stop_path import resolve_sleeve_close
-            earlier = resolve_sleeve_close(dict(row), exit_price, now)
+        if exit_dt is None and row["strategy"].upper() in _STOP_PATH_STRATEGIES:
+            from strategies.support.stop_path import (
+                STOP_PATH_REQUIRED, resolve_sleeve_close)
+            if stop_resolver is None and row["strategy"].upper() in STOP_PATH_REQUIRED:
+                # Loud rather than silent: this sleeve's stop levels come from
+                # its own candle loader and ladder, so a close path that does
+                # not supply a resolver would book the naive price and quietly
+                # skip a stop that had already been hit.
+                raise ValueError(
+                    f"{row['strategy']} closes need a stop_resolver; {trade_id} "
+                    f"was closed without one. Route through the sleeve's own "
+                    f"close helper, which supplies it.")
+            resolver = stop_resolver or resolve_sleeve_close
+            earlier = resolver(dict(row), exit_price, now)
             if earlier is not None:
                 exit_price, now, reason = earlier.price, earlier.at, earlier.reason
                 validate_event_time(now)
