@@ -243,8 +243,15 @@ def decide(variant: dict, *, weight_pct: float = 0.0, leverage: float = 1.0,
     stop, target, risk = sb_math.bracket(entry_price)
     if risk <= 0:
         return [], {"status": "invalid_risk", "swept": swept}
-    time_stop_dt = datetime.fromtimestamp(diag["bar_ts"], tz=timezone.utc) + \
-        timedelta(hours=TIF_HOURS)
+    # The time stop is TIF_HOURS after ENTRY, and entry is the trigger bar's
+    # CLOSE — one hour after its `bar_ts` open. Until 2026-09-13 this added
+    # TIF_HOURS to bar_ts itself, so every live hold was 47h while the research
+    # walker (math.replay_bracket) and the re-cut replay (recut_lib) held 48h,
+    # and the pre-registered live-vs-replay divergence rule compared two
+    # different exit times on every time-stop trade. BACKLOG 12a.
+    entry_dt = datetime.fromtimestamp(diag["bar_ts"], tz=timezone.utc) + \
+        timedelta(hours=1)
+    time_stop_dt = entry_dt + timedelta(hours=TIF_HOURS)
 
     reason = {
         "trigger": "squeeze_bull_oi_flush",

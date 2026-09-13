@@ -681,7 +681,23 @@ cap — the multi-asset plan's Phase B as written.
       48h / 6h. Item 12's first defect must be fixed first, or the study's "shipped" arm is not
       the live rule.
 12. **Two live defects found by the item-11 census.** Both verified 2026-09-13. Both change live
-    behaviour when fixed, so neither is fixed without a go-ahead.
+    behaviour when fixed, so neither is fixed without a go-ahead. **Both DONE 2026-09-13**
+    (user go-ahead "Fix both" the same day), in one commit with this entry. Each fix landed
+    behind tests that failed on the old code first; suite 1153 passed, drill 34/34 (one new
+    mutation per defect).
+
+    - **12a fixed:** the schedule is now `entry + 48h`, where entry is `bar_ts + 1h` (the
+      trigger bar's close). Boundary tests: open at entry + 47h59m, closed at + 48h. Eight
+      squeeze_bull goldens re-recorded, and the ONLY change in each is its time-stop
+      timestamps moving by exactly +3,600 s (verified field by field against the old files);
+      the three no-fire goldens are byte-identical. **SJ-4250 stays booked at 47.0h** — the
+      n = 20 re-cut and the 0.05 R divergence rule must read it with that known one-hour
+      offset, not as a divergence (recorded in `docs/calibration/squeeze_bull.md`).
+    - **12b fixed:** ordered by `COALESCE(actual_exit_time, exit_time)`. The bug cut both
+      ways, so both are tested: an early stop-out followed by a later win reads "not a loss",
+      and a genuine last loss still halves. BTC is unaffected (it uses the sleeve's no-tilt
+      skip). Recorded in `docs/calibration/chento_triple_v3.md`.
+    - Restarts needed: squeeze_bull and chento_v3_eth (neither holds a position).
 
     **12a — squeeze_bull's live time stop is 47h, not 48h.** `signal.py:246-247` measures the
     time stop from the trigger bar's OPEN (`bar_ts + TIF_HOURS`), but entry happens at that bar's

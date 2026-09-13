@@ -528,3 +528,62 @@ def test_execute_then_sweep_stop_hit(tmp_db):
     assert status == "closed"
     assert exit_price == pytest.approx(97_000.0)      # closed AT the stop
     assert botlib.count_open_trades(variant["id"]) == 0
+
+
+# ─── ETH half-after-loss: "last closed" means last CLOSED (BACKLOG 12b) ────
+
+def _seed_closed(db_path, tid, *, entry, exit_, scheduled_exit, actual_exit,
+                 variant="bot_chento_v3_eth", direction="LONG"):
+    con = sqlite3.connect(str(db_path))
+    try:
+        con.execute(
+            "INSERT INTO trades (id, series, asset, direction, strategy, "
+            "strategy_variant, status, entry_price, exit_price, entry_time, "
+            "exit_time, actual_exit_time, execution_mode) "
+            "VALUES (?, 'paper', 'ETH', ?, 'CHENTO_TRIPLE_V3', ?, 'closed', ?, ?, "
+            "?, ?, ?, 'paper')",
+            (tid, direction, variant, entry, exit_, scheduled_exit, scheduled_exit,
+             actual_exit))
+        con.commit()
+    finally:
+        con.close()
+
+
+def test_half_after_loss_reads_the_most_recent_ACTUAL_close(tmp_db):
+    """`exit_time` holds the SCHEDULED time stop and is never overwritten when
+    a trade closes; the real close is `actual_exit_time`. Until 2026-09-13 this
+    function ordered by `exit_time`, so a trade that stopped out early sorted as
+    if it had closed at its time stop days later. Real example: SJ-4248 stopped
+    out 2026-08-22 05:15 but carries exit_time 2026-08-25.
+
+    A stops out EARLY at a loss (scheduled exit day 4, actual close day 1).
+    B closes LATER at a win (scheduled and actual both day 3). The most recent
+    close is B, a win — so no halving. Ordering by the schedule picks A and
+    wrongly halves the next ETH position.
+    """
+    d = datetime(2026, 8, 20, tzinfo=timezone.utc)
+    _seed_closed(tmp_db, "A-loss-stopped-early", entry=3000.0, exit_=2900.0,
+                 scheduled_exit=(d + timedelta(days=4)).isoformat(),
+                 actual_exit=(d + timedelta(days=1)).isoformat())
+    _seed_closed(tmp_db, "B-win-closed-later", entry=3000.0, exit_=3100.0,
+                 scheduled_exit=(d + timedelta(days=3)).isoformat(),
+                 actual_exit=(d + timedelta(days=3)).isoformat())
+    assert runner._last_closed_was_loss("bot_chento_v3_eth") is False, (
+        "picked the early-stopped loser as 'last closed' — ordering by the "
+        "scheduled exit_time instead of actual_exit_time")
+
+
+def test_half_after_loss_still_sees_a_genuine_last_loss(tmp_db):
+    """The mirror failure: the bug does not only halve too often, it can HIDE a
+    real loss. W wins and closes day 1 but is scheduled for day 5; L loses and
+    is the actual last close on day 4. Ordering by the schedule picks W and
+    reports no loss, so the next position is not halved when it should be.
+    Both this and the test above failed on the old ordering."""
+    d = datetime(2026, 8, 20, tzinfo=timezone.utc)
+    _seed_closed(tmp_db, "W-win-first", entry=3000.0, exit_=3100.0,
+                 scheduled_exit=(d + timedelta(days=5)).isoformat(),
+                 actual_exit=(d + timedelta(days=1)).isoformat())
+    _seed_closed(tmp_db, "L-loss-last", entry=3000.0, exit_=2900.0,
+                 scheduled_exit=(d + timedelta(days=4)).isoformat(),
+                 actual_exit=(d + timedelta(days=4)).isoformat())
+    assert runner._last_closed_was_loss("bot_chento_v3_eth") is True

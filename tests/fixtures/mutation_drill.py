@@ -136,6 +136,22 @@ MUTATIONS = [
      "WHERE p.timestamp >= ? AND p.timestamp <= ?+8640000",
      "tests/test_bot_lookahead.py::"
      "test_short_squeeze_percentile_pool_is_clock_bounded"),
+    # BACKLOG 12a. The live time stop measured from the trigger bar's open —
+    # 47h — while research and the re-cut replay hold 48h from entry.
+    ("squeeze_bull time stop back to 47h (measured from the bar open)",
+     "bots/squeeze_bull/strategy/signal.py",
+     "time_stop_dt = entry_dt + timedelta(hours=TIF_HOURS)",
+     "time_stop_dt = entry_dt + timedelta(hours=TIF_HOURS - 1)",
+     "tests/test_squeeze_bull_bot.py::"
+     "test_time_stop_boundary_one_minute_early_stays_open"),
+    # BACKLOG 12b. Ordering by the SCHEDULED exit ranks an early stop-out as
+    # if it closed days later.
+    ("chento ETH half-after-loss orders by the scheduled exit again",
+     "bots/chento_v3/runner.py",
+     "ORDER BY COALESCE(actual_exit_time, exit_time) DESC LIMIT 1",
+     "ORDER BY exit_time DESC LIMIT 1",
+     "tests/test_chento_bot.py::"
+     "test_half_after_loss_reads_the_most_recent_ACTUAL_close"),
     # BACKLOG 10. Putting the module-scope init_db() back makes importing
     # trade_db write to whatever db.PROD_DB points at — the live file, during
     # pytest collection. The guard imports in a hooked subprocess, so running

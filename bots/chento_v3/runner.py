@@ -71,10 +71,17 @@ def _last_closed_was_loss(variant_id: str) -> bool:
     from strategies.support import db
     con = sqlite3.connect(f"file:{db.PROD_DB}?mode=ro", uri=True)
     try:
+        # Order by when the trade ACTUALLY closed. `exit_time` holds the
+        # scheduled time stop and is never overwritten on close, so ordering
+        # by it (as this did until 2026-09-13) ranked an early stop-out as if
+        # it closed days later — which could halve the next position after a
+        # win, or skip halving after a real loss. BACKLOG 12b. COALESCE keeps
+        # any row closed without an actual time orderable.
         row = con.execute(
             "SELECT entry_price, exit_price, direction FROM trades "
             "WHERE strategy_variant=? AND status='closed' "
-            "ORDER BY exit_time DESC LIMIT 1", (variant_id,)).fetchone()
+            "ORDER BY COALESCE(actual_exit_time, exit_time) DESC LIMIT 1",
+            (variant_id,)).fetchone()
     finally:
         con.close()
     if not row or row[0] is None or row[1] is None:

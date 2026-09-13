@@ -345,3 +345,53 @@ def test_tick_all_runs_both_variants_on_the_same_bar_and_diags_once(env, monkeyp
     assert all(r["size_usdt"] == pytest.approx(CAPITAL * 0.5) for r in rows)
     lines = botcfg.DIAG_PATH.read_text(encoding="utf-8").strip().splitlines()
     assert len(lines) == 1, "the evaluation is recorded once per tick, not per variant"
+
+
+# ─── time stop: 48h from ENTRY (BACKLOG 12a) ──────────────────────────────
+
+def _time_stop_iso(db_path):
+    notes = _trades(db_path)[0]["notes"] or ""
+    blob, _ = json.JSONDecoder().raw_decode(notes.split("\n")[0])
+    return datetime.fromisoformat(blob["_time_stop_iso"])
+
+
+def test_time_stop_is_48h_after_entry_not_after_the_trigger_bar_open(env, monkeypatch):
+    """Until 2026-09-13 the live schedule was `bar_ts + TIF_HOURS`, where
+    bar_ts is the trigger bar's OPEN. Entry happens at that bar's CLOSE, an
+    hour later, so every live hold was 47h — while the research walker
+    (math.replay_bracket) and the re-cut replay (recut_lib) both hold 48h from
+    entry. SJ-4250 held exactly 47.0h.
+
+    That mattered beyond an hour of price: the pre-registered rule "disable a
+    variant whose live record diverges from its own replay by > 0.05 R" was
+    comparing two different exit times on every time-stop trade.
+
+    Here the trigger bar opens 11:00 and entry is its 12:00 close (= NOW).
+    """
+    monkeypatch.setattr(sleeve, "_load_hourly",
+                        lambda now, lookback_days=45: _bars(now))
+    runner.tick(env["variant"])
+    assert len(_trades(env["db"])) == 1, "the synthetic flush must fire"
+    assert _time_stop_iso(env["db"]) == NOW + timedelta(hours=48), (
+        f"time stop {_time_stop_iso(env['db'])} is not 48h after entry "
+        f"{NOW} — measured from the trigger bar's open again?")
+
+
+def test_time_stop_boundary_one_minute_early_stays_open(env, monkeypatch):
+    """The behavioural half. The pre-existing test jumps straight to +49h, so
+    it passed on the 47h bug too. At entry+47h59m the trade must still be open;
+    at entry+48h it must close. Price is flat, so nothing but the time stop can
+    close it."""
+    monkeypatch.setattr(sleeve, "_load_hourly",
+                        lambda now, lookback_days=45: _bars(now))
+    runner.tick(env["variant"])
+    vid = env["variant"]["id"]
+
+    clock.set_simulated_now(NOW + timedelta(hours=47, minutes=59))
+    assert sleeve._sweep_open_positions(vid) == 0
+    assert _trades(env["db"])[0]["status"] == "open", (
+        "closed before 48h from entry — the 47h time-stop bug is back")
+
+    clock.set_simulated_now(NOW + timedelta(hours=48))
+    assert sleeve._sweep_open_positions(vid) == 1
+    assert _trades(env["db"])[0]["status"] == "closed"
