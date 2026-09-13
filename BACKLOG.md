@@ -533,7 +533,7 @@ cap — the multi-asset plan's Phase B as written.
    loaders' information set (`okx now − 1h`), and state in advance what result retires the
    gate. Nothing in the running bot changes until it reports.
 
-   **PRE-REGISTERED AND FROZEN 2026-09-13** (`<freeze8>`) at
+   **PRE-REGISTERED AND FROZEN 2026-09-13** (`19cd10a`) at
    `studies/notebooks/okx_gate_revalidation/README.md`, committed with no analysis script
    present. **Not yet run.** Premise confirmed first, against code and data: C4 read OKX hour
    `floor_hour(t)` as a complete bar, so its z embedded 0–45 minutes of prices from after the
