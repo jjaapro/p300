@@ -45,8 +45,12 @@ further down stay as they are.
 - **Later on 2026-09-13 — steps 6 to 12** (details in the numbered list below):
   step 6 look-ahead guard DONE for all four bots; 7a (r4) and 7b (chento loaders) live
   look-ahead defects fixed and restarted; 8, the OKX gate's re-validation on the causal
-  information set, pre-registered and frozen (`19cd10a`, Addendum 1 `d1d9808`) — **not yet
-  run, and it is the next step**; 9 analysed, needs its own decision; 10 the suite no longer
+  information set, pre-registered and frozen (`19cd10a`, Addendum 1 `d1d9808`), implemented and
+  run (run commit `2406b6a`): **verdict RETIRE, final** — the gate's kept-vs-blocked gap is
+  positive (+0.30 R) but its CI includes 0 while the blocked trades are profitable, and the
+  same-hour control fails the same way. **Open: the gate-off commit for both chento bots, date
+  set by the operator, due by 2026-10-13, after a sizing and concurrency review**; 9 analysed,
+  needs its own decision; 10 the suite no longer
   writes to prod.db on import; 11 a time-stop study added at the user's request (census
   only, no outcome computed, waits for the OKX verdict and the squeeze re-cuts); 12 the two
   live defects that census found fixed (`e048c6d`) and both bots restarted. Suite 1153
@@ -579,7 +583,25 @@ cap — the multi-asset plan's Phase B as written.
    pre-run code review found no blocker; its should-fix items (step-output provenance, a
    run-commit check over all imported code, a phase-B-started marker, a NaN-price refusal,
    and seven tests that passed without testing their clause) were fixed and each re-proven
-   by mutation (19/19). **The study run — outcomes.py phase B — is next.**
+   by mutation (19/19). Run commit `2406b6a`.
+
+   **VERDICT 2026-09-13: RETIRE — final** (`studies/notebooks/okx_gate_revalidation/findings.md`).
+   KEEP failed K1 (stitched-OOS blocked expectancy +59.6 bp, deflated Sharpe uplift −0.016, 2 of
+   4 folds) and K3 (R2 blocked set +0.54 R). RETIRE held: the blocked set is profitable (boot
+   5th percentile +0.18 R) and the kept-minus-blocked 90 % CI is [−0.04, +0.66] R around a
+   point of +0.30 R, same sign on both assets. **The gate's discrimination is positive but not
+   demonstrable at this sample** (minimum detectable effect 0.93 R), and it cuts mark-to-market
+   drawdown (36 % → 23 %) while blocking +111 R of profitable trades — the case decision 4 said
+   this study may retire. The same-hour control ALSO meets RETIRE (Δ +0.40, CI [−0.01, +0.83]),
+   so per the frozen statement the verdict does not bear on the look-ahead premise.
+
+   **Consequence, decided by the pre-registration:** `FILTER_OKX_ALIGNED = False` on both chento
+   bots, as its own commit (flag, calibration row, golden re-baseline, roadmap, restart of both
+   bots). **The operator sets the date, not the direction; overdue if not landed by
+   2026-10-13.** Precondition of the timing: a sizing and concurrency review — the ungated arm
+   fires 2.25× as often (392 vs 174 trades over the window). The memory label is now
+   "RETIRED (causal re-test)"; the −25 % / +34 % figures may no longer be cited, and every
+   downstream study scored on the same-hour `okx_delta_z` needs its own decision.
 
    **OPS follow-up, whatever the verdict:** the OKX refresh is an elapsed-time throttle
    (`data/sources/binance.py:1096-1105`, >= 3300 s), not hour-aligned, so each closed hour
@@ -698,7 +720,9 @@ cap — the multi-asset plan's Phase B as written.
       walk-forward re-selection, or a pre-set "change only if A1 or a grid value beats A0 by X in
       both halves and the walk-forward" rule.
     - **Sequencing:** the chento arm reads the same backward-only Triple pool as the frozen OKX
-      study's OFF arm, so it must wait for the OKX `verdict.json`, or it peeks at that study. The
+      study's OFF arm, so it must wait for the OKX `verdict.json`, or it peeks at that study.
+      (That verdict exists since 2026-09-13 — RETIRE. Its `report_pre.json` already carries the
+      OFF arm's 72 h exit mix, so the time-stop pre-registration must disclose it as seen.) The
       squeeze arms must not change a live TIF before the n = 20/30 paired re-cuts, which assume
       48h / 6h. Item 12's first defect must be fixed first, or the study's "shipped" arm is not
       the live rule.

@@ -1,0 +1,105 @@
+{
+  "D": true,
+  "K1_reference": {
+    "criteria": {
+      "blocked_expectancy_bp": [
+        37.81314063188964,
+        -5.0,
+        false
+      ],
+      "oos_sharpe_uplift_deflated": [
+        0.0010600367129350139,
+        0.2,
+        false
+      ],
+      "sign_stability": [
+        0.5,
+        0.6666666666666666,
+        false
+      ]
+    },
+    "n_folds": 4,
+    "pass": false
+  },
+  "R_a": true,
+  "R_b": true,
+  "anti_discriminating": false,
+  "boot_B": {
+    "block": 30,
+    "ci": [
+      0.10194828609755437,
+      0.44891717366310446,
+      0.8467451050578627
+    ],
+    "n_iter": 10000,
+    "p_gt_0": 0.9879,
+    "point": 0.4686570777753687
+  },
+  "boot_diff": {
+    "block": 30,
+    "ci": [
+      -0.006186314405987513,
+      0.41226108504187686,
+      0.8299706602718331
+    ],
+    "n_iter": 10000,
+    "p_gt_0": 0.9459,
+    "point": 0.40303153112478596
+  },
+  "control_run_failure": false,
+  "delta_K_minus_B": {
+    "BTC": 0.35886196641430446,
+    "ETH": 0.4297902842595915,
+    "pooled": 0.40303153112478596
+  },
+  "delta_pooled_R1": 0.30057564432512085,
+  "meets_full_retire_clause": true,
+  "p3_tif_exit_prices_report_only": [
+    {
+      "id": "SJ-4243",
+      "ledger_exit_price": 77459.91,
+      "rel_diff": -0.0010277574554372782,
+      "walker_exit_close": 77380.3
+    },
+    {
+      "id": "SJ-4244",
+      "ledger_exit_price": 77380.97,
+      "rel_diff": -8.658459566974332e-06,
+      "walker_exit_close": 77380.3
+    },
+    {
+      "id": "SJ-4245",
+      "ledger_exit_price": 78880.0,
+      "rel_diff": -0.0005299188640974,
+      "walker_exit_close": 78838.2
+    },
+    {
+      "id": "SJ-4246",
+      "ledger_exit_price": 78860.54,
+      "rel_diff": -0.0002832848976179533,
+      "walker_exit_close": 78838.2
+    }
+  ],
+  "power": {
+    "BTC": {
+      "n_B": 112,
+      "n_K": 96,
+      "n_off": 208
+    },
+    "ETH": {
+      "n_B": 112,
+      "n_K": 72,
+      "n_off": 184
+    },
+    "pooled": {
+      "n_B": 224,
+      "n_K": 168,
+      "n_off": 392
+    }
+  },
+  "power_ok": true,
+  "red_flag_causal_gap_exceeds_same_hour": false,
+  "required_statement": "does_not_bear_on_lookahead",
+  "sign_agreement_R1_vs_SH_membership": 0.6989795918367347,
+  "verdict_outcome": "RETIRE"
+}
