@@ -380,7 +380,7 @@ cap — the multi-asset plan's Phase B as written.
    and `health.py` recommending a `binance_feed.py` that does not exist — both fixed.
    Links now resolve 0 broken across the five primary docs.
 6. Port the two-clock look-ahead contract to the four running bots that had none.
-   **DONE 2026-09-13, all four bots** (`9010f86`, `6f6eba1`, `<fix7b>`). chento was
+   **DONE 2026-09-13, all four bots** (`9010f86`, `6f6eba1`, `f01894f`). chento was
    blocked on 7b and landed with it: `tests/test_chento_clock_bound.py`.
    New `tests/test_bot_lookahead.py`; drill 16 -> 25 mutations, 25/25 caught.
 
@@ -464,7 +464,10 @@ cap — the multi-asset plan's Phase B as written.
    **live sizing depends on when the process last restarted**. Both promises in the docstring
    at :320-322 are false.
 
-   **7b — DONE 2026-09-13** (`<fix7b>`). User go-ahead 2026-09-13 for the golden
+   **7b — DONE 2026-09-13** (`f01894f`); both chento bots restarted onto it the same
+   day (0 open chento trades; each stopped by exact runner-path match, fresh heartbeats
+   from new pids, one unit per fleet member, 8/8 ok, `health.py` 0). User go-ahead
+   2026-09-13 for the golden
    re-baseline, after it was held and brought back as its own decision. Shipped as designed
    below, with one correction found in execution: the drill entry guarding the traded
    06:00 signal first targeted the 15m bound, and that MISSED — the future that leaked into
