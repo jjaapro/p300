@@ -229,6 +229,12 @@ into a database (`backtest_runner.py` writes replay rows straight into `prod.db`
 standing read-only rule forbids, and `studies/simulation/build_sim_trader_db.py` currently
 hard-errors on five 2026-09-06 Track D tables that were never added to its `TABLE_PLAN`.
 
+*(2026-09-13: all three of those files were deleted with the legacy orchestrator path. The
+argument above is left as written because its conclusion is unchanged and now unconditional
+— there is no replay harness to weigh against, so driving the sleeve's own decision code
+under a frozen clock is simply the way. `studies/notebooks/pdo_adjacents/parity_check.py`
+is the worked example.)*
+
 The pre-registered path is therefore: **import and drive the sleeve's own decision code**,
 with the P&L computed by the sleeve's own accounting constants, and *nothing re-implemented*:
 

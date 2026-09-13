@@ -1,5 +1,13 @@
 # chento-findings validation plan
 
+> **Tooling note (added 2026-09-13):** this plan names `backtest_runner.py` as its replay
+> harness. That file was deleted when the legacy orchestrator path was retired; there is no
+> drop-in replacement, and reviving any of the work below means first deciding how to
+> replay. The sleeve paths also moved — `strategies/sleeves/chento_limit_bid/` is now
+> `studies/material/archive/chento_limit_bid/` (archived, superseded by `bots/chento_v3/`)
+> and `strategies/sleeves/ai_quant/cvd.py` is `studies/material/archive/ai_quant/cvd.py`.
+> The plan's reasoning is untouched.
+
 > **Structural caveat (added 2026-05-23):** Live observation of chento doubling a position from ~$1M to ~$2M while underwater so a small bounce scratches the trade at 25% TP. This pattern is **not in our 890-record scan** (zero lifecycles with margin_growth ≥ 1.5x and worst_pnl ≤ -10%). If frequent, each "scratched loss" appears in our data as a small *win*, inflating per-fill WR; the Feb 2025 RUNE blowup (-$28.5k, 100% of extracted losses on one day) is then better read as "the day the bounce didn't come on a doubled position" than as random tail risk. **Bot implication:** we cannot codify the unbounded version. A4 ladder-add must stay bounded (2 rungs at -0.75R / -1.0R, hard combined-stop at -1.5R). Realistic codifiable expectancy ceiling may be lower than the +0.30R the v2 sleeve currently produces. See [project_chento_size_doubling_observation.md](../../../../../Users/TJ5/.claude/projects/c--Source-Repos-p300/memory/project_chento_size_doubling_observation.md). **Do not assume the edge is fake** — he has built $100k → $1M+ multiple times; size-doubling may be one component of a larger edge stack we haven't fully captured.
 
 ## Context

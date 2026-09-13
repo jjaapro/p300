@@ -150,11 +150,15 @@ with the reason, before the script is run.
 
 ### Cell 5 — `EMA_ETH`: weekly EMA(5/21) cross on ETH, LONG/SHORT
 
-* **Algorithm**: exactly the shipped `strategies/sleeves/ema/math.py` algorithm, applied
-  to **ETH** instead of BTC. Imported, not reimplemented:
-  `strategies.sleeves.ema.math.aggregate_weekly` for the 168 h fixed-size buckets and
+* **Algorithm**: exactly the shipped `strategies/support/ema_position.py` algorithm,
+  applied to **ETH** instead of BTC. Imported, not reimplemented:
+  `strategies.support.ema_position.aggregate_weekly` for the 168 h fixed-size buckets and
   `strategies.support.regime_jplus.ema_calc` for the EMAs. (Nothing under
   `strategies/**` is modified — the module is imported read-only.)
+
+  This module was `strategies/sleeves/ema/math.py` when the study ran. It moved to the
+  support layer on 2026-09-13 — the EMA sleeve was archived, but this arithmetic sizes
+  the live r4 bot through `jplus_inputs`, so it stayed. The algorithm is unchanged.
 * **Bars**: ETH hourly aggregated from `eth_1m` (hour open = first minute's open, hour
   close = last minute's close, high/low from the minutes), then bucketed 168 h.
 * **Signal**: EMA(5) vs EMA(21) on weekly **closes**. Cross up ⇒ LONG, cross down ⇒

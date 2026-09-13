@@ -335,9 +335,12 @@ KNOWN_SLEEVES = (
     "ADX", "CARRY", "CHENTO_TRIPLE_V3", "SHORT_SQUEEZE", "SQUEEZE_BULL",
     "JPLUS_R4_BTC", "JPLUS_R4_ETH",
     "JPLUS_R4_BTC_V2", "JPLUS_R4_ETH_V2",
-    # Dormant since 2026-06-11: dispatched only by the legacy orchestrator
-    # path, which nothing runs. Kept until the archival step of the
-    # bot = directory = strategy refactor (BACKLOG.md) retires them.
+    # Archived 2026-09-13 under studies/material/archive/ — dormant since
+    # 2026-06-11 before that. These names STAY, permanently. prod.db holds 12
+    # closed trades under them (AI_QUANT 4, CPR 4, PDO_RETOUCH 2, THU_BEAR 2)
+    # and zero open ones; drop a name and the weekly report silently stops
+    # accounting for those trades. They are data, not dispatch — nothing here
+    # imports the archive. See studies/material/archive/README.md.
     "THU_BEAR", "PDO_RETOUCH", "CPR", "FOMC",
     "JPLUS_EMA_BTC", "JPLUS_ETH_DAILY",
     "AI_QUANT",  # discretionary LLM trader; decision-side stats below

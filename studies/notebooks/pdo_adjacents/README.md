@@ -2,6 +2,16 @@
 
 **Written and frozen: 2026-09-08, before any outcome number was computed.**
 
+> **Addendum 2026-09-13 — paths only, nothing else.** The body below is frozen and
+> unaltered. The PDO sleeve moved from
+> `strategies/sleeves/timing_anomalies/internal/pdo/` to
+> `studies/material/archive/pdo/` when the eight dormant sleeves were archived; read
+> every path below with that substitution. The code itself is byte-identical, and
+> `parity_check.py` still exits 0 against it (4,224 timestamps, re-run on the archive
+> commit) — which is why the archive was kept importable rather than dropped to a git
+> tag. See [studies/material/archive/README.md](../../material/archive/README.md).
+> The open question (b) — PDO's re-validation — is unaffected and still open.
+
 Two independent questions about the neighbourhood of the live PDO sleeve
 (`strategies/sleeves/timing_anomalies/internal/pdo/`).
 

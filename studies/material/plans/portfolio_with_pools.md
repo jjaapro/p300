@@ -1,3 +1,5 @@
+> **Superseded in its architecture, kept as the pool vision (2026-09-13).** Everything below that describes the orchestrator, `STRATEGY_DISPATCH` / two-phase dispatch, `strategies/sleeves/`, or the TIMING_ANOMALIES meta-sleeve is **history, not current code**: those were all deleted on 2026-09-13 by the "bot = directory = strategy" refactor, so links into `strategies/sleeves/...` below no longer resolve. The unit is now a bot directory, and the pools re-enter as *groups of bots that share a margin model* (plan decision D9). The pool allocation vision, the risk-model table and the open decisions are still live design input. Not rewritten — see the dated status section at the top of `BACKLOG.md` for what actually runs.
+
 > **Implementation plan:** [pool_restructure_implementation_plan.md](pool_restructure_implementation_plan.md) *(2026-06-11)* — created after a code-verification pass of this fact sheet; that pass's corrections are applied inline below (marked where substantive).
 
 ## Full pool overview

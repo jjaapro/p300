@@ -1,356 +1,238 @@
-# p300 — standalone P-300 paper-trading bot
+# p300 — a fleet of paper-trading bots
 
-Self-contained implementation of the **P-300 Aggressive 2.0 1.0** strategy.
-Runs as a paper variant — writes phantom trades to a local sqlite DB and
-never places orders on any exchange. The repo has no dependency on any
-upstream `trader` research repo: market data is pulled from Binance public
-REST, scheduled events are computed in-process, and long-short ratio
-history comes from Coinalyze (free tier).
+Seven bot processes, one market-data feed, one dashboard. Every bot writes
+phantom trades to a local SQLite ledger and **never places an order on any
+exchange**. The repo is self-contained: market data is pulled from public REST
+APIs (Binance, OKX, Bybit, Coinbase, Deribit, Yahoo), the event calendar is
+computed in-process, and the long-short-ratio history was seeded once from
+Coinalyze.
 
-> **Status 2026-09-12: paper fleet running, evidence still thin.** What actually runs is
-> `start_fleet.ps1`: `feed.py` plus seven bot units (chento_v3, chento_v3_eth, short_squeeze,
-> adx, carry, squeeze_bull, r4) and the dashboard — see
-> [OPERATIONS.md §10](OPERATIONS.md). The orchestrator loop described below (`bot.py`) has
-> been dormant since 2026-06-11; the table is the sleeve inventory, not the running fleet.
-> Current status and roadmap: the top section of [BACKLOG.md](BACKLOG.md). Validation:
-> `studies/lib/validation/` and [GATE_VALIDATION.md](GATE_VALIDATION.md) §8; the paper
-> ledgers hold 36 trades, too few for any verdict.
+> **Status 2026-09-13: the fleet runs, the evidence is still thin.** Nine paper
+> variants across seven bot units; the ledgers hold far too few closed trades
+> for a verdict on any of them. Current status and roadmap: the dated section at
+> the top of [BACKLOG.md](BACKLOG.md). Validation protocol:
+> [GATE_VALIDATION.md](GATE_VALIDATION.md); the honest-Sharpe audit of our own
+> record is
+> [studies/notebooks/validation_audit_2026_09/findings.md](studies/notebooks/validation_audit_2026_09/findings.md).
 
-## Sleeve inventory (orchestrator path, dormant since 2026-06-11)
+**A bot is a directory.** `bots/<name>/` holds `runner.py`, `config.py` and
+`strategy/` — and that is the only place that bot's logic lives. There is no
+orchestrator, no dispatch registry and no shared tick loop: each bot is its own
+process, reads `prod.db`, and owns its variant rows. This replaced the
+orchestrator path on 2026-09-13 (BACKLOG "bot = directory = strategy"); `bot.py`,
+`strategies/orchestrator.py`, `p300_spec.py`, `backtest_runner.py` and the
+simulation harness were deleted, and eight dormant sleeves moved to
+[`studies/material/archive/`](studies/material/archive/README.md) — nothing that
+runs may import them, enforced by
+[tests/test_orchestrator_interface_gone.py](tests/test_orchestrator_interface_gone.py).
 
-When the orchestrator ran, 8 top-level sleeves were dispatched per-minute by
-[`strategies/orchestrator.py`](strategies/orchestrator.py); one of them
-(`TIMING_ANOMALIES`) is a meta-sleeve that fans out internally to 8
-calendar/clock substrategies, for **15 distinct signal paths** total.
-All sleeves write to the same `trades` table; realized PnL is the
-trade-ledger sum.
+## The fleet
 
-| Sleeve | Asset | Schedule | Direction |
+`start_fleet.ps1` launches these, feed first and dashboard last:
+
+| Unit | Process | Variant id(s) | What it trades |
 |---|---|---|---|
-| **S-003 ADX** | BTC | signal-driven, continuous | LONG / SHORT |
-| **S-078 CARRY** | BTC | continuous while funding regime is positive | delta-neutral (spot long + perp short) |
-| **S-096 V4 Thu Bear** | BTC, ETH | Thu 00:05 UTC (event-filtered) | SHORT |
-| **S-102 PDO-L-RF** | BTC, ETH | retouch fire on prior-day-open touch | LONG |
-| **S-101 CPR** | BTC, ETH | extreme funding + L/S contrarian | LONG |
-| **S-103 FOMC** | BTC | FOMC day T-10h → T+0.5h (composite filtered) | LONG |
-| **JPLUS_R4_BTC** | BTC | Mon wk1-2 06:00 → 18:00 UTC | LONG |
-| **JPLUS_R4_ETH** | ETH | Tue 20:00 → Wed 20:00 UTC, wk1-2 | LONG |
-| **JPLUS_R4_BTC_V2** | BTC | Wed+Fri wk1-2 04:00 → 14:00 UTC | LONG |
-| **JPLUS_R4_ETH_V2** | ETH | Wed+Fri wk1-2 04:00 → 14:00 UTC | LONG |
-| **JPLUS_EMA_BTC** | BTC | continuous; weekly EMA(5)/EMA(21) crossover | LONG / SHORT |
-| **JPLUS_ETH_DAILY** | ETH | continuous in bull regimes only | LONG |
-| **AI_QUANT** | BTC | 1 LLM decision per UTC day (default-OFF) | LONG / SHORT / FLAT |
-| **SHORT_SQUEEZE** | BTC | 15m signal — sweep + perp/spot CVD divergence in London/NY session | LONG |
-| **CHENTO_TRIPLE_V3** | BTC | 15m signal — Triple composite (B1∩B5∩B7) + 4 filter gates + A4 ladder | LONG / SHORT |
+| feed | [feed.py](feed.py) | — | the only process that fetches; every bot reads `prod.db` |
+| chento_v3 | [bots/chento_v3/runner.py](bots/chento_v3/runner.py) | `bot_chento_v3_v1` | Chento Triple v3 on BTC perp 15m — B1∩B5∩B7 composite, LONG/SHORT, TIF 72h |
+| chento_v3_eth | [bots/chento_v3_eth/runner.py](bots/chento_v3_eth/runner.py) | `bot_chento_v3_eth` | same strategy, ETH leg (thin wrapper over the chento_v3 runner) |
+| short_squeeze | [bots/short_squeeze/runner.py](bots/short_squeeze/runner.py) | `bot_short_squeeze_v1`, `bot_short_squeeze_nostop_v1` | S-105 sweep + perp/spot CVD divergence, BTC LONG |
+| adx | [bots/adx/runner.py](bots/adx/runner.py) | `bot_adx_v1` | S-003 ADX trend flip on BTC, LONG/SHORT |
+| carry | [bots/carry/runner.py](bots/carry/runner.py) | `bot_carry_v1` | S-078 delta-neutral funding harvest (spot long + perp short) |
+| squeeze_bull | [bots/squeeze_bull/runner.py](bots/squeeze_bull/runner.py) | `bot_squeeze_bull_v1`, `bot_squeeze_bull_nostop_v1` | S-107 OI-flush bounce, BTC LONG |
+| r4 | [bots/r4/runner.py](bots/r4/runner.py) | `bot_r4_v1` | R4 calendar windows; **ETH windows only** since 2026-09-12 (the BTC pair is wired but `ENABLED=False` in [bots/r4/config.py](bots/r4/config.py)) |
+| dashboard | [dashboard/server.py](dashboard/server.py) | — | read-only UI on http://127.0.0.1:8300 |
+| monitor | [monitor.py](monitor.py) | — | hourly freshness / heartbeat / silence checks — **optional unit, started only with `-Monitor`** |
 
-The 8 substrategies S-096 V4 Thu Bear, S-102 PDO-L-RF, S-101 CPR,
-S-103 FOMC, and the four JPLUS_R4_* variants dispatch through the
-single `TIMING_ANOMALIES` meta-sleeve at the orchestrator level (their
-code lives under
-[`strategies/sleeves/timing_anomalies/internal/`](strategies/sleeves/timing_anomalies/internal/)).
-The other 7 (S-003, S-078, JPLUS_EMA_BTC, JPLUS_ETH_DAILY, AI_QUANT,
-SHORT_SQUEEZE, CHENTO_TRIPLE_V3) are top-level dispatchers.
+Nine variants, seven bot units: the two squeeze bots each run a **no-stop paper
+twin on the same signals in the same process** (added 2026-09-12), so their
+ledgers differ only by the exit. Which variants a bot registers is its
+`VARIANTS` / `VARIANT_ID` in `bots/<name>/config.py`.
 
-The orchestrator owns cross-sleeve coordination — see
-[`strategies/support/`](strategies/support/): `allocation.py` (regime →
-weight per sleeve), `gating.py` (R4 vol-gate, THU_BEAR V4 event filter),
-`portfolio_vol.py` (vol-target scalar), `margin_headroom.py` (gross-
-notional cap), `conflict_resolver.py` (skip when an opposing-direction
-perp is already open), `signal_aggregator.py` (read-side concordant-
-stack detection). All are injected into each sleeve's dispatch via
-`sleeve_cfg["_effective_*"]` fields.
+Per-bot strategy detail — signals, sizing, leverage, edge thesis, caveats — is in
+[PORTFOLIO.md](PORTFOLIO.md). Every dial change is logged in
+[docs/calibration/](docs/calibration/) (one file per strategy — the two chento
+bots share `chento_triple_v3.md`); the plain-language mechanism cards the
+dashboard renders are in [dashboard/cards/](dashboard/cards/), one per bot.
+`dashboard/botinfo.py` is what maps a bot to both.
 
-See [PORTFOLIO.md](PORTFOLIO.md) for per-sleeve detail (signals, entries,
-exits, leverage stack, regime weights, edge thesis, caveats).
+## Start it
+
+```powershell
+.\start_fleet.ps1                  # everything that isn't already up
+.\start_fleet.ps1 -Status          # what's running right now, then exit
+.\start_fleet.ps1 -Units adx,carry # just two units
+.\start_fleet.ps1 -Monitor         # also open the hourly monitor console
+.\start_fleet.ps1 -DryRun          # print the commands and exit
+```
+
+One console per process, kept open after the process exits so a crash traceback
+is never lost. A unit that is already running is **skipped, never started twice**
+— the 2026-08-15..24 incident ran every bot doubled for nine days and chento
+double-sized its signals. Run it as the same Windows user that owns the fleet,
+or the process scan cannot read the fleet's command lines. If PowerShell refuses
+to run the script: `powershell -ExecutionPolicy Bypass -File .\start_fleet.ps1`.
+
+Other flags: `-SkipGapFix` (fast feed restart, no startup heal — do **not** use
+after a long outage, the heal pass is what refills LSR/OI before the ~30d
+upstream retention burns them) and `-ForceFeed` (only when the feed died less
+than two minutes ago and its own stale-heartbeat guard refuses to start).
+
+Each runner also stands alone:
+
+```powershell
+venv\Scripts\python.exe bots\adx\runner.py            # 60s ticks
+venv\Scripts\python.exe bots\adx\runner.py --once     # single tick and exit
+venv\Scripts\python.exe bots\adx\runner.py --verbose  # log idle tick statuses too
+```
+
+`--once` also unlocks the dry-run pair `--db <copy.db>` (run against a **copy**
+of prod.db) and `--sim-now <iso>` (simulate a UTC timestamp). Every runner takes
+the same five flags — `--once`, `--interval`, `--verbose`, `--db`, `--sim-now`.
+
+## Check it
+
+```powershell
+venv\Scripts\python.exe health.py    # exit 0 = healthy; the checks and exit codes are in its docstring
+venv\Scripts\python.exe monitor.py   # freshness + heartbeats + silence; exit 0 = green, 1 = alerts
+venv\Scripts\python.exe monitor.py --deep   # plus an interior-gap scan (heavier; daily, not hourly)
+venv\Scripts\python.exe feed.py --once      # one refresh cycle, to clear a stale table
+```
+
+`health.py` covers the databases, table freshness and continuity, regime/LSR
+warmup depth, the single-open invariant, that every variant the bots are
+configured to trade is registered and enabled, and that every entry point the
+runners call still exists. `monitor.py` is the alerting counterpart (Telegram)
+— but it is **not running and has no scheduled task on this machine**, so run
+it by hand or with `-Monitor`. [backup.py](backup.py) is unscheduled too: the
+newest full `prod.db` snapshot under `data/backups/` is from 2026-07-22, and
+the LSR / open-interest history past the ~30d upstream retention is not
+refetchable if the file is lost.
+
+Reading the ledger:
+
+```powershell
+venv\Scripts\python.exe -m strategies.support.strategy_health --variant bot_chento_v3_v1
+
+sqlite3 data/databases/prod.db "SELECT id, asset, strategy, direction, entry_price, size_usdt, actual_entry_time FROM trades WHERE strategy_variant LIKE 'bot_%' AND status='open' ORDER BY actual_entry_time DESC"
+
+sqlite3 data/databases/prod.db "SELECT id, strategy_variant, asset, direction, pnl_pct, actual_exit_time FROM trades WHERE strategy_variant LIKE 'bot_%' AND status='closed' ORDER BY actual_exit_time DESC LIMIT 20"
+```
+
+Day-to-day runbook — troubleshooting, invariants, adding a bot, the dashboard's
+panels: [OPERATIONS.md](OPERATIONS.md).
 
 ## Bootstrap (one time)
 
 ```bash
-# 1. Install dependencies (numpy only)
 pip install -r requirements.txt
 
-# 2. Get a free Coinalyze API key (https://coinalyze.net/) and export it.
-#    Needed once for the initial LSR history fetch (~5 years).
+# Coinalyze free key (https://coinalyze.net/) — needed once, for the initial
+# LSR history fetch. feed.py keeps the table fresh afterwards. PowerShell:
+#   $env:COINALYZE_API_KEY = "..."      (or put it in the repo-root .env)
 export COINALYZE_API_KEY=...
 
-# 3. Build data/databases/prod.db from scratch — calendar, LS ratio, klines, funding.
-#    Slow on first run (~30-60 min for 5y of 1m klines). Idempotent.
+# Build data/databases/prod.db from scratch — calendar, LSR, klines, funding.
+# Slow on first run (~30-60 min for 5y of 1m klines). Idempotent.
 python bootstrap.py
-
-# 4. Start the bot — auto-registers the P-300 variant on first run.
-python bot.py
+#   --skip-klines      CSVs + funding only (~1 min)
+#   --skip-coinalyze   no key yet
+#   --since 2024-01-01 shorter history
 ```
 
-For a faster bootstrap that defers the slow kline backfill:
+Then `.\start_fleet.ps1` — each bot registers its own variant rows on first
+start. To fill the deferred kline history later, in the background:
 
 ```bash
-python bootstrap.py --skip-klines     # CSVs + funding only (~1 min)
-# Run later, in the background, when convenient:
 python -m data.sources.binance --backfill-klines --since 2020-01-01
 ```
 
-For a no-Coinalyze bootstrap (CPR will be dormant for ~6 months while
-the feed accumulates the rolling 30d LS window):
+`feed.py` self-heals at startup: it scans every cadence-based table for missing
+rows and fetches each gap window. The first run on a sparse DB can take ~20
+minutes; every subsequent run is sub-second.
 
-```bash
-python bootstrap.py --skip-coinalyze
-```
+**It heals gaps, not depth.** `--skip-klines` leaves a DB holding only the
+rolling window the feed has since filled, and the startup gap-fix will fill
+*interior* holes but will never extend history below `MIN(open_time)`. Only an
+explicit `--backfill-klines --since <date>` does that. A study that quietly ran
+on two years of data when it meant five is the failure this note exists to
+prevent.
 
-## Run
-
-```bash
-# Standalone loop — orchestrator + binance data feed in one process,
-# 60s ticks, console noise filtered. Idle/heartbeat lines (no_signal,
-# tick ok, [feed] etc.) are hidden by default; add --verbose to show
-# every line.
-python bot.py
-
-# Smoke test (one tick and exit; skips the feed thread and gap-fix)
-python bot.py --once
-
-# Fast restart — skip the startup gap-fix pass
-python bot.py --skip-gap-fix
-```
-
-If you'd rather drive the feed as a separate process:
-
-```bash
-python feed.py                # gap-fix pass + loop every 60s
-python feed.py --once         # gap-fix pass + one tick + exit
-python feed.py --skip-gap-fix # skip the gap pass (faster restart)
-```
-
-`feed.py` self-heals at startup: it scans every cadence-based
-table (klines + funding) for missing rows, then fetches each gap window
-from Binance. The first run on a sparse DB can take ~20 minutes; every
-subsequent run is sub-second.
-
-## Run in sim mode
-
-Same dispatch code, deterministic simulated clock, isolated DBs. No
-live API calls; no contamination of `data/databases/prod.db`. A sleeve that fires
-in sim is exactly the same code path that fires in live.
-
-```bash
-# 1. Build a date-range slice of the consolidated DB (read-only on
-#    the source). Self-contained; sim never reaches back to network.
-python studies/simulation/build_sim_trader_db.py \
-    --start 2024-01-01 --end 2024-12-31 \
-    --output data/sim_2024.db
-
-# 2. Run sim mode. Inclusive date range; --sim-tick-seconds advances
-#    the simulated clock per tick (no wall-clock sleep).
-python studies/simulation/sim.py \
-    --start 2024-01-01 --end 2024-12-31 \
-    --trader-db data/sim_2024.db \
-    --dash-db /tmp/sim_ledger.db \
-    --sim-tick-seconds 60
-
-# 3. Inspect results: open studies/notebooks/full_portfolio_report.ipynb
-#    in Jupyter and point it at the sim ledger.
-```
-
-### Choosing `--sim-tick-seconds`
-
-Each tick advances the simulated clock by `--sim-tick-seconds`. Lower
-values give finer granularity; higher values run faster.
-
-| `--sim-tick-seconds` | Behavior | When to use |
-|---|---|---|
-| **60** (default) | Same cadence live runs at. Tactical sleeves' "fire when in window" check sees every minute. | Operator-style sims where you want the result to look exactly like a live run over that window. |
-| **3600** | One tick per hour. Calendar-driven sleeves (R4_BTC, R4_ETH, V2 sleeves, FOMC) still fire correctly because their entry hour is on a clean hour boundary. | Long backtests where you trust the dispatch logic and want the run to finish in minutes instead of hours. |
-| **300** | 5 minutes. | A reasonable compromise — captures intra-hour tactical fires (e.g. CARRY's per-tick funding accrual) without paying the full 60s tick cost. |
-
-A signal that fires at HH:00 hits at the same simulated tick under
-all three settings — calendar sleeves are tick-granularity-invariant.
-Tactical sleeves whose firing decisions depend on intra-hour state
-(e.g. CARRY checking funding every tick) will see fewer or more
-opportunities. Pick the granularity that matches what you're trying
-to measure.
-
-The sim/backtest_runner parity test
-(`tests/test_sim_mode.py:test_sim_and_backtest_runner_produce_identical_jplus_trades`)
-runs both at 1h ticks and verifies J+ sub-sleeves produce byte-identical
-trades — proving calendar-anchored sleeves are granularity-invariant.
-
-### Resuming an interrupted sim run
-
-Sim mode is **idempotent per UTC day** because every sleeve checks
-the trades table for an existing row before opening a new one (each
-sleeve's own `_has_trade_for_day` / `_trade_today` helper). So if a
-long sim run is interrupted — kill signal, OOM, you closed the
-laptop — you can resume by re-launching the same command with a
-`--start` at or before the last completed date. Already-fired
-trades are no-ops on the re-tick.
-
-```bash
-# Original run, killed somewhere in mid-2024:
-python studies/simulation/sim.py --start 2024-01-01 --end 2024-12-31 \
-    --trader-db trader_sim.db --dash-db sim_dash.db
-
-# Find the last completed UTC date in the sim ledger:
-sqlite3 sim_dash.db \
-    "SELECT MAX(date(actual_entry_time)) FROM trades \
-     WHERE strategy_variant='p300_aggressive_v2_v1_0'"
-# ⇒ 2024-07-13
-
-# Resume — re-running 07-13 is safe (idempotent), continues from there:
-python studies/simulation/sim.py --start 2024-07-13 --end 2024-12-31 \
-    --trader-db trader_sim.db --dash-db sim_dash.db
-```
-
-The cost of starting a few days before the killpoint is just a few
-hundred no-op tick-and-skip iterations — much cheaper than restarting
-the whole sim from January.
-
-### Which sim tool — `studies/simulation/sim.py` or `backtest_runner.py`?
-
-Both drive the live bot under a fake clock via the same
-[strategies/support/sim_loop.py](strategies/support/sim_loop.py)
-primitive — but they differ in **where output lands** and **which
-features they layer on top**:
-
-|  | `studies/simulation/sim.py` | `backtest_runner.py` |
-|---|---|---|
-| Output ledger | separate `--dash-db` file | live `data/databases/prod.db` (variant id suffixed `__replay[_<tag>]`) |
-| Live data isolation | **complete** — separate prod.db | shares `data/databases/prod.db` (read) + `data/databases/prod.db` (writes to its own variant) |
-| Liquidation simulator | YES (via `orchestrator.tick` — same `force_close_liquidations` path) | YES (`force_close_liquidations`) |
-| Mark-to-end-of-window for trades open at end | NO | YES (`mark_remaining_at_end`) |
-| Per-sleeve PnL summary | uses `strategy_health.build_report` | bespoke report block |
-| `--reset` purges prior runs | NO (use a fresh `--dash-db`) | YES |
-| `--tag` for parallel A/B runs | NO | YES |
-| `--with-fomc` injects FOMC sleeve mid-run | NO | **NO — the flag now aborts** |
-| `--skip <strategy>` excludes one sleeve | NO | YES |
-
-**Pick `studies/simulation/sim.py`** when you want a clean *operator-style*
-sim (does the bot work end-to-end on this date range?) with no risk
-of touching the live ledger.
-
-**Pick `backtest_runner.py`** when you want *research workflow* —
-parameter sweeps, A/B comparisons, liquidation-aware long-window
-backtests, or anything where keeping multiple result sets in one DB
-helps.
-
-There is no "third option": the two tools share their clock primitive, and
-both resolve sleeves through `orchestrator.STRATEGY_DISPATCH`.
-
-Two caveats, both found on 2026-09-12 and both now enforced rather than
-documented. `--with-fomc` appended `{"strategy_id": "FOMC"}` to the
-composition, but FOMC is not a top-level dispatch key — it dispatches only as
-a TIMING_ANOMALIES substrategy — so every such run silently produced a run
-WITHOUT FOMC and reported success. It aborts now. And `backtest_runner` skipped
-an unresolved sleeve with no log, so a missing dispatch entry meant a
-zero-trade replay that still exited 0; that raises now. The narrower claim
-that survives is `tests/test_sim_mode.py`'s: the J+ sub-sleeve trades are
-byte-identical across the two paths.
-
-## Inspect state
-
-```bash
-# Variant metadata
-python -c "from strategies.support import variant_registry as r; print(r.get_variant('p300_aggressive_v2_v1_0')['status'])"
-
-# Open paper positions
-sqlite3 data/databases/prod.db "SELECT id, asset, strategy, direction, entry_price, size_usdt FROM trades WHERE strategy_variant='p300_aggressive_v2_v1_0' AND status='open'"
-
-# Closed trades (newest first)
-sqlite3 data/databases/prod.db "SELECT id, asset, strategy, direction, pnl_pct, actual_exit_time FROM trades WHERE strategy_variant='p300_aggressive_v2_v1_0' AND status='closed' ORDER BY actual_exit_time DESC LIMIT 20"
-
-# Cross-sleeve coordination snapshot — gross/cap/headroom, conflicts,
-# concordant stacks. Same data as the bot's startup banner.
-python -c "from strategies.support.strategy_health import build_report, format_report; print(format_report(build_report('p300_aggressive_v2_v1_0')))"
-```
-
-## Architecture
+## Where the code lives
 
 ```
 p300/
-├── bot.py                         # paper-trading entry point (60s tick, noise-filtered)
-├── bootstrap.py                   # one-shot data/databases/prod.db builder
-├── health.py                      # 8 invariant checks for live operation
-├── fetch_events.py                # rebuilds scheduled_events (FOMC/CPI/NFP/OPEX)
-├── fetch_coinalyze.py             # fetches ca_long_short_ratio history (Coinalyze)
-├── backtest_runner.py             # clock-driven replay over a date window
+├── start_fleet.ps1                 # starts feed + 7 bots + dashboard, one console each
+├── feed.py                         # the only fetcher; 60s cycle + startup gap heal
+├── health.py                       # 9 invariant checks for live operation
+├── monitor.py                      # freshness / heartbeat / silence alerts (unscheduled)
+├── backup.py                       # VACUUM INTO snapshot of prod.db (unscheduled)
+├── bootstrap.py                    # one-shot prod.db builder
+├── botlib.py                       # the shared bot runtime: freshness contracts,
+│                                   #   heartbeats, variant registration, sizing, dry-run flags
+├── fetch_events.py                 # rebuilds scheduled_events (FOMC/CPI/NFP/OPEX)
+├── fetch_coinalyze.py              # LSR history beyond Binance's 30d window
+├── bots/<name>/                    # ONE BOT = ONE DIRECTORY
+│   ├── runner.py                   #   the process: tick loop, heartbeat, ledger writes
+│   ├── config.py                   #   what the BOT decides — variants, sizing, staleness policy
+│   └── strategy/                   #   what the STRATEGY decides — signal.py, config.py, math.py
+├── strategies/
+│   ├── trades.py                   # the ledger-write layer (open / close / adjust)
+│   └── support/                    # shared live-path modules: clock, price_feed, funding,
+│                                   #   jplus_inputs, regime_jplus, voltarget, gate, ema_position,
+│                                   #   trade_db, variant_registry, strategy_health,
+│                                   #   ledger_coherence, db (path constants)
+│                                   # also present, with NO live importer:
+│                                   #   margin_sim, risk_caps, regime_tactical — see PORTFOLIO §6
+├── dashboard/                      # read-only web UI (server, procscan, market, botinfo, cards)
 ├── data/
-│   ├── prod.db                    # consolidated DB — market data + bot state
-│   │                              #   (P2.6 unified trader.db + dashboard.db)
-│   ├── known_unfillable.json      # gaps known to be unfillable
-│   ├── ai_quant_archive/          # per-decision markdown mirror
-│   └── ai_quant_preview/          # context-bundle preview snapshots
-├── data/sources/                  # external-data fetchers
-│   ├── binance.py                 # klines + funding refresh + gap-fix
-│   ├── fed_funds.py               # NY Fed XML + rate-cycle phase classifier
-│   ├── sentiment.py               # Fear & Greed index (alternative.me)
-│   ├── polymarket.py              # Polymarket-implied rate expectations
-│   ├── coindesk.py                # CoinDesk funding / OI / vol / liquidations
-│   └── news.py                    # news headlines (AI_QUANT context)
-├── strategies/                    # ALL strategy code (live + math + state)
-│   ├── orchestrator.py            # per-tick scheduler; injects _effective_*
-│   │                              #   (P2.4 — weight / leverage / gate / vol scalar)
-│   ├── trades.py                  # paper-trade open/close persistence
-│   ├── sleeves/                   # one folder per top-level sleeve
-│   │   ├── adx/                   # S-003 ADX
-│   │   ├── carry/                 # S-078 delta-neutral carry
-│   │   ├── ai_quant/              # discretionary LLM trader (default-off)
-│   │   ├── ema/                   # JPLUS_EMA_BTC
-│   │   ├── eth_daily/             # JPLUS_ETH_DAILY
-│   │   ├── short_squeeze/         # S-105 SHORT_SQUEEZE
-│   │   ├── chento_triple_v3/      # CHENTO_TRIPLE_V3 swing on BTC perp 15m
-│   │   └── timing_anomalies/      # TIMING_ANOMALIES meta-sleeve
-│   │       └── internal/          # 5 substrategies (fomc, thu_bear, pdo, cpr, r4 →
-│   │                              #   FOMC, THU_BEAR, PDO_L_RF, CPR, R4_BTC/ETH/V2)
-│   └── support/                   # shared math + state services
-│       ├── db.py                  # path constant (PROD_DB; TRADER_DB/DASH_DB alias it)
-│       ├── allocation.py          # per-(sleeve, regime) WEIGHT_TABLE (P2.4a)
-│       ├── gating.py              # GateDecision + GATE_REGISTRY (P2.4b)
-│       ├── portfolio_vol.py       # current_vol_scalar (P2.4c)
-│       ├── clock.py               # injectable clock for deterministic replay
-│       ├── sim_loop.py            # bot.py-shared sim primitive
-│       ├── price_feed.py          # last-close reader with staleness guard
-│       ├── indicators.py          # pure EMA / ADX math (no I/O)
-│       ├── voltarget.py           # vol-target leverage (J+ today)
-│       ├── gate.py                # R4 vol-percentile gate math
-│       ├── jplus_inputs.py        # today_inputs() — regime/lev/gate/ema/weights
-│       ├── regime_jplus.py        # J+ 4-state classifier
-│       ├── regime_tactical.py     # tactical regime (bull/bear/chop/sell_off)
-│       ├── margin_check.py        # liquidation orchestration + math adapter
-│       ├── margin_sim.py          # margin / liquidation simulator
-│       ├── risk_caps.py           # cross-sleeve BTC-long cap
-│       ├── risk_config.py         # SL semantic (price-move vs margin-loss)
-│       ├── strategy_health.py     # realized-PnL aggregation
-│       ├── trade_db.py            # trade log schema
-│       ├── variant_registry.py    # variant CRUD
-│       ├── sleeves.py             # strategy_id constants
-│       └── env.py                 # stdlib .env loader
-├── studies/                       # research-only code
-│   ├── simulation/                # sim.py (sim entry point), migrate_*, build_sim_trader_db.py
-│   ├── notebooks/                 # .ipynb research (per-sleeve backtests, PDO TV validation, R4 study)
-│   ├── reports/                   # ad-hoc report generators
-│   └── jplus_analytic/            # offline simulate() — preserved for research
-├── tests/                         # >670 tests incl. look-ahead canary, sim e2e, parity
-└── requirements.txt               # numpy + (optional) anthropic for AI_QUANT
+│   ├── databases/prod.db           # the one DB — market data + bot state
+│   ├── sources/                    # external-data fetchers (binance, okx, bybit, coinbase,
+│   │                               #   deribit, macro_yahoo, coindesk, fed_funds, …)
+│   ├── backups/                    # backup.py snapshots
+│   └── known_unfillable.json       # gaps verified to be source-side holes
+├── docs/calibration/<strategy>.md  # the calibration log — every dial change, dated
+├── studies/                        # research only; nothing here runs in the fleet
+│   ├── notebooks/                  # per-study directories, each with a findings.md
+│   ├── lib/                        # reusable research code, incl. lib/validation/
+│   └── material/archive/           # 8 archived sleeves — importable, unsupported, never live
+└── tests/                          # ~90 files; look-ahead canaries, golden guards, archive guard
 ```
+
+`strategies/` no longer contains a single strategy. `strategies/support/` is the
+shared live path only — anything strategy-specific belongs under its bot.
 
 ## Data tables
 
-All tables live in `data/databases/prod.db`. Refresh paths:
+All tables live in `data/databases/prod.db`. `feed.py` is the only writer of the
+**market-data** tables below; the bots write `trades`, `trade_adjustments`,
+`bot_heartbeats`, `variants` and `variant_events`, and `fetch_events.py` builds
+`scheduled_events`. Eight processes write this file concurrently, which is why
+everything is WAL and read paths open `mode=ro`.
 
-| Table | Source | Refresh | Used by |
+Freshness limits are `botlib.FRESHNESS_CONTRACTS`; each bot names the tables it
+cannot trade without in its `MGMT_TABLES` (stale ⇒ skip the whole tick) and
+`ENTRY_TABLES` (stale ⇒ manage positions, but open nothing new).
+
+| Table | Source | Refresh | Read by |
 |-------|--------|---------|---------|
-| `btc_1m`, `eth_1m` | Binance spot klines | `feed.py` every 60s | pdo, cpr, r4, price_feed (BTC+ETH) |
-| `cd_futures_ohlcv` | Binance BTCUSDT perp 1h | `feed.py` every 60s | adx, carry, regime_tactical, price_feed (BTC) |
-| `cd_spot_binance` | Binance BTCUSDT spot 1h | `feed.py` every 60s | carry, r4 (regime + gate inputs) |
-| `cd_funding_rate` | Binance BTC perp funding | `feed.py` every 60s | strategies.support.funding (BTC sleeves) |
-| `cd_funding_rate_eth` | Binance ETH perp funding | `feed.py` every 60s | strategies.support.funding (ETH sleeves) |
-| `ca_long_short_ratio` | Coinalyze (history) + Binance rolling 30d | `fetch_coinalyze.py` once + `feed.py` every 60s | cpr, r4 (regime), regime LS circuit breaker |
-| `paxg_spot_1h` | Binance PAXGUSDT spot 1h (tokenised gold, since 2020-08) | `feed.py` every 60s; backfill `data/sources/binance.py --backfill-paxg` | anchor-allocator study (GOLD leg) |
+| `btc_1m`, `eth_1m` | Binance spot klines | `feed.py` every 60s | `price_feed` — the mark price for every bot's position management; r4 window fills |
+| `cd_futures_ohlcv` | Binance BTCUSDT perp 1h | `feed.py` every 60s | squeeze_bull, short_squeeze, carry (the perp leg of the basis) |
+| `cd_spot_binance` | Binance BTCUSDT spot 1h | `feed.py` every 60s | adx (daily ADX/EMA), carry, r4 (regime + gate inputs) |
+| `cd_futures_15m`, `cd_spot_15m` | Binance BTCUSDT perp/spot 15m with taker buy/sell split | `feed.py` every 60s | chento_v3, short_squeeze (CVD) |
+| `cd_futures_eth_15m` | Binance ETHUSDT perp 15m | `feed.py` every 60s | chento_v3_eth |
+| `okx_perp_1h`, `okx_perp_eth_1h` | OKX BTC/ETH-USDT-SWAP 1h | `feed.py`, hourly throttle | chento_v3 + chento_v3_eth cross-exchange gate |
+| `cd_open_interest` | Binance native OI (~30d retention) | `feed.py` every 60s | squeeze_bull (flush), short_squeeze |
+| `cd_funding_rate` | Binance BTC perp funding | `feed.py` every 60s | carry, adx, short_squeeze |
+| `cd_funding_rate_eth` | Binance ETH perp funding | `feed.py` every 60s | `strategies.support.funding` / `equity` — funding accrual on the ETH legs |
+| `ca_long_short_ratio` | Coinalyze (history) + Binance rolling 30d | `fetch_coinalyze.py` once + `feed.py` every 60s | chento_v3, r4 (regime), the J+ LS circuit breaker |
+| `scheduled_events` | computed by `fetch_events.py` (FOMC/CPI hardcoded, NFP/OPEX rules) | annual: bump the FOMC/CPI lists, re-run | no bot reads it since the calendar sleeves were archived; kept fresh because `monitor.py` alerts below 60d of runway and the archived studies need it |
+| `paxg_spot_1h` | Binance PAXGUSDT spot 1h (tokenised gold, since 2020-08) | `feed.py` every 60s; backfill `python -m data.sources.binance --backfill-paxg` | anchor-allocator study (GOLD leg) |
 | `macro_daily` | Yahoo daily SPX/DXY/VIX/TNX/GOLD/IEF/TLT (since 2000) | `feed.py` once per UTC day via `data/sources/macro_yahoo.py`; seed `--seed-from`, deep pull `--backfill` | anchor-allocator study, regime context |
 | `deribit_dvol_daily`, `deribit_options_instruments`, `deribit_options_daily` | Deribit public API: DVOL daily (since 2022-09), option instruments, liquid-subset book snapshots 00:05/08:05 UTC; history seeded from the trader-repo CoinDesk snapshot (2023-12→2026-04, `source='coindesk_seed'`) | `feed.py` via `data/sources/deribit.py` (self-throttled); CLI `--seed-from`, `--backfill-dvol`, `--snapshot` | VRP study; supersedes gated `cd_dvol` |
 | `coinbase_spot_1h` | Coinbase Exchange BTC-USD/ETH-USD spot 1h (since 2020-01), one row per (asset, hour); history seeded from the trader-repo snapshot (→2026-04-14), live API onwards | `feed.py` via `data/sources/coinbase.py` (one pull per asset per UTC hour); CLI `--seed-from`, `--backfill [--since]` | Coinbase-premium study (US-venue spot basis vs `cd_spot_binance`) |
 | `okx_funding`, `bybit_funding` | OKX (`BTC-USDT-SWAP`, `ETH-USDT-SWAP`) and Bybit (`BTCUSDT`, `ETHUSDT`) funding settlements on the 8h grid, epoch-second timestamps that join straight onto `cd_funding_rate` / `cd_funding_rate_eth`. OKX serves a rolling ~3 months only (from 2026-06-08); Bybit reaches back to 2020-03-25 (BTC) / 2020-10-21 (ETH). No predecessor seed exists — the OKX series grows forward from 2026-06-08 | `feed.py` via `data/sources/venue_funding.py` (one pull per instrument per UTC hour); CLI `--backfill [--since]` | funding-dispersion (delta-neutral) study |
-| `binance_quarterly_1h` | Binance USDⓈ-M quarterly futures 1h, continuous-contract slots (`CURRENT_QUARTER`, `NEXT_QUARTER`) for BTCUSDT + ETHUSDT, one row per (pair, contract_type, hour). CURRENT_QUARTER runs unbroken from 2021-02-03 (BTC) / 2021-02-04 (ETH); NEXT_QUARTER from 2021-03-16 with five structural holes in 2022-04→2023-08 when Binance listed no far quarterly (recorded in `known_unfillable.json`). No predecessor seed. `series` is a virtual generated column (`pair-contract_type`) so `check_gaps` can group on one column | `feed.py` via `data/sources/binance_quarterly.py` (one pull per slot per UTC hour); CLI `--backfill [--since]` | perp-vs-quarterly basis study |
+| `binance_quarterly_1h` | Binance USDⓈ-M quarterly futures 1h, continuous-contract slots (`CURRENT_QUARTER`, `NEXT_QUARTER`) for BTCUSDT + ETHUSDT, one row per (pair, contract_type, hour). CURRENT_QUARTER runs unbroken from 2021-02-03 (BTC) / 2021-02-04 (ETH); NEXT_QUARTER from 2021-03-16 with five structural holes in 2022-04→2023-08 when Binance listed no far quarterly (recorded in `known_unfillable.json`). `series` is a virtual generated column (`pair-contract_type`) so `check_gaps` can group on one column | `feed.py` via `data/sources/binance_quarterly.py` (one pull per slot per UTC hour); CLI `--backfill [--since]` | perp-vs-quarterly basis study |
 | `binance_quarterly_contracts` | The listed quarterly contracts from `/fapi/v1/exchangeInfo` (symbol, pair, contract_type, deliveryDate, onboardDate) with first/last-seen stamps — the roll calendar for the slots above. Only ever shows contracts listed *now*, so it accumulates forward from 2026-09-08 | `feed.py` via `data/sources/binance_quarterly.py` (once per UTC day); CLI `--contracts` | perp-vs-quarterly basis study (roll dating) |
-| `scheduled_events` | computed by `fetch_events.py` (FOMC/CPI hardcoded, NFP/OPEX rules) | annual: bump FOMC/CPI lists, re-run | S-096 V4 filter, regime no-FOMC rule |
 
 Three read-path caveats on the 2026-09 feeds, verified 2026-09-08:
 
@@ -371,52 +253,37 @@ Three read-path caveats on the 2026-09 feeds, verified 2026-09-08:
   39,550.0 above `high`, on 4.48 of volume. Exclude it. No other row in the
   table breaks the invariant.
 
-If `ca_long_short_ratio` shows a gap >30 days old, Binance can't reach back
-that far — run `python fetch_coinalyze.py` to fill it. If `scheduled_events`
-is empty or out-of-date, S-096 V4 **fails closed** (skips the Thursday
-rather than degrading to an unconditional V1 short); re-run
-`python fetch_events.py` to repopulate.
+If `ca_long_short_ratio` shows a gap more than 30 days old, Binance can't reach
+back that far — run `python fetch_coinalyze.py` to fill it. If
+`scheduled_events` runs out of future rows, bump the FOMC/CPI lists in
+`fetch_events.py` and re-run it.
 
-## Known methodology caveats
+## What this does NOT do
 
-These are structural properties of the sleeves themselves, independent of
-whether any specific backtest is trusted:
+- **No live order placement.** All trades are paper — write-only to the `trades`
+  table. There is no exchange-side execution path.
+- **No backtest engine in this repo.** `bot.py`, `backtest_runner.py` and
+  `studies/simulation/sim.py` were deleted on 2026-09-13; the replay/sim path
+  they shared went with the orchestrator. Research runs in
+  `studies/notebooks/`, one directory per study with a dated `findings.md`. A
+  single bot can still be driven under a frozen clock with
+  `runner.py --once --db <copy.db> --sim-now <iso>`.
+- **No backtest equity seed.** Equity attribution starts from the first clean
+  live paper fill; the older daily-returns panel was removed as compromised.
+- **No verdicts yet.** In the 2026-09-08 validation audit no series reaches a
+  deflated Sharpe of 0.95, and the paper ledgers were statistically empty —
+  six closed trades across six bots. Read the caveats in
+  [PORTFOLIO.md](PORTFOLIO.md) §9 before quoting a number from anywhere.
 
-- **S-096 V4 event filter is in-sample.** It was derived post-hoc from V3's
-  Thursday attribution using the same CPI/NFP/OPEX calendar it now gates on.
-  Any backtest that reuses that calendar will outperform V3 by construction.
-  Only a genuine live OOS record separates signal from curve-fit.
-- **CPR sample is extremely thin** (n=12 BTC + n=9 ETH in upstream research).
-  Neither prior work nor our future replay will have statistical power;
-  live accumulation is the only real validation path.
-- **PDO regime threshold and gap/tolerance params were selected via sweeps**
-  without visible walk-forward CV — data-snooping exposure carries into any
-  future backtest.
-- **Aggressive 2.0 was selected from a 4-tier family** (Conservative /
-  Regime-dynamic / Kelly / Aggressive) **by backtest performance** — there
-  is family-level selection bias baked into the pick before we even evaluate it.
-- **`btc_1m` historical depth depends on whether you ran the kline backfill.**
-  `bootstrap.py --skip-klines` produces a DB with only the rolling window
-  the feed has filled; full 5y of 1m bars requires either the
-  `bootstrap.py` kline backfill or `python -m data.sources.binance
-  --backfill-klines --since 2020-01-01`. `feed.py`'s startup gap-fix will also
-  fill internal gaps incrementally on every restart — but won't extend
-  history below `MIN(open_time)` without an explicit `--since`. PDO
-  hourly-touch and CPR intraday aggregation are coarser before the
-  backfill catches up.
-- **Live BTC-long cap uses skip-if-over**; any future simulator-style
-  proportional scale-down will diverge by construction.
+## Where to read more
 
-## Caveats — what this bot does NOT do
-
-- **No live order placement.** All trades are paper (write-only to the
-  `trades` table); the bot has no exchange-side execution path yet.
-- **Dashboard UI** — `python dashboard/server.py` (read-only, http://127.0.0.1:8300;
-  OPERATIONS.md §9). Deeper introspection is sqlite queries (examples above)
-  plus the research notebooks under [`studies/notebooks/`](studies/notebooks/).
-- **No backtest equity seed.** Any daily-returns panel present in older
-  versions of this repo has been removed as compromised. Equity
-  attribution starts from the first clean live paper fill.
-- **`ca_long_short_ratio` history beyond Binance's 30d window** depends
-  on the initial Coinalyze fetch — Binance's API can't reach further
-  back than ~30 days.
+| Question | Document |
+|---|---|
+| How do I run, watch and fix the fleet? | [OPERATIONS.md](OPERATIONS.md) |
+| What does each bot actually trade, and at what size? | [PORTFOLIO.md](PORTFOLIO.md) |
+| What is being worked on, held or killed right now? | [BACKLOG.md](BACKLOG.md), top section |
+| How does a new gate or strategy prove itself? | [GATE_VALIDATION.md](GATE_VALIDATION.md) |
+| Why is this bot's dial set to that number? | [docs/calibration/](docs/calibration/) |
+| What did study X conclude? | `studies/notebooks/<study>/findings.md` |
+| Why was a sleeve archived, and can it come back? | [studies/material/archive/README.md](studies/material/archive/README.md) |
+| Can I trade this by hand? | [MANUAL.md](MANUAL.md) — written for the orchestrator-era sleeve set, not the current fleet |

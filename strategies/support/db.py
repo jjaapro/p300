@@ -6,7 +6,6 @@ After 2026-05-16, the layout is:
     data/
       databases/
         prod.db              ← PROD_DB (= TRADER_DB = DASH_DB)
-        sim_dash.db          ← created by sim.py per run (not maintained)
       archive/
         nyfed_rates.xml
         fed_funds_target_upper.json

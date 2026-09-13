@@ -28,7 +28,8 @@ Examples:
 
 After this:
   python health.py           # confirm everything is wired up
-  python bot.py              # starts the bot; auto-registers the variant
+  .\\start_fleet.ps1          # feed + the seven bot runners + the dashboard;
+                             # each bot registers its own variant rows
 """
 from __future__ import annotations
 

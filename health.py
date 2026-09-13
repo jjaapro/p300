@@ -180,7 +180,7 @@ def check_dashboard_tables() -> None:
     ).fetchall()}
     for t in required:
         if t not in tables:
-            _fail(t, "MISSING — run bootstrap.py / start bot.py", 2)
+            _fail(t, "MISSING — run bootstrap.py / start the fleet", 2)
         else:
             n = con.execute(f"SELECT COUNT(*) FROM {t}").fetchone()[0]
             _ok(t, f"{n:,} rows")
@@ -464,7 +464,7 @@ def _check_1m_table(con: sqlite3.Connection, label: str, table: str,
                f"{fillable_missing:,} missing min{extra} "
                f"(largest {largest_gap_min}m at {gap_start_str})")
     if fail_reasons:
-        _fail_soft(label, summary + "  -> run binance_feed.py --backfill-klines",
+        _fail_soft(label, summary + "  -> run python -m data.sources.binance --backfill-klines",
                     failures)
     else:
         _warn(label, summary + " -- likely exchange-side")
@@ -515,19 +515,19 @@ def check_data_continuity() -> None:
     # Hourly perpetual + spot — strict 1h cadence, FAIL on any gap.
     _check_seconds_table(con, "cd_futures_ohlcv (1h BTC perp)",
                           "cd_futures_ohlcv", "timestamp", 3600, 3600,
-                          "binance_feed.py --backfill-klines", failures)
+                          "python -m data.sources.binance --backfill-klines", failures)
     _check_seconds_table(con, "cd_spot_binance (1h BTC spot)",
                           "cd_spot_binance", "timestamp", 3600, 3600,
-                          "binance_feed.py --backfill-klines", failures)
+                          "python -m data.sources.binance --backfill-klines", failures)
 
     # Funding — BTC table is mixed-cadence (1h seeded + 8h fresh); use 8h
     # max-gap as the bar (deterministic 8h settlement schedule).
     _check_seconds_table(con, "cd_funding_rate (BTC, <=8h)",
                           "cd_funding_rate", "timestamp", 28800, 28800,
-                          "binance_feed.py --backfill-funding", failures)
+                          "python -m data.sources.binance --backfill-funding", failures)
     _check_seconds_table(con, "cd_funding_rate_eth (8h)",
                           "cd_funding_rate_eth", "timestamp", 28800, 28800,
-                          "binance_feed.py --backfill-funding", failures)
+                          "python -m data.sources.binance --backfill-funding", failures)
 
     # 1-minute klines -- strict policy on fillable gaps; honors unfillable list.
     _check_1m_table(con, "btc_1m", "btc_1m", failures,

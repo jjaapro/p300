@@ -393,10 +393,15 @@ Where:
 - All four R4 contributions are **multiplied by the gate factor** (2.5× normally; 1.0× when the vol-percentile gate has fired)
 
 > **CORE_ALLOC_CAP = 0.50 (since 2026-05-12).** The raw rows above sum to
-> >1.0 in every non-bear regime. The cap is preserved as a transitional
-> runtime safety on the J+ family (post-P2.4a the Core/Tactical split
-> is dropped; this scalar just bounds the family's raw weights until
-> the orchestrator owns full cross-sleeve allocation logic).
+> >1.0 in every non-bear regime. The cap bounds the J+ family's raw weights
+> (post-P2.4a the Core/Tactical split is dropped). It was written in as a
+> transitional safety "until the orchestrator owns full cross-sleeve
+> allocation logic" — **that wording retired 2026-09-13**: the orchestrator
+> was deleted and the cap is now simply what `today_inputs()` applies.
+> (The live `bots/r4/` bot does not use these regime weights at all; it
+> sizes off a flat 0.20 per variant — see
+> [docs/calibration/r4.md](docs/calibration/r4.md). The table below is still
+> what a manual operator running the full J+ family would use.)
 > `_cap_core_weights()` in
 > [strategies/support/jplus_inputs.py](strategies/support/jplus_inputs.py)
 > rescales every row whose raw sum > 0.50 by `0.50 / raw_sum`, preserving
@@ -796,7 +801,21 @@ That's your morning briefing in one cell.
 ---
 
 This manual is meant to be living documentation. If you start running
-it manually and discover gotchas not listed here, add them. The bot's
-code is in `strategies/` (sleeves under `strategies/sleeves/<name>/`,
-shared math + state under `strategies/support/`) if you ever want to
-verify a rule against the canonical implementation.
+it manually and discover gotchas not listed here, add them.
+
+**Where the canonical implementation lives (as of 2026-09-13).** A bot is a
+directory: `bots/<name>/` holds `runner.py`, `config.py` and `strategy/`, and
+that `strategy/` package is the only place that bot's rules live. The seven
+bot units are `chento_v3`, `chento_v3_eth`, `short_squeeze`, `adx`, `carry`,
+`squeeze_bull` and `r4`. Shared math and state stay under
+`strategies/support/` (regime, vol-target, gate, `jplus_inputs`,
+`r4_windows`, `ema_position`). What is calibrated right now for each running
+bot is in [docs/calibration/](docs/calibration/), one file per strategy — six
+files for the seven bot units, because `chento_v3` and `chento_v3_eth` share
+`chento_triple_v3.md`.
+
+Seven of the sleeves this manual describes are **no longer run**: EMA_BTC,
+ETH_DAILY, THU_BEAR, PDO, CPR, FOMC and AI_QUANT were archived on 2026-09-13
+under `studies/material/archive/` (see its README for why each stopped). Their
+rules above are kept as the manual record of how they were executed — but
+nothing in the fleet trades them, so don't expect the bot to agree.

@@ -252,7 +252,8 @@ be dead *gross* as well, which is deader than I predicted.
 
 **Build nothing.** All five cells KILL. No sleeve, no bot, no config change is proposed,
 and none was created - `strategies/**` and `bots/**` are untouched, and the module used
-for cell 5 (`strategies/sleeves/ema/math.py`) was imported read-only.
+for cell 5 (`strategies/sleeves/ema/math.py`, which moved to
+`strategies/support/ema_position.py` on 2026-09-13) was imported read-only.
 
 Concrete takeaways for the research queue:
 

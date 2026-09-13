@@ -51,6 +51,8 @@ at run time (`GAP_THRESHOLD_PCT=2.0`, `TOUCH_TOL_PCT=0.10`,
 **Recommendation: leave `REGIME_THRESHOLD_PCT = -10.0` in
 `strategies/sleeves/timing_anomalies/internal/pdo/config.py` unchanged.**
 This is a recommendation only; no production file was touched.
+(That file is now `studies/material/archive/pdo/config.py` — the sleeve was archived
+on 2026-09-13 with its value unchanged, so the recommendation stands as written.)
 
 ## a.2 Why A1 measured exactly zero - the OOS window carried no evidence
 

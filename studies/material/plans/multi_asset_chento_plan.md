@@ -1,5 +1,17 @@
 # Multi-asset Chento (BTC+ETH) — implementation plan
 
+> **Implemented 2026-08-23; superseded as a plan.** `bots/chento_v3_eth/`
+> (variant `bot_chento_v3_eth`, $10k paper) runs as a thin wrapper over the
+> shared `bots/chento_v3/runner.py`, with the strategy asset-parameterized by
+> `CHENTO_V3_ASSET` and the per-asset tilt policy in place (BTC `FILTER_NO_TILT`,
+> ETH `TILT_HALF_AFTER_LOSS`). Two things below are historical rather than
+> current: the strategy package moved to `bots/chento_v3/strategy/` on
+> 2026-09-13, and the "orchestrator unit" framing in §Decisions plus the
+> `backtest_runner` reference in Phase B step 7 both pre-date the orchestrator's
+> retirement that same day — a bot is now the unit. Current state lives in
+> `docs/calibration/chento_triple_v3.md`; the kill criteria still stand. Not
+> rewritten.
+
 *2026-08-23. Basis: overlay study + backward-only confirmation
 (studies/notebooks/overlay_study/findings.md). Combined BTC+ETH on the
 production-faithful pool: +72% total R at lower drawdown than BTC alone, MAR-like

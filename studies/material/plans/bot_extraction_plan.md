@@ -1,5 +1,13 @@
 # Bot extraction plan — Chento Triple v3 (#1) + Short Squeeze (#2)
 
+> **SUPERSEDED 2026-09-13 — this plan is closed.** Its "optional later step",
+> physical co-location, shipped: a bot is now a directory (`bots/<name>/` with
+> `runner.py`, `config.py` and `strategy/`), the orchestrator interface is gone,
+> and the fleet is seven bot units — `chento_v3`, `chento_v3_eth`,
+> `short_squeeze`, `adx`, `carry`, `squeeze_bull`, `r4`. Kept as the record of
+> how the extraction was reasoned and what shipped when; the live roadmap is the
+> dated status section at the top of `BACKLOG.md`. Not rewritten below.
+
 > **Created:** 2026-07-21, from a dependency-mapping pass over both sleeves plus a
 > data-freshness audit of `prod.db`.
 > **Direction:** single-strategy bots, each an independent process with its own

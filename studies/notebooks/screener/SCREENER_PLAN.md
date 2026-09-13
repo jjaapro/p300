@@ -182,6 +182,8 @@ Multi-asset from day 1 (asset column in PK) — no migration debt.
 
 **Phase 3 — Productization (only after ≥1 setup passes):**
 - New sleeve `strategies/sleeves/screener/` that subscribes to live trigger feed
+  *(2026-09-13: `strategies/sleeves/` no longer exists — a strategy is a bot directory
+  now, so this would be `bots/screener/`. Moot unless the 2026-08-23 KILL is overturned.)*
 - Live ingestion job for universe OHLCV
 - Trade-emission gated by same edge criteria as backtest
 

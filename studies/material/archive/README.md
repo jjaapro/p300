@@ -14,8 +14,11 @@ no live process may import it.
   moves under them, they break, and that is not a bug to fix on sight.
 - **Nothing live imports this.** Not `bots/`, `botlib.py`, `dashboard/`,
   `feed.py`, `monitor.py`, `bootstrap.py`, `health.py`, `data/` or
-  `strategies/`. Enforced by `tests/test_archive_is_not_live.py`, which fails
-  the suite rather than letting the edge reappear. Three such edges existed on
+  `strategies/`. Enforced by
+  `tests/test_orchestrator_interface_gone.py::test_no_live_code_imports_the_archive`,
+  which parses imports with `ast` rather than grepping — several live modules
+  legitimately name these paths in prose — and fails the suite rather than
+  letting the edge reappear. Three such edges existed on
   the day of the archive and one of them — `jplus_inputs` importing
   `ema/math.py` on the live r4 sizing path — would have failed *silently*,
   because the runner catches ImportError and writes a degraded heartbeat.

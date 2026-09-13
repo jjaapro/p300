@@ -38,9 +38,13 @@ further down stay as they are.
 - **Correction to the 2026-09-12 block below:** the legacy variant row is no longer
   `enabled = 1`. Step 3 set it to `0` with a `variant_events` row; its 27 closed trades
   are kept deliberately.
-- **Next:** step 5, the doc sweep (README, OPERATIONS, PORTFOLIO §2, dashboard cards,
-  calibration-log paths — memory `project-doc-cleanup-planned`), then step 6, porting the
-  two-clock look-ahead contract to the four running bots that have none.
+- **The refactor is DONE — all five steps.** What remains is step 6, opened by step 4:
+  four of the six running bots (chento_v3, short_squeeze, squeeze_bull, r4) have no
+  clock-invariance coverage, and the archived sleeves were subsidising the appearance of
+  it. That is the next guard worth building.
+- **Also open, unchanged by this work:** roadmap items 4.4 (`close_due_trades` books 15 bp
+  against a measured 7–10) and 4.5 (`trade_adjustments` has no UNIQUE constraint in prod),
+  and `monitor.py` still has no scheduled task.
 
 ---
 
@@ -350,13 +354,32 @@ cap — the multi-asset plan's Phase B as written.
 
    Still open, and archiving did **not** answer them: the PDO / CPR re-validation and the
    THU_BEAR OOS question remain research items.
-6. Port the two-clock look-ahead contract to chento_v3, short_squeeze, squeeze_bull and r4.
    Surfaced by step 4: `tests/test_jplus_lookahead.py` calls itself "the single most
    important integration test in the repo" and covers `jplus.simulate`, ADX, the regime
    classifier and carry — four of the six running bots have nothing. Until step 4 the
    dormant sleeves were subsidising the appearance of coverage.
-5. Docs: README, OPERATIONS, PORTFOLIO §2, dashboard cards, calibration-log paths — this is
-   where the deferred doc cleanup happens (memory `project-doc-cleanup-planned`).
+5. ~~Docs~~ — **DONE 2026-09-13**. README (423 -> ~280 lines, the whole orchestrator
+   sleeve inventory and sim chapter gone), OPERATIONS (the runbook — every procedure now
+   works against the seven-unit fleet; retired ones say so rather than leaving a plausible
+   command that fails at 3am), PORTFOLIO (§2 inventory + the file-location tables, archived
+   entries repointed), MANUAL, `docs/calibration/r4.md`, both per-bot strategy READMEs, and
+   dated notes on the superseded plan docs. The deferred doc cleanup
+   (memory `project-doc-cleanup-planned`) is closed with this.
+
+   **Rule applied throughout: fix what would mislead an operator, mark what is dated.**
+   Frozen pre-registrations (`pdo_adjacents`, `delta_neutral`) and every
+   `studies/notebooks/**/findings.md` keep their bodies and got addenda — rewriting a
+   pre-registration is how a research record stops being evidence.
+
+   An adversarial audit pass then checked every fenced command against the real argparse
+   and every markdown link against the filesystem. It caught four things worth having:
+   a NEW false claim the sweep itself introduced (`feed.py` is *not* the only writer of
+   prod.db — eight processes write it), two stale "Read by" attributions, and one operator
+   caveat that existed nowhere else (`--skip-klines` leaves a DB the gap-fix will never
+   deepen). It also found the sweep had left `bootstrap.py --help` printing `python bot.py`
+   and `health.py` recommending a `binance_feed.py` that does not exist — both fixed.
+   Links now resolve 0 broken across the five primary docs.
+6. Port the two-clock look-ahead contract to chento_v3, short_squeeze, squeeze_bull and r4.
 
 **Gates:** parity tests byte-equal before and after every step; the full suite green;
 fleet restarted from the new paths with fresh heartbeats; one definition per rule (no

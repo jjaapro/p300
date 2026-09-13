@@ -1,9 +1,11 @@
 """J+ live decision inputs — regime, vol-target leverage, R4 gate, EMA
 position, and per-regime sub-sleeve weights for "today".
 
-Public entrypoint: ``today_inputs()``. Called by the live entry handlers
-in ``strategies/sleeves/{r4,ema,eth_daily}/signal.py`` to size positions
-at trade-open time, using only data available through yesterday's close.
+Public entrypoint: ``today_inputs()``. Called by ``bots/r4/strategy/signal.py``
+to size positions at trade-open time, using only data available through
+yesterday's close. It served the EMA_BTC and ETH_DAILY handlers too until
+those sleeves were archived on 2026-09-13; r4 is the only live caller now,
+which makes this module part of a running bot's decide path.
 
 The heavy lifting is in ``_run_decision_loop()``, which walks the full
 historical series (BTC daily/hourly, ETH daily/hourly, LS ratio) and
@@ -168,7 +170,8 @@ def _run_decision_loop() -> tuple[dict[str, dict], dict]:
 
         # R4 flags and per-trade returns (intraday windows).
         # V1 R4_BTC: Mon-only since 2026-05-08 (was Mon+Wed). V2 captures
-        # Wed+Fri at 04→14 — see bots/r4/strategy/math.py and studies/notebooks/r4_study/.
+        # Wed+Fri at 04→14 — see strategies/support/r4_windows.py and
+        # studies/notebooks/r4_study/.
         dt = btc_d[d]["dt"]
         is_r4_b = dt.weekday() == 0 and dt.day <= 14
         is_r4_e = dt.weekday() == 2 and dt.day <= 14
@@ -302,9 +305,9 @@ def _invalidate_today_inputs_cache() -> None:
 def today_inputs() -> dict | None:
     """Decision inputs (regime mode, vol-target leverage, R4 gate, EMA
     position, sub-sleeve weights) for the CURRENT UTC date, derived from
-    data through yesterday's close. The live entry handlers in
-    ``strategies/sleeves/{r4,ema,eth_daily}/signal.py`` call this at trade-open time to size their
-    positions without waiting for today's daily close.
+    data through yesterday's close. ``bots/r4/strategy/signal.py`` calls this
+    at trade-open time to size its positions without waiting for today's
+    daily close.
 
     Returns ``None`` if there isn't enough warmup data to classify regime
     or compute vol-target — defensive guard for a bot booting on a cold DB.
