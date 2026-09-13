@@ -2,6 +2,126 @@
 
 **Written and frozen: 2026-09-13, before any outcome number was computed.**
 
+> ## ADDENDUM 1 — 2026-09-13, committed BEFORE any execution of §9 steps 1–6
+>
+> The body below (frozen at `19cd10a`) is not edited. Where this addendum and the body
+> disagree, this addendum governs, and every item says which frozen text it replaces. It was
+> written after a pre-run implementation review, from code, ledger timestamps and pool counts.
+> **No R, PnL, kept/blocked split or gate statistic had been computed when it was written.**
+> User decisions (2026-09-13): A1 as "check against the schedule"; A2–A6 approved together.
+>
+> ### A1 — P3 is CHANGED (a change to a frozen check, not a clarification)
+>
+> **Why.** The body's P3 tolerance (60 s against `actual_exit_time`) was measured on the three
+> original ledger trades only (§2.4 table, §7.11). P3 as frozen also covers their
+> doubled-fleet twins, which were never measured. A pre-run review, using ledger timestamps
+> only, found that both TIF twins fail it with certainty: SJ-4244 by 88.4 s and SJ-4246 by
+> 81.0 s, because the twins entered 58.2 s and 45.4 s after the bar close, against 25.5 s
+> and 12.4 s for the originals. §4.4 forbids a repair from changing a threshold, so the body
+> would have returned INVALID twice and ended with no verdict and the gate left on — the
+> §7.12 escape hatch that decision 2 exists to close. The author of the body set that
+> tolerance; the error is the author's.
+>
+> **Replaces the P3 bullet of §4.4:**
+> - exit KIND must match exactly (stop / target / TIF; `tif_expiry` and `scheduled_exit` both
+>   map to TIF);
+> - **TIF exits:** the walker's exit-bar CLOSE time must be within **180 s** of the trade's own
+>   recorded `_time_stop_iso` (its schedule), not of `actual_exit_time`;
+> - **stop and target exits:** the walker's exit-bar close must be within **180 s** of
+>   `actual_exit_time`, and the exit price within 1e-9 relative;
+> - TIF exit price stays report-only, written only after `verdict.json` exists.
+>
+> **Why 180 s and not 60 s.** Against the schedule, the TIF gaps are each trade's entry lag:
+> 25.3, 57.9, 12.2 and 45.2 s. A 60 s tolerance would pass by 2.1 s — a number fitted to six
+> observations after seeing them, which is how the original error happened. 180 s is taken
+> from the code instead: `LIVE_EVAL_GRACE_S = 180` (`bots/chento_v3/strategy/signal.py:68`)
+> is the window in which live entries are evaluated after each 15m boundary, so entry lag,
+> and with it the schedule, is bounded by it by construction. It also covers the stop side
+> (`LIVE_BAR_SETTLE_S = 90`, :74, plus a 60 s tick). It still catches a one-bar walker error
+> (900 s) five times over. Measured on all six today: TIF 25.3 / 57.9 / 12.2 / 45.2 s against
+> the schedule; stops 17.9 / 17.9 s against the ledger exit, prices exact.
+>
+> ### A2 — When "the run" starts (§4.4 "any exception in steps 1–5")
+>
+> - Executions before the **run commit** are development runs, not the study run: steps 1–4,
+>   `outcomes.py` phase A (preconditions only), the synthetic tests and the shadow run.
+> - **The study run is the first execution of `outcomes.py` phase B — the phase that computes
+>   R — at the run commit.** The run commit is named in `findings.md`.
+> - A precondition failure (P0, P1, P2, P3, POWER) seen in a development run on correct code is
+>   recorded and counts as the first INVALID — **unless** its diagnosed cause is an
+>   implementation defect, fixed without changing any frozen value, with that diagnosis
+>   committed before phase B. Either way it is written down; a development run can never
+>   quietly become an undeclared repair.
+>
+> ### A3 — Operator slips are not INVALID
+>
+> A missing or stale precondition artefact, a snapshot or provenance hash mismatch, or a
+> refusal guard firing writes nothing and is **not** INVALID. INVALID is only (a) a
+> precondition that was actually evaluated and failed, or (b) an exception once phase B has
+> started on verified inputs.
+>
+> ### A4 — Write order (reconciles §4.4, §4.5 and §9)
+>
+> `outcomes.py` phase B computes the verdict **and every §4.5 report item** in memory, then
+> writes the outcome files, then writes `verdict.json` **last**, by atomic rename. Any exception
+> before that rename — report-only computations included — is INVALID, exactly as §4.4 says.
+> "Once `verdict.json` is written, the verdict is final" is unchanged.
+>
+> ### A5 — Added INVALID conditions (pipeline defects that would otherwise read as gate-off)
+>
+> Added to the §4.4 step-1 list. Each would otherwise fail a clause silently and fall through
+> to RETIRE or INCONCLUSIVE, switching the gate off because of a bug:
+> - any non-finite R in the OFF arm (`gates.gate_metrics` would silently treat it as a
+>   no-fire, `gates.py:141-143`, `:164-165`);
+> - an empty or degenerate R2 arm: `n_K_R2 == 0` or `n_B_R2 == 0`, or R2 z non-finite on every
+>   trade. The R2 NaN-z count is reported before phase B.
+>
+> Also pinned here, so no later case is undefined:
+> - **TIF exit bar missing:** exit at the close of the first existing 15m bar with
+>   `bar_ts ≥ t + 72h`. (0 missing bars measured in all four price tables over
+>   [2021-01-01, 2026-09-12), so moot on this snapshot; it matters for the re-cut.)
+> - **Same-hour control, non-finite bootstrap quantile:** treated as a control run failure
+>   (§4.5: one repair, then "control not evaluable (run failure)"), never as a silent pass or
+>   fail of the required statement.
+>
+> ### A6 — The snapshot is taken ONCE, and its hash is committed before phase B
+>
+> The body froze the row cutoff (`< 2026-09-12 00:00 UTC`) but not the moment the snapshot is
+> captured. `ca_long_short_ratio` rows inside the trailing 30 days are still being rewritten
+> by the feed, so the capture time can change HOLDOUT anchors and pool membership. Step 1
+> therefore runs exactly once; `results/snapshot.json` (file sha256, per-table logical sha256,
+> row counts, capture time) is committed in the run commit; and that same file is used for
+> the development runs, the study run, any rerun and the §6 re-cut. The snapshot file itself
+> stays outside the repository.
+>
+> ### Report-only formulas, fixed now (cannot move the verdict; declared to remove any
+> appearance of choosing them after seeing numbers)
+>
+> - MAR-like = total R / trade-close max drawdown in R; trade-close drawdown cumulates R in
+>   **exit** order.
+> - Per-trade Sharpe = mean / sd (ddof = 1). Daily Sharpe on the 1,987-day axis, zero on empty
+>   days, periods_per_year = 365.
+> - DSR (`dsr_from_returns`) on per-trade R in entry order, at N = 1, 27, 53.
+> - Cap-binding trade: `risk / entry < 0.02 / 3`.
+> - MDE = (z₁₋₀.₀₅/₅₃ + z₀.₈₀) × sqrt(s_K²/n_K + s_B²/n_B), at power 0.80.
+> - CI half-width = (q₀.₉₅ − q₀.₀₅) / 2.
+> - Mark-to-market daily axis: first entry day to last exit day, zero-filled
+>   (`benchmark.compounded_max_drawdown` drops non-finite values, `benchmark.py:159`).
+> - Tilt portfolios per asset; pooled = the entry-ordered concatenation of the two sized series.
+>   `run_overlays.tilt_sizes` reacts to the IMMEDIATELY preceding trade only
+>   (`run_overlays.py:127-128`).
+>
+> ### Looks made before this addendum (disclosure, extending §7.11)
+>
+> While planning the implementation: a probe snapshot reproduced all six P0 z values
+> (|diff| ≤ 4.4e-16) and P0c; the walker was run on the six closed ledger trades for exit
+> kind and exit timing (booleans and time deltas; stop prices matched); pool sizes before any
+> filter were counted (357 BTC, 337 ETH in the window — not §4.6's 209/187, which are
+> post-research-filter counts; §4.6's power figures were computed on the smaller numbers);
+> and the six ledger exit-reason strings were read. **No R, PnL, kept/blocked split or gate
+> statistic was computed.**
+
+
 ### Decisions recorded (user, 2026-09-13 — final, encoded in the rules below)
 
 1. **RETIRE is discrimination-based, not a breadth policy.** RETIRE only if the causal gate
