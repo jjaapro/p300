@@ -441,13 +441,19 @@ def point_at_db_copy(path, *, diag_dir=None, botcfg=None) -> None:
     import os
     from pathlib import Path
 
-    from strategies.support import db, trade_db
+    from strategies.support import db
     target = Path(path).resolve()
     if target == Path(db.PROD_DB).resolve():
         raise SystemExit(f"--db {path} is the live prod.db; dry runs need a copy")
     if not target.exists():
         raise SystemExit(f"--db {path} does not exist")
     db.PROD_DB = db.DASH_DB = db.TRADER_DB = target
+    # Imported only AFTER the repoint. Until 2026-09-13 trade_db was imported at
+    # the top of this function and ran its DDL on import, so every "isolated"
+    # dry run wrote to the live prod.db before reaching this line — including
+    # tests/fixtures/repoint_baseline.py's refactor gate. trade_db no longer
+    # writes on import, but the ordering stays so it never depends on that.
+    from strategies.support import trade_db
     trade_db.DB_PATH = target
 
     diag = Path(diag_dir) if diag_dir else target.parent / "diagnostics"

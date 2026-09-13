@@ -45,11 +45,14 @@ def main(argv=None) -> int:
     sys.path.insert(0, str(repo))
 
     from strategies.support import db as dbm
-    from strategies.support import clock, price_feed, trade_db, variant_registry
+    from strategies.support import clock, price_feed
 
     tmp = Path(tempfile.mkdtemp()) / "prod.db"
     shutil.copy(a.fixture, tmp)
     dbm.PROD_DB = dbm.DASH_DB = dbm.TRADER_DB = tmp
+    # Ledger modules imported only after the repoint (BACKLOG 10): they used to
+    # write their schema on import, and this runner imported them first.
+    from strategies.support import trade_db, variant_registry
     trade_db.DB_PATH = tmp
     trade_db.init_db()
     variant_registry.init_schema()

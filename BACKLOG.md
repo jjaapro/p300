@@ -539,7 +539,45 @@ cap — the multi-asset plan's Phase B as written.
    both built from Tuesday's close, which a Tuesday 20:00 entry cannot know. 33 of 170
    historical R4_ETH rows; R4_ETH's research contribution overstated ~6% (39.985 vs
    37.447 pct-pts). Since 7a, live is causal on those rows and research is not.
-10. **Hazard: a plain `pytest` run can write to the live prod.db.** Found reviewing 7a.
+10. **Hazard: a plain `pytest` run can write to the live prod.db.** **DONE 2026-09-13**
+    (`<fix10>`). Worse than first reported, on every axis, all measured:
+    - **Two** modules wrote on import, not one: `trade_db.py` (BEGIN + CREATE ... IF NOT
+      EXISTS + INSERT OR IGNORE, 16 statements) and `variant_registry.py` (6).
+    - **12** test files fail collection against a read-only prod.db, not 2.
+    - **It leaked out of pytest.** `botlib.point_at_db_copy` imported `trade_db` BEFORE
+      repointing, so every "isolated" `runner.py --db <copy>` dry run wrote DDL to the live
+      file first — including `tests/fixtures/repoint_baseline.py`, the refactor's step-2
+      gate.
+    Nothing live needed the side effect: all six runners already call `init_db()` in
+    `main()`, and `botlib.ensure_bot_variant` calls `init_schema()`. Both module-scope calls
+    are gone; botlib and `_chento_golden_runner.py` import the ledger modules after the
+    repoint. Verified: the full suite under a write-deny authorizer made 0 writes to a
+    prod.db snapshot, whose SHA-1 was unchanged. **No live behaviour change, no restart.**
+
+    **Guard: `tests/test_no_import_time_db_writes.py`.** Fresh interpreters with audit hooks
+    that refuse any read-write connect to the live file and any file write inside the repo,
+    before anything opens — so a regression is caught without the probe writing. Three
+    probes: collection, an import sweep over 163 tracked modules (from `git ls-files`),
+    and the dry-run redirect. Proven red on the old code at all three sites. Hardened
+    against two escapes adversarial review found in the first draft, both of which left it
+    green: a writer outside the original package list, and an `__init__` raising a
+    non-ImportError that aborted `walk_packages` before it imported anything. The probe now
+    writes a completion sentinel (modules imported, pytest rc, items collected) and the test
+    asserts on it. Drill 32/32.
+
+    **Found building the guard:** an import-everything sweep is itself hazardous here.
+    `tests/fixtures/mutation_drill.py` runs its mutate-and-restore loop at MODULE scope, and
+    `studies/material/paladin/scripts/download_images.py` reads `sys.argv` at import and
+    starts a thread pool of HTTP downloads. The first sweep made that script treat the live
+    prod.db as its JSON input and the probe's result file as its output directory — it
+    failed parsing before any network call and wrote nothing into the repo, but the probe
+    now resets `sys.argv` and excludes `studies/material|notebooks|reports`. The notebook
+    libraries tests actually import stay covered by the collection probe.
+
+    **Follow-ups, not done:** the dry-run probe exercises `botlib.point_at_db_copy` only; it
+    would not catch a runner calling `init_db()` above `apply_dry_run_flags`, which is how
+    that leak arose. And 27 tests still open prod.db read-write at RUNTIME for SELECTs
+    (no writes measured) — a suite-wide deny hook would fail them today.
     Importing `strategies/support/trade_db.py` runs `init_db()` at import against whatever
     `db.PROD_DB` points to, and several test modules import it before repointing — so a
     suite run migrates the running fleet's database. `tests/_chento_golden_runner.py` does

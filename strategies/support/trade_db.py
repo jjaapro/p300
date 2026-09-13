@@ -307,6 +307,10 @@ def format_close_summary(*, trade_id: str, asset: str, direction: str,
     con.close()
 
 
-# Initialise on import so any caller that imports trade_db can rely on
-# the tables being present.
-init_db()
+# NO module-scope init_db(). There was one until 2026-09-13 ("initialise on
+# import so any caller can rely on the tables") and it made every import a
+# write to whatever db.PROD_DB pointed at — during pytest collection, the LIVE
+# prod.db the fleet writes; during a `runner.py --db <copy>` dry run, the live
+# file too, before the redirect. Nothing live needed it: every runner calls
+# trade_db.init_db() explicitly in main(). Call it at process start.
+# Guarded by tests/test_no_import_time_db_writes.py. BACKLOG 10.

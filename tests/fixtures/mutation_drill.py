@@ -136,6 +136,16 @@ MUTATIONS = [
      "WHERE p.timestamp >= ? AND p.timestamp <= ?+8640000",
      "tests/test_bot_lookahead.py::"
      "test_short_squeeze_percentile_pool_is_clock_bounded"),
+    # BACKLOG 10. Putting the module-scope init_db() back makes importing
+    # trade_db write to whatever db.PROD_DB points at — the live file, during
+    # pytest collection. The guard imports in a hooked subprocess, so running
+    # this mutation writes nothing.
+    ("import-time write: trade_db runs init_db() on import again",
+     "strategies/support/trade_db.py",
+     "# Guarded by tests/test_no_import_time_db_writes.py. BACKLOG 10.",
+     "# Guarded by tests/test_no_import_time_db_writes.py. BACKLOG 10.\ninit_db()",
+     "tests/test_no_import_time_db_writes.py::"
+     "test_collecting_the_suite_does_not_write_the_live_db"),
     # BACKLOG 7b. chento's loaders were unbounded until 2026-09-13 and the
     # goldens recorded the future. Both directions are pinned: a bound that is
     # loosened reads the future, one that is tightened drops the forming bar

@@ -203,5 +203,6 @@ def _row_to_dict(row: sqlite3.Row | None) -> dict | None:
     return d
 
 
-# Initialise schema on import so any caller can rely on the tables.
-init_schema()
+# NO module-scope init_schema() — removed 2026-09-13 for the same reason as
+# trade_db's init_db() (see there): importing this wrote to the live prod.db.
+# botlib.ensure_bot_variant calls init_schema() explicitly. BACKLOG 10.
