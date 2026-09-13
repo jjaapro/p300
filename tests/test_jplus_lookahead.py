@@ -41,6 +41,28 @@ from strategies.support import clock
 from studies.jplus_analytic import simulate
 
 
+def assert_no_data_after_clock(dates, clk, what: str) -> None:
+    """The other half of the contract: a run must not SEE past its own clock.
+
+    Comparing two clock positions on their common dates proves the past is
+    not revised. It does NOT prove the clock is respected — if a loader
+    ignores the clock entirely both runs return the whole table, every
+    common-date comparison is trivially equal, and the test passes green
+    while the bot trades on tomorrow's candles. Two of the four original
+    arms here had exactly that hole (2026-09-13).
+
+    `dates` is an iterable of "YYYY-MM-DD" strings or dates; `clk` the
+    simulated datetime the run used.
+    """
+    if not dates:
+        raise AssertionError(f"{what}: no data at all — test would be vacuous")
+    cutoff = clk.date().isoformat()
+    after = sorted(str(d) for d in dates if str(d) > cutoff)
+    assert not after, (
+        f"{what}: LOOK-AHEAD — {len(after)} date(s) after the clock {cutoff}, "
+        f"first 5 {after[:5]}. The loader is not clock-bounded.")
+
+
 @pytest.mark.slow
 @pytest.mark.parametrize("early_clock,late_clock", [
     (datetime(2023, 6, 1, tzinfo=timezone.utc), datetime(2024, 6, 1, tzinfo=timezone.utc)),
@@ -109,21 +131,51 @@ def test_simulate_on_tiny_window_doesnt_crash():
     (datetime(2023, 6, 1, tzinfo=timezone.utc), datetime(2024, 6, 1, tzinfo=timezone.utc)),
     (datetime(2024, 6, 1, tzinfo=timezone.utc), datetime(2025, 6, 1, tzinfo=timezone.utc)),
 ])
-def test_adx_signal_no_lookahead(early_clock, late_clock):
-    """ADX _current_signal must produce identical results at two different
-    clock positions for dates available to both."""
-    from bots.adx.strategy.signal import _load_btc_daily_candles, _current_signal
+def test_adx_candle_loader_no_lookahead(early_clock, late_clock):
+    """ADX's daily candles for a given date must not change when the clock
+    advances. This pins the LOADER, which is where ADX's look-ahead risk
+    actually lives.
+
+    Named test_adx_signal_no_lookahead until 2026-09-13, and it called
+    `_current_signal` at both clocks — but never compared the two results.
+    Proven decorative: making `_current_signal` return None unconditionally
+    left this test green. The dead calls are gone rather than being turned
+    into an assertion, because a signal-level assertion here would be
+    vacuous either way:
+
+    `_current_signal(candles)` is a pure function of the list it is handed
+    and reports the state of its LAST bar, so there are no later bars inside
+    it to peek at — it cannot look ahead by construction. Feed it equal
+    inputs and you get equal outputs; that is determinism, already covered by
+    test_replay_is_deterministic, not clock-invariance.
+
+    Note the loader's window START moves with the clock
+    (`since_ts = upper_ts - days_back * 86400`, signal.py:59-61), so the two
+    runs cover different spans. Only their intersection is comparable, which
+    is what the zip below walks.
+    """
+    from bots.adx.strategy.signal import _load_btc_daily_candles
 
     clock.set_simulated_now(early_clock)
     early_candles = _load_btc_daily_candles(limit_days=400)
-    early_sig = _current_signal(early_candles) if early_candles else None
     early_dates = {c["dt"] for c in early_candles}
 
     clock.set_simulated_now(late_clock)
     late_candles = _load_btc_daily_candles(limit_days=400)
-    late_sig = _current_signal(late_candles) if late_candles else None
     clock.set_simulated_now(None)
 
+    # HALF 1 — boundary. The early run must not have seen past its own clock.
+    # Added 2026-09-13. Without it the test is blind to the most likely
+    # look-ahead bug of all: a loader that ignores the clock entirely. Both
+    # runs then return the whole table, every common-date comparison is
+    # trivially equal, and the test passes. Verified by mutation — neutering
+    # the `timestamp <= ?` bound left the agreement half green.
+    assert_no_data_after_clock(early_dates, early_clock, "ADX daily candles")
+    assert_no_data_after_clock({c["dt"] for c in late_candles}, late_clock,
+                               "ADX daily candles")
+
+    # HALF 2 — agreement. A date the early run DID see must not be revised
+    # when the clock advances.
     common_candles_early = [c for c in early_candles if c["dt"] in {lc["dt"] for lc in late_candles}]
     common_candles_late = [c for c in late_candles if c["dt"] in early_dates]
     assert len(common_candles_early) > 50, "need enough common bars"
@@ -152,6 +204,9 @@ def test_regime_classifier_no_lookahead(early_clock, late_clock):
     clock.set_simulated_now(late_clock)
     late = {r["date"]: r for r in classify_regime("BTC")}
     clock.set_simulated_now(None)
+
+    assert_no_data_after_clock(early, early_clock, "regime classify_regime")
+    assert_no_data_after_clock(late, late_clock, "regime classify_regime")
 
     common = sorted(set(early) & set(late))
     assert len(common) > 100, "need enough common dates"
@@ -188,6 +243,9 @@ def test_carry_funding_no_lookahead(early_clock, late_clock):
     clock.set_simulated_now(late_clock)
     late = {r["date"]: r for r in _load_recent_daily_funding(days=400)}
     clock.set_simulated_now(None)
+
+    assert_no_data_after_clock(early, early_clock, "carry daily funding")
+    assert_no_data_after_clock(late, late_clock, "carry daily funding")
 
     common = sorted(set(early) & set(late))
     assert len(common) > 30, "need enough common funding days"
