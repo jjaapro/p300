@@ -42,6 +42,16 @@ further down stay as they are.
   four of the six running bots (chento_v3, short_squeeze, squeeze_bull, r4) have no
   clock-invariance coverage, and the archived sleeves were subsidising the appearance of
   it. That is the next guard worth building.
+- **Later on 2026-09-13 — steps 6 to 12** (details in the numbered list below):
+  step 6 look-ahead guard DONE for all four bots; 7a (r4) and 7b (chento loaders) live
+  look-ahead defects fixed and restarted; 8, the OKX gate's re-validation on the causal
+  information set, pre-registered and frozen (`19cd10a`, Addendum 1 `d1d9808`) — **not yet
+  run, and it is the next step**; 9 analysed, needs its own decision; 10 the suite no longer
+  writes to prod.db on import; 11 a time-stop study added at the user's request (census
+  only, no outcome computed, waits for the OKX verdict and the squeeze re-cuts); 12 the two
+  live defects that census found fixed (`e048c6d`) and both bots restarted. Suite 1153
+  passed, drill 34/34. Fleet: eight units, open positions SJ-4242 (CARRY) and SJ-4247
+  (ADX); SJ-4250 closed on its time stop 17:00Z.
 - **Also open, unchanged by this work:** roadmap items 4.4 (`close_due_trades` books 15 bp
   against a measured 7–10) and 4.5 (`trade_adjustments` has no UNIQUE constraint in prod),
   and `monitor.py` still has no scheduled task.
@@ -682,7 +692,7 @@ cap — the multi-asset plan's Phase B as written.
       the live rule.
 12. **Two live defects found by the item-11 census.** Both verified 2026-09-13. Both change live
     behaviour when fixed, so neither is fixed without a go-ahead. **Both DONE 2026-09-13**
-    (user go-ahead "Fix both" the same day), in one commit with this entry. Each fix landed
+    (`e048c6d`; user go-ahead "Fix both" the same day). Each fix landed
     behind tests that failed on the old code first; suite 1153 passed, drill 34/34 (one new
     mutation per defect).
 
@@ -697,7 +707,11 @@ cap — the multi-asset plan's Phase B as written.
       ways, so both are tested: an early stop-out followed by a later win reads "not a loss",
       and a genuine last loss still halves. BTC is unaffected (it uses the sleeve's no-tilt
       skip). Recorded in `docs/calibration/chento_triple_v3.md`.
-    - Restarts needed: squeeze_bull and chento_v3_eth (neither holds a position).
+    - **Both bots restarted onto it 2026-09-13 20:53–20:54Z**, six minutes before an hourly
+      boundary so no evaluation was skipped, neither holding a position: each stopped alone
+      (the other five bots and the feed untouched), started via `start_fleet.ps1 -Units`,
+      fresh heartbeats from the new pids (squeeze_bull 37076, chento_v3_eth 42324), one unit
+      per fleet member, `health.py` 0.
 
     **12a — squeeze_bull's live time stop is 47h, not 48h.** `signal.py:246-247` measures the
     time stop from the trigger bar's OPEN (`bar_ts + TIF_HOURS`), but entry happens at that bar's
