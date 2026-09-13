@@ -46,6 +46,18 @@ from strategies.support.margin_check import (  # noqa: E402
 from strategies.support.price_feed import _get_current_price  # noqa: E402
 from strategies.support import db, strategy_health
 
+#: Close functions for the sleeves `strategies/support/margin_check.py` must
+#: not import. Those six live under `bots/` (BACKLOG step 2), and support/ is
+#: a shared library that may not reach up into the application layer — so the
+#: research layer, which may, supplies them here. Resolved lazily to keep this
+#: module importable when a sleeve is mid-move.
+def _live_close_fns() -> dict:
+    from strategies.sleeves.adx.signal import _close_adx_paper
+    from strategies.sleeves.carry.signal import _close_carry_paper
+    return {"ADX": _close_adx_paper, "CARRY": _close_carry_paper}
+
+
+
 log = logging.getLogger("p300.backtest")
 
 LIVE_VARIANT_ID = "p300_aggressive_v2_v1_0"
@@ -164,7 +176,7 @@ def mark_remaining_at_end(variant_id: str) -> int:
             log.warning(f"[end-mark] no price for {t['asset']} at clock "
                         f"{clock.now_iso()} — {t['id']} left open")
             continue
-        close_fn = _load_close_fn(t["strategy"])
+        close_fn = _load_close_fn(t["strategy"], _live_close_fns())
         if close_fn is not None:
             close_fn(t["id"], price, "end_of_backtest_window")
             n += 1
@@ -208,7 +220,7 @@ def close_due_for_variant(variant_id: str, now_utc: datetime) -> int:
                             f"past exit_time by {age_h:.1f}h but no price available "
                             f"at clock={now_utc.isoformat()}")
             continue
-        close_fn = _load_close_fn(t["strategy"])
+        close_fn = _load_close_fn(t["strategy"], _live_close_fns())
         if close_fn is None:
             log.warning(f"[close_due] no close_fn for strategy {t['strategy']!r} "
                         f"({t['id']}) — trade will leak past exit_time")

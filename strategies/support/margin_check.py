@@ -308,15 +308,19 @@ def check_liquidations_for_variant(
 
 # ─── Force-close orchestration ────────────────────────────────────────────────
 
-def _load_close_fn(strategy: str):
+def _load_close_fn(strategy: str, extra: dict | None = None):
     """Return the sleeve-specific close function (which applies fees/funding).
-    Falls back to None for unknown strategies — caller logs and skips."""
-    if strategy == "ADX":
-        from strategies.sleeves.adx.signal import _close_adx_paper
-        return _close_adx_paper
-    if strategy == "CARRY":
-        from strategies.sleeves.carry.signal import _close_carry_paper
-        return _close_carry_paper
+    Falls back to None for unknown strategies — caller logs and skips.
+
+    `extra` is how a caller supplies sleeves this layer must not import. The
+    six running sleeves live under `bots/` as of 2026-09-13, and
+    `strategies/support/` is a shared library that may not reach up into the
+    application layer, so `backtest_runner` and the orchestrator inject those
+    (see LIVE_CLOSE_FNS in each). Only the DORMANT sleeves — which stay under
+    strategies/ until BACKLOG step 4 archives them — are resolved here.
+    """
+    if extra and strategy in extra:
+        return extra[strategy]
     if strategy == "THU_BEAR":
         from strategies.sleeves.timing_anomalies.internal.thu_bear.signal import _close_thu_bear_paper
         return _close_thu_bear_paper
@@ -332,7 +336,8 @@ def _load_close_fn(strategy: str):
     return None
 
 
-def force_close_liquidations(variant_id: str, now_utc: datetime) -> int:
+def force_close_liquidations(variant_id: str, now_utc: datetime,
+                             close_fns: dict | None = None) -> int:
     """Walk open paper trades for this variant; for any leveraged trade
     whose margin trajectory would have breached maintenance margin between
     its entry and now_utc, force-close it via the sleeve's close function
@@ -344,13 +349,17 @@ def force_close_liquidations(variant_id: str, now_utc: datetime) -> int:
     Always-on in backtest mode (per project decision). Trades at leverage
     <= 1 are skipped inside :func:`check_liquidations_for_variant` (no
     liquidation possible). Returns count force-closed.
+
+    `close_fns` maps strategy -> close function for sleeves this layer cannot
+    import (the six under bots/). Callers pass their own; without it only the
+    dormant sleeves resolve, and the rest are logged and skipped.
     """
     events = check_liquidations_for_variant(variant_id, now_utc)
     if not events:
         return 0
     n = 0
     for trade, liq in events:
-        close_fn = _load_close_fn(trade["strategy"])
+        close_fn = _load_close_fn(trade["strategy"], close_fns)
         if close_fn is None:
             log.warning(f"[liq] no close_fn for {trade['strategy']!r} "
                         f"({trade['id']}) — liquidation event ignored")

@@ -637,11 +637,20 @@ def _check_liquidations_all_variants(now_utc) -> int:
     cannot abort the tick. Returns total trades force-closed across all
     variants this tick (logged as a warning if non-zero)."""
     from strategies.support.margin_check import force_close_liquidations
+
+    def _live_close_fns() -> dict:
+        # See backtest_runner._live_close_fns: support/ may not import bots/,
+        # so this layer supplies the six moved sleeves' close functions.
+        from strategies.sleeves.adx.signal import _close_adx_paper
+        from strategies.sleeves.carry.signal import _close_carry_paper
+        return {"ADX": _close_adx_paper, "CARRY": _close_carry_paper}
+
     total = 0
     paper_variants = variant_registry.get_active_paper_variants()
     for v in paper_variants:
         try:
-            total += force_close_liquidations(v["id"], now_utc)
+            total += force_close_liquidations(v["id"], now_utc,
+                                              _live_close_fns())
         except Exception as e:
             log.exception(f"[liq {v['id']}] check raised: {e}")
     if total > 0:
