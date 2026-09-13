@@ -412,7 +412,7 @@ cap — the multi-asset plan's Phase B as written.
 7. **Fix the two live-code defects step 6 found.** Neither is a future peek. 7a is DONE;
    7b is HELD for the user because it re-baselines goldens.
 
-   **7a — DONE 2026-09-13** (`<fix7a>`); r4 restart `<restart>`. Go-ahead: user
+   **7a — DONE 2026-09-13** (`a547893`). r4 restarted onto it the same day: stopped alone (0 open r4 trades; the other six bots and the feed untouched), started via `start_fleet.ps1 -Units r4`, fresh heartbeat from the new pid, one unit per fleet member, 8/8 heartbeats ok, `health.py` 0. Go-ahead: user
    2026-09-13, "Proceed with next steps". What shipped differs from what this entry first
    described, because a det_i-only fix was measured and is **incomplete**: four live reads
    see the partial bar, not one — the regime (`det_i`), the R4 gate (`_gate_for_today`'s
