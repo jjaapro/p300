@@ -25,11 +25,11 @@ the default suite because pytest.ini sets `testpaths = tests`, and because the
 archive is explicitly unsupported: a main-suite test must not go red when
 unmaintained code drifts.
 
-KNOWN GAP, 2026-09-13: four of the six RUNNING bots — chento_v3,
-short_squeeze, squeeze_bull and r4 — have no clock-invariance coverage at all.
-This contract is the repo's strongest guard against look-ahead and it does not
-currently reach most of the fleet. Porting it is a roadmap item, and that is
-where the guard budget belongs now — not on the dormant four.
+Running-bot coverage, as of 2026-09-13: squeeze_bull and short_squeeze live
+in tests/test_bot_lookahead.py; r4's sizing engine is covered here, both by
+the jplus arm and by the today_inputs() arms at the bottom of this file.
+chento_v3 is the one running bot still uncovered — its loaders have no upper
+clock bound (BACKLOG 7b), so a correct boundary assertion would be red today.
 """
 from __future__ import annotations
 
@@ -75,10 +75,12 @@ def test_common_dates_identical_across_clocks(early_clock, late_clock):
     wrapper over `jplus_inputs._run_decision_loop`, the same walk that
     `today_inputs()` uses to size every live R4 fire.
 
-    The boundary half has to be taken on the RAW loop, not on `simulate()`.
-    `simulate` filters `k < clock_date` (simulate.py:47-48) precisely to stay
-    reproducible, so asserting the bound on its output would be true by
-    construction and would mask an unbounded loader underneath.
+    This arm is the AGREEMENT half only. The boundary half cannot be asserted
+    on this output at all: `simulate` filters `k < clock_date`
+    (simulate.py:47-48), and since 2026-09-13 `_run_decision_loop` drops that
+    date too, so any boundary check downstream of either is true by
+    construction and would mask an unbounded loader underneath. It is
+    asserted on the loaders directly in test_jplus_loaders_are_clock_bounded.
     """
     from strategies.support import jplus_inputs
 
@@ -86,8 +88,14 @@ def test_common_dates_identical_across_clocks(early_clock, late_clock):
         clock.set_simulated_now(clk)
         jplus_inputs._invalidate_today_inputs_cache()
         raw, _state = jplus_inputs._run_decision_loop()
-        # HALF 1 — boundary, on the unfiltered keys.
-        assert_no_data_after_clock(raw, clk, "jplus _run_decision_loop")
+        # No boundary assertion here, deliberately. There was one, on the raw
+        # loop keys, and it went decorative on 2026-09-13 the moment the 7a fix
+        # landed: _run_decision_loop now drops every date >= the clock's, so
+        # its keys can never reach past the clock no matter what the loaders
+        # return. The drill proved it — pushing load_btc_hourly's bound 100
+        # days into the future left it green. The same masking the note above
+        # warns about for simulate(), one layer down. The boundary half lives
+        # on the loaders themselves now: test_jplus_loaders_are_clock_bounded.
         cutoff = clk.date().isoformat()
         return {k: v for k, v in raw.items()
                 if k < cutoff and k >= "2022-01-01"}
@@ -112,6 +120,62 @@ def test_common_dates_identical_across_clocks(early_clock, late_clock):
                 if a[k] != b[k]:
                     diffs.append((d, k, a[k], b[k]))
     assert not diffs, f"first 5 look-ahead divergences: {diffs[:5]}"
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("clk", [
+    datetime(2024, 11, 5, 20, 0, tzinfo=timezone.utc),   # R4_ETH entry minute
+    datetime(2023, 6, 1, 4, 0, tzinfo=timezone.utc),
+])
+def test_jplus_loaders_are_clock_bounded(clk):
+    """The boundary half for r4's sizing engine, asserted where the bound
+    actually lives — on the five loaders `_run_decision_loop` reads.
+
+    It cannot be asserted downstream (see the agreement arm above): both
+    `simulate` and, since the 7a fix, `_run_decision_loop` drop dates at or
+    after the clock, which hides an unbounded loader. And hiding is not the
+    same as neutralising — `ema_pos` and the four R4 return maps are built
+    from the HOURLY series, which no date filter touches.
+
+    Hourly loaders are checked at TIMESTAMP granularity, not date: a date
+    check would accept a 21:00 bar on a 20:00 clock. The daily loaders may
+    include the clock's own date — that partial bar is what they are
+    documented to return, and _run_decision_loop is what drops it.
+
+    Proven to catch: load_btc_hourly's bound pushed 100 days past the clock.
+    ~7 s per clock: the loaders read full history back to 2019, even though
+    it skips the decision-loop walk.
+    """
+    from data import loaders
+
+    now_s = int(clk.timestamp())
+    clock.set_simulated_now(clk)
+    try:
+        btc_h = loaders.load_btc_hourly()
+        eth_h = loaders.load_eth_hourly()
+        btc_d = loaders.load_btc_daily()
+        eth_d = loaders.load_eth_daily()
+        ls = loaders.load_ls_ratio_btc()
+    finally:
+        clock.set_simulated_now(None)
+
+    assert btc_h, "load_btc_hourly returned nothing — the arm would be vacuous"
+    newest_btc = max(r[0] for r in btc_h)
+    assert newest_btc <= now_s, (
+        f"load_btc_hourly: LOOK-AHEAD — newest bar "
+        f"{datetime.fromtimestamp(newest_btc, tz=timezone.utc)} is after the "
+        f"clock {clk}. It feeds ema_pos and btc_d unfiltered.")
+
+    assert eth_h, "load_eth_hourly returned nothing — the arm would be vacuous"
+    newest_eth = max(datetime.strptime(d, "%Y-%m-%d").replace(
+        hour=h, tzinfo=timezone.utc) for d, h in eth_h)
+    assert newest_eth <= clk, (
+        f"load_eth_hourly: LOOK-AHEAD — newest bar {newest_eth} is after the "
+        f"clock {clk}. It feeds the R4_ETH return maps unfiltered.")
+
+    for what, series in (("load_btc_daily", btc_d), ("load_eth_daily", eth_d),
+                         ("load_ls_ratio_btc", ls)):
+        assert_no_data_after_clock(series, clk, what)
 
 
 @pytest.mark.slow
@@ -273,3 +337,119 @@ def test_carry_funding_no_lookahead(early_clock, late_clock):
             if abs(early[d][k] - late[d][k]) > 1e-9:
                 diffs.append((d, k, early[d][k], late[d][k]))
     assert not diffs, f"carry funding look-ahead divergences (first 5): {diffs[:5]}"
+
+
+# ─── R4 live sizing: today_inputs() must not read today's partial bar ───────
+#
+# BACKLOG 7a, fixed 2026-09-13. today_inputs() projects "today" from the tail
+# of _run_decision_loop's state, and until then that state included the
+# clock's own UTC date as a PARTIAL daily bar. Four live reads saw it — the
+# regime (det_i), the R4 gate, vol-target leverage and the LS circuit breaker
+# — so r4's sizing changed through the day and was frozen by whichever call
+# the date-keyed cache saw first, i.e. by when the process last restarted.
+# It also bypassed the bear-regime kill switch on 2026-03-03 and 2026-03-31.
+#
+# These are the only coverage today_inputs() has: tests/test_golden_r4.py
+# stubs it out entirely.
+
+@pytest.mark.slow
+# Two hours, not five: measured against the bug, 0/4/12/23 all PASS on the
+# broken code — only 20:00 read a different regime. One hour before the
+# divergence plus the hour that diverged is what actually has teeth; the
+# other three cost ~24s of decision-loop walks and caught nothing.
+@pytest.mark.parametrize("hour", [4, 20])
+def test_today_inputs_is_invariant_within_the_utc_day(hour):
+    """Same UTC day, any hour: same answer. The docstring has promised this
+    since the function was written; it was false until 2026-09-13.
+
+    2024-11-05 is a real R4_ETH entry day on which the bug moved the answer
+    from uncertain / lev 2.0 / w 0.148 at 04:00 to mild_bull / lev 2.5 / w
+    0.130 at 20:00 — and R4_ETH's window opens at 20:00.
+    """
+    from strategies.support import jplus_inputs
+    clock.set_simulated_now(datetime(2024, 11, 5, hour, tzinfo=timezone.utc))
+    jplus_inputs._invalidate_today_inputs_cache()   # date-keyed: flush per hour
+    try:
+        ti = jplus_inputs.today_inputs()
+    finally:
+        clock.set_simulated_now(None)
+        jplus_inputs._invalidate_today_inputs_cache()
+    assert ti["date"] == "2024-11-05"
+    assert (ti["mode"], ti["lev"], ti["gated"]) == ("uncertain", 2.0, False), (
+        f"today_inputs() at {hour:02d}:00 returned {ti['mode']}/{ti['lev']}/"
+        f"{ti['gated']} — live r4 sizing is reading today's partial bar again")
+    assert ti["weights"]["r4_eth"] == pytest.approx(0.14814814814814814)
+
+
+@pytest.mark.slow
+@pytest.mark.parametrize("when", [
+    datetime(2026, 3, 3, 20, 1, tzinfo=timezone.utc),
+    datetime(2026, 3, 31, 20, 1, tzinfo=timezone.utc),
+])
+def test_bear_kill_switch_is_not_bypassed_by_the_partial_bar(when):
+    """The safety consequence, pinned on the two real R4_ETH entry minutes
+    where it happened. The partial bar read 'uncertain' (weight 0.148 — the
+    bot fires); yesterday's complete close reads 'bear' (weight 0 — the kill
+    switch at bots/r4/strategy/signal.py:93 refuses). The kill switch itself
+    was intact in code and defeated in practice."""
+    from strategies.support import jplus_inputs
+    clock.set_simulated_now(when)
+    jplus_inputs._invalidate_today_inputs_cache()
+    try:
+        ti = jplus_inputs.today_inputs()
+    finally:
+        clock.set_simulated_now(None)
+        jplus_inputs._invalidate_today_inputs_cache()
+    assert ti["mode"] == "bear", (
+        f"{when:%Y-%m-%d %H:%M}: regime {ti['mode']!r}, expected 'bear' — the "
+        f"bear kill switch is being bypassed")
+    assert ti["weights"]["r4_eth"] == 0.0
+
+
+@pytest.mark.slow
+# 2026-03-03 dropped from this list: it fails here too, but the kill-switch
+# arm above already pins that exact minute. 2026-04-01 stays because it is the
+# one case only this arm catches — a GATE flip, which a det_i-only fix leaves
+# in place and which oversized the V2 entry 2.5x.
+@pytest.mark.parametrize("when", [
+    datetime(2024, 11, 5, 20, 1, tzinfo=timezone.utc),
+    datetime(2026, 4, 1, 4, 1, tzinfo=timezone.utc),
+])
+def test_today_inputs_equals_the_research_row(when):
+    """The contract, rather than a value: what the live bot sizes with on day D
+    must equal the row the research loop records for D.
+
+    Stronger than the hard-coded arms above because it cannot pass by a value
+    happening to sit at a regime cap. It is also exactly the premise of the
+    AUDIT_2026_05_13 weights correction at jplus_inputs.py:206-225 ("at Tue
+    20:00, today_inputs()'s latest complete daily close is Monday") — which
+    was false in live until this fix. 2026-04-01 04:01 is the V2 entry a
+    det_i-only fix would have oversized 2.5x through the gate leak.
+    """
+    from datetime import timedelta
+    from strategies.support import jplus_inputs
+
+    clock.set_simulated_now(when)
+    jplus_inputs._invalidate_today_inputs_cache()
+    try:
+        live = jplus_inputs.today_inputs()
+    finally:
+        clock.set_simulated_now(None)
+
+    later = when + timedelta(days=3)
+    clock.set_simulated_now(later)
+    jplus_inputs._invalidate_today_inputs_cache()
+    try:
+        out, _state = jplus_inputs._run_decision_loop()
+    finally:
+        clock.set_simulated_now(None)
+        jplus_inputs._invalidate_today_inputs_cache()
+
+    day = when.date().isoformat()
+    assert day in out, f"research loop has no row for {day}"
+    row = out[day]
+    assert (live["mode"], live["gated"]) == (row["mode"], row["gated"]), (
+        f"{day}: live sizes with {live['mode']}/gated={live['gated']} but the "
+        f"research row says {row['mode']}/gated={row['gated']}")
+    assert live["lev"] == pytest.approx(row["lev"]), (
+        f"{day}: live lev {live['lev']} != research lev {row['lev']}")

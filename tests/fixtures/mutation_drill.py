@@ -110,7 +110,11 @@ MUTATIONS = [
     ("lookahead: jplus btc_hourly upper bound pushed past the clock",
      "data/loaders.py",
      "AND timestamp <= ? ", "AND timestamp <= ?+8640000 ",
-     "tests/test_jplus_lookahead.py::test_common_dates_identical_across_clocks"),
+     # Was charged to test_common_dates_identical_across_clocks and went
+     # MISSED when the 7a fix landed: _run_decision_loop now drops dates
+     # >= the clock, which hides an unbounded loader from anything that
+     # reads its output. The drill is what caught the regression.
+     "tests/test_jplus_lookahead.py::test_jplus_loaders_are_clock_bounded"),
     ("lookahead: squeeze_bull loader re-anchored to MAX(timestamp)",
      "bots/squeeze_bull/strategy/signal.py",
      "WHERE p.timestamp >= ? AND p.timestamp < ?",
@@ -132,6 +136,14 @@ MUTATIONS = [
      "WHERE p.timestamp >= ? AND p.timestamp <= ?+8640000",
      "tests/test_bot_lookahead.py::"
      "test_short_squeeze_percentile_pool_is_clock_bounded"),
+    # BACKLOG 7a. Reverting the partial-day drop is the exact bug that
+    # bypassed r4's bear-regime kill switch on 2026-03-03 and 2026-03-31.
+    ("lookahead: r4 sizing reads today's partial daily bar again",
+     "strategies/support/jplus_inputs.py",
+     "dates = [d for d in sorted(set(btc_d.keys())) if d < clock_date]",
+     "dates = sorted(set(btc_d.keys()))",
+     "tests/test_jplus_lookahead.py::"
+     "test_bear_kill_switch_is_not_bypassed_by_the_partial_bar"),
     ("lookahead: short_squeeze percentile pool is no longer rolling",
      "bots/short_squeeze/strategy/signal.py",
      "WHERE p.timestamp >= ? AND p.timestamp <= ?",

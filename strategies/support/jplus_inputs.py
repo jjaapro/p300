@@ -77,7 +77,8 @@ def _gate_for_today(bc: list[float]) -> bool:
     """Compute today's R4 gate value from BTC closes through yesterday.
 
     Mirrors gate.compute_gate_map's per-date logic at index ``len(bc)``
-    where ``prev_i = len(bc) - 1`` is yesterday. Returns True if the bot
+    where ``prev_i = len(bc) - 1`` is yesterday — which is true only because
+    _run_decision_loop drops the clock's partial date from ``bc`` (see there). Returns True if the bot
     should de-lever R4 today (high-vol regime by the same trailing-30d-vs-
     365d-75th-percentile rule)."""
     import math
@@ -134,7 +135,31 @@ def _run_decision_loop() -> tuple[dict[str, dict], dict]:
     r4e_v2_map = r4.r4_eth_v2_returns(eth_h)
     ema_pos = ema_sleeve.compute_ema_position_map(hourly)
 
-    dates = sorted(set(btc_d.keys()))  # BTC-daily is the primary calendar
+    # BTC-daily is the primary calendar, MINUS the clock's own UTC date.
+    #
+    # load_btc_daily aggregates every hourly bar <= the clock, so that date is
+    # a PARTIAL bar whose "close" moves as the day fills in — at 2024-11-05 it
+    # reads 68,323.01 at 04:00Z and 69,445.99 at 20:00Z. Until 2026-09-13 it
+    # was left in, and everything today_inputs() projects from the tail of
+    # this state read it: the regime (det_i), the R4 gate (_gate_for_today's
+    # prev_i), vol-target leverage (recent_1x) and the LS circuit breaker
+    # (ls_d[dates[det_i]]). Live R4 sizing therefore changed through the day
+    # and was frozen by whichever call the date-keyed cache saw first — i.e.
+    # by when the process last restarted.
+    #
+    # It also defeated the bear-regime kill switch. On 2026-03-03 and
+    # 2026-03-31 at the R4_ETH 20:01 entry, the partial bar read 'uncertain'
+    # (weight 0.148, fires) where yesterday's complete close reads 'bear'
+    # (weight 0, blocked).
+    #
+    # Dropping the date here — not by repointing det_i — fixes all four reads
+    # at once, because they share this state. A det_i-only fix was measured
+    # and rejected: it leaves the gate and recent_1x leaks, and oversizes the
+    # 2026-04-01 04:01 V2 entry 2.5x. simulate() already drops this date from
+    # its OUTPUT (studies/jplus_analytic/simulate.py:42-48), so no research
+    # row is lost: simulate()'s SHA-256 is unchanged at four clocks.
+    clock_date = clock.now_utc().date().isoformat()
+    dates = [d for d in sorted(set(btc_d.keys())) if d < clock_date]
     bc = [btc_d[d]["c"] for d in dates]
     e20 = regime.ema_calc(bc, 20)
     e50 = regime.ema_calc(bc, 50)
@@ -317,9 +342,17 @@ def today_inputs() -> dict | None:
     crosses, regime entries) and avoid cold-start fills mid-signal.
 
     Look-ahead safety: every input here is derived strictly from data
-    available at yesterday's UTC close (regime/EMA cross/gate/vol-target
-    all use T-1 windows by construction). Calling at any time today
-    returns the same answer until midnight UTC tomorrow.
+    available at yesterday's UTC close (regime/gate/vol-target/LS circuit
+    breaker all use T-1 windows). Calling at any time today returns the same
+    answer until midnight UTC tomorrow.
+
+    Both of those promises were FALSE until 2026-09-13 — the state this
+    projects from included today's partial daily bar. They are true now
+    because _run_decision_loop drops the clock's own date, and they are
+    pinned by test_today_inputs_is_invariant_within_the_utc_day and
+    test_today_inputs_equals_the_research_row. One exception is NOT covered
+    by the promise: ``ema_p`` still reads ``ema_pos[today]`` intraday. r4
+    never reads it and EMA_BTC is archived, so it was left alone.
 
     Performance: the result is cached by UTC date — the first call of a
     new UTC day pays the full ``_run_decision_loop`` walk (~1-2s), every
@@ -339,9 +372,13 @@ def today_inputs() -> dict | None:
 
     yesterday_iso = (clock.now_utc().date() - timedelta(days=1)).isoformat()
 
-    # det_i = index of yesterday in `dates` = len(dates) - 1. The simulator
-    # uses ``max(1, i - 1)`` for in-loop iterations; for "today" we project
-    # one more step, so det_i is the last historical index.
+    # det_i = index of yesterday in `dates` = len(dates) - 1. This holds ONLY
+    # because _run_decision_loop drops the clock's own partial UTC date. If
+    # that date ever gets back into `dates`, this line, _gate_for_today below,
+    # the recent_1x tail and the LS circuit breaker all size R4 off today's
+    # half-formed bar again — guarded by test_today_inputs_is_invariant_
+    # within_the_utc_day. The simulator uses ``max(1, i - 1)`` for in-loop
+    # iterations; for "today" we project one more step.
     det_i = len(dates) - 1
     mode, _sp, _cb = regime.classify_day(
         det_i, state["bc"], state["e20"], state["e50"], state["ls_d"],

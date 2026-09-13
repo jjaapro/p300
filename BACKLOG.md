@@ -409,10 +409,47 @@ cap — the multi-asset plan's Phase B as written.
    filesystem's mtime granularity leaves a stale `.pyc` that CPython keeps using — it failed
    nine unrelated tests and would have been very hard to attribute. `_restore` now drops the
    bytecode too. With the fleet running, a bot restarted in that window would have loaded it.
-7. **Fix the two live-code defects step 6 found.** Both need a go-ahead
-   (`feedback_research_workflow_rules`); neither is fixed, and neither is a future peek.
+7. **Fix the two live-code defects step 6 found.** Neither is a future peek. 7a is DONE;
+   7b is HELD for the user because it re-baselines goldens.
 
-   **7a — r4 sizes off today's PARTIAL daily bar.** `today_inputs()` uses
+   **7a — DONE 2026-09-13** (`<fix7a>`); r4 restart `<restart>`. Go-ahead: user
+   2026-09-13, "Proceed with next steps". What shipped differs from what this entry first
+   described, because a det_i-only fix was measured and is **incomplete**: four live reads
+   see the partial bar, not one — the regime (`det_i`), the R4 gate (`_gate_for_today`'s
+   `prev_i`), vol-target leverage (`recent_1x`) and the LS circuit breaker
+   (`ls_d[dates[det_i]]`). A det_i-only fix leaves the gate leak and oversizes the
+   2026-04-01 04:01 V2 entry 2.5x. The fix drops the clock's own date inside
+   `_run_decision_loop`, which all four share — one line.
+
+   **It was defeating r4's bear-regime kill switch.** At the R4_ETH 20:01 entry on
+   2026-03-03 and 2026-03-31 the partial bar read `uncertain` (weight 0.148, fires) where
+   yesterday's complete close reads `bear` (weight 0, blocked). Those dates predate r4 going
+   live (it has 0 trades), so no paper record was damaged. Over the 78 enabled-window entry
+   minutes 2025-09 → 2026-09, 5 change; fires 46 → 45; gross notional +0.3 %.
+   **`simulate()` is byte-identical** — SHA-256 unchanged at three clocks, computed from a
+   clean HEAD worktree against the fixed tree. No golden moved (`test_golden_r4.py` stubs
+   `today_inputs`, which also means it had no coverage at all until now).
+
+   Guards: three test functions / six cases, each shown red with the fix reverted. Trimmed
+   from ten cases after measuring that four of the invariance hours passed on the BUGGY
+   code too — only the 20:00 entry hour diverged.
+
+   **The drill caught a regression the fix itself introduced.** The loader look-ahead
+   mutation went MISSED: dropping dates >= the clock inside `_run_decision_loop` hides an
+   unbounded loader from everything that reads its output — the same masking simulate()
+   already had, one layer down. And hiding is not neutralising: `ema_pos` and the R4 return
+   maps read the HOURLY series, which no date filter touches. The boundary half now lives on
+   the five loaders directly (`test_jplus_loaders_are_clock_bounded`, timestamp-granular for
+   the hourly ones), and the dead downstream assertion was removed rather than left green.
+
+   **Research defect found, NOT fixed** (separate item, would move `simulate()`): the
+   AUDIT_2026_05_13 weights correction at jplus_inputs.py:206-225 is partial. It lags
+   `weights` for the Wed-keyed R4_ETH row but still applies that row's gate and vol-lev, both
+   built from Tuesday's close a Tue 20:00 entry cannot know — 33 of 170 R4_ETH rows,
+   overstating R4_ETH's research contribution ~6 %. The live fix moves live TOWARD causal
+   truth on those rows, i.e. slightly away from the research row.
+
+   **Original description, kept for the record:** `today_inputs()` uses
    `det_i = len(dates) - 1` (jplus_inputs.py:345), commented "index of yesterday" — but
    `load_btc_daily()` includes the current incomplete day, so it indexes TODAY. The in-loop
    simulator uses `max(1, i - 1)` (:163) and `simulate()` additionally drops the clock date
@@ -426,7 +463,33 @@ cap — the multi-asset plan's Phase B as written.
    **live sizing depends on when the process last restarted**. Both promises in the docstring
    at :320-322 are false.
 
-   **7b — chento_v3's three loaders have no upper clock bound.** `_load_15m_btc`,
+   **7b — HELD for the user 2026-09-13: fixing it re-baselines six goldens.** Designed and
+   adversarially reviewed, not applied. The loader bounds are a measured LIVE NO-OP (all 36
+   feature columns identical at real now) but they are not the whole fix, and the goldens
+   are the reason it is held rather than shipped:
+
+   - **The current chento goldens pin look-ahead, and the live ledger proves it.** The live
+     bot recorded `okx_delta_z` 1.4609786480 (SJ-4243/4244), 0.1437340057 (SJ-4245/4246) and
+     1.6751492272 (SJ-4248/4249). The bounded replay reproduces all three to 10 significant
+     figures. The committed goldens say −0.7299, 0.4754 and 0.9437 — they match none.
+   - **`chento_btc_okx_blocked` asserts a block that never happened.** It pins the OKX gate
+     blocking the 2026-08-21 06:00 signal; live TRADED that signal (SJ-4243, LONG). The
+     golden was measuring 59 minutes of future OKX data, not the gate.
+   - Bounds alone **kill every walking replay** (121-tick walk: 2 decided → 0): the replay
+     branch builds the frame once per UTC day without `force`, so it freezes at the first
+     tick. A replay-only stale-frame rebuild must ship in the same commit (~15x slower
+     walking replays). The OKX bound must be `now - 3600`, not `now`: OKX stores closed hours
+     only, and the naive bound pairs a complete OKX hour with a truncated Binance hour.
+   - Moves six BTC goldens (fire_a, fire_b, fire_row, twice_first, twice_second,
+     okx_blocked); retire okx_blocked's anchor for 2026-07-16 06:30:05, which blocks under
+     both; widen the fixture's OKX carve 31 → 45 days; supersede `__replay_p0gate`
+     (8 trades, +$1,043.37) in `chento_triple_v3.md`, which ran on the same peeking frame.
+   - **Wider consequence:** the OKX gate's own study (−25 % DD, +34 % OOS; memory
+     `project_cross_exchange_okx_gate`) used same-hour COMPLETE bars on both venues, which
+     live can never see. The gate's sign differs from the peeking value on 31 % of bars.
+     This fix does not create that gap; it makes it visible.
+
+   **Original description:** `_load_15m_btc`,
    `_load_lsr_btc`, `_load_okx_1h` are `WHERE timestamp >= ?` only (signal.py:179, 199, 218).
    Measured: at clock 2026-07-15 12:00Z the feature frame runs to 2026-09-13 09:45Z —
    **5,751 bars of future data**. Harmless live, where the clock tracks the DB tail; fatal to
