@@ -69,15 +69,32 @@ def assert_no_data_after_clock(dates, clk, what: str) -> None:
     (datetime(2024, 1, 1, tzinfo=timezone.utc), datetime(2025, 1, 1, tzinfo=timezone.utc)),
 ])
 def test_common_dates_identical_across_clocks(early_clock, late_clock):
-    # Early run
-    clock.set_simulated_now(early_clock)
-    early = simulate.simulate(start_date="2022-01-01",
-                               end_date=early_clock.date().isoformat())
-    # Late run
-    clock.set_simulated_now(late_clock)
-    late = simulate.simulate(start_date="2022-01-01",
-                              end_date=late_clock.date().isoformat())
+    """The R4 sizing engine, both halves of the contract.
+
+    This is r4's coverage as well as Core J+'s: `simulate.simulate` is a thin
+    wrapper over `jplus_inputs._run_decision_loop`, the same walk that
+    `today_inputs()` uses to size every live R4 fire.
+
+    The boundary half has to be taken on the RAW loop, not on `simulate()`.
+    `simulate` filters `k < clock_date` (simulate.py:47-48) precisely to stay
+    reproducible, so asserting the bound on its output would be true by
+    construction and would mask an unbounded loader underneath.
+    """
+    from strategies.support import jplus_inputs
+
+    def run(clk):
+        clock.set_simulated_now(clk)
+        jplus_inputs._invalidate_today_inputs_cache()
+        raw, _state = jplus_inputs._run_decision_loop()
+        # HALF 1 — boundary, on the unfiltered keys.
+        assert_no_data_after_clock(raw, clk, "jplus _run_decision_loop")
+        cutoff = clk.date().isoformat()
+        return {k: v for k, v in raw.items()
+                if k < cutoff and k >= "2022-01-01"}
+
+    early, late = run(early_clock), run(late_clock)
     clock.set_simulated_now(None)
+    jplus_inputs._invalidate_today_inputs_cache()
 
     common = sorted(set(early) & set(late))
     assert len(common) > 30, "need enough common dates to be meaningful"

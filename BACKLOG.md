@@ -379,7 +379,61 @@ cap — the multi-asset plan's Phase B as written.
    deepen). It also found the sweep had left `bootstrap.py --help` printing `python bot.py`
    and `health.py` recommending a `binance_feed.py` that does not exist — both fixed.
    Links now resolve 0 broken across the five primary docs.
-6. Port the two-clock look-ahead contract to chento_v3, short_squeeze, squeeze_bull and r4.
+6. Port the two-clock look-ahead contract to the four running bots that had none.
+   **3 of 4 DONE 2026-09-13** (`9010f86`, `<step6>`); chento is blocked on 7b below.
+   New `tests/test_bot_lookahead.py`; drill 16 -> 25 mutations, 25/25 caught.
+
+   **The existing guard was the first finding.** `test_adx_signal_no_lookahead` called
+   `_current_signal` at both clocks and never compared the results — proven decorative
+   (making it return `None` unconditionally left the test green). Worse, **no arm asserted
+   the clock boundary at all**: comparing two clocks on their common dates proves the past
+   is not revised, but if a loader ignores the clock entirely then both runs return the
+   whole table, every comparison is trivially equal, and the test passes while the bot
+   trades on tomorrow's candles. Neutering the ADX `timestamp <= ?` bound left it green.
+   New helper `assert_no_data_after_clock` carries that half; ADX, regime, carry and the
+   jplus/r4 arm all have it now.
+
+   **What two-clock tests cannot do — the main lesson, and it cost three rewrites.**
+   Three successive squeeze_bull agreement arms were each decorative: none could be made to
+   fail under an origin-anchored cooldown, `COOLDOWN_HOURS` x60, a production lookback cut
+   45 -> 7 days, or `REGIME_SHIFT_DAYS = 0`. Two compounding reasons: (a) both runs get the
+   same mutation, so clock-invariance is blind to anything not clock-*dependent*, which is
+   most config and most arithmetic; (b) building a per-bar series by walking prefixes
+   enforces causality structurally, so an intra-frame peek cannot be observed. What survives
+   is the boundary half plus **direct causality** assertions — corrupt the present, prove the
+   past does not move. Arms that could not be shown to catch anything were deleted rather
+   than shipped: a guard that cannot fail reports safety it has not checked.
+
+   **Also found and fixed:** the drill could leave the repo executing mutated code while
+   `git status` reported clean. A same-size mutation (`= 1` -> `= 0`) restored inside the
+   filesystem's mtime granularity leaves a stale `.pyc` that CPython keeps using — it failed
+   nine unrelated tests and would have been very hard to attribute. `_restore` now drops the
+   bytecode too. With the fleet running, a bot restarted in that window would have loaded it.
+7. **Fix the two live-code defects step 6 found.** Both need a go-ahead
+   (`feedback_research_workflow_rules`); neither is fixed, and neither is a future peek.
+
+   **7a — r4 sizes off today's PARTIAL daily bar.** `today_inputs()` uses
+   `det_i = len(dates) - 1` (jplus_inputs.py:345), commented "index of yesterday" — but
+   `load_btc_daily()` includes the current incomplete day, so it indexes TODAY. The in-loop
+   simulator uses `max(1, i - 1)` (:163) and `simulate()` additionally drops the clock date
+   "to keep the return series look-ahead-safe AND deterministic" (simulate.py:42-48).
+   **The research path guards this; the live path does not.** Measured at 2024-11-05: clock
+   04:00Z vs 20:00Z gives the same date a close of 68,323.01 vs 69,445.99, and
+   `today_inputs()` returns `uncertain / lev 2.0 / w[r4_eth] 0.148` vs
+   `mild_bull / lev 2.5 / 0.130`. r4 reads `ti["lev"]` to size directly (signal.py:102) and
+   `ti["weights"]` as the bear-regime kill switch (:93); R4_ETH's window opens at 20:00.
+   `_TODAY_INPUTS_CACHE` freezes whichever value the first call of the UTC day produced, so
+   **live sizing depends on when the process last restarted**. Both promises in the docstring
+   at :320-322 are false.
+
+   **7b — chento_v3's three loaders have no upper clock bound.** `_load_15m_btc`,
+   `_load_lsr_btc`, `_load_okx_1h` are `WHERE timestamp >= ?` only (signal.py:179, 199, 218).
+   Measured: at clock 2026-07-15 12:00Z the feature frame runs to 2026-09-13 09:45Z —
+   **5,751 bars of future data**. Harmless live, where the clock tracks the DB tail; fatal to
+   every frozen-clock replay, which is how this repo validates everything (`--sim-now` runner
+   replays, parity checks, re-cuts). This is why chento has no arm yet: the correct boundary
+   assertion is red today, and a test pinning the defect instead would punish whoever fixes
+   it. Port the contract to chento once this lands.
 
 **Gates:** parity tests byte-equal before and after every step; the full suite green;
 fleet restarted from the new paths with fresh heartbeats; one definition per rule (no

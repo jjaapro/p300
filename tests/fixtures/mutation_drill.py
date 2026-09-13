@@ -84,6 +84,60 @@ MUTATIONS = [
      "bots/short_squeeze/runner.py",
      'count_diag=(k == 0))', 'count_diag=True)',
      "tests/test_short_squeeze_bot.py"),
+
+    # ─── Look-ahead (BACKLOG step 6, 2026-09-13) ────────────────────────────
+    # Charged to a specific NODE, not a whole file. A file-level CAUGHT can
+    # hide an arm that has gone decorative, which is exactly what happened to
+    # three successive drafts of a squeeze_bull agreement arm — each passed
+    # its file while catching nothing. Every entry below was run and confirmed
+    # red before being added.
+    ("lookahead: ADX candle loader reads 10d past the clock",
+     "bots/adx/strategy/signal.py",
+     "upper_ts = clock.now_ts()", "upper_ts = clock.now_ts() + 864000",
+     "tests/test_jplus_lookahead.py::test_adx_candle_loader_no_lookahead"),
+    ("lookahead: ADX candle loader drops its upper bound entirely",
+     "bots/adx/strategy/signal.py",
+     "WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp",
+     "WHERE timestamp >= ? AND ? > 0 ORDER BY timestamp",
+     "tests/test_jplus_lookahead.py::test_adx_candle_loader_no_lookahead"),
+    ("lookahead: carry funding upper_ts pushed 30d past the clock",
+     "bots/carry/strategy/signal.py",
+     "    upper_ts = clock.now_ts()", "    upper_ts = clock.now_ts() + 2592000",
+     "tests/test_jplus_lookahead.py::test_carry_funding_no_lookahead"),
+    # Binding-preserving on purpose: replacing "?" outright raises
+    # sqlite3.ProgrammingError (wrong parameter count) and the drill would
+    # report a FALSE catch — the test fails on the error, not the look-ahead.
+    ("lookahead: jplus btc_hourly upper bound pushed past the clock",
+     "data/loaders.py",
+     "AND timestamp <= ? ", "AND timestamp <= ?+8640000 ",
+     "tests/test_jplus_lookahead.py::test_common_dates_identical_across_clocks"),
+    ("lookahead: squeeze_bull loader re-anchored to MAX(timestamp)",
+     "bots/squeeze_bull/strategy/signal.py",
+     "WHERE p.timestamp >= ? AND p.timestamp < ?",
+     "WHERE p.timestamp >= ? AND p.timestamp < "
+     "(SELECT MAX(timestamp)+1 FROM cd_futures_ohlcv) AND ?>0",
+     "tests/test_bot_lookahead.py::test_squeeze_bull_loader_is_clock_bounded"),
+    ("lookahead: squeeze_bull loader bound made inclusive (forming hour)",
+     "bots/squeeze_bull/strategy/signal.py",
+     "AND p.timestamp < ?", "AND p.timestamp <= ?",
+     "tests/test_bot_lookahead.py::test_squeeze_bull_loader_is_clock_bounded"),
+    ("lookahead: squeeze_bull REGIME_SHIFT_DAYS = 0 (config says never)",
+     "bots/squeeze_bull/strategy/config.py",
+     "REGIME_SHIFT_DAYS = 1", "REGIME_SHIFT_DAYS = 0",
+     "tests/test_bot_lookahead.py::"
+     "test_squeeze_bull_regime_never_reads_its_own_day_or_later"),
+    ("lookahead: short_squeeze percentile pool reaches past the clock",
+     "bots/short_squeeze/strategy/signal.py",
+     "WHERE p.timestamp >= ? AND p.timestamp <= ?",
+     "WHERE p.timestamp >= ? AND p.timestamp <= ?+8640000",
+     "tests/test_bot_lookahead.py::"
+     "test_short_squeeze_percentile_pool_is_clock_bounded"),
+    ("lookahead: short_squeeze percentile pool is no longer rolling",
+     "bots/short_squeeze/strategy/signal.py",
+     "WHERE p.timestamp >= ? AND p.timestamp <= ?",
+     "WHERE p.timestamp >= ?-864000000 AND p.timestamp <= ?",
+     "tests/test_bot_lookahead.py::"
+     "test_short_squeeze_percentile_pool_is_clock_bounded"),
 ]
 
 
@@ -92,7 +146,29 @@ def run(cmd, **kw):
                           **kw)
 
 
-before_state = run(["git", "status", "--porcelain", "strategies/", "bots/"]).stdout
+def _restore(p: pathlib.Path, orig_bytes: bytes) -> None:
+    """Byte-exact restore, AND drop the bytecode compiled from the mutation.
+
+    Writing the original bytes back is not enough. CPython invalidates a
+    .pyc on (mtime, size), and a mutation that keeps the file the same size —
+    `REGIME_SHIFT_DAYS = 1` -> `= 0` — restored within the filesystem's mtime
+    granularity leaves a STALE .pyc that Python keeps using. Observed
+    2026-09-13: `git diff` clean, `git status` clean, and
+    `config.REGIME_SHIFT_DAYS` importing as 0, which failed nine unrelated
+    squeeze_bull tests and would have been a nightmare to attribute.
+
+    That is worse than a test-suite annoyance. The fleet is running, and a
+    bot restarted in that window would load the mutated bytecode from a repo
+    that reports itself clean. So the .pyc goes, unconditionally.
+    """
+    p.write_bytes(orig_bytes)
+    cache = p.parent / "__pycache__"
+    if cache.is_dir():
+        for pyc in cache.glob(f"{p.stem}.*.pyc"):
+            pyc.unlink(missing_ok=True)
+
+
+before_state = run(["git", "status", "--porcelain", "strategies/", "bots/", "data/"]).stdout
 
 caught = missed = skipped = 0
 for label, rel, before, after, testfile in MUTATIONS:
@@ -120,10 +196,10 @@ for label, rel, before, after, testfile in MUTATIONS:
                   f"decorative here")
             missed += 1
     finally:
-        p.write_bytes(orig_bytes)      # byte-exact restore
+        _restore(p, orig_bytes)
 
 print(f"\ncaught {caught}  missed {missed}  skipped {skipped}")
-after_state = run(["git", "status", "--porcelain", "strategies/", "bots/"]).stdout
+after_state = run(["git", "status", "--porcelain", "strategies/", "bots/", "data/"]).stdout
 st = "" if after_state == before_state else after_state.strip()
 print("restored to pre-drill state:" if not st else "!! DRILL LEFT RESIDUE:",
       st or "(yes)")
