@@ -18,10 +18,9 @@ Architecture:
                             P&L = funding collected − round-trip fees, no
                             price-PnL component.
 
-Each sleeve's legacy ``_close_X_paper`` is a thin wrapper that just sets
-the sleeve-name parameter (kept so
-``strategies.support.margin_check._load_close_fn`` doesn't need to change).
-The bug-fix surface for every paper close is now this one module.
+Each sleeve's ``_close_X_paper`` is a thin wrapper that sets the sleeve-name
+and cost parameters. The bug-fix surface for every paper close is this one
+module.
 """
 from __future__ import annotations
 

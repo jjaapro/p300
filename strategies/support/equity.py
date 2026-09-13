@@ -271,3 +271,59 @@ def marked_daily_returns(variant_id: str, start: str, end: str,
     if any(row[key] is None for row in rows):
         raise EquityDataError("Daily NAV returns undefined after non-positive equity")
     return [(row["date"], row[key]) for row in rows]
+
+
+# ─── Replay reporting ─────────────────────────────────────────────────────
+# Moved here verbatim from backtest_runner.py when the legacy replay path was
+# retired (2026-09-13). Kept rather than dropped because tests/test_equity.py
+# uses compute_metrics as an INDEPENDENT second implementation of maximum
+# drawdown, cross-checked against strategy_health.portfolio_metrics. Making
+# either delegate to the other would turn that assertion tautological.
+
+def build_daily_nav(variant_id: str, capital: float, start: datetime,
+                    end: datetime) -> list[dict]:
+    """Daily marked equity, including open-position risk before its close.
+
+    The last observation is capped at the replay end, even for a partial day.
+    Missing historical marks fail the report explicitly.
+    """
+    return daily_equity(
+        variant_id, start.date().isoformat(), end.date().isoformat(),
+        capital, as_of=end,
+    )
+
+
+def compute_metrics(nav_rows: list[dict], capital: float) -> dict:
+    if not nav_rows:
+        return {}
+    if any(r.get("nav_return_pct", r["return_pct"]) is None for r in nav_rows):
+        raise ValueError("Daily risk metrics undefined after non-positive equity")
+    rets = [r.get("nav_return_pct", r["return_pct"]) / 100.0 for r in nav_rows]
+    capital = nav_rows[0].get("opening_equity_usdt", capital)
+    final_equity = nav_rows[-1]["equity_usdt"]
+    total_return = (final_equity / capital) - 1
+    n_days = len(nav_rows)
+    years = n_days / 365.25
+    cagr = (final_equity / capital) ** (1 / years) - 1 if years > 0 and final_equity > 0 else float("nan")
+    if len(rets) > 1:
+        mean = sum(rets) / len(rets)
+        var = sum((r - mean) ** 2 for r in rets) / (len(rets) - 1)
+        sd = math.sqrt(var)
+        sharpe = (mean / sd) * math.sqrt(365) if sd > 0 else float("nan")
+    else:
+        sharpe = float("nan")
+    # MDD on equity curve
+    peak = capital
+    mdd = 0.0
+    for r in nav_rows:
+        peak = max(peak, r["equity_usdt"])
+        dd = (r["equity_usdt"] / peak) - 1 if peak > 0 else 0
+        mdd = min(mdd, dd)
+    return {
+        "final_equity": final_equity,
+        "total_return_pct": total_return * 100,
+        "cagr_pct": cagr * 100 if not math.isnan(cagr) else float("nan"),
+        "sharpe_daily_ann": sharpe,
+        "mdd_pct": mdd * 100,
+        "n_days": n_days,
+    }

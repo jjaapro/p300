@@ -329,9 +329,11 @@ def test_backdated_close_cannot_apply_later_resized_position(
     assert _trade(ledger) == before
 
 
-@pytest.mark.parametrize("caller", ["backtest", "botlib", "orchestrator"])
-def test_scheduled_backstops_cannot_bypass_recovered_thursday_stop(ledger, monkeypatch, caller):
-    import backtest_runner
+def test_scheduled_backstops_cannot_bypass_recovered_thursday_stop(ledger, monkeypatch):
+    """The backstop must not book the due-time price over a stop the path
+    already hit. Parametrized over three callers until 2026-09-13; the
+    backtest_runner and orchestrator arms went with those modules, and
+    botlib.close_due_trades is the one the fleet actually runs."""
     from strategies.support import funding
     _seed(ledger, direction="SHORT", strategy="THU_BEAR",
           notes='{"sl_semantic_price_thresh_pct":5}')
@@ -342,17 +344,8 @@ def test_scheduled_backstops_cannot_bypass_recovered_thursday_stop(ledger, monke
     _bar(ledger, 25 * 60 - 1, o=88, h=89, l=87, c=88)
     monkeypatch.setattr(clock, "_simulated_now", due)
     monkeypatch.setattr(funding, "accrued_pct", lambda *args: 0)
-    if caller == "backtest":
-        assert backtest_runner.close_due_for_variant("v", due) == 1
-    elif caller == "botlib":
-        import botlib
-        assert botlib.close_due_trades("v", due) == ["stop-test"]
-    else:
-        from strategies import orchestrator
-        with sqlite3.connect(ledger) as con:
-            con.execute("CREATE TABLE variants (id TEXT PRIMARY KEY, enabled INTEGER)")
-            con.execute("INSERT INTO variants VALUES ('v',1)")
-        orchestrator._close_due_paper_trades(due)
+    import botlib
+    assert botlib.close_due_trades("v", due) == ["stop-test"]
     row = _trade(ledger)
     assert row["exit_price"] == pytest.approx(105)
     assert row["actual_exit_time"] == _at(1).isoformat()
@@ -365,7 +358,10 @@ def test_scheduled_backstops_cannot_bypass_recovered_thursday_stop(ledger, monke
 ])
 def test_runner_end_window_close_cannot_bypass_stop(
         ledger, monkeypatch, strategy, direction, ohlc, expected):
-    import backtest_runner
+    """Closing an open trade at the current clock must still resolve a stop
+    the path already hit. Drove backtest_runner.mark_remaining_at_end until
+    2026-09-13; now drives the same close pipeline through the sleeve helper
+    the fleet uses."""
     from bots.adx.strategy import signal as adx
     from strategies.support import funding
     _seed(ledger, direction=direction, strategy=strategy)
@@ -374,14 +370,20 @@ def test_runner_end_window_close_cannot_bypass_stop(
     monkeypatch.setattr(funding, "accrued_pct", lambda *args: 0)
     monkeypatch.setattr(adx, "_load_btc_daily_candles", lambda: [])
     monkeypatch.setattr(adx, "ATR_TRAIL_MULT", 0)
-    assert backtest_runner.mark_remaining_at_end("v") == 1
+    from strategies import trades as trades_mod
+    if strategy == "ADX":
+        adx._close_adx_paper("stop-test", float(ohlc[3]), "end_of_window")
+    else:
+        trades_mod.close_perp_trade("stop-test", float(ohlc[3]),
+                                    "end_of_window", sleeve_name=strategy)
     row = _trade(ledger)
     assert row["exit_price"] == pytest.approx(expected)
     assert row["actual_exit_time"] == _at(1).isoformat()
 
 
 def test_late_scheduled_close_uses_due_price_not_later_wick_or_quote(ledger, monkeypatch):
-    import backtest_runner
+    """A close that runs late must price at the DUE time, not a later wick.
+    Drove backtest_runner.close_due_for_variant until 2026-09-13."""
     from strategies.support import funding
     _seed(ledger, direction="SHORT", strategy="THU_BEAR")
     due = _at(25 * 60)
@@ -393,7 +395,8 @@ def test_late_scheduled_close_uses_due_price_not_later_wick_or_quote(ledger, mon
     _bar(ledger, 25 * 60 + 9, o=80, h=81, l=79, c=80)
     monkeypatch.setattr(clock, "_simulated_now", _at(25 * 60 + 10))
     monkeypatch.setattr(funding, "accrued_pct", lambda *args: 0)
-    assert backtest_runner.close_due_for_variant("v", clock.now_utc()) == 1
+    import botlib
+    assert botlib.close_due_trades("v", clock.now_utc()) == ["stop-test"]
     row = _trade(ledger)
     assert row["actual_exit_time"] == due.isoformat()
     assert row["exit_price"] == 95

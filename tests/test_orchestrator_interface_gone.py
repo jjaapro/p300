@@ -4,8 +4,9 @@ Replaces tests/test_sleeve_adapter_equivalence.py, which for phase C pinned
 the legacy `(variant, sleeve_cfg)` adapters as pure passthroughs — the
 evidence that made deleting them safe. Phase D step 23 deleted them, so the
 assertions invert: the legacy names must now be ABSENT, the plain surface
-present, and the cfg->kwargs translation must live in exactly one place
-(`strategies/support/cfg_adapter.py`, covered by tests/test_cfg_adapter.py).
+present, and no sleeve may speak the orchestrator's vocabulary. The
+cfg->kwargs translator that phase D centralized went with the orchestrator
+itself on 2026-09-13 — nothing in production translates a cfg dict now.
 
 Kept as a standing guard rather than dropped, because the easiest way to
 "fix" a future dispatch problem is to add a wrapper back into a sleeve — which
@@ -46,8 +47,7 @@ BANNED = ("try_decide_for_variant", "execute_for_variant",
 #: they are archived (BACKLOG.md step 4).
 NOT_MIGRATED = ("strategies.sleeves.ai_quant.signal",
                 "strategies.sleeves.ema.signal",
-                "strategies.sleeves.eth_daily.signal",
-                "strategies.sleeves.timing_anomalies.signal")
+                "strategies.sleeves.eth_daily.signal")
 
 
 @pytest.mark.parametrize("modpath, entries", list(MIGRATED.items()))
@@ -130,13 +130,12 @@ def test_no_migrated_sleeve_reads_an_effective_key():
         f"{offenders}")
 
 
-def test_cfg_adapter_is_the_only_translator_in_support():
-    """`strategies/support/` is live-path code. Only cfg_adapter may READ the
-    orchestrator's injected keys there; docstrings describing the flow are
-    fine (allocation.py has one)."""
+def test_nothing_in_support_translates_an_orchestrator_key():
+    """`strategies/support/` is live-path code. With the orchestrator retired
+    nothing injects `_effective_*` any more, so nothing may read one — not
+    even the translator that used to be allowed to."""
     repo = pathlib.Path(__file__).resolve().parents[1]
     hits = {p.relative_to(repo).as_posix()
             for p in sorted((repo / "strategies" / "support").rglob("*.py"))
-            if p.name != "cfg_adapter.py"
-            and _READS_EFFECTIVE.search(p.read_text(encoding="utf-8"))}
+            if _READS_EFFECTIVE.search(p.read_text(encoding="utf-8"))}
     assert not hits, f"_effective_* read in support/: {sorted(hits)}"

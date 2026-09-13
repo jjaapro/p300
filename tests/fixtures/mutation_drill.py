@@ -72,33 +72,18 @@ MUTATIONS = [
      "bots/chento_v3/strategy/signal.py",
      'if not ctm.okx_aligned(okx_z, direction, OKX_ALIGN_Z_MIN):', 'if False:',
      "tests/test_golden_chento.py"),
-    # The cfg->kwargs translation, now centralized. These replace nine
-    # mutations that targeted the per-sleeve adapters phase D deleted.
-    ("cfg_adapter: effective-weight override lost",
-     "strategies/support/cfg_adapter.py",
-     '"weight_pct": float(cfg.get("_effective_weight_pct",',
-     '"weight_pct": float(cfg.get("__none__",',
-     "tests/test_cfg_adapter.py"),
-    ("cfg_adapter: weight defaults to 100 instead of 0",
-     "strategies/support/cfg_adapter.py", 'cfg.get("weight_pct", 0.0))', 'cfg.get("weight_pct", 100.0))',
-     "tests/test_cfg_adapter.py"),
-    ("cfg_adapter: leverage override dropped",
-     "strategies/support/cfg_adapter.py", '"leverage": float(cfg.get("_effective_leverage", 1.0)),',
-     '"leverage": 1.0,', "tests/test_cfg_adapter.py"),
-    ("cfg_adapter: ADX params stop_loss_pct ignored",
-     "strategies/support/cfg_adapter.py", 'float(params.get("stop_loss_pct", 10.0))', '10.0', "tests/test_cfg_adapter.py"),
-    ("cfg_adapter: use_stop forced on",
-     "strategies/support/cfg_adapter.py", '"use_stop": bool(cfg.get("use_stop", True))',
-     '"use_stop": True', "tests/test_cfg_adapter.py"),
-    ("cfg_adapter: count_diag conflated with use_stop",
-     "strategies/support/cfg_adapter.py", '"count_diag": bool(cfg.get("count_diag", True))',
-     '"count_diag": bool(cfg.get("use_stop", True))', "tests/test_cfg_adapter.py"),
-    ("cfg_adapter: r4 absent weight coerced to 0.0 (kills the regime gate)",
-     "strategies/support/cfg_adapter.py", '"weight_pct": cfg.get("_effective_weight_pct"),',
-     '"weight_pct": float(cfg.get("_effective_weight_pct") or 0.0),', "tests/test_cfg_adapter.py"),
-    ("cfg_adapter: r4 gate dropped (leverage silently reverts to the fallback)",
-     "strategies/support/cfg_adapter.py", '"gate": cfg.get("_effective_gate"),',
-     '"gate": None,', "tests/test_cfg_adapter.py"),
+    # The per-variant flags that separated the live paper twins moved from
+    # the cfg dict to literal runner keywords when the sleeves were repointed,
+    # so the mutation moves with them.
+    ("squeeze_bull runner: use_stop not threaded per variant",
+     "bots/squeeze_bull/runner.py",
+     'per[v["row"]["id"]] = tick(v["row"], use_stop=bool(v["use_stop"]),',
+     'per[v["row"]["id"]] = tick(v["row"], use_stop=True,',
+     "tests/test_squeeze_bull_bot.py"),
+    ("short_squeeze runner: count_diag not once-per-tick",
+     "bots/short_squeeze/runner.py",
+     'count_diag=(k == 0))', 'count_diag=True)',
+     "tests/test_short_squeeze_bot.py"),
 ]
 
 
@@ -107,11 +92,15 @@ def run(cmd, **kw):
                           **kw)
 
 
-before_state = run(["git", "status", "--porcelain", "strategies/"]).stdout
+before_state = run(["git", "status", "--porcelain", "strategies/", "bots/"]).stdout
 
 caught = missed = skipped = 0
 for label, rel, before, after, testfile in MUTATIONS:
     p = REPO / rel
+    if not p.exists():
+        print(f"  [SKIP ] {label}\n           {rel} no longer exists")
+        skipped += 1
+        continue
     orig_bytes = p.read_bytes()
     orig = orig_bytes.decode("utf-8")
     if before not in orig:
@@ -134,7 +123,7 @@ for label, rel, before, after, testfile in MUTATIONS:
         p.write_bytes(orig_bytes)      # byte-exact restore
 
 print(f"\ncaught {caught}  missed {missed}  skipped {skipped}")
-after_state = run(["git", "status", "--porcelain", "strategies/"]).stdout
+after_state = run(["git", "status", "--porcelain", "strategies/", "bots/"]).stdout
 st = "" if after_state == before_state else after_state.strip()
 print("restored to pre-drill state:" if not st else "!! DRILL LEFT RESIDUE:",
       st or "(yes)")

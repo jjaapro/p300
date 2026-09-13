@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 
 import pytest
 
-from strategies.support import db, equity, trade_db, strategy_health, portfolio_vol
+from strategies.support import db, equity, trade_db, strategy_health
 
 
 @pytest.fixture
@@ -55,9 +55,8 @@ def test_recovered_winner_keeps_daily_drawdown_and_conserves_terminal_pnl(ledger
     assert metrics.max_drawdown_pct == pytest.approx(-20)
     assert metrics.total_return_pct == pytest.approx(12)
     assert strategy_health.trades_daily_returns("V","2024-01-01","2024-01-04",100) == [("2024-01-04",12)]
-    from backtest_runner import build_daily_nav, compute_metrics
-    nav = build_daily_nav("V",100,datetime(2024,1,1,tzinfo=timezone.utc),datetime(2024,1,4,12,tzinfo=timezone.utc))
-    assert compute_metrics(nav,100)["mdd_pct"] == pytest.approx(-20)
+    nav = equity.build_daily_nav("V",100,datetime(2024,1,1,tzinfo=timezone.utc),datetime(2024,1,4,12,tzinfo=timezone.utc))
+    assert equity.compute_metrics(nav,100)["mdd_pct"] == pytest.approx(-20)
 
 
 def test_future_terminal_result_cannot_change_earlier_equity(ledger):
@@ -114,8 +113,10 @@ def test_missing_mark_is_explicit_and_vol_sizing_uses_floor(ledger, monkeypatch,
         equity.daily_equity("V","2024-01-01","2024-01-01",100)
     from strategies.support import clock
     monkeypatch.setattr(clock,"now_utc",lambda:datetime(2024,1,2,12,tzinfo=timezone.utc))
-    assert portfolio_vol.compute_portfolio_vol_scalar("V",100,window_days=1) == portfolio_vol.LEV_FLOOR
-    assert "risk unavailable" in caplog.text
+    # (The portfolio-vol scalar assertion went with strategies/support/
+    # portfolio_vol.py, retired 2026-09-13 with the orchestrator that was its
+    # only consumer — no bot ever read it; every runner passes leverage
+    # explicitly.)
     metrics = strategy_health.portfolio_metrics("V", strategy_health.Window("D","2024-01-01","2024-01-01"),capital_usdt=100)
     assert metrics.max_drawdown_pct is None and metrics.total_return_pct is None
     assert "Missing completed BTC mark" in metrics.data_error

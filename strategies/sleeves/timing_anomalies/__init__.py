@@ -1,9 +1,5 @@
-"""TIMING_ANOMALIES — meta-sleeve consolidating calendar/clock edges.
+"""TIMING_ANOMALIES — the meta-sleeve was retired 2026-09-13.
 
-Single sleeve at the orchestrator level that internally dispatches to
-multiple sub-strategies (FOMC, R4, THU_BEAR, PDO, CPR) on every tick.
-Each sub-strategy retains its own signal logic; the meta-sleeve provides
-unified allocation budget + reconciliation + composition.
-
-See README.md for the architectural rationale.
+Only internal/ remains, holding the four dormant calendar substrategies until
+BACKLOG step 4 archives them.
 """
