@@ -12,7 +12,7 @@ Run from the repo root:  venv\\Scripts\\python studies/notebooks/anchor_allocato
 
 Sources (verified in code before use — see README.md "Sources"):
   J+ loop     strategies.support.jplus_inputs._run_decision_loop()
-  R4 math     strategies.sleeves.timing_anomalies.internal.r4.math
+  R4 math     strategies.support.r4_windows
   ADX         studies.notebooks.adx_study.harness (T2 production config)
   chento      studies/notebooks/overlay_study/results_backonly/trades_{BTC,ETH}.csv
   carry       strategies.support.funding.daily_sums_pct + carry config
@@ -40,7 +40,7 @@ if hasattr(sys.stdout, "reconfigure"):          # plain console only; ipykernel 
 from strategies.support import db as _db                                   # noqa: E402
 from strategies.support import funding as _funding                          # noqa: E402
 from strategies.support import jplus_inputs                                 # noqa: E402
-from strategies.sleeves.timing_anomalies.internal.r4 import math as r4math  # noqa: E402
+from strategies.support import r4_windows as r4math  # noqa: E402
 from strategies.sleeves.carry.config import (                               # noqa: E402
     ENTRY_EXIT_COST_PCT, EXIT_NEG_DAYS, FR_ENTRY_THRESHOLD, FR_WINDOW_DAYS,
 )

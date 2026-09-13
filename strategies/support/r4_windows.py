@@ -1,4 +1,13 @@
 """R4 intraday windows — direct port from upstream `backtest_variant_j`,
+
+Lives in support/ rather than with the R4 sleeve because
+`strategies/support/jplus_inputs.py` imports it at MODULE scope to build
+`today_inputs()`, and the sleeve reads that result back. With the sleeve under
+`bots/r4/`, keeping this here is what stops support/ importing bots/ — the
+layer inversion BACKLOG P2.1 was created to fix once before. It is pure
+calendar/return arithmetic with no sleeve parameters, so it belongs at this
+layer on its own merits (moved 2026-09-13, step 2).
+
 extended 2026-05-08 with V2 sleeves following the calendar-window study
 in studies/notebooks/r4_study/.
 

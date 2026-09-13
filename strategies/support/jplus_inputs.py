@@ -23,7 +23,7 @@ from strategies.support import clock
 from data import loaders as data
 from strategies.support import gate, voltarget
 from strategies.support import regime_jplus as regime
-from strategies.sleeves.timing_anomalies.internal.r4 import math as r4
+from strategies.support import r4_windows as r4
 from strategies.sleeves.ema import math as ema_sleeve
 
 
