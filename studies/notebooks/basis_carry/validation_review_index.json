@@ -1,0 +1,226 @@
+{
+  "review_date": "2026-09-14",
+  "scope": "retrospective_static_review_and_conditional_forward_addenda",
+  "studies": [
+    {
+      "study": "basis_carry",
+      "review_path": "basis_carry/VALIDATION_REVIEW_PLAN.md",
+      "status": "conditional_inconclusive_negative_screen",
+      "priority": "P1",
+      "key_findings": [
+        "Literal D3 data failure remains; keep no-build decision.",
+        "Sampled hourly forecast lineage is not authenticated settled funding.",
+        "Entry/exit/funding clocks, pooled capital denominator and calendar dependence need reconciliation."
+      ],
+      "notebooks_reviewed": [
+        "basis_carry/basis_carry.ipynb"
+      ],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "delta_neutral",
+      "review_path": "delta_neutral/VALIDATION_REVIEW_PLAN.md",
+      "status": "rejected_models_with_conditional_revisit",
+      "priority": "P1",
+      "key_findings": [
+        "Preserve dispersion/sizing rejection and three-venue power qualification.",
+        "Current carry imports no longer match the frozen negative-streak interface.",
+        "Funding proxy, changed-leg costs and absent two-leg price/margin risk limit exact economics."
+      ],
+      "notebooks_reviewed": [
+        "delta_neutral/delta_neutral.ipynb"
+      ],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "grid_study",
+      "review_path": "grid_study/VALIDATION_REVIEW_PLAN.md",
+      "status": "archived_rejected_conditional",
+      "priority": "P2",
+      "key_findings": [
+        "Keep finite-grid no-build decision.",
+        "Invalid order direction and capital mechanics prevent executable or monotonic-upper-bound claims.",
+        "Entry-order/additive risk is not invested NAV drawdown."
+      ],
+      "notebooks_reviewed": [
+        "grid_study/grid_study.ipynb"
+      ],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "vrp_study",
+      "review_path": "vrp_study/VALIDATION_REVIEW_PLAN.md",
+      "status": "positive_evidence_blocked_before_reuse",
+      "priority": "P0",
+      "key_findings": [
+        "Keep later no-advance decision.",
+        "Future-mark survival selection and future settlement fallbacks compromise positive evidence.",
+        "Mark haircut is not bid/ask execution; clocks, overlapping expiries and collateral need validation."
+      ],
+      "notebooks_reviewed": [
+        "vrp_study/vrp_study.ipynb"
+      ],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "hedge_tests",
+      "review_path": "hedge_tests/VALIDATION_REVIEW_PLAN.md",
+      "status": "archived_negative_screen_conditional",
+      "priority": "P2",
+      "key_findings": [
+        "Keep no-change and range no-build conclusions.",
+        "Reactive intrabar ordering, hedge-cycle fees and differing filtered cohorts limit paired claims.",
+        "Gross hedge exposure and calendar NAV are not established by cumulative R."
+      ],
+      "notebooks_reviewed": [
+        "hedge_tests/hedge_experiments.ipynb"
+      ],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "pool_study",
+      "review_path": "pool_study/VALIDATION_REVIEW_PLAN.md",
+      "status": "descriptive_conditional",
+      "priority": "P2",
+      "key_findings": [
+        "Conditional ETH/BTC means are not allocation or causal-alpha evidence.",
+        "Calendar gaps, regime warm-up, paired dependence and 200% gross spread interpretation need explicit labels.",
+        "No new portfolio test is needed without an allocation question."
+      ],
+      "notebooks_reviewed": [],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "overlay_study",
+      "review_path": "overlay_study/VALIDATION_REVIEW_PLAN.md",
+      "status": "positive_evidence_blocked_before_reuse",
+      "priority": "P0",
+      "key_findings": [
+        "Tilt reads earlier-entry final outcomes before overlapping exits are known.",
+        "Wick round-grid scale uses future window maximum.",
+        "Selected cumulative-R MAR lacks equal-capital portfolio, net costs and honest fresh holdout."
+      ],
+      "notebooks_reviewed": [
+        "overlay_study/overlay_study.ipynb"
+      ],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "sizing_style_2026_09",
+      "review_path": "sizing_style_2026_09/VALIDATION_REVIEW_PLAN.md",
+      "status": "accounting_and_safety_evidence_blocked_before_reuse",
+      "priority": "P0",
+      "key_findings": [
+        "Fixed-notional daily ratio MTM does not conserve fixed-unit trade P&L; reported net R is gross.",
+        "S2 equity sizing recognizes future overlapping outcomes.",
+        "S3 substitutes in-hold MAE for the original 24-hour safety gate and aligns assets positionally."
+      ],
+      "notebooks_reviewed": [
+        "sizing_style_2026_09/sizing_style.ipynb"
+      ],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "strategy_comparison_2026_09",
+      "review_path": "strategy_comparison_2026_09/VALIDATION_REVIEW_PLAN.md",
+      "status": "descriptive_conditional",
+      "priority": "P2",
+      "key_findings": [
+        "Preserve explicit descriptive-only scope.",
+        "Notional-unit conversion does not create comparable portfolio drawdown or capital allocation.",
+        "Macro-gate association is not actual signal overlap or diversification; missing and unavailable gates need separation."
+      ],
+      "notebooks_reviewed": [],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "paladin_study",
+      "review_path": "paladin_study/VALIDATION_REVIEW_PLAN.md",
+      "status": "positive_wick_inference_blocked_no_build_retained",
+      "priority": "P0",
+      "key_findings": [
+        "Preserve no-sleeve decision and useful corpus/follower-fill diagnostics.",
+        "Wick grid depends on future window and net-cost alpha is only approximated.",
+        "Selected reported outcomes, unresolved simulations and inspected short history do not establish true skill or independent OOS."
+      ],
+      "notebooks_reviewed": [
+        "paladin_study/paladin_study.ipynb"
+      ],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "paladin_harvester",
+      "review_path": "paladin_harvester/VALIDATION_REVIEW_PLAN.md",
+      "status": "archived_rejected_conditional",
+      "priority": "P2",
+      "key_findings": [
+        "Keep twelve-cell rejection; do not automatically retune.",
+        "Overlap, truncated holds, funding and entry-order risk limit account claims.",
+        "A new study requires a distinct hypothesis and genuinely forward chronology."
+      ],
+      "notebooks_reviewed": [],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "attribution",
+      "review_path": "attribution/VALIDATION_REVIEW_PLAN.md",
+      "status": "causal_alpha_inference_blocked_before_reuse",
+      "priority": "P0",
+      "key_findings": [
+        "Algebraic decomposition and unmatched random-time holds do not identify selection/exit alpha.",
+        "Live counterfactual forces BTC and mixes open/completed horizons without asset validation.",
+        "Net equal-capital paired controls and dependent inference are prerequisites for decision use."
+      ],
+      "notebooks_reviewed": [],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "original_notebooks_unchanged": 52,
+  "reviewed_notebooks_mapped_once": 51,
+  "original_directories_covered": 43,
+  "review_plan_files_present": 51,
+  "overview_notebook_markdown_cells": 21,
+  "empirical_studies_executed": 0,
+  "databases_queried": 0,
+  "local_markdown_links_checked": 366,
+  "counts": {
+    "P0": 26,
+    "P1": 12,
+    "P2": 13
+  }
+}

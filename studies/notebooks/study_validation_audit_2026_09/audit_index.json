@@ -1,0 +1,986 @@
+{
+  "date": "2026-09-14",
+  "method": "Static JSON/source inspection; no notebook, strategy, database or network execution",
+  "scope": {
+    "original_notebooks_reviewed": 51,
+    "original_directories_reviewed": 43,
+    "review_plans": 51,
+    "priorities": {
+      "P0": 26,
+      "P1": 12,
+      "P2": 13
+    },
+    "notebooks_without_saved_execution_counts": 37,
+    "orb": "Existing research/test plan preserved; excluded from this new audit"
+  },
+  "review_plans": [
+    {
+      "study": "adx_eth_2026_09",
+      "review_path": "adx_eth_2026_09/VALIDATION_REVIEW_PLAN.md",
+      "status": "invalid_for_exact_performance_claim; historical KILL retained",
+      "priority": "P0",
+      "key_findings": [
+        "Shared live_walk skips the entire entry-day minute stop walk; ETH results inherit the defect.",
+        "Phase metrics use unequal calendars, funding is booked at trade closure, and terminal open exposure is omitted.",
+        "Shared sizing_lib daily MTM multiplies original notional by successive percentage changes instead of fixed-quantity price changes.",
+        "BTC/ETH correlation is conditional on nonzero P&L; a fixed transfer is not independent of BTC development.",
+        "Findings phase medians disagree with saved JSON; preserve both and reconcile before numeric reuse."
+      ],
+      "notebooks_reviewed": [
+        "adx_eth_2026_09/adx_eth.ipynb"
+      ],
+      "scope_limitations": [
+        "2026-09-14 static source/markdown and saved-text review; notebook cells 0–4.",
+        "No execution, database access, data fetch, production changes, or independently verified raw-data/fill provenance.",
+        "No numerical impact of shared-engine correction was estimated."
+      ]
+    },
+    {
+      "study": "adx_robustness_2026_09",
+      "review_path": "adx_robustness_2026_09/VALIDATION_REVIEW_PLAN.md",
+      "status": "invalid_for_execution_funding_and_account_risk_claims",
+      "priority": "P0",
+      "key_findings": [
+        "adx_lib.py:141 continues the daily outer loop after entry, omitting the first holding day's stop path.",
+        "Funding-at-exit and unequal calendars invalidate clean daily-risk attribution.",
+        "Shared sizing_lib daily MTM violates fixed-quantity P&L reconciliation.",
+        "Linear scaling of compounded maximum drawdown is not an account-risk bound.",
+        "Pure long/short funding netting does not create additional portfolio funding income; overlap days do not reconcile settlement quantities.",
+        "Late-entry counterfactual retains original funding and inherits engine defects."
+      ],
+      "notebooks_reviewed": [
+        "adx_robustness_2026_09/adx_robustness.ipynb"
+      ],
+      "scope_limitations": [
+        "2026-09-14 static review; notebook cells 0–10 plus key code and saved results.",
+        "No studies, database queries, data retrieval, production edits, or exchange-fill verification.",
+        "Quantitative effect of defects remains unmeasured."
+      ]
+    },
+    {
+      "study": "adx_study",
+      "review_path": "adx_study/VALIDATION_REVIEW_PLAN.md",
+      "status": "exploratory; invalid_for_annual_sharpe_causal_pivot_and_independent_validation_claims",
+      "priority": "P0",
+      "key_findings": [
+        "Historical harness Sharpe is trade t-like and drawdown is based on closed trades.",
+        "Current-day close raises the ATR trail before testing the same day's low/high.",
+        "Full-history experiment paths are sliced by entry date; selected-rule OOS language overstates independence.",
+        "Pivot accuracy starts at the pivot close despite eight-bar confirmation; a longer horizon does not remove unavailable returns.",
+        "Funding/CVD coverage and confirmation timestamps need explicit manifests."
+      ],
+      "notebooks_reviewed": [],
+      "scope_limitations": [
+        "2026-09-14 static review; no notebooks exist in this directory.",
+        "Findings and main harness/experiments/pivot/CVD/funding source reviewed; case-study/long-context/Pine implementations not exhaustively validated.",
+        "No execution, database access, data fetch, or current live configuration verification."
+      ]
+    },
+    {
+      "study": "anchor_allocator_study",
+      "review_path": "anchor_allocator_study/VALIDATION_REVIEW_PLAN.md",
+      "status": "descriptive_synthetic_panel; invalid_for_causal_portfolio_risk_reuse",
+      "priority": "P0",
+      "key_findings": [
+        "Same-day nonzero P&L defines active capital; allocation is not causally implementable from prior information.",
+        "Chento terminal returns are smeared across 72 hours and ADX daily-reset short marks differ from fixed-quantity ledgers.",
+        "Legacy Sharpe is CAGR/volatility; preserve historical definition but do not compare as standard Sharpe.",
+        "Rebalance costs omit price/NAV drift and direction flips; inactive gross-cap sensitivities duplicate outcomes.",
+        "Gold/cash/weight-compression effects and later post-hoc controls require distinct attribution.",
+        "Historical KILL remains conditional on the documented synthetic panel; no rerun needed for archival retention."
+      ],
+      "notebooks_reviewed": [
+        "anchor_allocator_study/anchor_allocator.ipynb"
+      ],
+      "scope_limitations": [
+        "2026-09-14 static review; notebook cells 0–12, panel notes, findings, key panel/allocator/metric code, saved verdict.",
+        "Underlying sleeve raw ledgers and predecessor implementations were not exhaustively audited.",
+        "No backtests, database access, data fetch, fleet wiring/fill verification, or production change."
+      ]
+    },
+    {
+      "study": "attribution",
+      "review_path": "attribution/VALIDATION_REVIEW_PLAN.md",
+      "status": "causal_alpha_inference_blocked_before_reuse",
+      "priority": "P0",
+      "key_findings": [
+        "Algebraic decomposition and unmatched random-time holds do not identify selection/exit alpha.",
+        "Live counterfactual forces BTC and mixes open/completed horizons without asset validation.",
+        "Net equal-capital paired controls and dependent inference are prerequisites for decision use."
+      ],
+      "notebooks_reviewed": [],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "carry_exit_rule_2026_09",
+      "review_path": "carry_exit_rule_2026_09/VALIDATION_REVIEW_PLAN.md",
+      "status": "invalid_for_stated_cost_uplift; tail_protection_unvalidated",
+      "priority": "P0",
+      "key_findings": [
+        "Imported C2 source charges 20 bp roundtrip while prose variously claims 24 bp roundtrip or per toggle.",
+        "ALWAYS_ON valid-span holding differs from a 7-day-entry-gated description.",
+        "Inherited median warmup and fixed prints-per-year require elapsed-calendar/cadence reconciliation.",
+        "Four alternative-versus-LIVE intervals are pointwise and reuse history already inspected in C2.",
+        "Funding-only notional yield and observed worst stretches do not validate full account risk or sustained-negative-regime protection."
+      ],
+      "notebooks_reviewed": [
+        "carry_exit_rule_2026_09/carry_exit_rule.ipynb"
+      ],
+      "scope_limitations": [
+        "2026-09-14 static review; notebook cells 0–4, rule source, dependency cost code, saved results.",
+        "Documented shipped CUM30D status and parity test were not independently verified or changed.",
+        "No cache/database access, execution, fetching, or numerical correction."
+      ]
+    },
+    {
+      "study": "chento_journal",
+      "review_path": "chento_journal/VALIDATION_REVIEW_PLAN.md",
+      "status": "HISTORICAL_CLAIMS_REQUIRE_REVALIDATION",
+      "priority": "P0",
+      "key_findings": [
+        "Trader profitability and bot equivalence: UNSUPPORTED. The selected image journal is not a complete account ledger. findings.md lines 66 and 119–127 describe incomplete lifecycles and omitted material; final_calibration_report.md lines 9–12 call approximate +0.30R and +0.33R statistically identical without an equivalence test. Its two-day annualization (86–88) and projected returns (148–159) do not establish realized or expected performance.",
+        "Early composite timing: INVALID BEFORE REUSE. validation_B_composite.py lines 55–66 intersects events with an absolute ±24-hour distance. validation_group_A_redo.py and validation_liquidation_and_C6.py retain callers. The backward-only alternatives patch selected module bindings in their main paths; their existence does not repair other imports.",
+        "Outcome-dependent gates and sizing: NOT VERIFIED CAUSAL. Prior-row final R, e.g. validation_liquidation_and_C6.py lines 236–239, is not necessarily known when the next signal fires. Replay must use completed exits for state updates and identify the precise gate/tilt version.",
+        "Multi-asset replication: NOT EQUIVALENT. The existing plan's progress log notes that 86% of v2 entries bypassed the intended confluence path. v3 cell 1 also describes unequal BTC/ETH/OP confluence. Different missing-data fallbacks are different strategies, not independent replication of one rule.",
+        "Notebook reproducibility: NOT EXECUTED / BROKEN IMPORT. All four notebooks have null execution counts and no saved outputs. v1/v3 import strategies.sleeves.chento_limit_bid, which is absent; archived source exists elsewhere. A valid Python syntax inventory is not a fresh-kernel run.",
+        "Current strategy relevance: HISTORICAL ONLY. The reports span retired sleeves, changed gates, selected filters, and data later repaired. An old SHIP or calibrated label cannot validate the current gate-off or paper-trading configuration."
+      ],
+      "notebooks_reviewed": [
+        "chento_journal/bootstrap_phase_analysis.ipynb",
+        "chento_journal/chento_limit_bid_v1_backtest.ipynb",
+        "chento_journal/chento_limit_bid_v3_backtest.ipynb",
+        "chento_journal/chento_vs_bot_comparison.ipynb"
+      ],
+      "scope_limitations": "All four notebook cell inventories and key source paths were reviewed statically; the large historical validation-script family was not exhaustively audited line by line. Journal images/account records, database contents, production behavior, and runtime imports were not independently verified. Static review on 2026-09-14; no backtests, database queries, downloads, or existing artifact edits."
+    },
+    {
+      "study": "coinbase_premium",
+      "review_path": "coinbase_premium/VALIDATION_REVIEW_PLAN.md",
+      "status": "invalid_for_positive_execution_and_provenance_claims; historical KILL retained",
+      "priority": "P0",
+      "key_findings": [
+        "Run A/B provenance is incomplete and both producers write premium_by_year.csv.",
+        "Incomplete-hour policies differ; dropping a few ETH hours cascades through threshold/cooldown decisions.",
+        "Same-close entry follows knowledge of two completed bars but is timestamped at bar open.",
+        "Next-open sensitivity skips the entry-hour stop path.",
+        "Inner-joined signal/execution rows alter elapsed horizons and can omit Binance risk during a Coinbase outage.",
+        "Cross-asset correlation, USD/USDT basis, and regime dependence limit predictive/mechanistic claims."
+      ],
+      "notebooks_reviewed": [
+        "coinbase_premium/coinbase_premium.ipynb",
+        "coinbase_premium/coinbase_premium_run_A_2026_09_08.ipynb"
+      ],
+      "scope_limitations": [
+        "2026-09-14 static review; primary notebook cells 0–17 and run-A notebook cells 0–23.",
+        "No historical code-hash recovery, raw cross-venue data verification, or actual latency/fill measurement.",
+        "No study execution, database queries, data fetch, or modifications to original runs."
+      ]
+    },
+    {
+      "study": "dwell_block",
+      "review_path": "dwell_block/VALIDATION_REVIEW_PLAN.md",
+      "status": "DO_NOT_INTEGRATE_STALE_POSITIVE_NOTEBOOK_INVALID_COMPARISON",
+      "priority": "P0",
+      "key_findings": [
+        "Current conclusion: DO NOT INTEGRATE. findings.md lines 7–12 says no deployable entry edge and rejects integration. Notebook cells 1 and 15 still describe a positive/wire-in interpretation; the newer negative conclusion governs, and the old narrative is stale.",
+        "Fallback comparison: INVALID COUNTERFACTUAL. prod_compare.py lines 71–81 first observes whether a limit fills over the next 24 hours; if not, it assigns the original market price and original start time. That fallback depends on future nonfill information and is not an executable policy.",
+        "Shared signal baseline: NOT CAUSAL AS IMPORTED. experiment_abc.py imports build_optimized_triggers from the old redo path, while prod_compare imports the old composite builder. Their reviewed conjunction path admits future ±24-hour events unless explicitly patched; the standalone callers do not establish such a repair.",
+        "Paired comparison population: NOT IDENTICAL. The saved market and shallow-fallback arms have 103 and 105 trades. Filters/state are applied after arm-specific outcomes, so an asserted same-trade comparison requires a signal/eligibility reconciliation and exit-completion-aware state.",
+        "Fill-bar and instrument effects: LIMITED / BIASED. Filled-limit replay begins after the fill bar, omitting possible immediate adverse movement. Fine 5-second spot paths do not establish perp fills or funding; fixed research costs cannot resolve basis and execution differences.",
+        "Detector/metric claims: DESCRIPTIVE ONLY. A detector matched to three charts and a selected trader journal is not an independent edge test. The trade-R cumulative-return/drawdown ratio is not an annualized capital-marked MAR."
+      ],
+      "notebooks_reviewed": [
+        "dwell_block/dwell_block_research.ipynb"
+      ],
+      "scope_limitations": "No source or existing notebook was modified and no experiment rerun. Saved arm counts are historical; current production parity, actual fine-data completeness, fills, and funding remain unverified. Static review on 2026-09-14; no backtests, database queries, downloads, or existing artifact edits."
+    },
+    {
+      "study": "funding_cvd_divergence",
+      "review_path": "funding_cvd_divergence/VALIDATION_REVIEW_PLAN.md",
+      "status": "FAILED_DISCOVERY_GATE_MECHANISM_AND_PORTFOLIO_CLAIMS_UNSUPPORTED",
+      "priority": "P0",
+      "key_findings": [
+        "Spot absorption mechanism: MISIDENTIFIED INPUT. research.py describes spot buyers and spot CVD, but its SQL reads Binance perp cd_futures_15m. The feature is rolling-standardized per-bar quote-volume delta, not a spot cumulative-volume-delta series. The strategy may test a perp-flow hypothesis, but it cannot establish the stated spot mechanism.",
+        "Phase-one acceptance: FAIL RETAINED. The saved cost-18-bp phase-one result has gate_pass=false and n_candidates=0. Its recorded result family must remain a failed discovery screen.",
+        "Phase-two winning configuration: EXPLORATORY AFTER FAILED GATE. phase2_robustness.py hard-codes a selected WINNING configuration with only 21 trades, below phase one's 100-trade floor. Continuing exploration is not itself prohibited, but it is not a passed validation or independent robustness test.",
+        "Regime and diversification: UNSUPPORTED. combined_portfolio_sim.py uses unshifted final-day 30-day returns. Phase-two correlation_proxy infers diversification from regime labels rather than measured portfolio covariance; tiny regime subsets cannot establish that claim.",
+        "Combined portfolio superiority: NOT ESTABLISHED. Concatenated trade R and selected Pareto comparisons do not establish shared-capital net marked performance, simultaneous drawdown, or capacity.",
+        "Funding provenance and descendant sample: LIMITED. Historical predicted funding and later settlement observations are different quantities. The later bull revalidation has only two OOS funding-CVD observations and does not supply a robust positive confirmation."
+      ],
+      "notebooks_reviewed": [],
+      "scope_limitations": "No data or accounts were queried and no study was rerun. Saved results are historical; true spot flow, funding settlement provenance, contract fills, and portfolio covariance were not independently verified. Static review on 2026-09-14; no backtests, database queries, downloads, or existing artifact edits."
+    },
+    {
+      "study": "legacy_portfolio_reports",
+      "review_path": "study_validation_audit_2026_09/standalone_plans/legacy_portfolio_reports.md",
+      "status": "static_review_complete_validation_needed",
+      "priority": "P0",
+      "key_findings": [
+        "backtest_report cell 6 compounds the output of trades_daily_returns even though the helper's fixed-capital P&L convention is additive. Its exit-date-only series also excludes unrealized risk. Cell 9 starts its drawdown peak after the first reported return, so an initial loss can be missed.",
+        "full_portfolio_report cell 11 constructs consecutive simple buy-and-hold returns, then passes them to equity_metrics (cell 9), which sums fixed-capital P&L percentages. The benchmark violates that function's input contract. Analytic example: prices 100 → 110 → 99 produce returns 0%, +10%, −10%; summing reports 0% while fixed-quantity buy-and-hold loses 1%.",
+        "portfolio_performance cells 1/3 query whole-variant closed trades while displaying a fixed date window, and its calendar curves book P&L at exit. Cell 3's saved output has an empty tactical book and a zero combined portfolio beside nonzero analytic sleeves; this is not evidence of a validated zero-return portfolio.",
+        "backtest_report and full_portfolio_report cell 2 depend on __file__; they are script conversions with commented main calls. Reproduction needs a real notebook entry point, explicit source snapshot and selected variant, not silent fallback capital or a mutable current ledger."
+      ],
+      "notebooks_reviewed": [
+        "backtest_report.ipynb",
+        "full_portfolio_report.ipynb",
+        "portfolio_performance.ipynb"
+      ],
+      "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+    },
+    {
+      "study": "oi_flush",
+      "review_path": "oi_flush/VALIDATION_REVIEW_PLAN.md",
+      "status": "HISTORICAL_SEARCH_CAUSAL_EVIDENCE_INVALID_BEFORE_REUSE",
+      "priority": "P0",
+      "key_findings": [
+        "Pooled OI-flush edge: NOT ESTABLISHED. Saved phase-two results show roughly 221 events and pooled mean near +0.005R, with a selected bullish subset driving the stronger narrative. The result does not establish a broad unconditional net edge.",
+        "Bull-regime timing: INVALID ORIGINAL EVIDENCE. phase2_backtest.py builds an unshifted daily return gate using the final daily close at intraday signal timestamps. Bullish-subset attribution therefore needs a new causal replay before reuse.",
+        "Threshold and exit selection: EXPLORATORY. Phase two selects among four stops, five targets, and four TIFs (80), then inspects regimes. threshold_ablation.py searches 30 threshold definitions; selecting -2% after the earlier -3% rule is another trial, not fresh OOS confirmation.",
+        "Elapsed-time and price semantics: NOT VERIFIED. The OI/price join uses row-based changes and entry-close replay. Missing hourly rows can change the elapsed meaning of a four-row flush, and observation stamps do not establish release time.",
+        "Execution and portfolio evidence: LIMITED. The replay charges a fixed 18 bp, uses exact barrier fills without a full gap/open model, and does not establish actual funding or shared capital. Phase-three monthly signal-assigned R and a correlation threshold alone cannot establish portfolio diversification.",
+        "Descendant evidence: DO NOT DOUBLE COUNT. The later squeeze-bull review is a descendant of this selected family. Its old OOS and this study's inspected data cannot be treated as independent confirmations."
+      ],
+      "notebooks_reviewed": [],
+      "scope_limitations": "Historical JSON counts and scores were inspected, not replicated. Database continuity, release latency, source revisions, and actual execution remain unverified; there is no executed notebook evidence in this directory. Static review on 2026-09-14; no backtests, database queries, downloads, or existing artifact edits."
+    },
+    {
+      "study": "overlay_study",
+      "review_path": "overlay_study/VALIDATION_REVIEW_PLAN.md",
+      "status": "positive_evidence_blocked_before_reuse",
+      "priority": "P0",
+      "key_findings": [
+        "Tilt reads earlier-entry final outcomes before overlapping exits are known.",
+        "Wick round-grid scale uses future window maximum.",
+        "Selected cumulative-R MAR lacks equal-capital portfolio, net costs and honest fresh holdout."
+      ],
+      "notebooks_reviewed": [
+        "overlay_study/overlay_study.ipynb"
+      ],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "paladin_study",
+      "review_path": "paladin_study/VALIDATION_REVIEW_PLAN.md",
+      "status": "positive_wick_inference_blocked_no_build_retained",
+      "priority": "P0",
+      "key_findings": [
+        "Preserve no-sleeve decision and useful corpus/follower-fill diagnostics.",
+        "Wick grid depends on future window and net-cost alpha is only approximated.",
+        "Selected reported outcomes, unresolved simulations and inspected short history do not establish true skill or independent OOS."
+      ],
+      "notebooks_reviewed": [
+        "paladin_study/paladin_study.ipynb"
+      ],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "pdo_adjacents",
+      "review_path": "pdo_adjacents/VALIDATION_REVIEW_PLAN.md",
+      "status": "invalid_for_exact_CDO_payoff_and_broad_claims; archived_dispositions_retained",
+      "priority": "P0",
+      "key_findings": [
+        "CDO shorts use entry/exit−1, inconsistent with linear entry-notional short P&L and advertised symmetric stop/target R.",
+        "Binary target-hit break-even ignores TIF outcomes; zero-cost result remains stop/target/TIF-dependent.",
+        "Question A has no historical OOS discriminating band trades: KEEP −10 is a default, not superiority evidence.",
+        "Feature parity does not verify full trading lifecycle or fills.",
+        "Funding need not cancel between differing policy trade sets; pooled BTC/ETH iid inference understates shared calendar dependence."
+      ],
+      "notebooks_reviewed": [
+        "pdo_adjacents/pdo_adjacents.ipynb"
+      ],
+      "scope_limitations": [
+        "2026-09-14 static review; notebook cells 0–25, documents, key computation, parity artifact, and saved clauses.",
+        "Large ledgers reviewed through source/schema/summaries, not every raw minute path.",
+        "No execution, database access, data fetch, production/archive-state verification, or numeric replay."
+      ]
+    },
+    {
+      "study": "pdo_tv_parity",
+      "review_path": "study_validation_audit_2026_09/standalone_plans/pdo_tv_parity.md",
+      "status": "static_review_complete_validation_needed",
+      "priority": "P0",
+      "key_findings": [
+        "pdo_tv_csv_parse cell 4 excludes Margin call slices and calls DayEnd/HoldLimit rows the real trades. Those cashflows are economically real parts of the exported position history. Removing them cannot establish reconciled net profitability or account drawdown; percent-return sums/compounding also require the actual sizing and partial-exit denominator.",
+        "pdo_tv_validate cell 3 aggregates available minutes without enforcing complete hours; cell 6 uses the first observed hour as day open and previous observed day as PDO. Missing days/hours can change the intended calendar rule and make HOLD_BARS count observations rather than elapsed hours.",
+        "The validation engines' end-open position is not marked, and drawdown follows closed-trade equity. Header slippage assumptions and actual fills must be reconciled. A static printed TradingView reference is not a matched, versioned export.",
+        "The sweep's gap/tolerance/hold loops contain 20 evaluations and 18 unique parameter combinations on the same sample; that is parity sensitivity, not out-of-sample evidence for a selected winner. __file__, legacy database paths and hard-coded export locations obstruct fresh-kernel reproduction; the dump writes outside the preferred study output tree."
+      ],
+      "notebooks_reviewed": [
+        "pdo_tv_csv_parse.ipynb",
+        "pdo_tv_validate.ipynb",
+        "pdo_tv_validate_dump.ipynb",
+        "pdo_tv_validate_sweep.ipynb"
+      ],
+      "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+    },
+    {
+      "study": "r4_study",
+      "review_path": "r4_study/VALIDATION_REVIEW_PLAN.md",
+      "status": "exploratory; invalid_for_headline_sharpe_live_calendar_and_independent_validation_claims",
+      "priority": "P0",
+      "key_findings": [
+        "Discovery grid contains 8,064 raw combinations per asset before screening and multiple ranking views.",
+        "Walk-forward is one already-inspected historical train/test split.",
+        "Entry-day ETH month filtering differs from bot-prep next-day filtering.",
+        "Sizing annualizes sparse active-date returns with sqrt(252), omits full MTM/cash days/costs, and fits expectancy weights on the evaluated era.",
+        "Mechanistic and V2-validation language exceeds exploratory evidence; notebook main calls are disabled and saved outputs absent."
+      ],
+      "notebooks_reviewed": [
+        "r4_study/era_split.ipynb",
+        "r4_study/grid_search.ipynb",
+        "r4_study/sizing_study.ipynb",
+        "r4_study/walk_forward.ipynb",
+        "r4_study/year_breakdown.ipynb"
+      ],
+      "scope_limitations": [
+        "2026-09-14 static review of all cells: era 0–5, grid 0–6, sizing 0–10, walk-forward 0–4, year 0–7.",
+        "No saved notebook outputs to reproduce; historical database and original execution not verified.",
+        "No study execution, database access, fetching, or live configuration change."
+      ]
+    },
+    {
+      "study": "range_sanity_2026_09",
+      "review_path": "range_sanity_2026_09/VALIDATION_REVIEW_PLAN.md",
+      "status": "static_review_complete_validation_needed",
+      "priority": "P0",
+      "key_findings": [
+        "b_basis_funding_asia.py's first-break fade outcome calculation approximates gross R as 2×target_hit−stop_hit, giving timeout trades zero gross return instead of marking their actual exit. It starts the stop/target walk strictly after the first breach bar, so an entry/fill followed by an adverse move within that bar is omitted.",
+        "Session eligibility permits incomplete Asia/rest sessions rather than requiring the stated full windows. Quantify missing-time effects and whether the first observed breach was actually the first; do not silently replace unavailable bars with clean sessions.",
+        "The funding path samples the historical mixed funding table at eight-hour timestamps. Pre-cutover forecasts are not established realized cashflows. Earlier minute-based saved outputs also need lineage comparison against the September 7 BTC repair before being reused.",
+        "Cost-only maker discounts and exploratory LVN/profile alternatives do not demonstrate attainable fills or a fully defined tradable policy. Negative numbers reject the modeled variants, not every intraday range idea."
+      ],
+      "notebooks_reviewed": [
+        "range_sanity_2026_09/range_sanity_2026_09.ipynb"
+      ],
+      "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+    },
+    {
+      "study": "scanner_study",
+      "review_path": "scanner_study/VALIDATION_REVIEW_PLAN.md",
+      "status": "NO_SLEEVE_RETAINED_BTC_CONDITIONED_ENGINE_INVALID_BEFORE_REUSE",
+      "priority": "P0",
+      "key_findings": [
+        "Study disposition: NO SLEEVE RETAINED. Selected A OOS expectancy is tiny before full trading frictions; A2 and B are negative. The record supports no build, not a universal claim about all event scanners.",
+        "BTC-conditioned arms: INVALID FEATURE TIMING. run_study.py and v2 form final hourly BTC closes with left labels; scanner_lib.py forward-fills them into 15-minute rows without a completed-hour shift. B/skip_up30d arms can see the unfinished hour's future close. Plain A without BTC gating is not tainted merely by having those columns present.",
+        "Universe relevance: SELECTION BIAS. The universe is a May-23 frozen current/liquid union with selected trader-watchlist names. Historical inclusion is not point-in-time listing/liquidity eligibility, and missing/dead assets need an explicit ledger.",
+        "OOS interpretation: DEVELOPMENT AFTER SELECTION. The September-2025 split is a single chronological split, not a full rolling walk-forward. Ranking OOS across the 28 first and 24 second-run configurations uses that period for selection.",
+        "Trade and capital replay: LIMITED. Stops fill at exact levels without a complete gap model. A 24-hour cooldown can permit overlapping 48-hour trades; no global capital/funding model proves portfolio feasibility. Preserve entry, exit, and holding timestamps explicitly.",
+        "Human comparison: UNSUPPORTED CAUSAL CLAIM. The finding that a trader's win rate is 'manufactured' is not established by this scanner's results. Different selected opportunities and risk management cannot be causally attributed from the available study."
+      ],
+      "notebooks_reviewed": [
+        "scanner_study/scanner_study.ipynb"
+      ],
+      "scope_limitations": "Saved notebook outputs and findings were read, not regenerated. Universe counts, market-data gaps, current venue costs, and actual fills were not freshly verified; current/no-build production state was not queried. Static review on 2026-09-14; no backtests, database queries, downloads, or existing artifact edits."
+    },
+    {
+      "study": "screener",
+      "review_path": "screener/VALIDATION_REVIEW_PLAN.md",
+      "status": "STARTER_SETUPS_FAIL_HARNESS_TIMING_INVALID_BEFORE_REUSE",
+      "priority": "P0",
+      "key_findings": [
+        "Starter disposition: ALL FOUR FAIL. The saved S1, S2, S4-proxy, and S10 summaries are all FAIL. The record does not justify a sleeve or the plan's expectation that a small batch will necessarily find an edge.",
+        "Daily-close entry timing: INVALID R EVIDENCE. ../../lib/screener_setups.py uses completed daily OHLC/volume and daily-close entry while retaining the day label as ts. The runner's R replay starts hourly rows at ts, potentially using price movement earlier on the signal day before that close-based entry can exist.",
+        "Incomplete forward horizons: INVALID LABEL HANDLING. Forward-return measurement uses searchsorted(..., right)-1 without requiring the target horizon to exist; a target beyond the data can use the last known close. Empty R paths return an entry-price/zero outcome. These are unresolved observations, not mature labels.",
+        "Gate implementation: DOES NOT IMPLEMENT FULL PLAN. The runner selects the best forward-horizon Sharpe, splits by row count, and can bypass stability when unavailable. It does not implement the plan's full baseline-excess or parameter-neighborhood conditions, so a future PASS string would not itself establish the planned gate.",
+        "Funding mechanism and costs: NOT MEASURED. S4 uses price/volume capitulation because per-coin funding/OI is absent from its inputs. R outcomes omit complete fees, slippage, and actual funding; forward drift and gross per-trigger Sharpe are not deployable trade expectancy.",
+        "Universe and causal harness: NOT VERIFIED. Universe selection uses a stored current liquidity ranking. Setup functions receive full frames; the setup module's comment that the runner enforces causal sub-slicing is not established by the reviewed caller. Each setup needs availability invariants, not trust in that comment."
+      ],
+      "notebooks_reviewed": [],
+      "scope_limitations": "No runner, setup, backtest, or DB query was executed. The four FAILs are saved historical results; current universe, corrected data lineage, actual funding, runtime imports, and execution economics remain unverified. Static review on 2026-09-14; no backtests, database queries, downloads, or existing artifact edits."
+    },
+    {
+      "study": "short_squeeze_sessions",
+      "review_path": "short_squeeze_sessions/VALIDATION_REVIEW_PLAN.md",
+      "status": "EXPLORATORY_EDGE_REQUIRES_CAUSAL_EXECUTION_REVALIDATION",
+      "priority": "P0",
+      "key_findings": [
+        "Discovery mechanism: DESCRIPTIVE ONLY. Discovery uses the day's eventual extremes, fade, and CVD at the ultimate sweep to classify completed days. These are retrospective labels, not information available to an intraday entry.",
+        "Headline long edge: UNVERIFIED NET CLAIM. Strategy cell 1 reports roughly 70 longs, +0.40R and PF 1.65, but there are no saved execution outputs. Cell 14 enters at perp close and replays spot minutes, with only two basis points per leg; fees, actual funding, and basis effects are not a full net execution model.",
+        "Six-hour prior low: IMPLEMENTATION MISMATCH. Cell 6 removes non-session bars before rolling, then uses LOOKBACK_BARS+1 observations followed by a shift. With the stated setting this is 25 retained bars, and missing 21:00–24:00 bars make elapsed history differ from a continuous six-hour low.",
+        "Trailing-stop comparisons: INVALID PATH ASSUMPTION. Cell 26 updates the high watermark/1R activation from the current minute high before checking that minute's low. OHLC does not establish that sequence. A fixed-target comparator does not repair the trailing arm's within-bar information problem.",
+        "Selected thresholds and OOS: NOT FRESH CONFIRMATION. Cells 32–34 acknowledge inspection and search lookbacks/thresholds; later cells add exits and context. The nested check in cell 44 concerns an absolute variant, not every later percentile/filter choice. The full search must be counted.",
+        "Portfolio and timing parity: NOT VERIFIED. Cell 20 compounds per-trigger R without a complete overlapping-position capital model. Cell 10's Asia funding summary needs publication-time review and parity against the current signal's funding rule; incomplete minute paths are skipped or closed at their available tail."
+      ],
+      "notebooks_reviewed": [
+        "short_squeeze_sessions/discovery.ipynb",
+        "short_squeeze_sessions/strategy_backtest.ipynb"
+      ],
+      "scope_limitations": "No historical study was rerun and no signal or live position was inspected. Reported performance is notebook narrative, not saved executed output. This review does not establish current deployed parity or economically correct fills. Static review on 2026-09-14; no backtests, database queries, downloads, or existing artifact edits."
+    },
+    {
+      "study": "sizing_style_2026_09",
+      "review_path": "sizing_style_2026_09/VALIDATION_REVIEW_PLAN.md",
+      "status": "accounting_and_safety_evidence_blocked_before_reuse",
+      "priority": "P0",
+      "key_findings": [
+        "Fixed-notional daily ratio MTM does not conserve fixed-unit trade P&L; reported net R is gross.",
+        "S2 equity sizing recognizes future overlapping outcomes.",
+        "S3 substitutes in-hold MAE for the original 24-hour safety gate and aligns assets positionally."
+      ],
+      "notebooks_reviewed": [
+        "sizing_style_2026_09/sizing_style.ipynb"
+      ],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "squeeze_bull_revalidation",
+      "review_path": "squeeze_bull_revalidation/VALIDATION_REVIEW_PLAN.md",
+      "status": "HISTORICAL_BUILD_PRESERVED_CURRENT_VALIDATION_INCOMPLETE",
+      "priority": "P0",
+      "key_findings": [
+        "Frozen BUILD: RETAIN AS HISTORICAL RULE RESULT. The original gate passed with ten OOS trades, mean about +0.2021R, and combined MAR about 1.60. This is a result under the frozen historical clause, not a current-policy deployment validation.",
+        "Regime gate: INVALID ORIGINAL TIMING. The original unshifted daily 30-day return uses the current day's final close. Findings report all 20 inspected eligible fires affected, by 1–21 hours. Previous-completed-day and intraday causal alternatives are different gates, not interchangeable repairs.",
+        "Search-adjusted confidence: WEAK. Findings' independent correction counts the prior 30 threshold and 80 exit searches; DSR deteriorates sharply beyond N=1. The notebook's saved N=1 fragility view must be read alongside that correction, not as complete family-wide evidence.",
+        "Sample independence: INSUFFICIENT PRECISION. The ten OOS events cluster into only three episodes (8/1/1), with episode-bootstrap uncertainty crossing zero. The tenth fire predates the preregistration date; this alone does not prove prior inspection, but it cannot establish a newly accrued unseen sample.",
+        "Combined portfolio: LIMITED PROXY. run_combined.py concatenates trade R by signal time. This does not establish daily marked equity, actual capital usage, drawdown, or interaction of overlapping holdings. Findings corrected an earlier overlap bug; do not revive that superseded error.",
+        "Funding and gate details: PARTIAL / HISTORICAL. Selecting pre-cutover rows at eight-hour boundaries does not turn predicted funding into documented settlements. The gate compares rounded metrics in source, though the recorded raw MAR remains above the current threshold; future gates should use full precision."
+      ],
+      "notebooks_reviewed": [
+        "squeeze_bull_revalidation/squeeze_bull_revalidation.ipynb"
+      ],
+      "scope_limitations": "Saved notebook outputs and findings were read, not recomputed. Source-seam semantics, runtime parity, current positions, actual fills, and immutable preregistration exposure history were not independently verified. Static review on 2026-09-14; no backtests, database queries, downloads, or existing artifact edits."
+    },
+    {
+      "study": "squeeze_recut",
+      "review_path": "squeeze_recut/VALIDATION_REVIEW_PLAN.md",
+      "status": "NOT_DUE_DECISION_ENGINE_REQUIRES_REVIEW",
+      "priority": "P0",
+      "key_findings": [
+        "Current experimental verdict: NOT DUE. The saved zero-pair result supports no performance decision. This review does not infer a current live sample count or request an early recut.",
+        "Reconstruction failure: MUST FAIL INCONCLUSIVE. run_recut.py catches reconstruction/replay exceptions, substitutes empty collections, then still calls decide. Missing replay can make divergence checks unavailable while other decision branches continue; absence of evidence must not become a cleared check.",
+        "D4 action routing: RULE/IMPLEMENTATION AMBIGUITY. recut_lib.py combines residual magnitude across variants, then routes a threshold breach to DISABLE_NOSTOP. A breach caused only by the stop variant needs an explicit diagnostic/action rule; the current blanket no-stop action is not logically established by that evidence.",
+        "D6 risk conjunction: EXTERNAL CHECK REQUIRED. The decision branch checks the mean difference but the README also requires marked drawdown within five percentage points. Source prints a conditional promotion consideration, not actual promotion; the external DD evidence must be mandatory before an operator treats D6 as satisfied.",
+        "Drop-trade sensitivity: MISLABELED OPTIMISTIC CHECK. The sensitivity helper sorts ascending and averages x[k:], removing the smallest outcomes. This is not the adverse drop-best/worst-case sensitivity its label implies. Preserve the historical output but clarify the estimand before future decision use.",
+        "Pair/funding completeness: NOT VERIFIED. Pairing uses a pivot with aggfunc='first', which can conceal duplicate keys. Missing reconstructed funding may become NaN with zero used in a residual component. Require unique pair invariants and treat incomplete cost/funding decomposition as inconclusive."
+      ],
+      "notebooks_reviewed": [],
+      "scope_limitations": "No current DB query, recut run, live threshold peek, or twin intervention occurred. Saved results are historical; current n, actual fills/funding, and external D6 drawdown remain unverified. Static review on 2026-09-14; no backtests, database queries, downloads, or existing artifact edits."
+    },
+    {
+      "study": "swing_base_limit_bid",
+      "review_path": "swing_base_limit_bid/VALIDATION_REVIEW_PLAN.md",
+      "status": "EXPLORATORY_NOTEBOOK_TIMING_AND_FILL_EVIDENCE_INVALID",
+      "priority": "P0",
+      "key_findings": [
+        "MTF confluence: INVALID ORIGINAL AVAILABILITY. Cell 16 claims last-closed higher-timeframe state but uses tf.index.asof(ts) against resampled bars without an explicit completed-bar availability shift. Left-labeled hour/4h/day final bars can leak their future close; weekly/monthly labels also require explicit semantics.",
+        "Confirmation and limit activation: INVALID POSSIBLE PRE-CONFIRMATION FILL. Cell 8 timestamps a base's confirmed expansion at the hit bar's label, though that bar's high must first be observed. Cell 18 scans for a limit fill beginning at that timestamp, including the confirmation bar, so a touch before confirmation can become a fill.",
+        "Intrabar and exit diagnostics: UNRELIABLE. Cell 18 updates high-water state before checking the same bar's low; OHLC cannot prove that path. Some excursion diagnostics inspect the remaining path after an exit, so they are not necessarily excursions while the position was open.",
+        "Volume profile: APPROXIMATION. Cell 12 places each 15-minute bar's full volume into a close-price bin. This may be a useful feature proxy, but it is not a measured traded-volume profile or evidence of a true HVN/LVN at that level.",
+        "Backtest performance: UNVERIFIED / NON-NET. There are no saved executed outputs; replay lacks complete fees, slippage, funding, and capital constraints. The narrative's minute coverage beginning in 2017 is not supported by the currently documented BTC minute inventory beginning in 2020.",
+        "Signature selection and tail handling: EXPLORATORY. Cell 22 selects MTF signatures with small n thresholds. The detector's full-forward-horizon loop excludes late candidates even when confirmation could occur earlier; chronological cuts and censoring must be made explicit before inference."
+      ],
+      "notebooks_reviewed": [
+        "swing_base_limit_bid/discovery.ipynb"
+      ],
+      "scope_limitations": "No notebook was executed, imports resolved at runtime, or market data queried. The forward scan is not itself proof of leakage if confirmation is delayed correctly; the identified problem is the actual availability/fill timestamp treatment. Static review on 2026-09-14; no backtests, database queries, downloads, or existing artifact edits."
+    },
+    {
+      "study": "vrp_study",
+      "review_path": "vrp_study/VALIDATION_REVIEW_PLAN.md",
+      "status": "positive_evidence_blocked_before_reuse",
+      "priority": "P0",
+      "key_findings": [
+        "Keep later no-advance decision.",
+        "Future-mark survival selection and future settlement fallbacks compromise positive evidence.",
+        "Mark haircut is not bid/ask execution; clocks, overlapping expiries and collateral need validation."
+      ],
+      "notebooks_reviewed": [
+        "vrp_study/vrp_study.ipynb"
+      ],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "basis_carry",
+      "review_path": "basis_carry/VALIDATION_REVIEW_PLAN.md",
+      "status": "conditional_inconclusive_negative_screen",
+      "priority": "P1",
+      "key_findings": [
+        "Literal D3 data failure remains; keep no-build decision.",
+        "Sampled hourly forecast lineage is not authenticated settled funding.",
+        "Entry/exit/funding clocks, pooled capital denominator and calendar dependence need reconciliation."
+      ],
+      "notebooks_reviewed": [
+        "basis_carry/basis_carry.ipynb"
+      ],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "bitstamp_adx_parity",
+      "review_path": "study_validation_audit_2026_09/standalone_plans/bitstamp_adx_parity.md",
+      "status": "static_review_complete_validation_needed",
+      "priority": "P1",
+      "key_findings": [
+        "Cell 11 opens at the daily close and then uses that same day's low/high in its worst-point MTM calculation. Those extrema predate the position. It tracks peaks only at those worst-point marks, so the reported MTM drawdown is not a complete NAV-path drawdown either. Do not reuse this risk metric without correction.",
+        "Stops fill exactly at their daily level without a gap-through rule. The final position is appended as still_open with a cost-adjusted mark, then included beside completed trades; realized and marked statistics need separate contracts. Cell 13 entry-year cohorts are not calendar marked annual returns.",
+        "Cell 2 requires __file__; cell 7's cache loader may fetch/write under data/. Service parity imports mutable current production implementations. The notebook has no saved execution counts establishing a fresh-kernel run."
+      ],
+      "notebooks_reviewed": [
+        "bitstamp_adx_backtest.ipynb"
+      ],
+      "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+    },
+    {
+      "study": "bitstamp_thu_parity",
+      "review_path": "study_validation_audit_2026_09/standalone_plans/bitstamp_thu_parity.md",
+      "status": "static_review_complete_validation_needed",
+      "priority": "P1",
+      "key_findings": [
+        "Cells 13/14 use day-of-month NFP/CPI/OPEX proxies and Pine timing. These may be appropriate for parity but do not validate the actual event-filtered service. The distinction already documented in cell 0 must remain visible in any performance claim.",
+        "Cell 14 fills daily-gap stops at the stop price and leaves final open positions outside the closed-trade statistics. Cell 16's MaxDD is closed-trade drawdown, not marked account risk.",
+        "Cell 17 applies UTC+3 to a CSV comparison. The export's actual declared chart timezone must establish whether this is a fixed offset or a timezone with DST; the code does not establish it. Partial/missing exported rows and trade-number matches need explicit reconciliation.",
+        "__file__, argparse-oriented orchestration, and cache fetch/write paths under data/ prevent treating the converted notebook as a clean, isolated executed study."
+      ],
+      "notebooks_reviewed": [
+        "bitstamp_thu_bear_backtest.ipynb"
+      ],
+      "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+    },
+    {
+      "study": "brainstorm_validation_2026_09",
+      "review_path": "brainstorm_validation_2026_09/VALIDATION_REVIEW_PLAN.md",
+      "status": "static_review_complete_validation_needed",
+      "priority": "P1",
+      "key_findings": [
+        "The blanket N_TRIALS=1 label refers to the new replication tests, while selected hypotheses came from the larger documented search. Existing deflation calculations recognize that distinction; future summaries must not erase it or treat five claims plus all secondary analyses as a single unselected test.",
+        "The notebook runs C0 then later scripts, while run_c0_data_parity.py:149–156 writes and prints gate values. A future orchestrator needs explicit required-gate enforcement and hash linkage, not execution order alone. Identical copied cache data is replication, not independent data.",
+        "New historical years and correlated crypto assets test transportability; they are not automatically untouched chronological validation. C5's unreproduced H24 cell must remain unreproduced rather than being absorbed into a general claim that all arithmetic matched.",
+        "C4's bar-phase and fill-model sensitivity supports sensitivity under those engines. It does not validate all ADX implementations or exact live stops; the newer ADX robustness harness has separate first-day-stop/accounting issues. Keep engine-specific conclusions and dependency revisions explicit."
+      ],
+      "notebooks_reviewed": [
+        "brainstorm_validation_2026_09/brainstorm_validation.ipynb"
+      ],
+      "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+    },
+    {
+      "study": "delta_neutral",
+      "review_path": "delta_neutral/VALIDATION_REVIEW_PLAN.md",
+      "status": "rejected_models_with_conditional_revisit",
+      "priority": "P1",
+      "key_findings": [
+        "Preserve dispersion/sizing rejection and three-venue power qualification.",
+        "Current carry imports no longer match the frozen negative-streak interface.",
+        "Funding proxy, changed-leg costs and absent two-leg price/margin risk limit exact economics."
+      ],
+      "notebooks_reviewed": [
+        "delta_neutral/delta_neutral.ipynb"
+      ],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "execution_2026_09",
+      "review_path": "execution_2026_09/VALIDATION_REVIEW_PLAN.md",
+      "status": "static_review_complete_validation_needed",
+      "priority": "P1",
+      "key_findings": [
+        "findings.md calls the modeled taker cost measured and concludes execution is the fee and almost nothing else. exec_lib.py fixes fees, spread/adverse-selection assumptions and zero impact; bars do not measure account fees, order-book queue, attainable maker status or actual fills. The caveats are more defensible than that headline.",
+        "run_e4_stop_slippage.py:21–55 computes gap/stop slippage from the same OHLC stop walker. Zero modeled gaps means no opening-gap slippage in those sampled bars; it does not establish zero intrabar stop-market slippage or exact live fills. Polling tails and sparse stressed samples are material.",
+        "E2/E3 touch/through models cannot establish that a resting order actually filled at a maker fee; marketable orders may take or be rejected under post-only. The narrow SHORT_SQUEEZE stop is particularly exposed to the documented spot/perpetual basis mismatch and sparse 5-second event sample.",
+        "Entry lists are inherited from upstream studies. Parity with those lists validates reproduction, not their causal selection or engine correctness. The ADX stop-list check cannot detect omitted stop events absent from its source ledger. exec_lib.py:130–138 reuses existing caches unless force is set, without checking source hashes; cache and result lineage must be frozen for a current replay."
+      ],
+      "notebooks_reviewed": [
+        "execution_2026_09/execution_study.ipynb"
+      ],
+      "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+    },
+    {
+      "study": "fomc_reports",
+      "review_path": "study_validation_audit_2026_09/standalone_plans/fomc_reports.md",
+      "status": "static_review_complete_validation_needed",
+      "priority": "P1",
+      "key_findings": [
+        "compare_with_fomc cells 4/7 remove FOMC rows from the realized book and book remaining P&L at exit. This estimates contribution within that executed ledger; it does not recompute free capital, skipped trades, position conflicts or marked risk of an executable portfolio without FOMC.",
+        "fomc_backtest_drilldown cell 0 compares win rates with phase expectations, and cell 3 joins observer phase labels by FOMC date. The review cannot establish that historical phase labels/expectations were available before each trade or were independently calibrated. Latest labels are not an as-of signal history.",
+        "fomc_leverage_sensitivity cell 3 does not load direction, while cell 6 calculates exit/entry−1. A long-only ledger prerequisite must be verified, or shorts are scored incorrectly. Closed-trade compounding and iid event resampling omit intrahold margin, liquidation, funding and clustered event shocks.",
+        "The leverage table inspects eleven leverage settings. Its Monte Carlo uses the observed empirical tails and cannot establish safety at 10–30× or bound unobserved losses. These risk claims would be P0 before reuse. All three notebooks retain __file__ setup and commented main calls."
+      ],
+      "notebooks_reviewed": [
+        "compare_with_fomc.ipynb",
+        "fomc_backtest_drilldown.ipynb",
+        "fomc_leverage_sensitivity.ipynb"
+      ],
+      "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+    },
+    {
+      "study": "lsr_b5_study",
+      "review_path": "lsr_b5_study/VALIDATION_REVIEW_PLAN.md",
+      "status": "KEEP_HISTORICAL_NO_CHANGE_REVALIDATE_BEFORE_REUSE",
+      "priority": "P1",
+      "key_findings": [
+        "Frozen no-change verdict: RETAIN. findings.md records five KILLs and no production change. This supports retaining that historical decision, not claiming LSR can never work.",
+        "Timestamp correctness across history: PARTIALLY VERIFIED. The stamp exercise compares a recent 20-day window and limited recent vendor rows. The statement that it cleared every LSR backtest exceeds that evidence; historical revisions, latency, and earlier endpoint semantics remain unverified.",
+        "Parity: DOCUMENTED WITH DATA DRIFT. BTC matches 204 reference trades; ETH has 182 plus seven reconstructed additions, explained in results/parity_explained.md. This is useful snapshot accounting, but a changed data snapshot is not immutable reproduction.",
+        "Current baseline relevance: NOT VERIFIED. score_variants.py lines 49–57 applies the historical OKX gate. Results are relative to that stack; they do not evaluate the current gate-off configuration. Imported tilt state also needs exit-completion timing review.",
+        "Short-side precision: INSUFFICIENT. findings.md reports only 13 BTC V0 OOS trades, including three shorts. The two-asset and n≥20 gates prevent interpreting an attractive subgroup as a robust effect.",
+        "Absolute P&L and attribution: LIMITED. The findings themselves state inherited research-engine limitations and gross, cost-free attribution. That attribution cannot quantify deployable net uplift or justify an execution change."
+      ],
+      "notebooks_reviewed": [],
+      "scope_limitations": "No notebook execution or database verification occurred. The recent stamp test and parity counts are documented results, not freshly replicated facts; historical vendor publication latency and imported tilt behavior remain unverified. Static review on 2026-09-14; no backtests, database queries, downloads, or existing artifact edits."
+    },
+    {
+      "study": "okx_gate_revalidation",
+      "review_path": "okx_gate_revalidation/VALIDATION_REVIEW_PLAN.md",
+      "status": "static_review_complete_validation_needed",
+      "priority": "P1",
+      "key_findings": [
+        "findings.md:36–40 explicitly says the same-hour control also fails, so the final verdict does not isolate the look-ahead premise. Lines 84–108 clarify that RETIRE means discrimination was not demonstrated while profitable trades were blocked; it is not proof the gate is useless or that chento is statistically validated.",
+        "The study is script/report based; no .ipynb exists here. Its external snapshot and result links are documented but this static review did not independently rerun or re-hash that snapshot. Preserve those limitations rather than asserting an independent reproduction.",
+        "The report-only all-trades drawdown and 2.25× fire-rate increase imply a distinct sizing/concurrency question. Positive kept-minus-blocked R and row counts alone do not establish the executable portfolio impact of disabling the gate.",
+        "findings.md:163–174 already records that the report-only production-sequence approximation used losing predecessors before they closed and differed from the bot's 48-hour rule. Those particular portfolio figures must not be reused; the final gate verdict did not depend on them. Lines 152–161 also disclose cross-checkout hash/line-ending issues and omitted funding.",
+        "findings.md lists downstream studies using same-hour OKX values and forbids treating the causal re-test as their automatic recut. Each dependent overlay/attribution/filter requires its own as-of replay; new replacement gates inherit the documented search family."
+      ],
+      "notebooks_reviewed": [],
+      "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+    },
+    {
+      "study": "r4_bot_prep",
+      "review_path": "r4_bot_prep/VALIDATION_REVIEW_PLAN.md",
+      "status": "provisional_no_change; live_risk_and_delay_tolerance_unvalidated",
+      "priority": "P1",
+      "key_findings": [
+        "Frozen stop screen supports retaining the baseline but uses optimistic level fills and incomplete path checks.",
+        "Scheduled exits and historical worst fires do not bound account loss.",
+        "Late-entry comparisons need paired eligibility and confidence relative to an acceptable loss threshold.",
+        "Portfolio appendix lacks an auditable intraday marked quantity/capital ledger for overlapping positions.",
+        "Next-day ETH day-of-month semantics differ from the original R4 development study."
+      ],
+      "notebooks_reviewed": [
+        "r4_bot_prep/r4_bot_prep.ipynb"
+      ],
+      "scope_limitations": [
+        "2026-09-14 static review; notebook cells 0–3, source, findings, and selected saved summary rows.",
+        "Every raw minute path/large fire-ledger row was not manually inspected; appendix computation provenance is incomplete.",
+        "No backtest, database query, fetch, current dispatch/sizing verification, or production change."
+      ]
+    },
+    {
+      "study": "statistical_validation_tools",
+      "review_path": "study_validation_audit_2026_09/standalone_plans/statistical_validation_tools.md",
+      "status": "static_review_complete_validation_needed",
+      "priority": "P1",
+      "key_findings": [
+        "Cells 4/5 use first-to-last closed-trade exit dates and realized P&L. Long holdings and open trades disappear from the risk path. A precise bootstrap of that cashflow series is not a confidence interval for marked trading risk.",
+        "Cell 15 resamples individual days independently; BCa bias correction does not preserve holding-period or volatility dependence. It also has unhandled degenerate cases when the bias proportion reaches 0 or 1, and no explicit empty-input guard. Calibration should precede reuse as a general validator.",
+        "Cell 21 labels correlation as daily log returns although cell 19 converts BTC to simple returns. Correlation thresholds are used to narrate BTC-beta dependence, but correlation alone is not beta, explained return or independence. Rolling windows overlap and are descriptive, not independent tests.",
+        "The notebook is a converted script with __file__ and commented main, no saved execution record, and no family search correction or untouched evaluation. Those omissions are acceptable for a labeled ledger report but not a selected-strategy validation claim."
+      ],
+      "notebooks_reviewed": [
+        "tools_statistical_validation.ipynb"
+      ],
+      "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+    },
+    {
+      "study": "validation_audit_2026_09",
+      "review_path": "validation_audit_2026_09/VALIDATION_REVIEW_PLAN.md",
+      "status": "static_review_complete_validation_needed",
+      "priority": "P1",
+      "key_findings": [
+        "Reproducing a loader's published point estimate (cells 8/10) does not establish its engine or source labels are correct. The current review finds upstream causal, funding, first-holding-day and MTM problems that can propagate into this audit's input vectors.",
+        "Cells 13/14 disclose PBO only for the saved four tilt alternatives, omitting other searched branches whose matrices were unavailable. That is a partial-family diagnostic, not a complete search correction. Daily closed-trade or signal-return inputs must not be interpreted as a reconciled live account NAV.",
+        "The closing narrative in cell 19 treats point estimates as real and breadth as the binding limitation. A cautious restatement is that saved point estimates reproduced under the tested definitions; data/engine validity and actual economic edge remain separate unresolved questions.",
+        "Paper counts and deployment status in cell 5 are an as-of historical snapshot. They should not be displayed as current facts without a new explicit observation cutoff. A report-only notebook does not record execution of the source audit scripts in its own cells."
+      ],
+      "notebooks_reviewed": [
+        "validation_audit_2026_09/validation_audit.ipynb"
+      ],
+      "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+    },
+    {
+      "study": "calendar_cells",
+      "review_path": "calendar_cells/VALIDATION_REVIEW_PLAN.md",
+      "status": "descriptive_archived_negative_screen; broader_claims_need_qualification",
+      "priority": "P2",
+      "key_findings": [
+        "The exact five rules fail their documented gates; no new sweep is needed to retain no-build.",
+        "Stored NFP dates/fixed UTC windows test a calendar proxy, not verified release-relative trading.",
+        "HIGH52 holds 120 hours and EMA can hold many weeks; all-holds-at-most-72h and funding-only-hurts statements are false.",
+        "Monthly PBO assigns whole future trades to entry months and trims the final eight of 68 listed months.",
+        "Sparse-event failure to confirm is not proof that more independent observations cannot help."
+      ],
+      "notebooks_reviewed": [
+        "calendar_cells/calendar_cells.ipynb"
+      ],
+      "scope_limitations": [
+        "2026-09-14 static review; notebook cells 0–21 plus key source and saved summaries.",
+        "No original event calendar, raw-data completeness, actual funding, or full trade path verification.",
+        "No study execution, database access, data retrieval, or artifact changes."
+      ]
+    },
+    {
+      "study": "footprint_study",
+      "review_path": "footprint_study/VALIDATION_REVIEW_PLAN.md",
+      "status": "TEST_A_KILLED_TEST_B_NOT_AUTHORIZED_BY_EVIDENCE",
+      "priority": "P2",
+      "key_findings": [
+        "Test A verdict: KILL RETAINED. All six flag/target combinations fail. The strongest C3 gross result remains negative after costs and fails the second half; neither Test B nor alt continuation is established.",
+        "Footprint mechanism: LIMITED OPERATIONAL TEST. Top-quarter signed volume is a trade-flow summary, not direct proof of absorption or participant intent. A killed summary feature does not disprove every footprint hypothesis.",
+        "C3 semantics: REQUIRES EXPLICIT DEFINITION. score_test_a.py implements event-bar C1 AND prior-bar top delta<0. If 'combined' in the README means pooled two-bar signed volume, those are different rules. Preserve the tested AND rule and register any pooled alternative as a new trial.",
+        "Missingness and denominator: AUDIT NEEDED BEFORE REUSE. The scorer inner-joins events and footprints; the fetcher can mark insufficient-trade/zero-range rows done without storing an aggregate. Missing prior rows become a false C3 condition. Report eligible, requested, parsed, excluded, and matched counts separately.",
+        "Archive reproducibility: NOT VERIFIED. The fetch path reads daily archives and stores derived aggregates, but complete raw archive checksums, parse versions, and the full bin vectors were not independently verified. Reported 100% matched coverage alone is not end-to-end provenance.",
+        "Independence and selection: LIMITED. The 1,357 event rows include different targets and clustered symbol/date events, not necessarily 1,357 independent trials. The chronological half split is a discovery gate after all six comparisons, not untouched evidence for a newly chosen flag."
+      ],
+      "notebooks_reviewed": [],
+      "scope_limitations": "No archives were fetched, parquet recomputed, scanner rerun, or Test B executed. README counts and verdicts are documented results; raw bin data, archive integrity, and actual execution remain unverified. Static review on 2026-09-14; no backtests, database queries, downloads, or existing artifact edits."
+    },
+    {
+      "study": "fvg_magnet",
+      "review_path": "fvg_magnet/VALIDATION_REVIEW_PLAN.md",
+      "status": "NEGATIVE_DESCRIPTIVE_AND_TRADE_RESULTS_CONDITIONAL_REVIVAL",
+      "priority": "P2",
+      "key_findings": [
+        "FVG magnet effect: NOT ESTABLISHED. The saved broad sample of about 43,623 FVGs has roughly 1.00–1.03 uplift, below the 1.5 criterion. The selected 2–5% distance bucket is exploratory and does not reverse that broad result.",
+        "Control interpretation: MISDESCRIBED / CONFOUNDED. research.py describes a same-distance same-direction random control, while the reviewed implementation uses an opposite-side mirrored level. This compares directional tendencies as well as level type; it is not an isolated FVG-specific attraction test.",
+        "LVN price structure: PROXY ONLY. lvn_research.py allocates bar volume via typical price and compares zones with point-like opposite controls. That approximation is not observed traded volume at each price; width and initial depth can explain transit differences.",
+        "Regime evidence: INVALID BEFORE REUSE. lvn_phase3b_regime.py and lvn_phase4_backtest.py apply final daily returns at intraday timestamps without a completed-bar shift. Affected regime claims need a causal reconstruction.",
+        "Trade viability: NEGATIVE / SMALL OOS. The phase-four saved result has 27 trades, mean near -0.369R, 26 IS and one OOS. This supports rejecting that tested configuration, not a precise universal claim about all FVG/LVN trades.",
+        "Fill and risk realism: LIMITED. Phase-four uses entry close, exact barrier prices, and fixed costs without complete gaps/funding/capital treatment. Drawdown uses a trade-R path and span conventions that do not establish marked portfolio risk."
+      ],
+      "notebooks_reviewed": [],
+      "scope_limitations": "All five script roles and core comparison/replay paths were reviewed statically, not rerun. Saved metrics are historical; true volume-at-price, complete raw event sets, data gaps, and fills remain unverified. Static review on 2026-09-14; no backtests, database queries, downloads, or existing artifact edits."
+    },
+    {
+      "study": "grid_study",
+      "review_path": "grid_study/VALIDATION_REVIEW_PLAN.md",
+      "status": "archived_rejected_conditional",
+      "priority": "P2",
+      "key_findings": [
+        "Keep finite-grid no-build decision.",
+        "Invalid order direction and capital mechanics prevent executable or monotonic-upper-bound claims.",
+        "Entry-order/additive risk is not invested NAV drawdown."
+      ],
+      "notebooks_reviewed": [
+        "grid_study/grid_study.ipynb"
+      ],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "hawkes_note_results",
+      "review_path": "hawkes_note_results/VALIDATION_REVIEW_PLAN.md",
+      "status": "static_review_complete_followup_conditional",
+      "priority": "P2",
+      "key_findings": [
+        "The note's binary rising-edge streams cannot satisfy its original hourly over-dispersion condition; the note discloses this and explains why the verdict does not change. Preserve that literal original clause and its recorded deviation, rather than retrospectively replacing the preregistration.",
+        "addendum_slow_rate.py:9–13 uses a centered rate estimated from the same observations and calls residual clustering genuine self-excitation. The code/note can show a descriptive mismatch with that particular null; it cannot identify a unique excitation mechanism, a causal forecast or the benefit of a Hawkes model.",
+        "The full-sample percentile thresholds and centered smoother are legitimate descriptive choices but would leak future information in prediction. Two hundred null replications provide limited precision for 99th-percentile thresholds, and multiple streams/bin widths/lags need simultaneous inference if a new formal discovery claim is made.",
+        "The archived liquidity-feed span and funding-era restriction are historical inventory facts. The plan did not requery present coverage. A monotone ladder in this sample does not prove no future dataset or shorter kernel could ever yield a useful model."
+      ],
+      "notebooks_reviewed": [],
+      "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+    },
+    {
+      "study": "hedge_tests",
+      "review_path": "hedge_tests/VALIDATION_REVIEW_PLAN.md",
+      "status": "archived_negative_screen_conditional",
+      "priority": "P2",
+      "key_findings": [
+        "Keep no-change and range no-build conclusions.",
+        "Reactive intrabar ordering, hedge-cycle fees and differing filtered cohorts limit paired claims.",
+        "Gross hedge exposure and calendar NAV are not established by cumulative R."
+      ],
+      "notebooks_reviewed": [
+        "hedge_tests/hedge_experiments.ipynb"
+      ],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "macd_bottom_note",
+      "review_path": "study_validation_audit_2026_09/standalone_plans/macd_bottom_note.md",
+      "status": "static_review_complete_followup_conditional",
+      "priority": "P2",
+      "key_findings": [
+        "The title and narrative say 2W, but cell 1 sets BAR_DAYS=7 and the saved output in cell 2 confirms 7d bars. Any claim specifically about a tested two-week signal is unsupported by this saved run.",
+        "Cell 2 reports interior gap bars and retains them. Cell 1's root search still expects jplus/. Dataset lineage, bucket completeness and the difference between displayed bar start and actionable bar close must be resolved before reproduction.",
+        "Cells 5/6 examine proximity bands on the same eleven cycles. Cells 7/8 use future lows, next ATH/bear boundaries and future peak closes. These are retrospective labels; they cannot be entry features or realized exit profits. Shared/overlapping cycles and one unresolved cycle limit inferential precision."
+      ],
+      "notebooks_reviewed": [
+        "macd_2w_post_ath_bottom.ipynb"
+      ],
+      "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+    },
+    {
+      "study": "paladin_harvester",
+      "review_path": "paladin_harvester/VALIDATION_REVIEW_PLAN.md",
+      "status": "archived_rejected_conditional",
+      "priority": "P2",
+      "key_findings": [
+        "Keep twelve-cell rejection; do not automatically retune.",
+        "Overlap, truncated holds, funding and entry-order risk limit account claims.",
+        "A new study requires a distinct hypothesis and genuinely forward chronology."
+      ],
+      "notebooks_reviewed": [],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "pool_study",
+      "review_path": "pool_study/VALIDATION_REVIEW_PLAN.md",
+      "status": "descriptive_conditional",
+      "priority": "P2",
+      "key_findings": [
+        "Conditional ETH/BTC means are not allocation or causal-alpha evidence.",
+        "Calendar gaps, regime warm-up, paired dependence and 200% gross spread interpretation need explicit labels.",
+        "No new portfolio test is needed without an allocation question."
+      ],
+      "notebooks_reviewed": [],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "rsi_divergence_note",
+      "review_path": "study_validation_audit_2026_09/standalone_plans/rsi_divergence_note.md",
+      "status": "static_review_complete_followup_conditional",
+      "priority": "P2",
+      "key_findings": [
+        "Cell 1's window_mask includes each end date by adding a day, while the next window begins on the same date. Adjacent windows therefore overlap a boundary day. They are fixed-period comparisons, not a fitted walk-forward procedure.",
+        "Cell 4 uses same-close information and fills, without a latency model. Its 10× liquidation proxy is based on hourly closes and a 1/leverage threshold, omitting intrabar marks, maintenance margin and funding. That cannot support liquidation safety. The RSI calculation's zero-loss case becomes NaN and needs a declared flat/rising-market convention.",
+        "Cell 7 includes late crossings without a full future horizon in reach-probability denominators. Cell 8's suggested rolling gate arose after seeing W4 and future reach outcomes; future-gate decisions may use only already matured outcomes. The root finder and legacy database path also need modernization in a study copy."
+      ],
+      "notebooks_reviewed": [
+        "rsi_divergence_sketch.ipynb"
+      ],
+      "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+    },
+    {
+      "study": "strategy_comparison_2026_09",
+      "review_path": "strategy_comparison_2026_09/VALIDATION_REVIEW_PLAN.md",
+      "status": "descriptive_conditional",
+      "priority": "P2",
+      "key_findings": [
+        "Preserve explicit descriptive-only scope.",
+        "Notional-unit conversion does not create comparable portfolio drawdown or capital allocation.",
+        "Macro-gate association is not actual signal overlap or diversification; missing and unavailable gates need separation."
+      ],
+      "notebooks_reviewed": [],
+      "scope_limitations": [
+        "Static source/notebook/saved text review only; no study execution, database query or data download.",
+        "Saved outputs are historical evidence, not a new reproducibility result.",
+        "Underlying raw data, execution quotes and live production performance were not independently validated."
+      ]
+    },
+    {
+      "study": "trade_audit",
+      "review_path": "trade_audit/VALIDATION_REVIEW_PLAN.md",
+      "status": "static_review_complete_followup_conditional",
+      "priority": "P2",
+      "key_findings": [
+        "The claim that 203/203 trades obey timing/asset/direction checks establishes those checks, not full strategy-logic compliance. It does not test indicator reconstruction, missing eligible signals, sizing, costs, duplicate orders, exit paths or idempotent restart behavior.",
+        "The scripts contain hard-coded variant/database assumptions and direct sqlite3.connect(DB), without mode=ro enforcement. The June 7 enabled-variant convention and counts are an as-of snapshot; they are not a reliable current classifier for paper, simulated and real execution histories.",
+        "Mean return / win-rate differences from different historical periods and n≤6 paper trades cannot establish matched paper-versus-simulator agreement, improvement or drift. Configuration history needs precise effective timestamps, and replay P&L percent fields have different denominators across sleeves.",
+        "No notebook exists in this folder. Static findings do not show a reusable fresh-kernel reconciliation workflow, complete event coverage or a verified root cause for every anomaly."
+      ],
+      "notebooks_reviewed": [],
+      "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+    },
+    {
+      "study": "whale_absorption",
+      "review_path": "whale_absorption/VALIDATION_REVIEW_PLAN.md",
+      "status": "ARCHIVED_NEGATIVE_CONDITIONAL_REVIVAL_ONLY",
+      "priority": "P2",
+      "key_findings": [
+        "Discovery acceptance: FAIL RETAINED. All six saved result files record gate_pass=false and zero candidates. Retain the negative screen; do not reinterpret a selected positive mean as accepted alpha.",
+        "Cost sensitivity comparability: NOT FULLY PAIRED. The 15m paid result uses z windows 96/192/288, cooldowns 4/8, and TIFs 16/48; its zero-cost file uses time-scaled windows 4/16/32, cooldowns 1/2, and TIFs 4/16. That pair changes parameters as well as costs, so it is not a clean recost comparison.",
+        "Whale mechanism: PROXY ONLY. Notional trade-size buckets are not identified beneficial owners or proof of inventory absorption. The aggregate data can support a size-conditioned flow hypothesis, not observed whale intent.",
+        "Coverage and independence: LIMITED. Fine-cadence evidence spans roughly thirteen weeks in 2026. Many overlapping events and hundreds of parameter cells do not become independent confirmations across market regimes.",
+        "Execution evidence: LIMITED. Entry-close and exact-barrier replay with a fixed cost do not establish latency, gaps, funding, spread, or queue execution. Both halves are used in the discovery search, so the second half is a stability screen, not untouched OOS.",
+        "Reusable engine: AUDIT BEFORE REUSE. No positive decision currently depends on this engine. If reused, verify censored paths, data gaps, time-scaled windows, and identical parameter hashes before attributing changes to cost or resolution."
+      ],
+      "notebooks_reviewed": [],
+      "scope_limitations": "The negative verdicts and parameter discrepancies are read from saved artifacts, not replicated. No tape ownership, DB completeness, latency, fills, or actual funding was verified. Fine-data coverage is documented context, not a fresh inventory. Static review on 2026-09-14; no backtests, database queries, downloads, or existing artifact edits."
+    }
+  ],
+  "notebook_coverage": {
+    "adx_eth_2026_09/adx_eth.ipynb": "adx_eth_2026_09/VALIDATION_REVIEW_PLAN.md",
+    "adx_robustness_2026_09/adx_robustness.ipynb": "adx_robustness_2026_09/VALIDATION_REVIEW_PLAN.md",
+    "anchor_allocator_study/anchor_allocator.ipynb": "anchor_allocator_study/VALIDATION_REVIEW_PLAN.md",
+    "backtest_report.ipynb": "study_validation_audit_2026_09/standalone_plans/legacy_portfolio_reports.md",
+    "basis_carry/basis_carry.ipynb": "basis_carry/VALIDATION_REVIEW_PLAN.md",
+    "bitstamp_adx_backtest.ipynb": "study_validation_audit_2026_09/standalone_plans/bitstamp_adx_parity.md",
+    "bitstamp_thu_bear_backtest.ipynb": "study_validation_audit_2026_09/standalone_plans/bitstamp_thu_parity.md",
+    "brainstorm_validation_2026_09/brainstorm_validation.ipynb": "brainstorm_validation_2026_09/VALIDATION_REVIEW_PLAN.md",
+    "calendar_cells/calendar_cells.ipynb": "calendar_cells/VALIDATION_REVIEW_PLAN.md",
+    "carry_exit_rule_2026_09/carry_exit_rule.ipynb": "carry_exit_rule_2026_09/VALIDATION_REVIEW_PLAN.md",
+    "chento_journal/bootstrap_phase_analysis.ipynb": "chento_journal/VALIDATION_REVIEW_PLAN.md",
+    "chento_journal/chento_limit_bid_v1_backtest.ipynb": "chento_journal/VALIDATION_REVIEW_PLAN.md",
+    "chento_journal/chento_limit_bid_v3_backtest.ipynb": "chento_journal/VALIDATION_REVIEW_PLAN.md",
+    "chento_journal/chento_vs_bot_comparison.ipynb": "chento_journal/VALIDATION_REVIEW_PLAN.md",
+    "coinbase_premium/coinbase_premium.ipynb": "coinbase_premium/VALIDATION_REVIEW_PLAN.md",
+    "coinbase_premium/coinbase_premium_run_A_2026_09_08.ipynb": "coinbase_premium/VALIDATION_REVIEW_PLAN.md",
+    "compare_with_fomc.ipynb": "study_validation_audit_2026_09/standalone_plans/fomc_reports.md",
+    "delta_neutral/delta_neutral.ipynb": "delta_neutral/VALIDATION_REVIEW_PLAN.md",
+    "dwell_block/dwell_block_research.ipynb": "dwell_block/VALIDATION_REVIEW_PLAN.md",
+    "execution_2026_09/execution_study.ipynb": "execution_2026_09/VALIDATION_REVIEW_PLAN.md",
+    "fomc_backtest_drilldown.ipynb": "study_validation_audit_2026_09/standalone_plans/fomc_reports.md",
+    "fomc_leverage_sensitivity.ipynb": "study_validation_audit_2026_09/standalone_plans/fomc_reports.md",
+    "full_portfolio_report.ipynb": "study_validation_audit_2026_09/standalone_plans/legacy_portfolio_reports.md",
+    "grid_study/grid_study.ipynb": "grid_study/VALIDATION_REVIEW_PLAN.md",
+    "hedge_tests/hedge_experiments.ipynb": "hedge_tests/VALIDATION_REVIEW_PLAN.md",
+    "macd_2w_post_ath_bottom.ipynb": "study_validation_audit_2026_09/standalone_plans/macd_bottom_note.md",
+    "overlay_study/overlay_study.ipynb": "overlay_study/VALIDATION_REVIEW_PLAN.md",
+    "paladin_study/paladin_study.ipynb": "paladin_study/VALIDATION_REVIEW_PLAN.md",
+    "pdo_adjacents/pdo_adjacents.ipynb": "pdo_adjacents/VALIDATION_REVIEW_PLAN.md",
+    "pdo_tv_csv_parse.ipynb": "study_validation_audit_2026_09/standalone_plans/pdo_tv_parity.md",
+    "pdo_tv_validate.ipynb": "study_validation_audit_2026_09/standalone_plans/pdo_tv_parity.md",
+    "pdo_tv_validate_dump.ipynb": "study_validation_audit_2026_09/standalone_plans/pdo_tv_parity.md",
+    "pdo_tv_validate_sweep.ipynb": "study_validation_audit_2026_09/standalone_plans/pdo_tv_parity.md",
+    "portfolio_performance.ipynb": "study_validation_audit_2026_09/standalone_plans/legacy_portfolio_reports.md",
+    "r4_bot_prep/r4_bot_prep.ipynb": "r4_bot_prep/VALIDATION_REVIEW_PLAN.md",
+    "r4_study/era_split.ipynb": "r4_study/VALIDATION_REVIEW_PLAN.md",
+    "r4_study/grid_search.ipynb": "r4_study/VALIDATION_REVIEW_PLAN.md",
+    "r4_study/sizing_study.ipynb": "r4_study/VALIDATION_REVIEW_PLAN.md",
+    "r4_study/walk_forward.ipynb": "r4_study/VALIDATION_REVIEW_PLAN.md",
+    "r4_study/year_breakdown.ipynb": "r4_study/VALIDATION_REVIEW_PLAN.md",
+    "range_sanity_2026_09/range_sanity_2026_09.ipynb": "range_sanity_2026_09/VALIDATION_REVIEW_PLAN.md",
+    "rsi_divergence_sketch.ipynb": "study_validation_audit_2026_09/standalone_plans/rsi_divergence_note.md",
+    "scanner_study/scanner_study.ipynb": "scanner_study/VALIDATION_REVIEW_PLAN.md",
+    "short_squeeze_sessions/discovery.ipynb": "short_squeeze_sessions/VALIDATION_REVIEW_PLAN.md",
+    "short_squeeze_sessions/strategy_backtest.ipynb": "short_squeeze_sessions/VALIDATION_REVIEW_PLAN.md",
+    "sizing_style_2026_09/sizing_style.ipynb": "sizing_style_2026_09/VALIDATION_REVIEW_PLAN.md",
+    "squeeze_bull_revalidation/squeeze_bull_revalidation.ipynb": "squeeze_bull_revalidation/VALIDATION_REVIEW_PLAN.md",
+    "swing_base_limit_bid/discovery.ipynb": "swing_base_limit_bid/VALIDATION_REVIEW_PLAN.md",
+    "tools_statistical_validation.ipynb": "study_validation_audit_2026_09/standalone_plans/statistical_validation_tools.md",
+    "validation_audit_2026_09/validation_audit.ipynb": "validation_audit_2026_09/VALIDATION_REVIEW_PLAN.md",
+    "vrp_study/vrp_study.ipynb": "vrp_study/VALIDATION_REVIEW_PLAN.md"
+  }
+}

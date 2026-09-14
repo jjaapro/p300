@@ -1,0 +1,241 @@
+[
+  {
+    "study": "legacy_portfolio_reports",
+    "review_path": "study_validation_audit_2026_09/standalone_plans/legacy_portfolio_reports.md",
+    "status": "static_review_complete_validation_needed",
+    "priority": "P0",
+    "key_findings": [
+      "backtest_report cell 6 compounds the output of trades_daily_returns even though the helper's fixed-capital P&L convention is additive. Its exit-date-only series also excludes unrealized risk. Cell 9 starts its drawdown peak after the first reported return, so an initial loss can be missed.",
+      "full_portfolio_report cell 11 constructs consecutive simple buy-and-hold returns, then passes them to equity_metrics (cell 9), which sums fixed-capital P&L percentages. The benchmark violates that function's input contract. Analytic example: prices 100 → 110 → 99 produce returns 0%, +10%, −10%; summing reports 0% while fixed-quantity buy-and-hold loses 1%.",
+      "portfolio_performance cells 1/3 query whole-variant closed trades while displaying a fixed date window, and its calendar curves book P&L at exit. Cell 3's saved output has an empty tactical book and a zero combined portfolio beside nonzero analytic sleeves; this is not evidence of a validated zero-return portfolio.",
+      "backtest_report and full_portfolio_report cell 2 depend on __file__; they are script conversions with commented main calls. Reproduction needs a real notebook entry point, explicit source snapshot and selected variant, not silent fallback capital or a mutable current ledger."
+    ],
+    "notebooks_reviewed": [
+      "backtest_report.ipynb",
+      "full_portfolio_report.ipynb",
+      "portfolio_performance.ipynb"
+    ],
+    "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+  },
+  {
+    "study": "fomc_reports",
+    "review_path": "study_validation_audit_2026_09/standalone_plans/fomc_reports.md",
+    "status": "static_review_complete_validation_needed",
+    "priority": "P1",
+    "key_findings": [
+      "compare_with_fomc cells 4/7 remove FOMC rows from the realized book and book remaining P&L at exit. This estimates contribution within that executed ledger; it does not recompute free capital, skipped trades, position conflicts or marked risk of an executable portfolio without FOMC.",
+      "fomc_backtest_drilldown cell 0 compares win rates with phase expectations, and cell 3 joins observer phase labels by FOMC date. The review cannot establish that historical phase labels/expectations were available before each trade or were independently calibrated. Latest labels are not an as-of signal history.",
+      "fomc_leverage_sensitivity cell 3 does not load direction, while cell 6 calculates exit/entry−1. A long-only ledger prerequisite must be verified, or shorts are scored incorrectly. Closed-trade compounding and iid event resampling omit intrahold margin, liquidation, funding and clustered event shocks.",
+      "The leverage table inspects eleven leverage settings. Its Monte Carlo uses the observed empirical tails and cannot establish safety at 10–30× or bound unobserved losses. These risk claims would be P0 before reuse. All three notebooks retain __file__ setup and commented main calls."
+    ],
+    "notebooks_reviewed": [
+      "compare_with_fomc.ipynb",
+      "fomc_backtest_drilldown.ipynb",
+      "fomc_leverage_sensitivity.ipynb"
+    ],
+    "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+  },
+  {
+    "study": "pdo_tv_parity",
+    "review_path": "study_validation_audit_2026_09/standalone_plans/pdo_tv_parity.md",
+    "status": "static_review_complete_validation_needed",
+    "priority": "P0",
+    "key_findings": [
+      "pdo_tv_csv_parse cell 4 excludes Margin call slices and calls DayEnd/HoldLimit rows the real trades. Those cashflows are economically real parts of the exported position history. Removing them cannot establish reconciled net profitability or account drawdown; percent-return sums/compounding also require the actual sizing and partial-exit denominator.",
+      "pdo_tv_validate cell 3 aggregates available minutes without enforcing complete hours; cell 6 uses the first observed hour as day open and previous observed day as PDO. Missing days/hours can change the intended calendar rule and make HOLD_BARS count observations rather than elapsed hours.",
+      "The validation engines' end-open position is not marked, and drawdown follows closed-trade equity. Header slippage assumptions and actual fills must be reconciled. A static printed TradingView reference is not a matched, versioned export.",
+      "The sweep's gap/tolerance/hold loops contain 20 evaluations and 18 unique parameter combinations on the same sample; that is parity sensitivity, not out-of-sample evidence for a selected winner. __file__, legacy database paths and hard-coded export locations obstruct fresh-kernel reproduction; the dump writes outside the preferred study output tree."
+    ],
+    "notebooks_reviewed": [
+      "pdo_tv_csv_parse.ipynb",
+      "pdo_tv_validate.ipynb",
+      "pdo_tv_validate_dump.ipynb",
+      "pdo_tv_validate_sweep.ipynb"
+    ],
+    "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+  },
+  {
+    "study": "bitstamp_adx_parity",
+    "review_path": "study_validation_audit_2026_09/standalone_plans/bitstamp_adx_parity.md",
+    "status": "static_review_complete_validation_needed",
+    "priority": "P1",
+    "key_findings": [
+      "Cell 11 opens at the daily close and then uses that same day's low/high in its worst-point MTM calculation. Those extrema predate the position. It tracks peaks only at those worst-point marks, so the reported MTM drawdown is not a complete NAV-path drawdown either. Do not reuse this risk metric without correction.",
+      "Stops fill exactly at their daily level without a gap-through rule. The final position is appended as still_open with a cost-adjusted mark, then included beside completed trades; realized and marked statistics need separate contracts. Cell 13 entry-year cohorts are not calendar marked annual returns.",
+      "Cell 2 requires __file__; cell 7's cache loader may fetch/write under data/. Service parity imports mutable current production implementations. The notebook has no saved execution counts establishing a fresh-kernel run."
+    ],
+    "notebooks_reviewed": [
+      "bitstamp_adx_backtest.ipynb"
+    ],
+    "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+  },
+  {
+    "study": "bitstamp_thu_parity",
+    "review_path": "study_validation_audit_2026_09/standalone_plans/bitstamp_thu_parity.md",
+    "status": "static_review_complete_validation_needed",
+    "priority": "P1",
+    "key_findings": [
+      "Cells 13/14 use day-of-month NFP/CPI/OPEX proxies and Pine timing. These may be appropriate for parity but do not validate the actual event-filtered service. The distinction already documented in cell 0 must remain visible in any performance claim.",
+      "Cell 14 fills daily-gap stops at the stop price and leaves final open positions outside the closed-trade statistics. Cell 16's MaxDD is closed-trade drawdown, not marked account risk.",
+      "Cell 17 applies UTC+3 to a CSV comparison. The export's actual declared chart timezone must establish whether this is a fixed offset or a timezone with DST; the code does not establish it. Partial/missing exported rows and trade-number matches need explicit reconciliation.",
+      "__file__, argparse-oriented orchestration, and cache fetch/write paths under data/ prevent treating the converted notebook as a clean, isolated executed study."
+    ],
+    "notebooks_reviewed": [
+      "bitstamp_thu_bear_backtest.ipynb"
+    ],
+    "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+  },
+  {
+    "study": "macd_bottom_note",
+    "review_path": "study_validation_audit_2026_09/standalone_plans/macd_bottom_note.md",
+    "status": "static_review_complete_followup_conditional",
+    "priority": "P2",
+    "key_findings": [
+      "The title and narrative say 2W, but cell 1 sets BAR_DAYS=7 and the saved output in cell 2 confirms 7d bars. Any claim specifically about a tested two-week signal is unsupported by this saved run.",
+      "Cell 2 reports interior gap bars and retains them. Cell 1's root search still expects jplus/. Dataset lineage, bucket completeness and the difference between displayed bar start and actionable bar close must be resolved before reproduction.",
+      "Cells 5/6 examine proximity bands on the same eleven cycles. Cells 7/8 use future lows, next ATH/bear boundaries and future peak closes. These are retrospective labels; they cannot be entry features or realized exit profits. Shared/overlapping cycles and one unresolved cycle limit inferential precision."
+    ],
+    "notebooks_reviewed": [
+      "macd_2w_post_ath_bottom.ipynb"
+    ],
+    "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+  },
+  {
+    "study": "rsi_divergence_note",
+    "review_path": "study_validation_audit_2026_09/standalone_plans/rsi_divergence_note.md",
+    "status": "static_review_complete_followup_conditional",
+    "priority": "P2",
+    "key_findings": [
+      "Cell 1's window_mask includes each end date by adding a day, while the next window begins on the same date. Adjacent windows therefore overlap a boundary day. They are fixed-period comparisons, not a fitted walk-forward procedure.",
+      "Cell 4 uses same-close information and fills, without a latency model. Its 10× liquidation proxy is based on hourly closes and a 1/leverage threshold, omitting intrabar marks, maintenance margin and funding. That cannot support liquidation safety. The RSI calculation's zero-loss case becomes NaN and needs a declared flat/rising-market convention.",
+      "Cell 7 includes late crossings without a full future horizon in reach-probability denominators. Cell 8's suggested rolling gate arose after seeing W4 and future reach outcomes; future-gate decisions may use only already matured outcomes. The root finder and legacy database path also need modernization in a study copy."
+    ],
+    "notebooks_reviewed": [
+      "rsi_divergence_sketch.ipynb"
+    ],
+    "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+  },
+  {
+    "study": "statistical_validation_tools",
+    "review_path": "study_validation_audit_2026_09/standalone_plans/statistical_validation_tools.md",
+    "status": "static_review_complete_validation_needed",
+    "priority": "P1",
+    "key_findings": [
+      "Cells 4/5 use first-to-last closed-trade exit dates and realized P&L. Long holdings and open trades disappear from the risk path. A precise bootstrap of that cashflow series is not a confidence interval for marked trading risk.",
+      "Cell 15 resamples individual days independently; BCa bias correction does not preserve holding-period or volatility dependence. It also has unhandled degenerate cases when the bias proportion reaches 0 or 1, and no explicit empty-input guard. Calibration should precede reuse as a general validator.",
+      "Cell 21 labels correlation as daily log returns although cell 19 converts BTC to simple returns. Correlation thresholds are used to narrate BTC-beta dependence, but correlation alone is not beta, explained return or independence. Rolling windows overlap and are descriptive, not independent tests.",
+      "The notebook is a converted script with __file__ and commented main, no saved execution record, and no family search correction or untouched evaluation. Those omissions are acceptable for a labeled ledger report but not a selected-strategy validation claim."
+    ],
+    "notebooks_reviewed": [
+      "tools_statistical_validation.ipynb"
+    ],
+    "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+  },
+  {
+    "study": "execution_2026_09",
+    "review_path": "execution_2026_09/VALIDATION_REVIEW_PLAN.md",
+    "status": "static_review_complete_validation_needed",
+    "priority": "P1",
+    "key_findings": [
+      "findings.md calls the modeled taker cost measured and concludes execution is the fee and almost nothing else. exec_lib.py fixes fees, spread/adverse-selection assumptions and zero impact; bars do not measure account fees, order-book queue, attainable maker status or actual fills. The caveats are more defensible than that headline.",
+      "run_e4_stop_slippage.py:21–55 computes gap/stop slippage from the same OHLC stop walker. Zero modeled gaps means no opening-gap slippage in those sampled bars; it does not establish zero intrabar stop-market slippage or exact live fills. Polling tails and sparse stressed samples are material.",
+      "E2/E3 touch/through models cannot establish that a resting order actually filled at a maker fee; marketable orders may take or be rejected under post-only. The narrow SHORT_SQUEEZE stop is particularly exposed to the documented spot/perpetual basis mismatch and sparse 5-second event sample.",
+      "Entry lists are inherited from upstream studies. Parity with those lists validates reproduction, not their causal selection or engine correctness. The ADX stop-list check cannot detect omitted stop events absent from its source ledger. exec_lib.py:130–138 reuses existing caches unless force is set, without checking source hashes; cache and result lineage must be frozen for a current replay."
+    ],
+    "notebooks_reviewed": [
+      "execution_2026_09/execution_study.ipynb"
+    ],
+    "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+  },
+  {
+    "study": "brainstorm_validation_2026_09",
+    "review_path": "brainstorm_validation_2026_09/VALIDATION_REVIEW_PLAN.md",
+    "status": "static_review_complete_validation_needed",
+    "priority": "P1",
+    "key_findings": [
+      "The blanket N_TRIALS=1 label refers to the new replication tests, while selected hypotheses came from the larger documented search. Existing deflation calculations recognize that distinction; future summaries must not erase it or treat five claims plus all secondary analyses as a single unselected test.",
+      "The notebook runs C0 then later scripts, while run_c0_data_parity.py:149–156 writes and prints gate values. A future orchestrator needs explicit required-gate enforcement and hash linkage, not execution order alone. Identical copied cache data is replication, not independent data.",
+      "New historical years and correlated crypto assets test transportability; they are not automatically untouched chronological validation. C5's unreproduced H24 cell must remain unreproduced rather than being absorbed into a general claim that all arithmetic matched.",
+      "C4's bar-phase and fill-model sensitivity supports sensitivity under those engines. It does not validate all ADX implementations or exact live stops; the newer ADX robustness harness has separate first-day-stop/accounting issues. Keep engine-specific conclusions and dependency revisions explicit."
+    ],
+    "notebooks_reviewed": [
+      "brainstorm_validation_2026_09/brainstorm_validation.ipynb"
+    ],
+    "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+  },
+  {
+    "study": "validation_audit_2026_09",
+    "review_path": "validation_audit_2026_09/VALIDATION_REVIEW_PLAN.md",
+    "status": "static_review_complete_validation_needed",
+    "priority": "P1",
+    "key_findings": [
+      "Reproducing a loader's published point estimate (cells 8/10) does not establish its engine or source labels are correct. The current review finds upstream causal, funding, first-holding-day and MTM problems that can propagate into this audit's input vectors.",
+      "Cells 13/14 disclose PBO only for the saved four tilt alternatives, omitting other searched branches whose matrices were unavailable. That is a partial-family diagnostic, not a complete search correction. Daily closed-trade or signal-return inputs must not be interpreted as a reconciled live account NAV.",
+      "The closing narrative in cell 19 treats point estimates as real and breadth as the binding limitation. A cautious restatement is that saved point estimates reproduced under the tested definitions; data/engine validity and actual economic edge remain separate unresolved questions.",
+      "Paper counts and deployment status in cell 5 are an as-of historical snapshot. They should not be displayed as current facts without a new explicit observation cutoff. A report-only notebook does not record execution of the source audit scripts in its own cells."
+    ],
+    "notebooks_reviewed": [
+      "validation_audit_2026_09/validation_audit.ipynb"
+    ],
+    "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+  },
+  {
+    "study": "okx_gate_revalidation",
+    "review_path": "okx_gate_revalidation/VALIDATION_REVIEW_PLAN.md",
+    "status": "static_review_complete_validation_needed",
+    "priority": "P1",
+    "key_findings": [
+      "findings.md:36–40 explicitly says the same-hour control also fails, so the final verdict does not isolate the look-ahead premise. Lines 84–108 clarify that RETIRE means discrimination was not demonstrated while profitable trades were blocked; it is not proof the gate is useless or that chento is statistically validated.",
+      "The study is script/report based; no .ipynb exists here. Its external snapshot and result links are documented but this static review did not independently rerun or re-hash that snapshot. Preserve those limitations rather than asserting an independent reproduction.",
+      "The report-only all-trades drawdown and 2.25× fire-rate increase imply a distinct sizing/concurrency question. Positive kept-minus-blocked R and row counts alone do not establish the executable portfolio impact of disabling the gate.",
+      "findings.md:163–174 already records that the report-only production-sequence approximation used losing predecessors before they closed and differed from the bot's 48-hour rule. Those particular portfolio figures must not be reused; the final gate verdict did not depend on them. Lines 152–161 also disclose cross-checkout hash/line-ending issues and omitted funding.",
+      "findings.md lists downstream studies using same-hour OKX values and forbids treating the causal re-test as their automatic recut. Each dependent overlay/attribution/filter requires its own as-of replay; new replacement gates inherit the documented search family."
+    ],
+    "notebooks_reviewed": [],
+    "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+  },
+  {
+    "study": "range_sanity_2026_09",
+    "review_path": "range_sanity_2026_09/VALIDATION_REVIEW_PLAN.md",
+    "status": "static_review_complete_validation_needed",
+    "priority": "P0",
+    "key_findings": [
+      "b_basis_funding_asia.py's first-break fade outcome calculation approximates gross R as 2×target_hit−stop_hit, giving timeout trades zero gross return instead of marking their actual exit. It starts the stop/target walk strictly after the first breach bar, so an entry/fill followed by an adverse move within that bar is omitted.",
+      "Session eligibility permits incomplete Asia/rest sessions rather than requiring the stated full windows. Quantify missing-time effects and whether the first observed breach was actually the first; do not silently replace unavailable bars with clean sessions.",
+      "The funding path samples the historical mixed funding table at eight-hour timestamps. Pre-cutover forecasts are not established realized cashflows. Earlier minute-based saved outputs also need lineage comparison against the September 7 BTC repair before being reused.",
+      "Cost-only maker discounts and exploratory LVN/profile alternatives do not demonstrate attainable fills or a fully defined tradable policy. Negative numbers reject the modeled variants, not every intraday range idea."
+    ],
+    "notebooks_reviewed": [
+      "range_sanity_2026_09/range_sanity_2026_09.ipynb"
+    ],
+    "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+  },
+  {
+    "study": "hawkes_note_results",
+    "review_path": "hawkes_note_results/VALIDATION_REVIEW_PLAN.md",
+    "status": "static_review_complete_followup_conditional",
+    "priority": "P2",
+    "key_findings": [
+      "The note's binary rising-edge streams cannot satisfy its original hourly over-dispersion condition; the note discloses this and explains why the verdict does not change. Preserve that literal original clause and its recorded deviation, rather than retrospectively replacing the preregistration.",
+      "addendum_slow_rate.py:9–13 uses a centered rate estimated from the same observations and calls residual clustering genuine self-excitation. The code/note can show a descriptive mismatch with that particular null; it cannot identify a unique excitation mechanism, a causal forecast or the benefit of a Hawkes model.",
+      "The full-sample percentile thresholds and centered smoother are legitimate descriptive choices but would leak future information in prediction. Two hundred null replications provide limited precision for 99th-percentile thresholds, and multiple streams/bin widths/lags need simultaneous inference if a new formal discovery claim is made.",
+      "The archived liquidity-feed span and funding-era restriction are historical inventory facts. The plan did not requery present coverage. A monotone ladder in this sample does not prove no future dataset or shorter kernel could ever yield a useful model."
+    ],
+    "notebooks_reviewed": [],
+    "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+  },
+  {
+    "study": "trade_audit",
+    "review_path": "trade_audit/VALIDATION_REVIEW_PLAN.md",
+    "status": "static_review_complete_followup_conditional",
+    "priority": "P2",
+    "key_findings": [
+      "The claim that 203/203 trades obey timing/asset/direction checks establishes those checks, not full strategy-logic compliance. It does not test indicator reconstruction, missing eligible signals, sizing, costs, duplicate orders, exit paths or idempotent restart behavior.",
+      "The scripts contain hard-coded variant/database assumptions and direct sqlite3.connect(DB), without mode=ro enforcement. The June 7 enabled-variant convention and counts are an as-of snapshot; they are not a reliable current classifier for paper, simulated and real execution histories.",
+      "Mean return / win-rate differences from different historical periods and n≤6 paper trades cannot establish matched paper-versus-simulator agreement, improvement or drift. Configuration history needs precise effective timestamps, and replay P&L percent fields have different denominators across sleeves.",
+      "No notebook exists in this folder. Static findings do not show a reusable fresh-kernel reconciliation workflow, complete event coverage or a verified root cause for every anomaly."
+    ],
+    "notebooks_reviewed": [],
+    "scope_limitations": "Static source/text-output review; no database query, notebook execution, independent historical reproduction or rendered-chart inspection."
+  }
+]

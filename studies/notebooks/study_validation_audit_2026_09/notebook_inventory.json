@@ -1,0 +1,784 @@
+{
+  "date": "2026-09-14",
+  "method": "Static JSON/source inspection; no notebook, strategy, database or network execution",
+  "cell_index_convention": "zero-based in original .ipynb",
+  "directories": [
+    "adx_eth_2026_09",
+    "adx_robustness_2026_09",
+    "adx_study",
+    "anchor_allocator_study",
+    "attribution",
+    "basis_carry",
+    "brainstorm_validation_2026_09",
+    "calendar_cells",
+    "carry_exit_rule_2026_09",
+    "chento_journal",
+    "coinbase_premium",
+    "delta_neutral",
+    "dwell_block",
+    "execution_2026_09",
+    "footprint_study",
+    "funding_cvd_divergence",
+    "fvg_magnet",
+    "grid_study",
+    "hawkes_note_results",
+    "hedge_tests",
+    "lsr_b5_study",
+    "oi_flush",
+    "okx_gate_revalidation",
+    "orb_study",
+    "overlay_study",
+    "paladin_harvester",
+    "paladin_study",
+    "pdo_adjacents",
+    "pool_study",
+    "r4_bot_prep",
+    "r4_study",
+    "range_sanity_2026_09",
+    "scanner_study",
+    "screener",
+    "short_squeeze_sessions",
+    "sizing_style_2026_09",
+    "squeeze_bull_revalidation",
+    "squeeze_recut",
+    "strategy_comparison_2026_09",
+    "swing_base_limit_bid",
+    "trade_audit",
+    "validation_audit_2026_09",
+    "vrp_study",
+    "whale_absorption"
+  ],
+  "notebooks": [
+    {
+      "notebook": "adx_eth_2026_09/adx_eth.ipynb",
+      "sha256": "43babd13c27fd3ad016ea69d8622c6fb8a119fe537e7fea2f2d0cb9e1f91714f",
+      "source_sha256": "f2ab3010ee35d1cfb8d6d6d371fba8eaa7c4c7fbe0a325213d1cf690b47a1d96",
+      "cells": 5,
+      "code_cells": 2,
+      "code_cells_with_execution_count": 2,
+      "code_cells_with_saved_outputs": 2,
+      "saved_errors": [],
+      "static_review_flags": [],
+      "scope": "review"
+    },
+    {
+      "notebook": "adx_robustness_2026_09/adx_robustness.ipynb",
+      "sha256": "29c9078e2c2b7525e8a30ef8a768bbe77db2c21e0d53f9542ecb987c6e134e0e",
+      "source_sha256": "99332583220cb0b1c265c61e2cfcd7cb22810f27c0ef1cf06146ce57b43165e0",
+      "cells": 11,
+      "code_cells": 5,
+      "code_cells_with_execution_count": 5,
+      "code_cells_with_saved_outputs": 5,
+      "saved_errors": [],
+      "static_review_flags": [],
+      "scope": "review"
+    },
+    {
+      "notebook": "anchor_allocator_study/anchor_allocator.ipynb",
+      "sha256": "b4dbc1b7c47afff4a6329274ff8867a28fe3be090c3a00dbf8f67f2211106e74",
+      "source_sha256": "a36ce01d718ece306e16d3d5f548c2634663b4bb82939be073efad13d8805407",
+      "cells": 13,
+      "code_cells": 6,
+      "code_cells_with_execution_count": 6,
+      "code_cells_with_saved_outputs": 6,
+      "saved_errors": [],
+      "static_review_flags": [],
+      "scope": "review"
+    },
+    {
+      "notebook": "backtest_report.ipynb",
+      "sha256": "9f8bc4d028ee2800f8b2023c7f2901b7ac32c0d57afa46a34f2b1d1b1fab146a",
+      "source_sha256": "be31d109a7fa4e35848b8fc0b3727a5024f8b29c19dd73cb3b03b6fa05ad53a8",
+      "cells": 15,
+      "code_cells": 14,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "uses___file___requires_notebook_entrypoint_review",
+        "no_saved_execution_counts_not_proof_of_no_external_run",
+        "connection_cell_without_explicit_mode_ro_review_required"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "basis_carry/basis_carry.ipynb",
+      "sha256": "3e5d34d477ed05cb8e7242ad5e53bf665461887c2a6624d6632c645953638ba2",
+      "source_sha256": "e1050d90dc584e234b7d03348ac471df6a14faddb5a5e812733efe6c8cdbbd4b",
+      "cells": 20,
+      "code_cells": 11,
+      "code_cells_with_execution_count": 11,
+      "code_cells_with_saved_outputs": 11,
+      "saved_errors": [],
+      "static_review_flags": [],
+      "scope": "review"
+    },
+    {
+      "notebook": "bitstamp_adx_backtest.ipynb",
+      "sha256": "26390aa24a911b938c6ac4f206d60851163960f184bf1343a9a45c1f47d3b52f",
+      "source_sha256": "0c4670950d31629f0f650a72156659deec26bcb75a4364b93d28523a6ae04d56",
+      "cells": 17,
+      "code_cells": 12,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "uses___file___requires_notebook_entrypoint_review",
+        "no_saved_execution_counts_not_proof_of_no_external_run"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "bitstamp_thu_bear_backtest.ipynb",
+      "sha256": "ed0522d8091882830232397fecae26c55daea1e2258a1f638f804e42cb6904e3",
+      "source_sha256": "ebad8c27b101c173db44a34d782476a351e95fd547c1eec3815603b04ebe6419",
+      "cells": 20,
+      "code_cells": 16,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "uses___file___requires_notebook_entrypoint_review",
+        "no_saved_execution_counts_not_proof_of_no_external_run"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "brainstorm_validation_2026_09/brainstorm_validation.ipynb",
+      "sha256": "3d70a5a6787c5ce4c13ad22afaab7c8746ba7a7c58788e5ad82b198f19f7d014",
+      "source_sha256": "c34c46c665aebbcff110df8b29aaa743aec965a84bbf2ef1ec1f83167259826a",
+      "cells": 27,
+      "code_cells": 13,
+      "code_cells_with_execution_count": 13,
+      "code_cells_with_saved_outputs": 13,
+      "saved_errors": [],
+      "static_review_flags": [],
+      "scope": "review"
+    },
+    {
+      "notebook": "calendar_cells/calendar_cells.ipynb",
+      "sha256": "5d95206f139474c50be5f34f7f4969b3cf53318ade8dfd279bb57069ff0257c1",
+      "source_sha256": "e6a239a1eab7af57f6d77e11c431b52bc80376325771782f6ae4acf835c24ed1",
+      "cells": 22,
+      "code_cells": 13,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "carry_exit_rule_2026_09/carry_exit_rule.ipynb",
+      "sha256": "d0e95f329f57029757493d2d9eaaf3524e46811883b903c31bb1ba2e2ee7f5f9",
+      "source_sha256": "2153e41a1ed2ec62b48e26b65a73f122cce28675c3cf0d3a97017a0bf869f8f8",
+      "cells": 5,
+      "code_cells": 2,
+      "code_cells_with_execution_count": 2,
+      "code_cells_with_saved_outputs": 2,
+      "saved_errors": [],
+      "static_review_flags": [],
+      "scope": "review"
+    },
+    {
+      "notebook": "chento_journal/bootstrap_phase_analysis.ipynb",
+      "sha256": "2272fff2fa70fc7f2befa3a357853be1c28e9a50eccb8a3635404be9bad3ac04",
+      "source_sha256": "841898ffcddc4703bc1f156e0033cc308c7a840522cb72a128ec054a812c49af",
+      "cells": 21,
+      "code_cells": 10,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run",
+        "connection_cell_without_explicit_mode_ro_review_required"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "chento_journal/chento_limit_bid_v1_backtest.ipynb",
+      "sha256": "f58093adbd4dfd470c265db9a9f07d179ca98aeda0a0f074c037a23e6c66ee02",
+      "source_sha256": "364805db6e236e2183f0b434e4293f757621b1d77ff15312b541dc588dd4eb56",
+      "cells": 14,
+      "code_cells": 7,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run",
+        "connection_cell_without_explicit_mode_ro_review_required"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "chento_journal/chento_limit_bid_v3_backtest.ipynb",
+      "sha256": "82af0ab9844a1d121b4f202e535601e3191dccdb13be433b8478bb8b33fc1856",
+      "source_sha256": "deefba141f0249953437b8e382a054113e02fba5aad4c74ddcbe45661d16ff1e",
+      "cells": 13,
+      "code_cells": 6,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run",
+        "connection_cell_without_explicit_mode_ro_review_required"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "chento_journal/chento_vs_bot_comparison.ipynb",
+      "sha256": "edd1f1d45d20e37db19360f9e04fd1a7534346313458c2a98f7a5fcd8b10b908",
+      "source_sha256": "e334a6303a3efea5e9c1233aea3e09c1861577089097eed90ffdb0d35456ab24",
+      "cells": 18,
+      "code_cells": 9,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "coinbase_premium/coinbase_premium.ipynb",
+      "sha256": "63fe2b7b40c8f46418a1d996b41c14b1bf2b8ec7ecd40d1e75e7a48f0d15d3d9",
+      "source_sha256": "d68aeb5c8ff2ffd3a4ea4eb3ba4d084f05c41cddaa8a14c357faf8ce95fe8f19",
+      "cells": 18,
+      "code_cells": 9,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "coinbase_premium/coinbase_premium_run_A_2026_09_08.ipynb",
+      "sha256": "28d23295e1ec045a71e2d6033bcfd5b86f46f5d6738c1622e0a44cda0779bd05",
+      "source_sha256": "8f31baeca5d2f4e88b7079332f46f6959c0e6ea48a3394a7fab624e52a2259b2",
+      "cells": 24,
+      "code_cells": 13,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "compare_with_fomc.ipynb",
+      "sha256": "314306094efdc8e35cf4645d092059b30fd3dc2a3435fee1056ad9e45c62ea40",
+      "source_sha256": "cc424c7ecbb39b97008511aa7dddf74dfe3bf878688b6b1148839329d1ee0610",
+      "cells": 9,
+      "code_cells": 8,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "uses___file___requires_notebook_entrypoint_review",
+        "no_saved_execution_counts_not_proof_of_no_external_run",
+        "connection_cell_without_explicit_mode_ro_review_required"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "delta_neutral/delta_neutral.ipynb",
+      "sha256": "756d48d94497830fc29ba1374c7c0a35a0c3dbd1315df6d1e35f1aa048d948c9",
+      "source_sha256": "55f73fb99705e69ce4075b65738669346fde7a8795a00ccfadce56442c675d40",
+      "cells": 27,
+      "code_cells": 15,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "dwell_block/dwell_block_research.ipynb",
+      "sha256": "b23bdfdeda44b87401fe12938d45fa0f45f7bc87db1132990753b89fab1deafa",
+      "source_sha256": "e8ccba50df5be03f3a186f88da17c2648ad5d6112235141d8fd6b54996683cf7",
+      "cells": 15,
+      "code_cells": 7,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "execution_2026_09/execution_study.ipynb",
+      "sha256": "e7cc7937dd8136dc45014a4ce7add2ae66adf322a4eaf9c842d46f827c4a4679",
+      "source_sha256": "e9c0277e4b51725889e54094705f43a658d94977b40285adab75e1dd769e170d",
+      "cells": 25,
+      "code_cells": 12,
+      "code_cells_with_execution_count": 12,
+      "code_cells_with_saved_outputs": 12,
+      "saved_errors": [],
+      "static_review_flags": [],
+      "scope": "review"
+    },
+    {
+      "notebook": "fomc_backtest_drilldown.ipynb",
+      "sha256": "8d4cf05bf806d300cde14fec3d4941bd2540e58df93d552b46ba31b8f2d229ae",
+      "source_sha256": "ac0ed2fa300fd34f40a06f45667b213b0490f0acafc4a1a155d87cb1378e2354",
+      "cells": 5,
+      "code_cells": 4,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "uses___file___requires_notebook_entrypoint_review",
+        "no_saved_execution_counts_not_proof_of_no_external_run",
+        "connection_cell_without_explicit_mode_ro_review_required"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "fomc_leverage_sensitivity.ipynb",
+      "sha256": "b0b54911e11d35a3cea682150903c9d1734d55d643bc2943d6a904328410d129",
+      "source_sha256": "267067626ee733f3b8a887b0dff98b1730397cd5a2e282ebc4f10e73b261078c",
+      "cells": 8,
+      "code_cells": 7,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "uses___file___requires_notebook_entrypoint_review",
+        "no_saved_execution_counts_not_proof_of_no_external_run",
+        "connection_cell_without_explicit_mode_ro_review_required"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "full_portfolio_report.ipynb",
+      "sha256": "1dcff3cca263c51d1bb9350b4117c3aa07a2eb026c1cf404bdc4ec007d1e7097",
+      "source_sha256": "05ff3047d6775fde4af8f3da7bc0db0d6c0621a14a9882f3512a51ff794f13bf",
+      "cells": 17,
+      "code_cells": 16,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "uses___file___requires_notebook_entrypoint_review",
+        "no_saved_execution_counts_not_proof_of_no_external_run",
+        "connection_cell_without_explicit_mode_ro_review_required"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "grid_study/grid_study.ipynb",
+      "sha256": "37f64882c43bce0e576fd9ea4651929ca5193c24a20296f38398284af7cb5b3a",
+      "source_sha256": "4236493713e5d158b0ab81ecbee98fa678e4ffbcd021e5c20cd3465c9f87f42e",
+      "cells": 9,
+      "code_cells": 4,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "hedge_tests/hedge_experiments.ipynb",
+      "sha256": "065eaae2732789c8d8a4b5ab17f9ada6f8feaaeecb082429a22c900c13e87fb0",
+      "source_sha256": "818cc7cfc65296571c03b7a81241b3a58c8bba1a8191484fb2283f8dc45891ea",
+      "cells": 7,
+      "code_cells": 3,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "macd_2w_post_ath_bottom.ipynb",
+      "sha256": "df6b17c763443c1de40a2c26128942b787be2a44262509d4cade580e4e3f4485",
+      "source_sha256": "29245492612dfdc12495f47db3137c03907ebc67df783cb2d5e1afa2239d2360",
+      "cells": 11,
+      "code_cells": 9,
+      "code_cells_with_execution_count": 8,
+      "code_cells_with_saved_outputs": 8,
+      "saved_errors": [],
+      "static_review_flags": [],
+      "scope": "review"
+    },
+    {
+      "notebook": "orb_study/00_research_and_plan.ipynb",
+      "sha256": "3e15d38a8f349dce211998cd92c5ca8f84026a0bbdc26b54cca06c6e46056d69",
+      "source_sha256": "b47900508f5245817da5fa8f40ea8720e90dbb605cc8c5cdc76d462f952c0b8a",
+      "cells": 14,
+      "code_cells": 0,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [],
+      "scope": "existing_plan_excluded"
+    },
+    {
+      "notebook": "overlay_study/overlay_study.ipynb",
+      "sha256": "c1f2f469615a1a88a2e0b00da4cea80efc4f3dd4d8c295e5b26cd602df76d51a",
+      "source_sha256": "4cc19974174eae84187797e08184ab868f822be35750edff79819c294a65bcea",
+      "cells": 4,
+      "code_cells": 2,
+      "code_cells_with_execution_count": 2,
+      "code_cells_with_saved_outputs": 2,
+      "saved_errors": [],
+      "static_review_flags": [],
+      "scope": "review"
+    },
+    {
+      "notebook": "paladin_study/paladin_study.ipynb",
+      "sha256": "21004e590e022650970bef1ed9d3b6d57631d85921cccbaea175022f738dc6ed",
+      "source_sha256": "33cc1901c10ce06bf46f12883e0f8f72c1c27336c72d75911f611d0ac523c2e6",
+      "cells": 12,
+      "code_cells": 6,
+      "code_cells_with_execution_count": 6,
+      "code_cells_with_saved_outputs": 6,
+      "saved_errors": [],
+      "static_review_flags": [
+        "connection_cell_without_explicit_mode_ro_review_required"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "pdo_adjacents/pdo_adjacents.ipynb",
+      "sha256": "3bbe18b3f1d9ac4aa881653c332a5a486c28d1741d03ab309e49cc72a328384a",
+      "source_sha256": "f95c29a9dbd63b48f1a9d29cad4749859bd142604724ec27e1863a78617ee44e",
+      "cells": 26,
+      "code_cells": 13,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "uses___file___requires_notebook_entrypoint_review",
+        "no_saved_execution_counts_not_proof_of_no_external_run"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "pdo_tv_csv_parse.ipynb",
+      "sha256": "34953ad4cc6c3622be1d524ccf8a7bd0c03265f39aac2bea2f3e49470114d95e",
+      "source_sha256": "7937514007ba534a1cfda9a3a1ddb29ce14143eca87610dd3d3faf34ac99b035",
+      "cells": 6,
+      "code_cells": 5,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "uses___file___requires_notebook_entrypoint_review",
+        "no_saved_execution_counts_not_proof_of_no_external_run"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "pdo_tv_validate.ipynb",
+      "sha256": "09f66fcc6223374bea7ad3a1c4e74c3ed60a66bd83b47f62dfd23acf85a478bb",
+      "source_sha256": "faa456249328e3c0f044fc80ca53c9f4c4745c25f823b56c425714c1304d7af6",
+      "cells": 7,
+      "code_cells": 6,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "uses___file___requires_notebook_entrypoint_review",
+        "no_saved_execution_counts_not_proof_of_no_external_run",
+        "connection_cell_without_explicit_mode_ro_review_required"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "pdo_tv_validate_dump.ipynb",
+      "sha256": "9e6d48a950558e9459651fc9492115d41068664007d1b4791852f99d6988a18e",
+      "source_sha256": "fb31ebe59fe5be5617d5f4fb021d5fa3068e5845501c59d2fd92971590b26498",
+      "cells": 7,
+      "code_cells": 6,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "uses___file___requires_notebook_entrypoint_review",
+        "no_saved_execution_counts_not_proof_of_no_external_run",
+        "connection_cell_without_explicit_mode_ro_review_required"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "pdo_tv_validate_sweep.ipynb",
+      "sha256": "ef5d913f436a6cb86e1e76694eede4bfb2099d5bb93ff5b12f1a469ff9c03278",
+      "source_sha256": "125b2a3a272263999288ca6078f9071478824d965a210b90ceb6275c51fc72c3",
+      "cells": 8,
+      "code_cells": 7,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "uses___file___requires_notebook_entrypoint_review",
+        "no_saved_execution_counts_not_proof_of_no_external_run",
+        "connection_cell_without_explicit_mode_ro_review_required"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "portfolio_performance.ipynb",
+      "sha256": "78c825a809a48165941a0dddfe51416bee98f1b16f063ef06a9c7fd421559f15",
+      "source_sha256": "91f5ba5f55a7e67f9c897a9e9f96a4ec62c896c5c338fdc19dcdcdb9575b2816",
+      "cells": 5,
+      "code_cells": 5,
+      "code_cells_with_execution_count": 5,
+      "code_cells_with_saved_outputs": 5,
+      "saved_errors": [],
+      "static_review_flags": [
+        "connection_cell_without_explicit_mode_ro_review_required"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "r4_bot_prep/r4_bot_prep.ipynb",
+      "sha256": "cd3e4952a16abbb4b03d5818ad4556f360d54dbb3d6f754cc91861fc7c01d3cb",
+      "source_sha256": "ebf38f5d3324bb7a2662e04b5e31a6c53e9bd8a30f9179438c49c07a399e9620",
+      "cells": 4,
+      "code_cells": 2,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "r4_study/era_split.ipynb",
+      "sha256": "4578b53419a5b15f9be3681e1871c33cb2826f47b7f4314ab6a07b16397eeb22",
+      "source_sha256": "31e7c5a879a9c99822fee46bcbbb05fccefc902e9ebd31711f90d8a635f4201a",
+      "cells": 6,
+      "code_cells": 5,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "r4_study/grid_search.ipynb",
+      "sha256": "dbf79486a7e3ecde41504d2dc8314a8994cf5e0072cba3311a630d845b98fe98",
+      "source_sha256": "671904e17bda514c24e3a3f3d32980b65c0066eea9e47693c8a9cb7337947e2e",
+      "cells": 7,
+      "code_cells": 6,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "r4_study/sizing_study.ipynb",
+      "sha256": "be8aa9513d1850a71c336f059394c0cc1bab1ec7f8841b18aa98c89b32d6debc",
+      "source_sha256": "47691948a610bcfa874a57954b0b96f0748945b50b9d316aa1726a3c3cdc62ab",
+      "cells": 11,
+      "code_cells": 10,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "r4_study/walk_forward.ipynb",
+      "sha256": "ad0b5bce5af5856ecd49db57600fcbed8527781d663022e31a5fe7bd7a3665ea",
+      "source_sha256": "0ff71a975cb590abac2bc01fffc315a862575f3b672fe6882d39c0e295f936b6",
+      "cells": 5,
+      "code_cells": 4,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "r4_study/year_breakdown.ipynb",
+      "sha256": "50fc3f7010d361a9a056b916b591c649ebe6f0e3a613f26949817b73965c7752",
+      "source_sha256": "30fd11793f92f4ffcc20a1a930936b898018db1d8b277ebb5fdbe52426f6418b",
+      "cells": 8,
+      "code_cells": 7,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "range_sanity_2026_09/range_sanity_2026_09.ipynb",
+      "sha256": "888221e976d0f7c06969f2b4cbc41bbe349fb95938539e2b6ce243e990f29434",
+      "source_sha256": "60968159e50646bd926e7937f05a447a4bcd49eb272e26f11d4a8e85f18aa54d",
+      "cells": 7,
+      "code_cells": 3,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "rsi_divergence_sketch.ipynb",
+      "sha256": "149765f5562c654e3acfaf218213d4ef843e412d1de954462565618beea5c084",
+      "source_sha256": "51a8448e588a6ecebe50eba627df58f06dc97d6a517fd14fece6f2a88b5debb0",
+      "cells": 9,
+      "code_cells": 7,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run",
+        "connection_cell_without_explicit_mode_ro_review_required"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "scanner_study/scanner_study.ipynb",
+      "sha256": "df32e8f5edef78fa4f1ce42f40f2b5c2d62a8cc9fcf4f9cc93ca81dc730e6b6d",
+      "source_sha256": "1e8a6dc2ba1e453831d82f849b4eb10e625798019ce09388102e8ae6d0977995",
+      "cells": 6,
+      "code_cells": 3,
+      "code_cells_with_execution_count": 3,
+      "code_cells_with_saved_outputs": 3,
+      "saved_errors": [],
+      "static_review_flags": [],
+      "scope": "review"
+    },
+    {
+      "notebook": "short_squeeze_sessions/discovery.ipynb",
+      "sha256": "c43e138d8c43a3efd21dd10d9e41e57e25b80d45ca9039f5823ce7909514283c",
+      "source_sha256": "ab117234d2d55af8e3371476e1db685e65428a1bfc1c224c2753c85cd3e0b683",
+      "cells": 25,
+      "code_cells": 12,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run",
+        "connection_cell_without_explicit_mode_ro_review_required"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "short_squeeze_sessions/strategy_backtest.ipynb",
+      "sha256": "04d41f30856e35a9e5beeb1918979dc8769489272ea20d60a04d610b938e69b5",
+      "source_sha256": "2e9b737ed33bd0b0799956961f5fbbd8ca0037751ddc44a850ca637851f9953e",
+      "cells": 51,
+      "code_cells": 24,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run",
+        "connection_cell_without_explicit_mode_ro_review_required"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "sizing_style_2026_09/sizing_style.ipynb",
+      "sha256": "9bfbe44db5de02002b5969bd332daad5531be18f7f6c81cd5ebcaaf6d9447004",
+      "source_sha256": "af0adc7b3e03c08e803a2a06770caf94ad7331234f7bfe63ee17dece39dbb606",
+      "cells": 11,
+      "code_cells": 5,
+      "code_cells_with_execution_count": 5,
+      "code_cells_with_saved_outputs": 5,
+      "saved_errors": [],
+      "static_review_flags": [],
+      "scope": "review"
+    },
+    {
+      "notebook": "squeeze_bull_revalidation/squeeze_bull_revalidation.ipynb",
+      "sha256": "f4321d38524a427976f6447eabbaa5ce7123486f4cbd2e22936fdb3fd030334c",
+      "source_sha256": "5f90ae32cd4cbc90892c284028a1b3112557de71085775571ffe82f6ce40b8b7",
+      "cells": 19,
+      "code_cells": 9,
+      "code_cells_with_execution_count": 9,
+      "code_cells_with_saved_outputs": 9,
+      "saved_errors": [],
+      "static_review_flags": [],
+      "scope": "review"
+    },
+    {
+      "notebook": "swing_base_limit_bid/discovery.ipynb",
+      "sha256": "f02a8b3fead8c52df06a397bbc79f29a5dd1f908cd109882c8014f79b03151a7",
+      "source_sha256": "c78b8d9f35607de91a0e34089b7333ca75ca42cc972ba433972e953fd37834ba",
+      "cells": 35,
+      "code_cells": 17,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run",
+        "connection_cell_without_explicit_mode_ro_review_required"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "tools_statistical_validation.ipynb",
+      "sha256": "aafa814149c17694e0b0af1a226f0446e0a86758fc9a6f19924edb2f8f24e475",
+      "source_sha256": "ec8ef3c1e99e85d453d464551cba78fea669730374ce575c5b3956cb1ad8d7ba",
+      "cells": 24,
+      "code_cells": 20,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "uses___file___requires_notebook_entrypoint_review",
+        "no_saved_execution_counts_not_proof_of_no_external_run",
+        "connection_cell_without_explicit_mode_ro_review_required"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "validation_audit_2026_09/validation_audit.ipynb",
+      "sha256": "3b130743766e1d1b2d43f6ba3a82d9df0f4935f3519af56ca82009810b143ecd",
+      "source_sha256": "227ab5f4c0880dbc02e517f345509c78a309166d47bc64be01cb81fbfa1fcc14",
+      "cells": 20,
+      "code_cells": 11,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run"
+      ],
+      "scope": "review"
+    },
+    {
+      "notebook": "vrp_study/vrp_study.ipynb",
+      "sha256": "f2a840b2046f6a6d8e041380aa1cc0cbd2741c486d5517f818f1fa3220f1344a",
+      "source_sha256": "825d6744a757bd092f1688816633cdd02d9e2c3835e3ecbf154b541bf1ef7c01",
+      "cells": 18,
+      "code_cells": 9,
+      "code_cells_with_execution_count": 0,
+      "code_cells_with_saved_outputs": 0,
+      "saved_errors": [],
+      "static_review_flags": [
+        "no_saved_execution_counts_not_proof_of_no_external_run"
+      ],
+      "scope": "review"
+    }
+  ]
+}

@@ -1,0 +1,204 @@
+[
+  {
+    "study": "adx_eth_2026_09",
+    "review_path": "adx_eth_2026_09/VALIDATION_REVIEW_PLAN.md",
+    "status": "invalid_for_exact_performance_claim; historical KILL retained",
+    "priority": "P0",
+    "key_findings": [
+      "Shared live_walk skips the entire entry-day minute stop walk; ETH results inherit the defect.",
+      "Phase metrics use unequal calendars, funding is booked at trade closure, and terminal open exposure is omitted.",
+      "Shared sizing_lib daily MTM multiplies original notional by successive percentage changes instead of fixed-quantity price changes.",
+      "BTC/ETH correlation is conditional on nonzero P&L; a fixed transfer is not independent of BTC development.",
+      "Findings phase medians disagree with saved JSON; preserve both and reconcile before numeric reuse."
+    ],
+    "notebooks_reviewed": ["adx_eth_2026_09/adx_eth.ipynb"],
+    "scope_limitations": [
+      "2026-09-14 static source/markdown and saved-text review; notebook cells 0–4.",
+      "No execution, database access, data fetch, production changes, or independently verified raw-data/fill provenance.",
+      "No numerical impact of shared-engine correction was estimated."
+    ]
+  },
+  {
+    "study": "adx_robustness_2026_09",
+    "review_path": "adx_robustness_2026_09/VALIDATION_REVIEW_PLAN.md",
+    "status": "invalid_for_execution_funding_and_account_risk_claims",
+    "priority": "P0",
+    "key_findings": [
+      "adx_lib.py:141 continues the daily outer loop after entry, omitting the first holding day's stop path.",
+      "Funding-at-exit and unequal calendars invalidate clean daily-risk attribution.",
+      "Shared sizing_lib daily MTM violates fixed-quantity P&L reconciliation.",
+      "Linear scaling of compounded maximum drawdown is not an account-risk bound.",
+      "Pure long/short funding netting does not create additional portfolio funding income; overlap days do not reconcile settlement quantities.",
+      "Late-entry counterfactual retains original funding and inherits engine defects."
+    ],
+    "notebooks_reviewed": ["adx_robustness_2026_09/adx_robustness.ipynb"],
+    "scope_limitations": [
+      "2026-09-14 static review; notebook cells 0–10 plus key code and saved results.",
+      "No studies, database queries, data retrieval, production edits, or exchange-fill verification.",
+      "Quantitative effect of defects remains unmeasured."
+    ]
+  },
+  {
+    "study": "adx_study",
+    "review_path": "adx_study/VALIDATION_REVIEW_PLAN.md",
+    "status": "exploratory; invalid_for_annual_sharpe_causal_pivot_and_independent_validation_claims",
+    "priority": "P0",
+    "key_findings": [
+      "Historical harness Sharpe is trade t-like and drawdown is based on closed trades.",
+      "Current-day close raises the ATR trail before testing the same day's low/high.",
+      "Full-history experiment paths are sliced by entry date; selected-rule OOS language overstates independence.",
+      "Pivot accuracy starts at the pivot close despite eight-bar confirmation; a longer horizon does not remove unavailable returns.",
+      "Funding/CVD coverage and confirmation timestamps need explicit manifests."
+    ],
+    "notebooks_reviewed": [],
+    "scope_limitations": [
+      "2026-09-14 static review; no notebooks exist in this directory.",
+      "Findings and main harness/experiments/pivot/CVD/funding source reviewed; case-study/long-context/Pine implementations not exhaustively validated.",
+      "No execution, database access, data fetch, or current live configuration verification."
+    ]
+  },
+  {
+    "study": "calendar_cells",
+    "review_path": "calendar_cells/VALIDATION_REVIEW_PLAN.md",
+    "status": "descriptive_archived_negative_screen; broader_claims_need_qualification",
+    "priority": "P2",
+    "key_findings": [
+      "The exact five rules fail their documented gates; no new sweep is needed to retain no-build.",
+      "Stored NFP dates/fixed UTC windows test a calendar proxy, not verified release-relative trading.",
+      "HIGH52 holds 120 hours and EMA can hold many weeks; all-holds-at-most-72h and funding-only-hurts statements are false.",
+      "Monthly PBO assigns whole future trades to entry months and trims the final eight of 68 listed months.",
+      "Sparse-event failure to confirm is not proof that more independent observations cannot help."
+    ],
+    "notebooks_reviewed": ["calendar_cells/calendar_cells.ipynb"],
+    "scope_limitations": [
+      "2026-09-14 static review; notebook cells 0–21 plus key source and saved summaries.",
+      "No original event calendar, raw-data completeness, actual funding, or full trade path verification.",
+      "No study execution, database access, data retrieval, or artifact changes."
+    ]
+  },
+  {
+    "study": "carry_exit_rule_2026_09",
+    "review_path": "carry_exit_rule_2026_09/VALIDATION_REVIEW_PLAN.md",
+    "status": "invalid_for_stated_cost_uplift; tail_protection_unvalidated",
+    "priority": "P0",
+    "key_findings": [
+      "Imported C2 source charges 20 bp roundtrip while prose variously claims 24 bp roundtrip or per toggle.",
+      "ALWAYS_ON valid-span holding differs from a 7-day-entry-gated description.",
+      "Inherited median warmup and fixed prints-per-year require elapsed-calendar/cadence reconciliation.",
+      "Four alternative-versus-LIVE intervals are pointwise and reuse history already inspected in C2.",
+      "Funding-only notional yield and observed worst stretches do not validate full account risk or sustained-negative-regime protection."
+    ],
+    "notebooks_reviewed": ["carry_exit_rule_2026_09/carry_exit_rule.ipynb"],
+    "scope_limitations": [
+      "2026-09-14 static review; notebook cells 0–4, rule source, dependency cost code, saved results.",
+      "Documented shipped CUM30D status and parity test were not independently verified or changed.",
+      "No cache/database access, execution, fetching, or numerical correction."
+    ]
+  },
+  {
+    "study": "coinbase_premium",
+    "review_path": "coinbase_premium/VALIDATION_REVIEW_PLAN.md",
+    "status": "invalid_for_positive_execution_and_provenance_claims; historical KILL retained",
+    "priority": "P0",
+    "key_findings": [
+      "Run A/B provenance is incomplete and both producers write premium_by_year.csv.",
+      "Incomplete-hour policies differ; dropping a few ETH hours cascades through threshold/cooldown decisions.",
+      "Same-close entry follows knowledge of two completed bars but is timestamped at bar open.",
+      "Next-open sensitivity skips the entry-hour stop path.",
+      "Inner-joined signal/execution rows alter elapsed horizons and can omit Binance risk during a Coinbase outage.",
+      "Cross-asset correlation, USD/USDT basis, and regime dependence limit predictive/mechanistic claims."
+    ],
+    "notebooks_reviewed": [
+      "coinbase_premium/coinbase_premium.ipynb",
+      "coinbase_premium/coinbase_premium_run_A_2026_09_08.ipynb"
+    ],
+    "scope_limitations": [
+      "2026-09-14 static review; primary notebook cells 0–17 and run-A notebook cells 0–23.",
+      "No historical code-hash recovery, raw cross-venue data verification, or actual latency/fill measurement.",
+      "No study execution, database queries, data fetch, or modifications to original runs."
+    ]
+  },
+  {
+    "study": "r4_bot_prep",
+    "review_path": "r4_bot_prep/VALIDATION_REVIEW_PLAN.md",
+    "status": "provisional_no_change; live_risk_and_delay_tolerance_unvalidated",
+    "priority": "P1",
+    "key_findings": [
+      "Frozen stop screen supports retaining the baseline but uses optimistic level fills and incomplete path checks.",
+      "Scheduled exits and historical worst fires do not bound account loss.",
+      "Late-entry comparisons need paired eligibility and confidence relative to an acceptable loss threshold.",
+      "Portfolio appendix lacks an auditable intraday marked quantity/capital ledger for overlapping positions.",
+      "Next-day ETH day-of-month semantics differ from the original R4 development study."
+    ],
+    "notebooks_reviewed": ["r4_bot_prep/r4_bot_prep.ipynb"],
+    "scope_limitations": [
+      "2026-09-14 static review; notebook cells 0–3, source, findings, and selected saved summary rows.",
+      "Every raw minute path/large fire-ledger row was not manually inspected; appendix computation provenance is incomplete.",
+      "No backtest, database query, fetch, current dispatch/sizing verification, or production change."
+    ]
+  },
+  {
+    "study": "r4_study",
+    "review_path": "r4_study/VALIDATION_REVIEW_PLAN.md",
+    "status": "exploratory; invalid_for_headline_sharpe_live_calendar_and_independent_validation_claims",
+    "priority": "P0",
+    "key_findings": [
+      "Discovery grid contains 8,064 raw combinations per asset before screening and multiple ranking views.",
+      "Walk-forward is one already-inspected historical train/test split.",
+      "Entry-day ETH month filtering differs from bot-prep next-day filtering.",
+      "Sizing annualizes sparse active-date returns with sqrt(252), omits full MTM/cash days/costs, and fits expectancy weights on the evaluated era.",
+      "Mechanistic and V2-validation language exceeds exploratory evidence; notebook main calls are disabled and saved outputs absent."
+    ],
+    "notebooks_reviewed": [
+      "r4_study/era_split.ipynb",
+      "r4_study/grid_search.ipynb",
+      "r4_study/sizing_study.ipynb",
+      "r4_study/walk_forward.ipynb",
+      "r4_study/year_breakdown.ipynb"
+    ],
+    "scope_limitations": [
+      "2026-09-14 static review of all cells: era 0–5, grid 0–6, sizing 0–10, walk-forward 0–4, year 0–7.",
+      "No saved notebook outputs to reproduce; historical database and original execution not verified.",
+      "No study execution, database access, fetching, or live configuration change."
+    ]
+  },
+  {
+    "study": "pdo_adjacents",
+    "review_path": "pdo_adjacents/VALIDATION_REVIEW_PLAN.md",
+    "status": "invalid_for_exact_CDO_payoff_and_broad_claims; archived_dispositions_retained",
+    "priority": "P0",
+    "key_findings": [
+      "CDO shorts use entry/exit−1, inconsistent with linear entry-notional short P&L and advertised symmetric stop/target R.",
+      "Binary target-hit break-even ignores TIF outcomes; zero-cost result remains stop/target/TIF-dependent.",
+      "Question A has no historical OOS discriminating band trades: KEEP −10 is a default, not superiority evidence.",
+      "Feature parity does not verify full trading lifecycle or fills.",
+      "Funding need not cancel between differing policy trade sets; pooled BTC/ETH iid inference understates shared calendar dependence."
+    ],
+    "notebooks_reviewed": ["pdo_adjacents/pdo_adjacents.ipynb"],
+    "scope_limitations": [
+      "2026-09-14 static review; notebook cells 0–25, documents, key computation, parity artifact, and saved clauses.",
+      "Large ledgers reviewed through source/schema/summaries, not every raw minute path.",
+      "No execution, database access, data fetch, production/archive-state verification, or numeric replay."
+    ]
+  },
+  {
+    "study": "anchor_allocator_study",
+    "review_path": "anchor_allocator_study/VALIDATION_REVIEW_PLAN.md",
+    "status": "descriptive_synthetic_panel; invalid_for_causal_portfolio_risk_reuse",
+    "priority": "P0",
+    "key_findings": [
+      "Same-day nonzero P&L defines active capital; allocation is not causally implementable from prior information.",
+      "Chento terminal returns are smeared across 72 hours and ADX daily-reset short marks differ from fixed-quantity ledgers.",
+      "Legacy Sharpe is CAGR/volatility; preserve historical definition but do not compare as standard Sharpe.",
+      "Rebalance costs omit price/NAV drift and direction flips; inactive gross-cap sensitivities duplicate outcomes.",
+      "Gold/cash/weight-compression effects and later post-hoc controls require distinct attribution.",
+      "Historical KILL remains conditional on the documented synthetic panel; no rerun needed for archival retention."
+    ],
+    "notebooks_reviewed": ["anchor_allocator_study/anchor_allocator.ipynb"],
+    "scope_limitations": [
+      "2026-09-14 static review; notebook cells 0–12, panel notes, findings, key panel/allocator/metric code, saved verdict.",
+      "Underlying sleeve raw ledgers and predecessor implementations were not exhaustively audited.",
+      "No backtests, database access, data fetch, fleet wiring/fill verification, or production change."
+    ]
+  }
+]
