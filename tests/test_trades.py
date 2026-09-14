@@ -8,6 +8,7 @@ import pytest
 
 from strategies import trades
 from strategies.support import clock
+from tests.test_trade_adjustments import old_shape_ddl
 
 
 # ─── compute_perp_close (pure function) ──────────────────────────────────────
@@ -222,6 +223,95 @@ def test_persist_close_unknown_id_returns_none(trades_db):
         pnl_usdt=0.0, pnl_pct=0.0, notes_suffix="",
     )
     assert row is None
+
+
+@pytest.mark.parametrize("shape", ["init_db", "old_shape_2026_05_18"])
+def test_persist_close_loser_writes_no_second_close(tmp_path, monkeypatch, shape):
+    """close_carry_trade calls persist_close with no write lock held, and
+    instance_guard lets both copies of a doubled bot run exits, so the other
+    copy can close the trade between persist_close's SELECT and its UPDATE.
+    The loser's UPDATE then matches no row. It used to record a CLOSE anyway:
+    on the 2026-05-18 shape prod carries (no event-date key) that is a second
+    CLOSE row at seq+1, and daily_pnl_from_adjustments books both
+    realizations. That shape proves the rowcount check on its own; the
+    init_db shape, where the key already drops the row, proves the loser
+    also reports that it closed nothing."""
+    db = tmp_path / "ledger.db"
+    from strategies.support import trade_db, db as _db_mod
+    monkeypatch.setattr(trade_db, "DB_PATH", db)
+    monkeypatch.setattr(_db_mod, "DASH_DB", db)
+    if shape == "init_db":
+        trade_db.init_db()
+    con = sqlite3.connect(str(db))
+    if shape != "init_db":
+        for table in ("trades", "trade_adjustments"):
+            for sql in old_shape_ddl(table):
+                con.execute(sql)
+    con.execute("""
+        INSERT INTO trades
+        (id, series, asset, direction, strategy, allocation_pct, leverage,
+         entry_time, status, execution_mode, strategy_variant,
+         actual_entry_time, entry_price, size_usdt, qty, notes,
+         current_qty, current_leverage, current_size_usdt, realized_pnl_usdt)
+        VALUES
+        ('TX-1','SJ','BTC','DELTA_NEUTRAL','CARRY',5.0,1.0,
+         '2026-09-01T00:00:00+00:00','open','paper',
+         'test_variant','2026-09-01T00:00:00+00:00',
+         100.0,1000.0,10.0,'',
+         10.0,1.0,1000.0,0)
+    """)
+    con.execute("""
+        INSERT INTO trade_adjustments
+        (trade_id, seq, event_type, event_time, event_date)
+        VALUES ('TX-1', 0, 'OPEN', '2026-09-01T00:00:00+00:00', '2026-09-01')
+    """)
+    con.commit()
+    con.close()
+
+    real_connect = sqlite3.connect
+    winner = []
+
+    class LosingConnection:
+        """The loser's connection. Just before its close-UPDATE, a second
+        caller closes the same trade on its own connection and commits."""
+        def __init__(self, con):
+            object.__setattr__(self, "_con", con)
+
+        def __getattr__(self, name):
+            return getattr(self._con, name)
+
+        def __setattr__(self, name, value):
+            setattr(self._con, name, value)
+
+        def execute(self, sql, *params):
+            if "UPDATE trades SET status='closed'" in sql and not winner:
+                winner.append(trades.persist_close(
+                    "TX-1", 101.0, "2026-09-14T10:00:00+00:00", 1.0, 0.1,
+                    "\nWINNER", fee_usdt=0.5))
+            return self._con.execute(sql, *params)
+
+    def connect_once(*args, **kwargs):
+        monkeypatch.setattr(sqlite3, "connect", real_connect)
+        return LosingConnection(real_connect(*args, **kwargs))
+
+    monkeypatch.setattr(sqlite3, "connect", connect_once)
+    loser = trades.persist_close(
+        "TX-1", 102.0, "2026-09-14T10:00:05+00:00", 2.0, 0.2, "\nLOSER",
+        fee_usdt=0.5)
+
+    assert winner and winner[0] is not None
+    con = sqlite3.connect(str(db))
+    closes = con.execute(
+        "SELECT seq, price, realized_pnl_delta_usdt FROM trade_adjustments "
+        "WHERE trade_id='TX-1' AND event_type='CLOSE'").fetchall()
+    trade = con.execute(
+        "SELECT status, exit_price, pnl_usdt, notes FROM trades WHERE id='TX-1'"
+    ).fetchone()
+    con.close()
+    assert closes == [(1, 101.0, 1.0)]
+    assert trade[:3] == ("closed", 101.0, 1.0)
+    assert "WINNER" in trade[3] and "LOSER" not in trade[3]
+    assert loser is None
 
 
 def test_close_perp_trade_end_to_end(trades_db, monkeypatch):

@@ -18,10 +18,14 @@ Semantics, deliberately asymmetric:
   by the other process.
 
   EXITS are NOT refused. Both instances keep sweeping stops, targets and time
-  stops. A double close is already idempotent (``persist_close`` updates
-  ``WHERE id = ? AND status = 'open'``), whereas suspending exit management on
-  both instances would leave open positions unmanaged — strictly worse than
-  the duplication being guarded against.
+  stops. A double close is idempotent: ``persist_close`` updates ``WHERE id = ?
+  AND status = 'open'`` and, when that UPDATE matches no row because the other
+  instance closed first, returns None without recording a CLOSE event. Until
+  2026-09-14 it recorded one anyway, and ``close_carry_trade``, which holds no
+  write lock across its read and its UPDATE, could book a second CLOSE row.
+  (The losing ``close_carry_trade`` call still logs its receipt line.)
+  Suspending exit management on both instances would leave open positions
+  unmanaged — strictly worse than the duplication being guarded against.
 
 Both instances typically detect each other and both stand down, which is
 intended: with entries refused and exits still running, the fleet degrades to

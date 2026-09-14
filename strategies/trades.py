@@ -373,7 +373,9 @@ def persist_close(trade_id: str, exit_price: float, exit_time_iso: str,
                   con: sqlite3.Connection | None = None) -> sqlite3.Row | None:
     """UPDATE the trade row with close fields. Returns the row as it was
     BEFORE the close (so callers can log entry-side details), or None if
-    no row matched the trade_id.
+    no open row matched the trade_id — including when another caller closed
+    it between this call's SELECT and its UPDATE, in which case no CLOSE
+    adjustment is recorded either.
 
     Semantics:
       ``pnl_usdt``  — P&L realized on the CLOSE event itself (= price_pnl
@@ -406,7 +408,7 @@ def persist_close(trade_id: str, exit_price: float, exit_time_iso: str,
                               else row["qty"] or 0.0)
         close_realized_delta = pnl_usdt
         cumulative_pnl = prior_realized + pnl_usdt
-        con.execute("""
+        cur = con.execute("""
             UPDATE trades SET status='closed', actual_exit_time=?, exit_price=?,
                 pnl_usdt=?, pnl_pct=?, resolution='filled_closed',
                 notes = COALESCE(notes,'') || ?,
@@ -414,6 +416,15 @@ def persist_close(trade_id: str, exit_price: float, exit_time_iso: str,
             WHERE id=? AND status='open'
         """, (exit_time_iso, exit_price, cumulative_pnl, pnl_pct, notes_suffix,
               cumulative_pnl, trade_id))
+        if cur.rowcount == 0:
+            # Lost a close race. Without a caller-held write lock (the
+            # close_carry_trade path) the SELECT above runs outside any
+            # transaction, so a second instance can close the trade in
+            # between; the UPDATE then matches nothing. Recording the CLOSE
+            # anyway booked a second CLOSE row at seq+1 on a ledger without
+            # uix_adj_trade_date_type, and daily_pnl_from_adjustments summed
+            # both realizations.
+            return None
         from strategies.support.trade_adjustments import record_adjustment, EV_CLOSE
         # Sign of qty_delta is the closing-trade direction: closing a LONG
         # sells (-qty), closing a SHORT buys (+qty).

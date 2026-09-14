@@ -10,9 +10,13 @@ Each position in the ``trades`` table can accumulate a sequence of events:
   CLOSE             position fully closed; books final realized P&L
 
 Every event lands in ``trade_adjustments`` with a monotonic ``seq`` per
-trade_id. Idempotency is enforced by ``UNIQUE(trade_id, event_date,
-event_type)`` — re-running the J+ emitter for the same UTC day never
-duplicates events.
+trade_id. Idempotency is enforced by the ``uix_adj_trade_date_type`` unique
+index on ``(trade_id, event_date, event_type)``, declared in
+``trade_db.init_db`` — re-running the J+ emitter for the same UTC day never
+duplicates events. The same key allows at most ONE event of each type per
+trade per UTC day: a second same-day SCALE_UP / SCALE_DOWN / LEVERAGE_ADJUST
+is dropped as a retry, so an intraday ladder or partial exit needs a
+different key before it ships.
 
 This module is the single write surface for the adjustment ledger. The
 ``strategies.trades`` lifecycle helpers (open / scale / close) delegate
@@ -143,7 +147,10 @@ def record_adjustment(
                 con.commit()
             return True
         except sqlite3.IntegrityError as e:
-            # UNIQUE(trade_id, event_date, event_type) hit — idempotent no-op.
+            # uix_adj_trade_date_type hit — idempotent no-op. A (trade_id,
+            # seq) collision also matches "UNIQUE"; treating that as a retry
+            # is safe only while every caller holds the write lock before
+            # _next_seq, which the strategies.trades helpers do.
             if "UNIQUE" in str(e):
                 return False
             raise

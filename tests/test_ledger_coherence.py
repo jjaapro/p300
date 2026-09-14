@@ -13,6 +13,7 @@ from datetime import datetime, timedelta, timezone
 import pytest
 
 from strategies.support import ledger_coherence as lc
+from tests.test_trade_adjustments import old_shape_ddl
 
 
 # ─── Synthetic-defect fixture ──────────────────────────────────────────────
@@ -296,6 +297,96 @@ def test_clean_db_returns_all_zeros(tmp_path, monkeypatch):
     assert audit.n_disabled_variants_with_recent_opens == 0
     assert audit.n_post_jplus_open_missing_open_event == 0
     assert audit.n_post_jplus_closed_missing_close_event == 0
+    assert audit.n_duplicate_adjustment_events == 0
+
+
+# ─── Duplicate adjustment events (2026-09-14) ──────────────────────────────
+
+
+def _old_shape_ledger(tmp_path, monkeypatch, *, duplicate: bool,
+                      close_event: bool = True, created_at: str | None = None):
+    """trades + trade_adjustments exactly as the 2026-05-18 PK rebuild left
+    them in prod, plus the unique_key column init_db() later added to trades.
+    Built WITHOUT init_db(): that now creates the (trade_id, event_date,
+    event_type) key, and a duplicate event can only be written where the key
+    is missing. One bot-era trade, created_at NULL by default like every
+    trade since the rebuild dropped that column's DEFAULT."""
+    fixture_db = tmp_path / "old_shape.db"
+    from strategies.support import db as _db_mod, trade_db
+    monkeypatch.setattr(trade_db, "DB_PATH", fixture_db)
+    monkeypatch.setattr(_db_mod, "DASH_DB", fixture_db)
+    con = sqlite3.connect(str(fixture_db))
+    for table in ("trades", "trade_adjustments"):
+        for sql in old_shape_ddl(table):
+            con.execute(sql)
+    con.execute("ALTER TABLE trades ADD COLUMN unique_key TEXT")
+    con.execute("""
+        INSERT INTO trades
+        (id, series, asset, direction, strategy, entry_time, status,
+         execution_mode, strategy_variant, actual_entry_time, created_at)
+        VALUES ('SJ-4247', 'SJ', 'BTC', 'LONG', 'CHENTO_TRIPLE_V3',
+                '2026-08-22T06:15:00+00:00', 'closed', 'paper', 'live_v',
+                '2026-08-22T06:15:00+00:00', ?)
+    """, (created_at,))
+    events = ["2026-08-22T06:15:00+00:00 OPEN"]
+    if duplicate:
+        events.append("2026-08-22T06:15:33+00:00 OPEN")   # the retry, at seq+1
+    if close_event:
+        events.append("2026-08-22T19:45:00+00:00 CLOSE")
+    for seq, ev in enumerate(events):
+        event_time, event_type = ev.split()
+        con.execute("""
+            INSERT INTO trade_adjustments
+            (trade_id, seq, event_type, event_time, event_date)
+            VALUES ('SJ-4247', ?, ?, ?, ?)
+        """, (seq, event_type, event_time, event_time[:10]))
+    con.commit()
+    con.close()
+
+
+def test_duplicate_adjustment_event_detected(tmp_path, monkeypatch):
+    """A same-day retry that the missing key let through: a second OPEN for
+    the same trade and UTC day at seq+1. The seqs stay contiguous, so the
+    seq-gap detector cannot see it; only grouping on the key can."""
+    _old_shape_ledger(tmp_path, monkeypatch, duplicate=True)
+    audit = lc.audit_ledger()
+    assert audit.n_duplicate_adjustment_events == 1
+    sample = audit.duplicate_adjustment_event_samples[0]
+    assert (sample["trade_id"], sample["event_date"], sample["event_type"],
+            sample["cnt"]) == ("SJ-4247", "2026-08-22", "OPEN", 2)
+    assert sorted(sample["seqs"].split(",")) == ["0", "1"]
+    assert audit.n_trades_with_adjustment_seq_gaps == 0
+    assert ("[FAIL] duplicate (trade_id,event_date,event_type) adjustment events: 1"
+            in lc.format_ledger_coherence(audit))
+    assert lc._main([]) == 1
+
+
+def test_open_and_close_on_one_day_are_not_duplicate_events(tmp_path, monkeypatch):
+    """Twin: the same trade's OPEN and CLOSE on one UTC day are two events."""
+    _old_shape_ledger(tmp_path, monkeypatch, duplicate=False)
+    audit = lc.audit_ledger()
+    assert audit.n_duplicate_adjustment_events == 0
+    assert audit.duplicate_adjustment_event_samples == ()
+    assert lc._main([]) == 0
+
+
+def test_trade_with_created_at_is_audited_for_a_missing_close(tmp_path, monkeypatch):
+    """The twin below minus the NULL: proves the fixture's closed trade with
+    no CLOSE event is a detectable defect, so the xfail is about created_at."""
+    _old_shape_ledger(tmp_path, monkeypatch, duplicate=False, close_event=False,
+                      created_at="2026-08-22 06:15:00")
+    assert lc.audit_ledger().n_post_jplus_closed_missing_close_event == 1
+
+
+@pytest.mark.xfail(strict=True, reason=(
+    "BACKLOG item 20, known blind spot, not fixed here: _adjustment_coherence "
+    "filters on trades.created_at >= cutoff, and created_at is NULL on every "
+    "trade since the 2026-05-18 PK rebuild dropped its DEFAULT "
+    "(open_paper_trade never writes it), so no bot-era trade is audited for "
+    "a missing OPEN/CLOSE or a seq gap. Remove this mark with the fix."))
+def test_created_at_null_trade_is_audited_for_a_missing_close(tmp_path, monkeypatch):
+    _old_shape_ledger(tmp_path, monkeypatch, duplicate=False, close_event=False)
+    assert lc.audit_ledger().n_post_jplus_closed_missing_close_event == 1
 
 
 def test_cli_exit_code_zero_on_clean_db(tmp_path, monkeypatch, capsys):

@@ -132,8 +132,9 @@ def init_db() -> None:
 
     # Adjustment-event ledger: one row per OPEN / SCALE_UP / SCALE_DOWN /
     # LEVERAGE_ADJUST / FLIP / CLOSE event on a position. Idempotency via the
-    # UNIQUE(trade_id, event_date, event_type) key — re-running the emitter
-    # for the same date never duplicates events.
+    # uix_adj_trade_date_type unique index on (trade_id, event_date,
+    # event_type), created below — re-running the emitter for the same date
+    # never duplicates events.
     con.execute("""
         CREATE TABLE IF NOT EXISTS trade_adjustments (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -152,8 +153,7 @@ def init_db() -> None:
             fee_usdt REAL DEFAULT 0,
             realized_pnl_delta_usdt REAL DEFAULT 0,
             notes_json TEXT,
-            UNIQUE(trade_id, seq),
-            UNIQUE(trade_id, event_date, event_type)
+            UNIQUE(trade_id, seq)
         )
     """)
     con.execute(
@@ -163,6 +163,46 @@ def init_db() -> None:
         "CREATE INDEX IF NOT EXISTS idx_adj_date "
         "ON trade_adjustments(event_date, event_type)"
     )
+    # The idempotency key is a NAMED index rather than an inline UNIQUE in the
+    # CREATE TABLE above. CREATE TABLE IF NOT EXISTS never touches an existing
+    # table, so an inline constraint that a rebuild drops stays dropped: the
+    # 2026-05-18 PK rebuild (data/migrations/2026_05_18_add_table_pks.py) kept
+    # only UNIQUE(trade_id, seq), and prod ran without this key from then on.
+    # CREATE INDEX IF NOT EXISTS puts it back at every process start — the
+    # same pattern as uix_trades_unique_key. Declare it ONLY here: an inline
+    # copy as well would give fresh DBs two identical unique indexes.
+    #
+    # On a ledger that already holds duplicates the build fails, on purpose.
+    # Every runner calls init_db() first, so the bot refuses to start instead
+    # of writing into a ledger with double-booked events. The error lists the
+    # offending groups; dedupe them deliberately before restarting (the dry
+    # run of data/migrations/2026_09_14_trade_adjustments_unique_index.py
+    # lists them as well).
+    try:
+        con.execute(
+            "CREATE UNIQUE INDEX IF NOT EXISTS uix_adj_trade_date_type "
+            "ON trade_adjustments(trade_id, event_date, event_type)"
+        )
+    except sqlite3.IntegrityError as e:
+        groups = con.execute(
+            "SELECT trade_id, event_date, event_type, COUNT(*), group_concat(id) "
+            "FROM trade_adjustments GROUP BY trade_id, event_date, event_type "
+            "HAVING COUNT(*) > 1 ORDER BY trade_id, event_date, event_type"
+        ).fetchall()
+        con.close()
+        listing = "; ".join(f"{g[0]} {g[1]} {g[2]} x{g[3]} (ids {g[4]})"
+                            for g in groups[:20])
+        if len(groups) > 20:
+            listing += f"; ... and {len(groups) - 20} more"
+        raise sqlite3.IntegrityError(
+            f"trade_adjustments holds {len(groups)} duplicate (trade_id, "
+            f"event_date, event_type) group(s), so uix_adj_trade_date_type "
+            f"cannot be built and this process must not start: {listing}. "
+            f"Remedy: take python backup.py first; list the groups read-only "
+            f"with python data/migrations/"
+            f"2026_09_14_trade_adjustments_unique_index.py (its dry run); "
+            f"delete the extra rows deliberately; then start the bots again."
+        ) from e
     # AI_QUANT decision audit table — one row per daily LLM call (the
     # AI_QUANT sleeve). Persisted regardless of whether a trade is
     # ultimately opened, so we can see every decision the model made
