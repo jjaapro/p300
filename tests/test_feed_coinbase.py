@@ -141,6 +141,88 @@ def test_refresh_replaces_the_previously_partial_bar(tmp_prod):
     assert row == [(8.0, 42.0)]
 
 
+# ─── refresh heals outages ────────────────────────────────────────────────────
+
+def _store_bar(path, asset, ts):
+    con = sqlite3.connect(str(path))
+    coinbase.ensure_schema(con)
+    con.execute("INSERT INTO coinbase_spot_1h VALUES (?, ?, 1, 2, 0, 1.5, 9)", (asset, ts))
+    con.commit()
+    con.close()
+
+
+def _range_fake(calls):
+    """Serve every hourly candle inside the requested [start, end], newest
+    first — a venue that has the data, like Coinbase did for the 09-08 hole."""
+    def fake(url):
+        start = url.split("start=")[1].split("&")[0].replace("%3A", ":")
+        end = url.split("end=")[1].split("&")[0].replace("%3A", ":")
+        calls.append((start, end))
+        lo = int(datetime.strptime(start, "%Y-%m-%dT%H:%M:%SZ")
+                 .replace(tzinfo=timezone.utc).timestamp())
+        hi = int(datetime.strptime(end, "%Y-%m-%dT%H:%M:%SZ")
+                 .replace(tzinfo=timezone.utc).timestamp())
+        first = -(-lo // H) * H
+        return [_candle(t, 1, 2, 1, 2, 1) for t in range(hi // H * H, first - 1, -H)]
+    return fake
+
+
+def test_refresh_after_an_outage_longer_than_the_window_leaves_no_hole(tmp_prod):
+    """The 2026-09-08 incident: feed down 10h, a 6h trailing window restarted
+    past the missing bars. Refresh must start at the last stored bar."""
+    last = int(NOW.timestamp()) // H * H - 20 * H
+    _store_bar(tmp_prod, "BTC", last)
+    _store_bar(tmp_prod, "ETH", last)
+    calls: list[tuple[str, str]] = []
+    coinbase.refresh(now=NOW, http_get=_range_fake(calls))
+    assert calls[0][0] == coinbase._iso(last + H)
+    con = sqlite3.connect(str(tmp_prod))
+    for asset in coinbase.PRODUCTS:
+        ts = [r[0] for r in con.execute(
+            "SELECT timestamp FROM coinbase_spot_1h WHERE asset=? ORDER BY timestamp",
+            (asset,))]
+        assert ts == list(range(last, int(NOW.timestamp()) // H * H + H, H))
+    con.close()
+
+
+def test_refresh_pages_a_catch_up_longer_than_one_request(tmp_prod):
+    last = int(NOW.timestamp()) // H * H - 400 * H
+    _store_bar(tmp_prod, "BTC", last)
+    calls: list[tuple[str, str]] = []
+    out = coinbase.refresh_asset("BTC", now=NOW, http_get=_range_fake(calls))
+    assert len(calls) == 2
+    assert calls[0] == (coinbase._iso(last + H), coinbase._iso(last + 300 * H))
+    assert calls[1][0] == coinbase._iso(last + 301 * H)            # no overlap
+    assert out == 400
+
+
+def test_refresh_on_an_empty_table_pulls_only_the_trailing_window(tmp_prod):
+    calls: list[tuple[str, str]] = []
+    coinbase.refresh_asset("BTC", now=NOW, http_get=_range_fake(calls))
+    end_ts = int(NOW.timestamp())
+    assert calls == [(coinbase._iso(end_ts - coinbase.REFRESH_WINDOW_HOURS * H),
+                      coinbase._iso(end_ts))]
+
+
+def test_refresh_failing_mid_catch_up_keeps_pages_and_retries_next_tick(tmp_prod):
+    last = int(NOW.timestamp()) // H * H - 400 * H
+    _store_bar(tmp_prod, "BTC", last)
+    calls: list[tuple[str, str]] = []
+    serve = _range_fake(calls)
+
+    def fake(url):
+        if "ETH-USD" in url:
+            return []
+        if len(calls) == 1:
+            raise RuntimeError("coinbase 503")
+        return serve(url)
+
+    out = coinbase.refresh(now=NOW, http_get=fake)
+    assert out["BTC"] == -1
+    assert "BTC:2026-09-08:12" not in coinbase._done
+    assert coinbase.latest("BTC")[0] == last + 300 * H             # first page kept
+
+
 # ─── backfill (CLI only) ──────────────────────────────────────────────────────
 
 def test_backfill_pages_forward_and_is_not_called_by_refresh(tmp_prod):

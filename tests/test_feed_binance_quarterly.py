@@ -250,6 +250,76 @@ def test_refresh_replaces_the_previously_partial_bar(tmp_prod):
     assert rows == [(8.0, 42.0)]
 
 
+# ─── refresh heals outages ────────────────────────────────────────────────────
+
+def _store_bar(path, pair, ct, ts):
+    con = sqlite3.connect(str(path))
+    bq.ensure_schema(con)
+    con.execute("INSERT INTO binance_quarterly_1h (pair, contract_type, timestamp, "
+                "open, high, low, close, volume) VALUES (?, ?, ?, 1, 2, 0, 1.5, 9)",
+                (pair, ct, ts))
+    con.commit()
+    con.close()
+
+
+def _range_fake(calls, missing=range(0)):
+    """Serve every hourly kline in [startTime, endTime] up to `limit`, except
+    timestamps in `missing` (a stretch with no listed contract)."""
+    def fake(url):
+        if "exchangeInfo" in url:
+            return _exchange_info()
+        lo = int(re.search(r"startTime=(\d+)", url).group(1)) // 1000
+        end = re.search(r"endTime=(\d+)", url)
+        hi = int(end.group(1)) // 1000 if end else int(NOW.timestamp())
+        limit = int(re.search(r"limit=(\d+)", url).group(1))
+        calls.append((lo, hi, limit))
+        first = -(-lo // H) * H
+        ts = [t for t in range(first, hi + 1, H) if t not in missing][:limit]
+        return [_kline(t, 1, 2, 1, 2, 1) for t in ts]
+    return fake
+
+
+def test_refresh_after_an_outage_longer_than_the_window_leaves_no_hole(tmp_prod):
+    """The 2026-09-09 incident: feed down past the 6h trailing window, which
+    restarted past the missing bar. Refresh must start at the last stored bar."""
+    last = int(NOW.timestamp()) // H * H - 20 * H
+    for p, c in bq.SERIES:
+        _store_bar(tmp_prod, p, c, last)
+    calls: list[tuple[int, int, int]] = []
+    bq.refresh(now=NOW, http_get=_range_fake(calls))
+    assert calls[0][0] == last + H
+    assert calls[0][2] == 21                       # 19.5h span: small limit, weight 1
+    con = sqlite3.connect(str(tmp_prod))
+    for p, c in bq.SERIES:
+        ts = [r[0] for r in con.execute(
+            "SELECT timestamp FROM binance_quarterly_1h WHERE pair=? AND "
+            "contract_type=? ORDER BY timestamp", (p, c))]
+        assert ts == list(range(last, int(NOW.timestamp()) // H * H + H, H))
+    con.close()
+
+
+def test_refresh_keeps_the_small_limit_for_the_usual_trailing_pull(tmp_prod):
+    calls: list[tuple[int, int, int]] = []
+    bq.refresh_series("BTCUSDT", "CURRENT_QUARTER", now=NOW, http_get=_range_fake(calls))
+    end_ts = int(NOW.timestamp())
+    assert calls == [(end_ts - bq.REFRESH_WINDOW_HOURS * H, end_ts,
+                      bq.REFRESH_WINDOW_HOURS + 2)]
+
+
+def test_refresh_pages_a_long_catch_up_and_steps_over_an_empty_stretch(tmp_prod):
+    last = int(NOW.timestamp()) // H * H - 3200 * H
+    _store_bar(tmp_prod, "BTCUSDT", "NEXT_QUARTER", last)
+    # no contract listed for the whole second page's span
+    missing = range(last + 1501 * H, last + 3001 * H, H)
+    calls: list[tuple[int, int, int]] = []
+    out = bq.refresh_series("BTCUSDT", "NEXT_QUARTER", now=NOW,
+                            http_get=_range_fake(calls, missing))
+    assert [c[0] for c in calls] == [last + H, last + 1501 * H, last + 3001 * H]
+    assert calls[0][2] == bq.MAX_LIMIT
+    assert out == 3200 - 1500
+    assert bq.latest("BTCUSDT", "NEXT_QUARTER")[0] == int(NOW.timestamp()) // H * H
+
+
 # ─── backfill (CLI only) ──────────────────────────────────────────────────────
 
 def test_backfill_pages_forward_and_is_not_called_by_refresh(tmp_prod):

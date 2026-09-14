@@ -20,8 +20,9 @@ live path INSERT OR REPLACE, so live rows always win over seed rows without
 the table needing a `source` column.
 
 Cadence: `refresh()` is called every feed cycle and throttles itself to one
-pull per (asset, UTC hour). Each pull re-requests a trailing window, so the
-bar that was still forming last hour is corrected on the next tick.
+pull per (asset, UTC hour). Each pull starts at the last stored bar or 6h
+back, whichever is earlier, so the bar that was still forming last hour is
+corrected on the next tick and an outage of any length fills itself in.
 
 CLI:
   python data/sources/coinbase.py --refresh
@@ -135,18 +136,41 @@ def store(con: sqlite3.Connection, asset: str, rows: list[tuple]) -> int:
     return len(rows)
 
 
+def _pull(con: sqlite3.Connection, asset: str, start_ts: int, end_ts: int,
+          http_get: Callable[[str], list]) -> int:
+    """Walk [start_ts, end_ts] forward in 300-candle pages, storing each page
+    as it arrives — a failure part-way keeps the pages already written."""
+    total = 0
+    cursor = start_ts
+    while cursor <= end_ts:
+        stop = min(cursor + (MAX_CANDLES - 1) * GRANULARITY, end_ts)
+        total += store(con, asset, fetch_candles(asset, cursor, stop, http_get))
+        cursor = stop + GRANULARITY
+        time.sleep(REQUEST_GAP_S)
+    return total
+
+
 def refresh_asset(asset: str, *, now: datetime | None = None,
                   hours: int = REFRESH_WINDOW_HOURS,
                   http_get: Callable[[str], list] = _http_get) -> int:
-    """Pull the trailing `hours` window for one asset and upsert it."""
+    """Pull one asset from its last stored bar (or `hours` back, whichever is
+    earlier) to now and upsert it.
+
+    Starting at the last stored bar is what lets an outage heal: with only a
+    trailing window, a feed down longer than `hours` restarted past the
+    missing bars and never asked for them again (the 2026-09-08 hole). An
+    empty table gets the trailing window only — full history is the CLI's
+    job, not the feed loop's."""
     now = now or clock.now_utc()
     end_ts = int(now.timestamp())
     start_ts = end_ts - hours * GRANULARITY
-    rows = fetch_candles(asset, start_ts, end_ts, http_get)
     con = sqlite3.connect(str(_db.PROD_DB))
     try:
         ensure_schema(con)
-        return store(con, asset, rows)
+        last = _last_ts(con, asset)
+        if last is not None:
+            start_ts = min(start_ts, last + GRANULARITY)
+        return _pull(con, asset, start_ts, end_ts, http_get)
     finally:
         con.close()
 
@@ -198,18 +222,11 @@ def backfill(since: int | None = None, *, now: datetime | None = None,
         for asset in PRODUCTS:
             start = since if since is not None else (
                 (_last_ts(con, asset) or DEFAULT_BACKFILL_START - GRANULARITY) + GRANULARITY)
-            total = 0
             try:
-                cursor = start
-                while cursor <= end_all:
-                    stop = min(cursor + (MAX_CANDLES - 1) * GRANULARITY, end_all)
-                    rows = fetch_candles(asset, cursor, stop, http_get)
-                    total += store(con, asset, rows)
-                    cursor = stop + GRANULARITY
-                    time.sleep(REQUEST_GAP_S)
-                out[asset] = total
+                out[asset] = _pull(con, asset, start, end_all, http_get)
             except Exception as e:  # noqa: BLE001 — one asset must not kill the other
-                log.warning(f"{TABLE} {asset} backfill failed after {total} rows: {e}")
+                log.warning(f"{TABLE} {asset} backfill failed (pages already "
+                            f"stored are kept): {e}")
                 out[asset] = -1
     finally:
         con.close()

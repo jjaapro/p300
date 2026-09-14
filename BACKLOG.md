@@ -108,13 +108,18 @@ and the commit that carries this text (16 + 17, roadmap, drill). How it went:
     chento's 3 ignored duplicate rows.
 - **Dashboard:** the new alerts, badges and job footer are served.
 
-**Next ops item:** heal or accept the two interior gaps ("Next, in order" 1).
+**Interior gaps healed (2026-09-14 ~20:00Z):** both were still served upstream. `coinbase.py --backfill
+--since 2026-09-08` and `binance_quarterly.py --backfill --since 2026-09-09` filled them; `monitor.py --deep`
+exits 0. Root cause: both feeds re-pulled only a 6h trailing window, so an outage longer than 6h
+restarted past the missing bars. Fixed in code: `refresh_asset` / `refresh_series` now start at the
+last stored bar (or 6h back, whichever is earlier) and page forward; an empty table still gets
+the trailing window only. Six new tests, each red on the old code. **The running feed still has
+the old code loaded until it is restarted.**
 
 ### Next, in order (after today's stop)
 
-1. **Read the first deep scan.** It will report the 2026-09-08/09 disk-full gaps
-   (`coinbase_spot_1h` 22 rows, `binance_quarterly_1h` 4 rows): heal from upstream if still
-   served, otherwise accept and record.
+1. ~~Read the first deep scan.~~ **DONE 2026-09-14:** both gaps healed from upstream and the
+   refresh fixed so they cannot recur (see "Deployed 2026-09-14"). Restart the feed to load it.
 2. **Operator decisions 1–3 below** (post-loss rule defaults, item 14, item 9).
 3. **Pre-register the chento arm of the exit-policy study** (item 11 + research queue 2). It is
    unblocked: the OKX verdict exists and item 12 is fixed.

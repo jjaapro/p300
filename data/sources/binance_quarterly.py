@@ -44,8 +44,9 @@ from 2021-01-01 and stops where the data does.
 
 Cadence: `refresh()` is called every feed cycle and throttles itself to one
 pull per (pair, contract_type) per UTC hour, plus one exchangeInfo pull per
-UTC day. Each pull re-requests a trailing window, so the bar that was still
-forming last hour is corrected on the next tick.
+UTC day. Each pull starts at the slot's last stored bar or 6h back, whichever
+is earlier, so the bar that was still forming last hour is corrected on the
+next tick and an outage of any length fills itself in.
 
 CLI:
   python data/sources/binance_quarterly.py --refresh
@@ -195,15 +196,40 @@ def store(con: sqlite3.Connection, pair: str, contract_type: str,
 def refresh_series(pair: str, contract_type: str, *, now: datetime | None = None,
                    hours: int = REFRESH_WINDOW_HOURS,
                    http_get: Callable[[str], Any] = _http_get) -> int:
-    """Pull the trailing `hours` window for one (pair, contract_type) slot."""
+    """Pull one (pair, contract_type) slot from its last stored bar (or
+    `hours` back, whichever is earlier) to now and upsert it.
+
+    Starting at the last stored bar is what lets an outage heal: with only a
+    trailing window, a feed down longer than `hours` restarted past the
+    missing bars and never asked for them again (the 2026-09-09 hole). An
+    empty slot gets the trailing window only — full history is the CLI's
+    job, not the feed loop's.
+
+    Pages carry an explicit endTime and the cursor advances by the page span,
+    not by the last bar returned, so a slot with no listed contract for part
+    of the range (NEXT_QUARTER in 2022-23) is stepped over rather than
+    ending the walk."""
     now = now or clock.now_utc()
-    start_ts = int(now.timestamp()) - hours * INTERVAL_S
-    rows = fetch_klines(pair, contract_type, start_ts=start_ts,
-                        limit=hours + 2, http_get=http_get)
+    end_ts = int(now.timestamp())
+    start_ts = end_ts - hours * INTERVAL_S
     con = sqlite3.connect(str(_db.PROD_DB))
     try:
         ensure_schema(con)
-        return store(con, pair, contract_type, rows)
+        last = _last_ts(con, pair, contract_type)
+        if last is not None:
+            start_ts = min(start_ts, last + INTERVAL_S)
+        total = 0
+        cursor = start_ts
+        while cursor <= end_ts:
+            stop = min(cursor + (MAX_LIMIT - 1) * INTERVAL_S, end_ts)
+            # a small limit keeps the usual 6h pull at request weight 1
+            limit = min(MAX_LIMIT, (stop - cursor) // INTERVAL_S + 2)
+            rows = fetch_klines(pair, contract_type, start_ts=cursor, end_ts=stop,
+                                limit=limit, http_get=http_get)
+            total += store(con, pair, contract_type, rows)
+            cursor = stop + INTERVAL_S
+            time.sleep(REQUEST_GAP_S)
+        return total
     finally:
         con.close()
 
