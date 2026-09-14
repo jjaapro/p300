@@ -6,7 +6,9 @@ Usage:
 
 Panels: fleet liveness + duplicate detection (psutil ground truth with the
 venv-shim collapse, dashboard/procscan.py), data-feed freshness grid, an
-alert strip mirroring monitor.py's checks live, the trade chart with entry
+alert strip mirroring monitor.py's checks live (plus the scheduled jobs'
+status files and the display-only results warnings, which also badge the
+fleet tiles), the trade chart with entry
 markers (planned TP/SL/timed stop on hover) with flow panes underneath
 (perp/spot CVD + divergence, OI + ΔOI quadrant label, funding + basis —
 dashboard/market.py, descriptive "what the bots see" context, not a

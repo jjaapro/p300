@@ -78,6 +78,19 @@ function fmtNum(v) {
   return String(v);
 }
 
+/* Last finish of each scheduled job (data/diagnostics status files):
+   HH:MMZ, with the date once it is more than a day old. */
+function fmtJobs(jobs) {
+  const one = (name, j) => {
+    if (!j || !j.finished_utc) return `${name} never`;
+    const iso = fmtIso(j.finished_utc);            // "YYYY-MM-DD HH:MMZ"
+    return `${name} ${j.age_s > 86400 ? iso.slice(5) : iso.slice(11)}`;
+  };
+  const j = jobs || {};
+  return [one("monitor", j.monitor), one("deep", j.deep),
+          one("backup", j.backup)].join(" · ");
+}
+
 /* ── health strip ─────────────────────────────────────────────────────── */
 
 let lastOk = null;
@@ -87,18 +100,23 @@ function renderBanner(ov) {
   b.classList.remove("banner-wait", "banner-green", "banner-amber",
                      "banner-red", "banner-stale");
   const reds = ov.alerts.filter((a) => a.severity === "red").length;
-  const ambers = ov.alerts.length - reds;
+  const ambers = ov.alerts.filter((a) => a.severity === "amber").length;
+  // info lines (HELD, results notes) are listed below but never turn the
+  // banner amber — a permanent note must not dull a real warning.
+  const infos = ov.alerts.length - reds - ambers;
+  const infoTxt = infos ? ` · ${infos} info` : "";
   if (reds) {
     b.classList.add("banner-red");
     b.textContent = `${reds} ALERT${reds > 1 ? "S" : ""}` +
-      (ambers ? ` + ${ambers} warning${ambers > 1 ? "s" : ""}` : "");
+      (ambers ? ` + ${ambers} warning${ambers > 1 ? "s" : ""}` : "") + infoTxt;
   } else if (ambers) {
     b.classList.add("banner-amber");
-    b.textContent = `${ambers} warning${ambers > 1 ? "s" : ""}`;
+    b.textContent = `${ambers} warning${ambers > 1 ? "s" : ""}` + infoTxt;
   } else {
     b.classList.add("banner-green");
     const n = ov.fleet.length;
-    b.textContent = `ALL SYSTEMS GO — ${n} units running single, tables fresh`;
+    b.textContent = `ALL SYSTEMS GO — ${n} units running single, tables fresh` +
+      infoTxt;
   }
 
   const list = $("alerts");
@@ -115,6 +133,20 @@ function renderFleet(ov) {
     const tile = el("div", `tile state-${u.state.toLowerCase()}`);
     const head = el("div", "tile-head");
     head.appendChild(el("span", "tile-name", u.unit));
+    // results badges sit beside the liveness state and never replace it
+    const results = u.results || [];
+    const flags = new Set(results.flatMap((r) => r.flags));
+    if (flags.size) {
+      const badges = el("span", "tile-badges");
+      if (flags.has("LOSING_MONEY")) {
+        badges.appendChild(el("span", "tile-badge badge-losing", "LOSING"));
+      }
+      if (flags.has("BELOW_RESEARCH")) {
+        badges.appendChild(el("span", "tile-badge badge-below", "BELOW RESEARCH"));
+      }
+      badges.title = "results warning — display only; the operator decides";
+      head.appendChild(badges);
+    }
     head.appendChild(el("span", "tile-state", u.state));
     tile.appendChild(head);
 
@@ -143,6 +175,23 @@ function renderFleet(ov) {
     if (u.state === "DUPLICATE" && u.instance_count > 1) {
       tile.appendChild(el("div", "tile-row",
         "kill all but one (oldest listed first)"));
+    }
+    for (const r of results) {
+      const cls = r.flags.includes("LOSING_MONEY") ? "losing"
+        : r.flags.length ? "warn" : "dim";
+      const dups = r.duplicates_ignored;
+      tile.appendChild(el("div", `tile-row results ${cls}`, r.n === 0
+        ? `${r.variant}: no closed trades`
+        : `${r.variant}: ${r.n} closed · net ${fmtSigned(r.total_usdt, 2)} USDT` +
+          (dups ? ` · ${dups} duplicate row${dups === 1 ? "" : "s"} ignored` : "")));
+      for (const c of r.last_closes) {
+        tile.appendChild(el("div", "tile-row results mono dim",
+          `${c.id} ${fmtIso(c.exit_time)} ${fmtSigned(c.pnl_usdt, 2)} ` +
+          `(${fmtSigned(c.pct, 2)}%)`));
+      }
+      if (r.n > 0 && r.note) {
+        tile.appendChild(el("div", "tile-row results dim", r.note));
+      }
     }
     wrap.appendChild(tile);
   }
@@ -973,7 +1022,7 @@ async function pollHealth() {
     $("foot").textContent =
       `updated ${lastOk.toLocaleTimeString()} · read-only · ` +
       `${ov.scan.scanned_python} python processes scanned · ` +
-      `chart: TradingView Lightweight Charts™`;
+      `${fmtJobs(ov.jobs)} · chart: TradingView Lightweight Charts™`;
   } catch (e) {
     const b = $("banner");
     b.classList.remove("banner-wait", "banner-green", "banner-amber",

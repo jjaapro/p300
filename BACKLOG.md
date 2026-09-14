@@ -1,11 +1,466 @@
-# Backlog — pending topics
+# Backlog — roadmap and pending topics
 
-Topics flagged for future work but not yet started. Newer entries at top
-unless an explicit ordering matters. Each entry should be self-contained
-enough that a fresh reader (or future-you with no memory of the
-discussion) can pick it up.
+**How this file is organised** (rebuilt 2026-09-14 at the user's request: "Update backlog /
+roadmap to reflect the current state of the project and the longer term vision"):
+
+1. **Roadmap** — the living section: where the project is, what was decided, what comes next,
+   what waits on the operator or on evidence, the research queue, the path to real capital
+   and the long-term vision. It is updated in the same commit as anything that ships, is
+   held, is killed or is decided.
+2. **Open items 16–29** — the items opened on 2026-09-14. Older open items (4.4, 4.5, 9, 11,
+   13, 14, 15) keep their numbers and their full text where they were first written, because
+   code, tests and calibration logs cite them by number.
+3. **Status log** — the dated status blocks, newest first, kept as written. Where a block is
+   wrong today the roadmap says so; the block itself is not rewritten.
+4. **Topic entries and history** — the bot = directory = strategy refactor (done; its numbered
+   items 6–15 live there), the execution-layer entry, and older entries that are done or
+   obsolete, each marked.
 
 ---
+
+## Roadmap
+
+*Rebuilt 2026-09-14. Replaces the "Next, in order" and "Decisions waiting" lists of the
+dated blocks below.*
+
+### Where we are
+
+- **What runs (paper only, no exchange connection):** `feed.py`, seven bot units —
+  `chento_v3` (BTC), `chento_v3_eth`, `short_squeeze`, `squeeze_bull`, `adx`, `carry`, `r4` —
+  and the dashboard on :8300. Nine variants: both squeeze bots carry a no-stop twin, and r4
+  trades its ETH windows only. The orchestrator path is retired and its eight sleeves are
+  archived (the refactor finished 2026-09-13).
+- **Evidence is thin, as expected.** The bot ledgers hold 7 closed trades — six chento BTC rows
+  that are three signals double-booked in the August incident, and SJ-4250 (squeeze_bull,
+  −$19.16, closed on its time stop) — plus two open ones, SJ-4242 (CARRY) and SJ-4247 (ADX).
+  Nothing clears an honest DSR; the binding constraint is breadth of evidence, not edge.
+- **The OKX gate is retired and off** on both chento bots from the 08:45 UTC bar on 2026-09-14
+  (`53d3393`). Chento fires about twice as often and stacks more positions; RISK_PCT 2% and the
+  3× cap were kept for paper after a sizing review.
+- **Operations had no safety net until today:** no scheduled monitor, no deep scan, no backup
+  since 2026-07-22 (C: has ~9 GB free), and no alert channel. Being closed today, see
+  "In progress".
+
+### Decided on 2026-09-14
+
+1. **OKX gate off** (item 8, DONE).
+2. **Results warnings on the dashboard; the operator decides** (item 16). The user's framing:
+   when a strategy goes negative a warning is shown, and "it should be operator decision then
+   to ask that bot or strategy to be disabled". Rule chosen: **RED** as soon as a variant's
+   cumulative net P&L on closed trades is below zero, at any n, with n shown and "too few
+   trades to conclude anything" while n < 5; **AMBER** once a variant has ≥ 5 closed trades and
+   its mean per-trade result is below what its research predicts at the 10% level, with live
+   and research win rates shown. Display only. Nothing is disabled automatically.
+3. **The time-stop study goes ahead** (item 11), with the user's hypothesis on record: "time
+   stop overall feels a bad idea, it just means that we do not actually know if the trade was
+   valid or not, so better to just cut it". Prompted by SJ-4250, which closed on its 48h time
+   stop and later traded above its entry. That is one hindsight observation, not evidence. The
+   study must also test the alternative the hypothesis implies: exits that fire when the trade
+   is shown wrong (condition exits, research queue 2), not just longer holds.
+4. **Post-loss rules (item 15) are not shown to be wise.** The user asked whether skipping
+   entries after a loss is "just once again arbitrary number got from overfitting". Answer: the
+   48h was never fitted. It was a simplification written with the sleeve (2026-05-29), standing
+   in for a research rule that was itself picked in-sample (37 filter cells) on a pool with
+   trigger-order look-ahead. Neither live rule has been tested against "no rule". On the honest
+   pool the effect mostly disappears (BTC MAR none 7.20, skip 8.16, half 8.34), and the 2026-09
+   audit found that skip lowers DSR (0.726 → 0.461). A pre-registered study is designed
+   (`post_loss_rules`, arms: no rule / coded BTC / coded ETH / causal research rule /
+   same-direction only). It needs two operator decisions first (see below).
+5. **Item 4.4 approved:** the scheduled-exit backstop books the same cost as each bot's own
+   close. r4 keeps the trades.py defaults on purpose.
+6. **Item 4.5 approved as a named unique index**, not a table rebuild: `init_db` declares
+   `uix_adj_trade_date_type`, so every bot start re-creates the key if it is ever lost again.
+   The one-off migration needs no fleet stop; a backup is taken first.
+7. **Monitoring approved** (item 17), with these operator choices: **dashboard-only alerts for
+   now** (no Telegram); scheduled tasks run while the user is logged on; **local backups,
+   keeping 2**; **keep every existing file** (the 2026-07-22 backup and both May-2026 rebuild
+   copies stay; old copies are never pruned automatically).
+8. **Fix the backstop defect now** (item 18): a `decide()` that raises must not skip the
+   scheduled exits, since for r4 the scheduled close is its only exit.
+9. **Push the local commits** — done.
+
+### In progress (2026-09-14)
+
+Items 4.4, 4.5, 16, 17 and 18 are **shipped in code**: `1c201c5` (4.5), `5485899` (4.4 + 18),
+and the commit that carries this text (16 + 17, roadmap, drill). How it went:
+- Each item was built by an implementer, reviewed from two angles (correctness and live safety),
+  and fixed. Two session-limit interruptions were resumed from the saved partial work.
+- `python backup.py` verified `prod-20260914.db` (18:52Z).
+- The index migration was applied on prod with the fleet running (18:53Z, lock held 3.7 ms).
+- Full suite 1430 passed / 6 xfailed; mutation drill 139/139 caught, tree restored.
+
+**Still to do:** restart the seven bot units (4.4, 4.5's `persist_close` and 18 take effect then)
+and the dashboard (16, 17). The slot must be HH:04–HH:13 after an :00/:15/:30 boundary and never
+across HH:00. Then register the three scheduled tasks and run the first monitor and deep scan.
+The follow-up commit records the restart times.
+
+### Next, in order (after today's stop)
+
+1. **Read the first deep scan.** It will report the 2026-09-08/09 disk-full gaps
+   (`coinbase_spot_1h` 22 rows, `binance_quarterly_1h` 4 rows): heal from upstream if still
+   served, otherwise accept and record.
+2. **Operator decisions 1–3 below** (post-loss rule defaults, item 14, item 9).
+3. **Pre-register the chento arm of the exit-policy study** (item 11 + research queue 2). It is
+   unblocked: the OKX verdict exists and item 12 is fixed.
+4. **Watch r4's first enabled window, Fri 2026-10-02 04:00 UTC** (R4_ETH V1: Tue 2026-10-06
+   20:00). r4 has never traded; confirm the first open and its scheduled close.
+
+### Decisions waiting on the operator
+
+Recommendation in brackets.
+
+1. **Item 15 post-loss rules** — (a) the objective: drawdown/MAR or total return (skip vs half
+   vs none is mostly that trade-off); (b) the default if the study is inconclusive [no rule on
+   either asset, as with the OKX gate]. The pre-registration is written after both.
+2. **Item 14, figures measured on OKX-gated pools** — re-cut on the gate-off arm or retire, per
+   figure. For the ETH kill rule (< +0.3 R after 15 trades) [retire it: item 16's AMBER test
+   against the gate-off research baseline answers the same question and leaves the disable to
+   the operator]. The +0.739 / +0.605 R expectancies, overlay tilt ranking, attribution split,
+   LSR B5 scores and audit DSRs [retire; re-cut only what a decision needs].
+3. **Item 9, R4_ETH research weights** — the J+ simulator books the Tue 20:00 → Wed 20:00 trade
+   on Wednesday's row with Wednesday's gate and leverage, which a Tuesday entry cannot know;
+   R4_ETH's research total is overstated 39.985 vs 37.447 pct-pts, 86% of it from one row
+   (2025-07-09). Live is causal since 7a and nothing live depends on the research number.
+   [A: record and park; the full fix only if the J+ simulator is used for a decision again.]
+4. **Item 13, exposure budget design** — an open-risk or gross cap per bot, or RISK_PCT 1.5%, as
+   its own pre-registered test. Required before real capital, not for paper.
+5. **Account architecture** — one exchange sub-account per bot (the architecture in force)
+   versus the pool-plan D8/D9 groupings (ADX + CARRY together; no-stop bots in one account).
+   Must be settled before any live wiring.
+6. **Live venue** — every go-live document assumes Binance, but `.env` holds only MEXC keys.
+7. **Merge item 11 with research queue 2** into one exit-policy study with one trial ledger
+   [yes; it is the test the user's hypothesis calls for].
+8. **E7 live quoting probe** (API key, ≤ $50, two weeks) [no, unless maker entries are wanted].
+9. **OKX refresh aligned to HH:01** [close: nothing reads `okx_delta_z` since the gate went off].
+10. **Telegram push alerts** — deferred by the operator on 2026-09-14; revisit before any real
+    capital (G0).
+11. **Docs:** archive or rewrite MANUAL.md; rewrite GATE_VALIDATION.md (dead paths, and its §5
+    promotion rule is not the discrimination-based rule the OKX re-test used).
+12. **Formally close as obsolete** [close]: pool-plan D1–D7, A3, A5, phases B and D, studies S1,
+    S3, S5, S6; P2.4; the AI_QUANT milestones; the timing-anomaly consolidation.
+
+### Waiting on evidence (rule fixed in advance)
+
+| what | rule | where | when |
+|---|---|---|---|
+| Squeeze paired re-cuts, stop vs no-stop | at 20 and 30 paired fires; SHORT_SQUEEZE retires if both variants ≤ 0 at 30 | `studies/notebooks/squeeze_recut/run_recut.py` (NOT_DUE 0/20); `docs/calibration/squeeze_bull.md`, `short_squeeze.md` | squeeze_bull ~25 fires/yr in bull tape, none in bear; short_squeeze droughts up to 186 days |
+| SQUEEZE_BULL incumbent | DISABLE if mean R ≤ 0 at n = 20; at n = 30 also if DSR < 0.50 | `docs/calibration/squeeze_bull.md` | as above |
+| R4 ETH paper acceptance | ≥ 20 fires, latency and exit fidelity; never live capital without a mechanism | `docs/calibration/r4.md` | first window Fri 2026-10-02 |
+| Chento gate-off paper track | item 16 warnings; item 14 decides whether a hard rule remains | `docs/calibration/chento_triple_v3.md` | from 2026-09-14 08:45 UTC |
+| VRP options study | re-run both modes at OOS n ≥ 6 | `studies/notebooks/vrp_study/findings.md` | ≈ 2026-12, else 2027-03 |
+| LSR B5 V4 (365-row window) | fresh pre-registration at BTC OOS n ≥ 20 | `studies/notebooks/lsr_b5_study/findings.md` | ≈ 2027-09 |
+| SQUEEZE_BULL Rule B (funding + CVD) | revisit at ≥ 10 of its own OOS fires; nothing counts them live, so recount periodically | `docs/calibration/squeeze_bull.md` | unknown |
+| Hawkes / liquidation cascades | paid backfill, or re-enable the feed and wait | `studies/notebooks/hawkes_note.md` | ≥ 2028-06 |
+| Institutional trader material | the user shares the rules (likely needs L2 book data) | memory only | if still expected |
+
+### Research queue
+
+Pre-registered notebooks, in the recommended order. Standing rule: every replay charges
+measured per-leg costs and funding.
+
+1. **Exit-policy study** — item 11 (time stops: chento 72h, squeeze_bull 48h, short_squeeze
+   6h) merged with research queue 2 (condition exits: inverse signal, regime flip, flow
+   reversal, OI rebuild, funding normalisation). Chento arm first. The squeeze arms may not
+   change a live time stop before their n = 20/30 re-cuts.
+   **Design input from the 2026-09-14 absorption/momentum sweep** (read-only, verified; not a
+   decision):
+   - **Define "flow reversal" as ABS_AGAINST:** the bot's own closed-15m B1 absorption firing
+     against the position (for a long: taker-delta z ≥ +k while the 4-bar return z is flat).
+     It is also an "inverse signal", so it counts once.
+   - **Chento arms on identical gate-off entries:** A0 shipped exits; A1 no time stop, with a
+     declared censoring horizon; X1 = A1 + exit on ABS_AGAINST at any time; X2 = A1 + exit on
+     ABS_AGAINST only while the trade is below entry. X2 is the literal form of the user's
+     hypothesis and cannot cut the 6R winners that every earlier chento early exit damaged
+     (A7/A8/A9, rejection-wick take-profit, RSI scale-out, all killed).
+   - **Step 0, before any R:** measure fire rate and time-to-first-fire for k ∈ {1, 2, 3}, then
+     freeze k. At B1's live threshold it could fire within hours and act as a hidden short time
+     stop. Add 2 trials to chento's ledger. Flow may trigger a pre-written exit, never cancel
+     one. Prior that X2 beats A0 by a fixed rule: low (about 0.15, a subjective estimate).
+   - **Squeeze arms, pre-registered now but report-only until the re-cuts:** short_squeeze
+     "covering absorbed" and "sweep failed" exits, plus the catastrophe-stop arm its no-stop twin
+     needs; squeeze_bull "bounce absorbed" and "flush resumed" exits; squeeze_bull
+     "flush absorbed" as a one-trial diagnostic, not a filter. Mechanistically, short_squeeze fits
+     best (absorption information peaks at 2–3h, inside its 6h hold), but it has only 71 fires.
+   - **Not arms, with reasons recorded:** ADX absorption exit (no information at long horizons,
+     27 trades); chento absorption take-profit or partial (family killed six times); sub-15m
+     entry confirmation (≤ 43 BTC trades have finer data, no ETH, no live feed).
+   - **Precondition:** the replay engine must not carry the defects the study validation audit
+     rates P0 (`studies/notebooks/study_validation_audit_2026_09/`, `34d21e9`): gross R labelled
+     net and a defective mark-to-market formula in `sizing_style_2026_09`; future-built levels in
+     the overlay and Paladin wick exits. `btc_1m` was repaired on 2026-09-07, so cached 1m
+     outcomes from before then are not reused.
+   Full synthesis kept outside the repo; its tables are summarised in this item.
+2. **Post-loss rules** (item 15), once decision 1 is made.
+3. **Second assets** — SHORT_SQUEEZE on ETH, CARRY on ETH (data exists). SQUEEZE_BULL on ETH
+   needs an ETH open-interest feed. Alts are blocked (the screener feed stopped 2026-05-23).
+   This is the most direct lever on the breadth constraint.
+4. **Shelf re-cost** under the no-stop style at measured costs (R4 windows, PDO), then fleet
+   compounding through the liquidation walk. Bar: net ≥ 2× the round trip in both halves.
+   *Changed 2026-09-14 after the absorption sweep:* "absorption" is removed — no absorption
+   study can meet the bar from its recorded gross. Brainstorm rule A1 died on replication, not
+   cost. The best remaining numbers at 10 bp: B7 divergence about +0.05 to +0.11 R (its recorded
+   +0.212 R predates the cost fix); footprint C3 +0.01 R with a negative second half; LVN fade
+   −0.13 R. Footprint C3 stays parked. Post-cascade reversion (+1 to +4 bp net) is what
+   squeeze_bull already expresses.
+5. **ETH/BTC regime spread** (strong-bull days only) and hedged expressions of existing
+   signals; absorbs the old "ETH bull-regime tilt" decision.
+6. **A new chento replay baseline** — bounded loaders, 10 bp, gate off — replacing the
+   superseded `__replay_p0gate`.
+7. **R4 target-exit sweep** (low: it cannot lift R4's no-live-capital status).
+
+Parked, each with its trigger: SHORT_SQUEEZE funding-cadence fidelity
+(`docs/calibration/short_squeeze.md`); a symmetric `is_long_macro` detector; the archived
+CPR / PDO / THU_BEAR questions (re-entry only through a study and a bot of its own); footprint
+C3 on alts; dwell-block as a filter. Tooling gap for any honest go/no-go: SPA / White's
+reality check and full-grid PBO.
+
+Momentum, parked with triggers (2026-09-14 sweep). Momentum has survived only as a trend
+machine (ADX, live) or as a gate (squeeze_bull's bull_30d, chento's up_30d short skip). Every
+standalone momentum edge tested was killed on unseen data: big-bar daily follow, RSI > 75,
+52-week high, weekly EMA on ETH, Coinbase-premium continuation, alt relative strength, and the
+external 7,908-cell TA sweep, where follow beats fade but no cell clears |t| 4.88.
+Parked items and their triggers:
+- **ORB draft** (`studies/notebooks/orb_study/`, `34d21e9`): freeze a pre-registration first;
+  BTC perp 1m history is short.
+- **Alternative trend gates for squeeze_bull** (ADX state, weekly EMA): after its n = 30
+  re-cut.
+- **OI short-flush continuation as a trade:** descriptive only so far (+1.85% at 168h).
+- **Causal pivot + CVD divergence as an ADX veto:** never backtested; the original pivot
+  measure had look-ahead.
+
+Kept off the queue:
+- Vol-targeted time-series momentum: the unscaled forms are on the do-not-retest list, since
+  they duplicate EMA 1W.
+- Cross-sectional alt momentum: blocked by data (no alt taker split, funding or OI; the feed
+  stopped 2026-05-23).
+
+### Code and ops hygiene (low, batchable)
+
+- Items 19–29 below.
+- Item 10 follow-ups: 27 tests open prod.db read-write for SELECTs; the dry-run probe covers
+  only `botlib.point_at_db_copy`.
+- The chento fixture hash alarm fires on B-tree page layout, not data (item 7b).
+- `strategy_health`'s 2.5× gross-headroom default reads negative for the chento bots.
+- r4 `decide_eth` has no after-window guard (covered today by the 300 s grace).
+- Chento as one runner carrying both assets under a cross-asset cap (ties to item 13).
+- Close as won't-do: splitting `sweep()` out of `decide()`.
+- Cadences with no owner yet: weekly `strategy_health` per bot; monthly attribution re-run and
+  memory/system audit.
+- Doc fixes: OPERATIONS §7.2 still calls the look-ahead port open, and its test counts are old;
+  `portfolio_with_pools.md` calls chento BTC-only; the README status date; stale "Current
+  state" headers in `docs/calibration/adx.md` and `short_squeeze.md`.
+- `.env` still names the archived AI_QUANT variables.
+- Record each closed trade's max favourable / adverse excursion (read-only rebuild from `btc_1m`,
+  or appended to the CLOSE notes). No bot records it today, so no target or time stop can be
+  checked against live data (item 11's squeeze_bull target trace). Aggregates stay unread until
+  the exit-policy study pre-registers what it reads. Confirm `btc_1m` retention first.
+- The dashboard shows no R multiple for squeeze_bull trades: its notes carry no `_risk` key.
+- `docs/calibration/squeeze_bull.md` dates the sizing-study pool "2022-01 to 2026-06", but its
+  fires run 2022-03-25 to 2026-09-04.
+
+### Path to real capital
+
+Ordered gates; none is met today.
+
+- **G0 — operations you can trust.** Monitor, deep scan and backups scheduled and seen working
+  for weeks; alerts that reach the operator; items 4.4, 4.5 and 18 fixed; disk healthy.
+- **G1 — evidence.** Each bot passes its own pre-registered gate (the waiting list above), on
+  deflated statistics, with a retirement rule written before the data.
+- **G2 — risk.** Item 13's exposure budget; fleet-level return and margin arithmetic and a
+  joint-path margin simulation (pool plan S2, S4) re-scoped to bots; live liquidation
+  modelling re-added; margin mode chosen per bot.
+- **G3 — accounts.** Decisions 5 and 6: sub-account per bot or groups, the venue,
+  sub-account availability and terms, hedge mode.
+- **G4 — execution.** The F-EXEC layer: taker entries, resting reduce-only take-profits,
+  exchange-resident stop orders instead of 60 s polling, a fills record (intended vs realised
+  price per leg), and an exchange adapter. E7 only if maker entries are wanted.
+- **G5 — re-audit, then start small.** An end-to-end audit of the live path, then
+  smallest-first sizing with an automatic circuit breaker.
+
+### Long-term vision
+
+- **A fleet of independent bots.** One bot = one directory = one strategy = one variant, and
+  eventually one exchange account (or a few margin-model groups, once G3 decides). A bot can be
+  added, paused or retired without touching the others.
+- **Leverage is an output, not a dial:** fixed-R sizing when a trade has a stop, vol-targeting
+  when exposure is continuous, fixed notional for calendar and carry.
+- **Growth comes from breadth:** more mechanistically grounded, pre-registered setups
+  (microstructure with a causal story; second assets before new mechanisms), not from tuning
+  the edges we already have.
+- **Mechanism before deployment.** No live capital on statistics alone. Every edge has a stated
+  mechanism and a retire rule written before its data. Avoid piling up long-only exposure.
+- **Exits come from the trade being right or wrong, not from the clock** — the user's working
+  hypothesis, which the exit-policy study tests.
+- **The system warns; the operator decides.** Automatic disabling arrives only with G5's
+  circuit breaker.
+- **Research discipline:** pre-register, disclose what was already seen, treat a written
+  verdict as final, and charge measured costs.
+
+### Corrections to the status log below
+
+- 2026-09-13 block: step 6 ("the next guard worth building") and the gate-off commit ("open,
+  due by 2026-10-13") are both done.
+- 2026-09-12 block: "Next, in order" steps 1 and 4.1–4.3 and "Documents known to be stale" are
+  done; "Active plan documents" calls `bot_extraction_plan.md` the architecture in force, but
+  that file is marked superseded (its architecture principle stands; this roadmap carries it).
+  "Decisions waiting" is replaced by the list above; SHORT_SQUEEZE's fate at n = 30 is not a
+  decision, its rule is fixed.
+- Execution-layer entry, point 3: the paired re-cut script exists
+  (`studies/notebooks/squeeze_recut/`, written 2026-09-12).
+- Item 10: the last paragraph still reads as unfixed; `a942cf1` fixed it.
+- Item 4.5: "needs a table rebuild between a fleet stop and a restart" is not true; a named
+  unique index does it with the fleet running.
+
+---
+
+## Open items 16–29 (opened 2026-09-14)
+
+16. **Results warnings on the dashboard.** Decided 2026-09-14 (Roadmap, decision 2). Per live
+    variant: RED when cumulative net P&L on closed trades is below zero; AMBER at n ≥ 5 when
+    the live mean per-trade result (% of the variant's capital) is below the 10th percentile of
+    means of n trades resampled from the variant's research results. Research baselines are
+    stored per bot in `bots/<bot>/research_baseline.json`, with their source, method and
+    caveats. The dashboard and `monitor.py` share one module, so their wording cannot drift.
+    Display only.
+    **DONE 2026-09-14** (`strategies/support/evidence.py`). Design choices made while building it,
+    because of what the baselines showed:
+    - Rows of the same variant, strategy and direction entered in the same UTC minute count once,
+      so the August doubled-fleet pairs are not double-counted.
+    - AMBER uses only trades entered on or after the baseline's `comparable_from`: the last
+      config change the baseline models, e.g. chento's gate-off bar 2026-09-14 08:45Z.
+    - AMBER needs at least 10 research values. Carry's baseline is a single episode, so it shows
+      an info line instead.
+    - Its text says the research is in-sample: a prompt to look, not a verdict.
+    - The bootstrap threshold is seeded from sha256(variant:n), so every process computes the
+      same value.
+    - `monitor.py` imports the module lazily, so a broken `evidence.py` shows as an amber
+      EVIDENCE_UNAVAILABLE line instead of crashing the monitor or the dashboard.
+    Live at the time of the build: one RED (squeeze_bull SJ-4250, −$19.16, n = 1) and no AMBER
+    (no variant has 5 comparable trades yet; chento needs about 7 weeks).
+17. **Scheduled monitoring and backups.** Until 2026-09-14 `monitor.py` had never been
+    scheduled, its only push channel (Telegram) was not configured, a crash and an alert both
+    exited 1, and it left no record a dashboard could read. The newest backup was 2026-07-22.
+    Plan: `monitor.py` writes a status file and a rotating log and adds disk-space and
+    backup-age checks; the dashboard turns stale, failed or alerting jobs into alert-strip
+    entries; `backup.py` writes to a temporary file, verifies it, then renames, and prunes to 2
+    copies without ever touching copies from before 2026-09-14; three Task Scheduler tasks
+    (hourly monitor, daily deep scan, daily backup).
+    **DONE 2026-09-14.**
+    - `monitor.py` writes `data/diagnostics/monitor_last.json` (plus `monitor_last_deep.json`)
+      and a rotating `monitor.log`, including a crash at import.
+    - Exit codes: 0 green, 1 alerts, 2 crashed.
+    - It opens prod.db read-only (PROD_DB_UNREADABLE; it never creates the file) and adds
+      DISK_LOW, BACKUP_STALE and DEEP_SCAN_STALE.
+    - The dashboard adds job alerts and a footer with the last run times.
+    - `backup.py` writes `.partial`, verifies it, then renames it; `--keep-daily` /
+      `--keep-weekly`; `PRUNE_FROM = 2026-09-14` protects older copies; `backup_last.json`.
+    - `ops/register_tasks.ps1` registers the three tasks.
+    - First verified backup: `prod-20260914.db` (1.60 GB, 22 s, `quick_check` ok, 18:52Z).
+    - Disk: C: was down to 3.3 GB free. Two runaway 5 GB Claude task logs from 2026-09-13 were
+      deleted (12.7 GB free after). The Claude desktop app's ~8.6 GB VM bundle is the grower to
+      watch.
+18. **The scheduled-exit backstop is skipped when `decide()` raises.** Every runner called the
+    strategy's `decide()` before `botlib.close_due_trades`, with only the loop-level exception
+    handler around both, so one exception skipped that tick's scheduled exits. For r4 the
+    scheduled close is the only exit. Planned as its own commit in the refactor's step-1
+    re-plan (phase B, step 8) and never done. The stale-management-tables early return still
+    skips the backstop on purpose (the price may be stale); `monitor.py`'s overdue-trade check
+    covers that case.
+    **DONE 2026-09-14 for `decide()`**, together with item 4.4. All six runners wrap `decide()`.
+    On an exception the tick opens nothing more (r4 keeps a window it opened earlier in the same
+    tick), still runs the backstop (r4: the window close and the stop sweep), and reports
+    heartbeat `error` with note `repr(error)`. The stale-management early return still skips the
+    exits on purpose, with a comment in each runner and a due-trade test in every bot. **Item
+    4.4, same commit:**
+    - `botlib.close_due_trades(variant_id, now_utc=None, *, closers)` closes through each
+      sleeve's own close function.
+    - It tries every due trade: a missing closer, a raising price read or a raising close is
+      collected, then raised after the loop as `BackstopRefused`. Runners catch it and set
+      heartbeat `error`; in the squeeze bots the twin variant still ticks.
+    - r4 keeps the `trades.py` defaults on purpose.
+    - Corrections to 4.4's text: SHORT_SQUEEZE's gap was 5 bp (0.03–0.33 R, median 0.15 R); the
+      8 bp was SQUEEZE_BULL's. Chento was affected too (5 bp plus funding it never books;
+      SJ-4243 and SJ-4245 were closed this way, recorded in its calibration log).
+    - `squeeze_recut` D4 now nets the booked cost from each CLOSE row's `fee_usdt` on every
+      closed trade. Its funding term was fixed; it passed `+1` as the direction, so the funding
+      came out NaN on holds that crossed a settlement. Every recorded recut run had D4 = n/a.
+    Not covered: exceptions after `decide()` (item 23).
+19. **Live schema drift from the 2026-05-18 PK rebuild, beyond item 4.5.** Found reviewing 4.5.
+    The rebuild (`data/migrations/2026_05_18_add_table_pks.py`) also stripped NOT NULL and
+    DEFAULTs from `trades`, removed `variants`' PRIMARY KEY, NOT NULL, CHECK and DEFAULTs, and
+    dropped `ai_quant_decisions`' created_at DEFAULT. With no PK on `variants`,
+    `botlib.ensure_bot_variant`'s check-then-insert can register a duplicate variant row if the
+    same bot starts twice at once (the August doubled-fleet scenario). A live schema test will
+    pin today's drift as known, so any new drift fails. Fix per table, each with its own
+    go-ahead.
+    **Correction (4.5 review, 2026-09-14):** `variants` is not in the 2026-05-18 migration's
+    plan. Its bare `CREATE TABLE … AS SELECT` shape (INT types, no PK, NOT NULL, CHECK or
+    DEFAULT) was left by the 2026-05-15 P2.6 consolidation (`studies/simulation/
+    migrate_to_prod_db.py`, removed in `574ea6e`); only the partial `idx_variants_primary` came
+    back, via `variant_registry.init_schema`. The `trades`, `trade_adjustments` and
+    `ai_quant_decisions` drift does match the 2026-05-18 DDL. The live schema test exists now
+    (`tests/test_live_schema_constraints.py`): it pins each table's exact drift, so a fix must
+    update or drop its pin in the same commit.
+20. **`created_at` is NULL on every trade since 2026-05-18, which blinds `ledger_coherence`.**
+    Consequence of item 19: 16 trades (SJ-3458 … SJ-4250, including open SJ-4242 and SJ-4247)
+    and all 9 bot variants have `created_at` NULL. `ledger_coherence`'s OPEN/CLOSE/seq checks
+    filter on `created_at`, so they have not audited a single bot-era trade; a deleted CLOSE
+    or a seq gap planted on a copy went unseen. Earlier "coherence clean" readings for bot
+    trades are therefore unverified. Options: `open_paper_trade` writes `created_at`
+    explicitly; `ledger_coherence` uses `COALESCE(created_at, actual_entry_time)`; a backfill
+    (its own go-ahead). A strict-xfail test documents the blind spot
+    (`tests/test_ledger_coherence.py::test_created_at_null_trade_is_audited_for_a_missing_close`);
+    remove the xfail mark in the commit that fixes this item.
+21. **288 orphan `trade_adjustments` rows.** Ids 69–356 for SJ-3156 … SJ-3299 (event dates
+    2024-05-09 … 2026-05-09) have no `trades` row in prod.db or in
+    `data/archive/replay_archive.db`, most likely from the 2026-07-22 archive-order bug
+    (`studies/simulation/archive_replay_variants.py`). Harmless while foreign keys are off.
+    Decide: archive, delete or leave, and record it.
+22. **`health.py`'s single-open check only sees legacy `p300_%` variants.** A repoint to the
+    bot variants must exempt chento's and r4's stacking by design (OPERATIONS §7).
+
+*Items 23–29 were found by the 2026-09-14 reviews of items 4.4, 4.5 and 18. Each changes live
+behaviour or a sleeve, so each needs its own go-ahead.*
+
+23. **(18b) An exception after `decide()` still skips the backstop.** Item 18 covered
+    `decide()` only. If the entry-table check, sizing, `execute()` or `botlib.open_gross_usdt`
+    raises, the tick's exits are skipped, and in the two-variant squeeze bots the second variant
+    is skipped for that tick. That includes `DuplicateInstanceError` from `open_paper_trade`
+    on a signal tick while a process stands down, which contradicts OPERATIONS' "keeps managing
+    exits" for that one tick. r4's `_sleeve()` / `deciders()` also sit before the window loop,
+    so a broken sleeve import would still block R4's only exit. Fix: wrap the entry path in
+    the same try as `decide()`.
+24. **Chento still sends about 1 in 8 time-stop exits through the backstop.** The sleeve's own
+    time-stop close requires `not walked_any` (`bots/chento_v3/strategy/signal.py`), which
+    misses under the 90 s bar-settle margin. Costs now match (4.4), but those exits close at
+    the tick's quote and are labelled `scheduled_exit` instead of `tif_expiry`. A sleeve and
+    golden change.
+25. **R4's cost has never been measured.** It books the `trades.py` defaults (10 bp + 5 bp +
+    funding); `execution_2026_09` did not cover it. A test pins today's behaviour.
+26. **`close_carry_trade` takes no write lock** (`strategies/trades.py`). The `persist_close`
+    rowcount check (4.5) stops the duplicate CLOSE row, but the losing caller still logs a
+    close that did not happen. Now also on the backstop path, which the 2099 placeholder exit
+    time keeps unreachable today.
+27. **r4's stale-management check is not per asset.** `MGMT_TABLES` holds `btc_1m` and
+    `eth_1m` together, so with ETH-only windows a stale `btc_1m` alone holds back the ETH window
+    close. A behaviour change to R4's only exit.
+28. **A double close across 00:00 UTC is not caught.** The unique index, the migration's
+    duplicate check and `ledger_coherence`'s new count all group by `event_date`.
+    `close_carry_trade` takes `now` before its funding lookup, so two racing CLOSE rows can
+    carry different dates. Today prod has no trade with more than one OPEN or CLOSE. Candidate:
+    a date-independent "more than one OPEN or CLOSE per trade" FAIL count.
+29. **Restoring the 2026-07-22 backup would stop every bot at start.**
+    `data/backups/prod-20260722.db` holds 8 duplicate (trade, date, type) groups, all on
+    replay-variant trades (SJ-3548/3549/3550, SJ-3650/3651). After the named index ships,
+    `trade_db.init_db` refuses to start on it and lists them. Restore from a 2026-09-14 or later
+    snapshot instead, or run `studies/simulation/archive_replay_variants.py --apply` first. Any
+    file-level restore: stop every process including the dashboard, confirm `prod.db-wal` is
+    absent or 0 bytes, delete `prod.db-wal` and `prod.db-shm`, then copy. The OPERATIONS restore
+    section needs this note.
+
+---
+
+# Status log — dated blocks, newest first (kept as written)
 
 ## Project status and roadmap — 2026-09-14
 
@@ -250,7 +705,13 @@ SQUEEZE_BULL (OI-flush only; Rule B deferred).
 
 ---
 
+# Topic entries and history
+
 ## Bot = directory = strategy — retire the orchestrator layer
+
+> **2026-09-14:** the refactor (steps 1–5) and items 6, 7a, 7b, 8, 10 and 12 are DONE. Items
+> 9, 11, 13, 14 and 15 are still open and tracked in the Roadmap at the top; their full text
+> stays here because code and docs cite them by number.
 
 **Captured:** 2026-09-12. **Status:** planned, direction agreed by the user ("why do we
 need the sleeves if we have bots? I like the maintainability of the bots"); starts after
@@ -659,6 +1120,19 @@ cap — the multi-asset plan's Phase B as written.
      from their own harness, not this simulator. The only other consumer of
      `_run_decision_loop` is `anchor_allocator_study/build_panel.py`, a concluded KILL.
    Needs its own measured analysis and a decision; not scheduled.
+
+   **2026-09-14, measured and explained to the user.** Worked example, Tue 2025-07-08 20:01:
+   live sees Monday's close (regime uncertain, leverage 2.0) and would size $10,000; the
+   research row for Wed 2025-07-09 books the trade at Wednesday's strong_bull leverage 3.0,
+   6.57 pct-pts against a causal 4.38. Only 9 of 170 rows change the total, and that row is 86%
+   of the gap; one row errs the other way (2024-03-06, −0.80). Only 72 rows carry an ETH
+   return, because the ETH loaders look back three years. The leak into live through
+   `recent_1x` moved live leverage on no day in history (leverage sat at its regime cap every
+   time). Options: A record and park; B lag the gate only (recovers 0.19 of 2.54 — another
+   partial fix); C full fix with a separate R4_ETH leverage (a measured live no-op, but an edit
+   on r4's sizing path: go-ahead, restart, tests); D correct `simulate()` only.
+   **Recommendation A**, and C only if the J+ simulator is used for a decision again. Operator
+   decision pending (Roadmap, decision 3).
 10. **Hazard: a plain `pytest` run can write to the live prod.db.** **DONE 2026-09-13**
     (`a942cf1`). Worse than first reported, on every axis, all measured:
     - **Two** modules wrote on import, not one: `trade_db.py` (BEGIN + CREATE ... IF NOT
@@ -759,6 +1233,71 @@ cap — the multi-asset plan's Phase B as written.
       squeeze arms must not change a live TIF before the n = 20/30 paired re-cuts, which assume
       48h / 6h. Item 12's first defect must be fixed first, or the study's "shipped" arm is not
       the live rule.
+
+    **2026-09-14 — go-ahead, and the user's hypothesis.** Prompted again by SJ-4250: "we need to
+    study this properly, time stop overall feels a bad idea, it just means that we do not
+    actually know if the trade was valid or not, so better to just cut it". The pre-registration
+    records that hypothesis before any outcome is computed, and adds the arm it implies: an exit
+    that fires when the trade is shown wrong (research queue 2's condition exits), next to
+    "no time stop" and the shipped value. The recommendation is to run item 11 and research
+    queue 2 as one exit-policy study with one trial ledger (Roadmap, decision 7). Both
+    sequencing conditions above are met (the OKX verdict exists; 12a is fixed), so the chento
+    arm is unblocked. SJ-4250's later move above its entry is hindsight on one trade; the
+    pre-registration discloses it as seen and does not use it as evidence. Measured read-only
+    from `btc_1m` at 2026-09-14 14:26Z: entry 77,493.9, stop 75,944.0 (−2%), target 79,818.7
+    (+3%). During the 47h hold the high was 77,506 and the low 76,500. After the time-stop
+    close the high was 78,649 (+1.49%, first above 78,500 at 14:11Z on 09-14); the stop was
+    never touched, and neither was the target, yet. The user (same day): "time stops were also
+    extremely harmful, squeeze bull would have soon hit the TP".
+
+    **2026-09-14 — squeeze_bull's +3% target traced** (the user asked whether it is "also
+    arbitrary number or based on actual events in data, something we monitor"). Read-only trace
+    plus an adversarial verifier; no new outcome was computed. Findings:
+    - **Picked from a grid, not measured from flush behaviour.** On 2026-06-05
+      (`studies/notebooks/oi_flush/phase2_backtest.py`, commit `fd5e808`) the stop, target and
+      time stop were chosen together from 4 stops × 5 targets (0.5–3%) × 4 holds = 80 combos.
+      The pool was the old −3% trigger with no regime gate, 221 fires at 18 bp. The rule: highest
+      full-sample MAR among combos with a positive 2025+ mean, so the out-of-sample data was used
+      in the selection. Only 4 of 80 passed. All four sit on the grid's widest stop (2%), and
+      +3% was its largest target, so the optimum may lie outside the range tested.
+    - **The winner failed the script's own written rule.** Mean +0.005 R and MAR 0.01, against a
+      stated bar of mean > +0.2 R, MAR > 1.5 and every regime positive, "otherwise report findings
+      and stop". The study went on: the bull gate (chento's ±10% 30-day label, borrowed) was added
+      afterwards by splitting that one combo by regime, and the trigger moved to −2% with the exits
+      held fixed. The grid was never re-run at −2%, bull-gated, with the causal gate, or at the
+      measured 7 bp. The committed script now reads −2% (`95728a5`), so it no longer reproduces the
+      run that chose the exits (pin `fd5e808` to reuse it).
+    - **No written mechanism for +3%.** Every rationale covers only the entry and the gate. Before
+      the grid the plan was a 1% stop / 1.5% target. No file measures how far this signal's bounces
+      actually run (no max favourable excursion or time-to-peak).
+    - **Later "confirmations" were in-sample judgment calls.** The re-validation froze the exits
+      (N_TRIALS 1). The sizing study's P1 (no stop, no target, 48h) vs P1b (no stop, +3% target) on
+      the same 122 fires: no target had the higher mean (+0.566 vs +0.526 R), and +3% was kept on the
+      twin for MAR and drawdown after the results were seen. No finite target other than 0.5–3% was
+      ever tried, nor "keep the −2% stop, drop the target".
+    - **Nothing checks whether +3% is right.** Tests pin the value (parity and goldens), the
+      dashboard draws it, and both n = 20/30 re-cuts replay a hard-coded 0.98 / 1.03. The trade
+      ledger has no excursion columns, and the exit reason is free text in the notes.
+      `strategy_health`, the new results warnings and `monitor.py` read P&L only.
+    - **Must be disclosed as already seen** in the exit-policy pre-registration: phase-2 target
+      share 33% pooled / 44% bull; ablation target shares by threshold; re-validation OOS target
+      share down from 41% to 30% (3 of 10); S1 P1 vs P1b; S1 exit counts (−2% stop hit 34%); the
+      exit-kind counts in `bots/squeeze_bull/research_baseline.json` (47 target / 41 stop / 29 time of
+      117; twin 45 target / 58 time of 103); phase-1 forward means (−2% trigger: no uplift over
+      baseline beyond 24h); execution E3/E5 markouts; the brainstorm cascade excursions (different
+      5m definition, median 1.6% travel, not reproducible here); SJ-4250's path above.
+    - **Honest trial count for the exits:** 80 grid combos + 30 threshold variants + the S1 policy
+      choice. The paired re-cut's DSR clause deflates at N = 30 (its README calls that "the kindest
+      defensible number"); the frozen pre-registration stays as written, but its DSR must be read
+      knowing the exit search was about 110 trials.
+
+    **What the exit-policy study should add because of this** (design input, not a decision): target
+    arms beyond +3% and a no-target-with-stop arm; a target scaled to flush depth or ATR as a
+    declared secondary arm; the running-max (favourable excursion) distribution the repo's own
+    mean-reversion lesson prescribes (never run for squeeze_bull); ranking at the measured 7 bp plus
+    funding. Per-trade excursion can be rebuilt afterwards from `btc_1m` with no live change if that
+    table is kept indefinitely — no pruning was found, but no retention policy is written; verify
+    before relying on it.
 12. **Two live defects found by the item-11 census.** Both verified 2026-09-13. Both change live
     behaviour when fixed, so neither is fixed without a go-ahead. **Both DONE 2026-09-13**
     (`e048c6d`; user go-ahead "Fix both" the same day). Each fix landed
@@ -820,6 +1359,11 @@ cap — the multi-asset plan's Phase B as written.
     layer's chento split, the LSR B5 variant scores and the validation audit's OKX threshold
     re-filter (all also on the same-hour look-ahead z). Decide per item: re-cut on the gate-off
     arm, or retire the number. Not re-cut by the switch.
+
+    **2026-09-14:** the user chose dashboard warnings with the disable left to the operator
+    (item 16). Its AMBER test compares each variant with a gate-off research baseline, which
+    covers what the ETH kill rule was for. Recommendation: retire the ETH kill rule rather than
+    re-cut it (Roadmap, decision 2).
 15. **The overlay study's tilt rules are not the bots' rules (both legs).** Found by the
     item-8 review. `overlay_study/run_overlays.tilt_sizes` skips a BTC trade after ANY losing
     predecessor in trigger order, closed or not (36 look-ahead cases on the gate-off pool); the
@@ -831,6 +1375,39 @@ cap — the multi-asset plan's Phase B as written.
     per-asset choices rest on the study rule: BTC's `FILTER_NO_TILT` and ETH's
     `TILT_HALF_AFTER_LOSS` (2026-08-23). Needs its own measured decision; nothing changes until
     then.
+
+    **2026-09-14 — provenance traced for the user**, who asked whether skipping entries is
+    "just once again arbitrary number got from overfitting with known data":
+    - **The 48h was never fitted or tested.** It first appears in the sleeve's first commit
+      (`19d8fcf`, 2026-05-29) as a stand-in for the research rule `consec_losses_before == 0`,
+      with the comment "same effect since cooldown is 4h and TIF is 72h". That was never checked
+      and is false (94 vs 198 of 208 BTC triggers taken, above). No script sweeps a tilt window.
+    - **The research rule was picked in-sample.** `validation_loser_profile.py` (2026-05-25)
+      tested 37 filter cells from 10 features on the bidirectional ±24h pool, with no holdout.
+      Its p = 2e-05 is what trigger-order leakage produces: triggers sit ~13h apart against a
+      24h hold, so "the last trade lost" mostly means "an overlapping position in the same move
+      is losing".
+    - **On the honest pool the effect shrinks to noise-sized.** BTC backward-only, pre-cost:
+      MAR none 7.20, skip 8.16, half 8.34; skip halves total R (41 vs 81) with equal OOS totals.
+      The 2026-09 validation audit: skip lowers DSR 0.726 → 0.461 and is the only series whose
+      Sharpe more than halves out of sample — "a drawdown-management choice, not an edge
+      improvement". ETH's half was chosen on a MAR tie (6.7 vs 6.7) that the 2026-09-01 re-check
+      broke in skip's favour (8.4 vs 7.5).
+    - **Live:** the BTC rule rarely fires (about 10 of 208 triggers), its state resets on every
+      restart, and no test or drill mutation covers it.
+    - **No mechanism is written down.** The one plausible story — a trend running through the
+      extreme stops out several same-direction triggers in a row — predicts the effect sits in
+      same-direction triggers shortly after a closed stop, and is testable.
+
+    **Designed, not written:** a pre-registered `studies/notebooks/post_loss_rules/` on the
+    OKX study's gate-off pool, per asset, with arms A0 no rule, A1 the coded BTC rule, A2 the
+    coded ETH rule, A3 the causal research rule (skip while the last CLOSED trade lost), A4 A1
+    restricted to same-direction triggers; random-skip and after-a-target placebos; honest
+    N_TRIALS 87 (sensitivity 16); a power check up front (A1 on BTC is almost certainly
+    underpowered); walk-forward re-selection because no clean holdout exists. **Needs two
+    operator decisions first:** the objective (drawdown/MAR or total return), and the default
+    when the verdict is inconclusive (recommended: no rule). Removing either rule meanwhile is
+    the operator's call.
 
 **Gates:** parity tests byte-equal before and after every step; the full suite green;
 fleet restarted from the new paths with fresh heartbeats; one definition per rule (no
@@ -1080,6 +1657,10 @@ sleeve works — it has never fired in production and is pending a retirement de
 
 ## Execution layer and pending re-cuts from the 2026-09 execution / sizing studies
 
+> **2026-09-14:** folded into the Roadmap — points 1–2 are gate G4 and decision 8, point 3 is
+> in "Waiting on evidence" (its script exists since 2026-09-12, so the last sentence of point 3
+> is out of date), point 4 is decision 5, point 5 is the research queue's standing rule.
+
 **Captured:** 2026-09-12. **Status:** open — the paper-side changes shipped
 the same day (cost constants, CARRY exit, two no-stop paper variants; see
 each `docs/calibration/*.md`); these are the parts that wait on something.
@@ -1111,6 +1692,10 @@ each `docs/calibration/*.md`); these are the parts that wait on something.
 
 ## Consolidate timing-anomaly sleeves under a single bucket ✅
 
+> **OBSOLETE 2026-09-13:** the TIMING_ANOMALIES dispatcher was deleted in refactor step 3 and
+> the sub-strategies other than R4 were archived; the links below are dead. The motivation
+> paragraph at the end still stands and is carried into the Roadmap's long-term vision.
+
 **Captured:** 2026-05-18.
 **Status:** ✅ shipped 2026-05-18 (three commits: meta-sleeve scaffolding,
 p300_spec cutover, physical relocation under
@@ -1137,6 +1722,11 @@ for capital and config attention.
 ---
 
 # Phase 2 — restructure follow-ups
+
+> **HISTORY (2026-09-14):** P2.1–P2.3 and P2.5–P2.7 are done, and P2.1 and P2.3 are also
+> obsolete (their files were deleted in 2026-09). **P2.4, the real orchestrator, is obsolete**:
+> the orchestrator was retired on 2026-09-13 and bots are the unit. Its exposure and conflict
+> questions come back through item 13 and gate G2.
 
 The 2026-05-14 structural restructure (see [Proposal.md](Proposal.md))
 shipped everything mechanical: directories, file moves, import rewrites,
@@ -2032,6 +2622,9 @@ Low. Doc-only.
 ---
 
 # Earlier backlog entries
+
+> **OBSOLETE (2026-09-14):** the AI_QUANT sleeve was archived on 2026-09-13
+> (`studies/material/archive/`), so its milestone plan below is history, not work.
 
 ## AI_QUANT — let the model see its prior decisions
 

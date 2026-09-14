@@ -21,11 +21,12 @@
 | Start the fleet (feed + 7 bots + dashboard) | `.\start_fleet.ps1` — see §10 |
 | What is running right now | `.\start_fleet.ps1 -Status` |
 | Health check | `python health.py` |
-| Freshness / heartbeat / silence alerts | `python monitor.py` — **not scheduled**, see §11 |
+| Freshness / heartbeat / silence alerts | scheduled task `\p300\monitor-hourly` (+ `monitor-daily-deep`) once `ops\register_tasks.ps1` is run; ad hoc `python monitor.py` — see §11 |
 | Dashboard | `python dashboard/server.py` → http://127.0.0.1:8300 |
 | Dry-run one bot on a DB copy | `python bots/<name>/runner.py --once --db <copy.db> --sim-now <iso>` |
 | Per-variant metrics report | `python -m strategies.support.strategy_health --variant bot_adx_v1` |
-| Daily prod.db backup | `python backup.py` — **not scheduled**, see §11 |
+| Daily prod.db backup | scheduled task `\p300\backup-daily` (2 local copies; needs ~6.5 GB free on C:) once `ops\register_tasks.ps1` is run; ad hoc `python backup.py --keep-daily 2 --keep-weekly 0` — see §11 |
+| Results warnings (LOSING red / BELOW RESEARCH amber) | dashboard fleet tiles + `monitor.py` warnings tier — display only, the operator decides; see §11 |
 | Unit + integration tests | `python -m pytest tests/` |
 
 Replay and sim tooling is gone — see §5.
@@ -125,7 +126,25 @@ On each tick a runner:
   per-window weight × capped leverage against a gross co-fire budget for `r4`.
   Then it calls `execute()`;
 - runs `botlib.close_due_trades()` as the scheduled-exit backstop behind the
-  sleeve's own sweep;
+  sleeve's own sweep. Since 2026-09-14 the runner hands it each strategy's own
+  close function, so a backstop close books the sleeve's cost, slippage and
+  funding (CARRY delta-neutral; ADX through its stop resolver, which can move
+  the close to an earlier stop or to the due minute). It closes at the tick's
+  quote with the label `scheduled_exit`. `r4` has no close of its own: the
+  backstop is its exit and books the `trades.py` defaults, 10 bp + 5 bp +
+  funding. The backstop still runs on a tick where `decide()` raised: no
+  further entries that tick (`r4` keeps a window it opened earlier in the same
+  tick), heartbeat `error`, note = the exception. It does not run on a
+  `stale_mgmt_inputs` tick (on purpose; heartbeat `degraded`; `r4` checks
+  btc_1m and eth_1m together, so a stale btc_1m also holds back an ETH close).
+  Nor does it run when anything after `decide()` raises (entry-table check,
+  sizing, `execute()`, including `DuplicateInstanceError` while standing down)
+  or, for `r4`, when loading the sleeve fails; the loop reports those as
+  `error`, and in the two-variant bots such an exception also skips the second
+  variant for that tick (BACKLOG 23). A due trade whose strategy has no closer,
+  or whose price read or close raises, stays open and is named in the heartbeat
+  note with status `error`; the other due trades still close, and the other
+  variant still ticks;
 - writes its `bot_heartbeats` row (`last_tick_utc`, `last_eval_utc`,
   `last_signal_utc`, `open_trades`, status, note).
 
@@ -142,6 +161,10 @@ same heartbeat name, `botlib.heartbeat` forces `status='error'` with a
 `DUPLICATE INSTANCE` note and calls `instance_guard.stand_down()`. That process
 then **refuses new entries** but keeps managing exits — deliberately
 asymmetric, see [strategies/support/instance_guard.py](strategies/support/instance_guard.py).
+The exception: on a tick where a standing-down process gets a signal, `execute()` raises
+`DuplicateInstanceError` before the scheduled-exit backstop runs, so that one tick skips the
+backstop (and, in the two-variant bots, the other variant); the sleeve's own sweep inside
+`decide()` has already run (BACKLOG 23).
 Kill one of the two; the survivor clears the flag on its next heartbeat.
 
 ## 3. Observing state
@@ -550,6 +573,13 @@ to start twice (the second bind just fails; exit code 2). Run it as the bots'
 Windows user so the process scan can read their command lines.
 `start_fleet.ps1` starts it last, after the feed and the bots.
 Details: dashboard/server.py docstring.
+Fleet tiles also carry display-only results badges (red LOSING, amber BELOW RESEARCH;
+`strategies/support/evidence.py`) that never replace the liveness state. The alert strip
+includes the scheduled jobs' status (MONITOR_*, DEEP_STALE, INTERIOR_GAPS as of the last deep
+scan, BACKUP_*, DISK_LOW), and the footer shows the last monitor / deep / backup times (§11).
+Info lines (HELD, results notes) no longer turn the banner amber; it reads `· N info`. After
+removing a variant from a bot config, restart the dashboard too: it keeps the configs it
+imported.
 Theme: the header button cycles auto (light 07–19 local time, dark
 otherwise) → light → dark; the choice is remembered by the browser, and
 `/?theme=light|dark` forces one for a session. Both palettes are validated
@@ -571,7 +601,7 @@ The operated fleet is what `start_fleet.ps1` launches (feed first, dashboard las
 | r4 | bots/r4/runner.py | R4 calendar family; ETH windows only since 2026-09-12 (BTC windows wired but disabled in `bots/r4/config.py`; added 2026-09-06, held 09-09) |
 | squeeze_bull | bots/squeeze_bull/runner.py | S-107 OI-flush long; + no-stop twin |
 | dashboard | dashboard/server.py | read-only UI on :8300 |
-| monitor | monitor.py | hourly checks (optional unit, `-Monitor`; see §11) |
+| monitor | monitor.py | hourly checks: normally the `\p300\monitor-hourly` scheduled task (`ops\register_tasks.ps1`); `-Monitor` opens a fallback console that duplicates it (see §11) |
 
 Seven bot units, nine variants. A bot is a **directory**: `bots/<name>/` holds
 `runner.py`, `config.py` and `strategy/` (`README.md`, `signal.py`, `config.py`,
@@ -612,44 +642,148 @@ police neither.
 Every table the new bot reads must already be in `botlib.FRESHNESS_CONTRACTS`; list the
 management tables in the bot's `MGMT_TABLES` and the entry-only tables in `ENTRY_TABLES`.
 
-## 11. What is NOT automated (2026-09-13)
+## 11. Monitoring, scheduled jobs and backups (2026-09-14)
 
-There is **no Task Scheduler entry for anything in this repo** on this machine —
-verified 2026-09-13. Nothing starts the fleet at boot, and the jobs below run
-only when an operator runs them:
+Nothing starts the **fleet** at boot (§10). The monitor and the backup run as
+Task Scheduler tasks once `ops\register_tasks.ps1` has been run. The script was
+written on 2026-09-14 and only dry-run, so check with `Get-ScheduledTask
+-TaskPath '\p300\'` before assuming the tasks exist:
 
-| job | command | intended cadence | status |
-|---|---|---|---|
-| monitor | `python monitor.py` | hourly | **not running, not scheduled** |
-| deep gap scan | `python monitor.py --deep` | daily | not scheduled |
-| daily backup | `python backup.py` | daily | **not scheduled** |
+| task (`\p300\`) | runs (`venv\Scripts\pythonw.exe`, in the repo) | when | limit | records |
+|---|---|---|---|---|
+| `monitor-hourly` | `monitor.py --quiet` | every hour at :07 | 10 min | `data\diagnostics\monitor_last.json`, `monitor.log` |
+| `monitor-daily-deep` | `monitor.py --deep --quiet` | daily 09:10 local | 20 min | `monitor_last_deep.json` (and `monitor_last.json`), `monitor.log` |
+| `backup-daily` | `backup.py --keep-daily 2 --keep-weekly 0` | daily 04:40 local | 120 min | `data\backups\prod-YYYYMMDD.db`, `backup_last.json`, `backup.log` |
 
-`monitor.py`'s own docstring says "run it ad hoc or hourly via Task Scheduler"
-and `backup.py`'s says "schedule daily via Task Scheduler" — that is the
-intent, not the state. Until they are scheduled, the freshness / heartbeat /
-silence / retention-burn alerts fire only when you run them, and the
-dashboard's alert strip (which recomputes the same checks live, whenever the
-page is open) is the only always-on substitute.
+All three run as the current user **only while that user is logged on**
+(LogonType Interactive: no stored password, no elevation, RunLevel Limited).
+They may start and keep running on battery, run once to catch up after a missed
+start, and never overlap themselves. `pythonw.exe` opens no window and throws
+stdout away, so the status files and the rotating logs (`monitor.log`,
+`backup.log`, 1 MB × 5) are the record. Start times are stored as local time,
+so they follow DST.
 
-The stopgap while that remains true:
 ```powershell
-.\start_fleet.ps1 -Monitor     # opens a console running monitor.py once an hour
+pwsh -File ops\register_tasks.ps1 -DryRun      # show what would be registered
+pwsh -File ops\register_tasks.ps1              # register (re-runnable) and print a verification table
+Start-ScheduledTask -TaskPath '\p300\' -TaskName monitor-hourly       # run one now
+Get-ScheduledTaskInfo -TaskPath '\p300\' -TaskName monitor-hourly | Format-List LastRunTime, LastTaskResult, NextRunTime
+pwsh -File ops\register_tasks.ps1 -Uninstall   # remove the tasks; files under data\ are kept
 ```
-That console lives only as long as it is open — it is a stopgap, not a schedule.
 
-**Telegram alerts.** `monitor.py` pushes every non-green run to Telegram when
-`TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` are set in `.env`. `--summary` also
-pushes an all-green daily status, so silence itself signals breakage. Verify the
-wiring with `python monitor.py --test-alert`. Send failures are logged, never
-fatal.
+**Reading `LastTaskResult`:**
+- `0`: the monitor is green, or the backup verified.
+- `1`: the monitor raised alerts, or the backup's snapshot, check or prune failed. Existing copies are kept.
+- `2`: the monitor **crashed**, or the backup refused to start because prod.db is missing or free disk is short. For a monitor crash, read the traceback in `monitor_last.json` → `error` and in `monitor.log`.
+- `267009`: running. `267011`: has never run.
 
-**Backups.** `backup.py` takes a WAL-safe `VACUUM INTO` snapshot to
-`data/backups/prod-<YYYYMMDD>.db`, keeps the last 7 daily + last 4 Sunday
-copies, and verifies the copy (`--verify-full` for a full `integrity_check`
-instead of `quick_check`). This matters more than klines suggest: LSR,
-open-interest and liquidation history beyond the upstream ~30-day retention is
-**irreplaceable**. Retention here does not survive a disk failure — occasionally
-copy the newest file off-machine.
+**Alerts go to the dashboard only.** The Telegram code in `monitor.py` is kept
+but unconfigured (there are no `TELEGRAM_*` keys in `.env`). When those keys
+are set it pushes every non-green run; check the wiring with
+`python monitor.py --test-alert`. The dashboard reads the three status files on
+every 5 s poll:
+
+| code | severity | meaning |
+|---|---|---|
+| `MONITOR_NEVER_RUN` | amber | no `monitor_last.json`: the tasks were never registered |
+| `MONITOR_STALE` | red | the last monitor run is older than 2h15m: the task is disabled or failing, the machine slept, or you were logged off |
+| `MONITOR_ERROR` | red | the last monitor or deep run crashed (exit 2), or a status file is unreadable |
+| `DEEP_STALE` | amber | no deep gap scan in 30h |
+| `INTERIOR_GAPS` | amber | replayed from the last deep scan, marked "(as of HH:MMZ)" |
+| `BACKUP_FAILED` | amber | the last backup run did not end `ok` |
+| `BACKUP_STALE` | amber over 30h, red over 72h | the newest good copy is too old |
+| `DISK_LOW` | amber under 5 GB, red under 2 GB | free space on prod.db's drive, computed live |
+
+The dashboard footer reads `monitor HH:MMZ · deep HH:MMZ · backup HH:MMZ`.
+`monitor.py` also raises four alerts of its own:
+- `PROD_DB_UNREADABLE`: it opens prod.db read-only and never creates it.
+- `DISK_LOW`.
+- `BACKUP_STALE`: the first run raises it, because the newest copy is from 2026-07-22.
+- `DEEP_SCAN_STALE`, on hourly runs only.
+
+A logged-off or sleeping machine gets no monitoring. When you come back, the
+dashboard shows `MONITOR_STALE` in red, which is the honest signal.
+`.\start_fleet.ps1 -Monitor` still opens an hourly console. Treat it as a
+fallback for when the tasks are not registered: while they are, it only
+duplicates `monitor-hourly`.
+
+**Results warnings** (`strategies/support/evidence.py`) are **display only**.
+They are computed per live variant, meaning the ids in each
+`bots/<bot>/config.py`. Each closed trade counts as a % of that config's
+`CAPITAL_USDT`:
+- **LOSING (red)**: the variant's cumulative net P&L is below zero, at any
+  number of trades. Under 5 trades the line says "too few trades to conclude
+  anything". It clears once the total is back at or above zero.
+- **BELOW RESEARCH (amber)**: needs at least 5 live trades since the variant's
+  `comparable_from`. It fires when the live mean is below the 10th percentile
+  of 10,000 resampled research means from `bots/<bot>/research_baseline.json`.
+  The research is in-sample, so treat it as a prompt to look, not a verdict. A
+  research sample under 10 trades gets an info line instead (carry today).
+- Rows with the same variant, strategy and direction, entered in the same UTC
+  minute, count once. These are the rows the 2026-08 doubled fleet booked twice
+  (SJ-4243/44, 4245/46, 4248/49).
+
+The warnings appear in four places:
+- a badge on the fleet tile, which never replaces the liveness state;
+- rows on the tile with n, net total and the last closes;
+- lines in the alert strip;
+- `monitor.py`'s `~~` warnings tier, recorded in `monitor_last.json` and never
+  part of the exit code.
+
+**Nothing is disabled automatically; the operator decides.** To disable a
+variant, remove it from its bot's config (`VARIANTS`) and restart that unit,
+then the dashboard unit: the dashboard keeps the bot configs it imported at
+start, so until it restarts it still shows the variant and its badge. The
+hourly monitor starts fresh each run and drops it on its own.
+Setting `variants.enabled = 0` alone does not stop a runner.
+
+**Backups.** How `backup.py` takes a copy:
+1. It takes a WAL-safe `VACUUM INTO` snapshot, over a read-only connection, to
+   `data/backups/prod-<YYYYMMDD>.db.partial`.
+2. It checks the snapshot with `quick_check`, or with `integrity_check` under
+   `--verify-full`.
+3. Only then does it rename the snapshot to `prod-<YYYYMMDD>.db`.
+
+So a killed or failed run never leaves a truncated copy, and a same-day rerun
+replaces the earlier copy only once the new one verifies.
+
+Retention:
+- The task keeps **2 local copies** (`--keep-daily 2 --keep-weekly 0`). A
+  hand-run `python backup.py` still uses the old defaults of 7 daily + 4
+  Sunday copies, which C: cannot hold, so pass the same flags.
+- Copies dated **before 2026-09-14 are never auto-pruned**
+  (`backup.PRUNE_FROM`). `prod-20260722.db` and any older copy stay until the
+  operator deletes them.
+- Files not named `prod-YYYYMMDD.db` are never touched.
+
+The script refuses to start with less than 2× prod.db free (about 3.3 GB for
+the 1.65 GB prod.db of 2026-09-14), and a copy takes about 1.6 GB. Two task
+copies are already on disk when the third day's run starts, so C: needs about
+**6.5 GB free before the first run**, on top of the protected
+`prod-20260722.db`. With less, the run either ends `low_disk` (BACKUP_FAILED
+on the dashboard) or passes the guard and leaves C: below the 2 GB `DISK_LOW`
+critical line while the feed is writing. On 2026-09-14 C: had about 3.3 GB
+free until two runaway 5 GB Claude task logs were deleted (12.7 GB free after);
+the Claude desktop app's VM bundle (~8.6 GB under `%LOCALAPPDATA%\Packages\Claude_*`)
+is the largest grower to watch. If there is not room, keep the task off after registering it:
+`Disable-ScheduledTask -TaskPath '\p300\' -TaskName backup-daily`, then
+`Enable-ScheduledTask` with the same arguments once C: has the room.
+Re-running `register_tasks.ps1` registers it enabled again.
+
+Backups matter more than klines suggest: LSR, open-interest and liquidation history beyond the
+upstream ~30-day retention is **irreplaceable**. Local retention does not
+survive a disk failure, so occasionally copy the newest file off-machine.
+
+**Restoring a backup.** Stop every process that opens prod.db, the dashboard
+included. Confirm `prod.db-wal` is absent or 0 bytes, delete `prod.db-wal` and
+`prod.db-shm`, then copy the backup over `prod.db`. A stale WAL left beside
+the copy would be replayed onto it. Restore from a copy dated 2026-09-14 or
+later. `prod-20260722.db` holds 8 duplicate (trade, date, event type)
+adjustment groups, all on replay-variant trades. Since the
+`uix_adj_trade_date_type` index (BACKLOG 4.5), every bot refuses to start on
+that file and lists the groups. If it is the only copy, run
+`studies/simulation/archive_replay_variants.py --apply` on it first
+(BACKLOG 29).
 
 **Calendar runway.** `scheduled_events` is static and populated years ahead
 (currently to 2027-12-31). `monitor.py` alerts when less than 60 days of future

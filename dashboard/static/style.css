@@ -139,6 +139,18 @@ footer { padding: 10px 14px 16px; }
 .state-silent .tile-state, .state-degraded .tile-state,
 .state-writer_unseen .tile-state { color: var(--amber); }
 
+/* results badges (strategies/support/evidence.py) — display only. They sit
+   beside the liveness state; the tile border keeps the state's color. */
+.tile-badges { display: inline-flex; flex-wrap: wrap; gap: 3px; margin: 0 6px; }
+.tile-badge {
+  font-size: 10px; font-weight: 700; letter-spacing: .05em;
+  padding: 0 4px; border-radius: 3px; border: 1px solid currentColor;
+}
+.badge-losing { color: var(--red-ink); }
+.badge-below { color: var(--amber); }
+.tile-row.results { overflow-wrap: anywhere; }
+.tile-row.losing { color: var(--red-ink); }
+
 /* feeds grid */
 table.grid { border-collapse: collapse; width: 100%; max-width: 760px; }
 table.grid th {

@@ -41,7 +41,7 @@ runs may import them, enforced by
 | squeeze_bull | [bots/squeeze_bull/runner.py](bots/squeeze_bull/runner.py) | `bot_squeeze_bull_v1`, `bot_squeeze_bull_nostop_v1` | S-107 OI-flush bounce, BTC LONG |
 | r4 | [bots/r4/runner.py](bots/r4/runner.py) | `bot_r4_v1` | R4 calendar windows; **ETH windows only** since 2026-09-12 (the BTC pair is wired but `ENABLED=False` in [bots/r4/config.py](bots/r4/config.py)) |
 | dashboard | [dashboard/server.py](dashboard/server.py) | — | read-only UI on http://127.0.0.1:8300 |
-| monitor | [monitor.py](monitor.py) | — | hourly freshness / heartbeat / silence checks — **optional unit, started only with `-Monitor`** |
+| monitor | [monitor.py](monitor.py) | — | hourly freshness / heartbeat / silence checks — runs as scheduled tasks ([ops/register_tasks.ps1](ops/register_tasks.ps1)); the `-Monitor` console unit is only a fallback |
 
 Nine variants, seven bot units: the two squeeze bots each run a **no-stop paper
 twin on the same signals in the same process** (added 2026-09-12), so their
@@ -61,7 +61,7 @@ dashboard renders are in [dashboard/cards/](dashboard/cards/), one per bot.
 .\start_fleet.ps1                  # everything that isn't already up
 .\start_fleet.ps1 -Status          # what's running right now, then exit
 .\start_fleet.ps1 -Units adx,carry # just two units
-.\start_fleet.ps1 -Monitor         # also open the hourly monitor console
+.\start_fleet.ps1 -Monitor         # fallback hourly monitor console (duplicates the scheduled task)
 .\start_fleet.ps1 -DryRun          # print the commands and exit
 ```
 
@@ -93,7 +93,7 @@ the same five flags — `--once`, `--interval`, `--verbose`, `--db`, `--sim-now`
 
 ```powershell
 venv\Scripts\python.exe health.py    # exit 0 = healthy; the checks and exit codes are in its docstring
-venv\Scripts\python.exe monitor.py   # freshness + heartbeats + silence; exit 0 = green, 1 = alerts
+venv\Scripts\python.exe monitor.py   # freshness + heartbeats + silence; exit 0 = green, 1 = alerts, 2 = crashed
 venv\Scripts\python.exe monitor.py --deep   # plus an interior-gap scan (heavier; daily, not hourly)
 venv\Scripts\python.exe feed.py --once      # one refresh cycle, to clear a stale table
 ```
@@ -103,12 +103,20 @@ warmup depth, the single-open invariant (still scoped to the legacy `p300_%`
 variants, so it sees none of the `bot_*` ones — and chento and r4 stack
 positions by design), that every variant the bots are configured to trade is
 registered and enabled, and that every entry point the runners call still
-exists. `monitor.py` is the alerting counterpart (Telegram)
-— but it is **not running and has no scheduled task on this machine**, so run
-it by hand or with `-Monitor`. [backup.py](backup.py) is unscheduled too: the
-newest full `prod.db` snapshot under `data/backups/` is from 2026-07-22, and
-the LSR / open-interest history past the ~30d upstream retention is not
-refetchable if the file is lost.
+exists. `monitor.py` is the alerting counterpart, and
+[backup.py](backup.py) takes the verified daily snapshot. Both run as scheduled
+tasks (`\p300\monitor-hourly`, `monitor-daily-deep`, `backup-daily`, only while
+you are logged on) once [ops/register_tasks.ps1](ops/register_tasks.ps1) has
+been run. The script was written on 2026-09-14 and only dry-run; see
+OPERATIONS.md §11. Each run records itself under `data/diagnostics/`, and the
+dashboard alerts when a run goes stale or fails. The dashboard is the only
+alert channel (Telegram is not configured). The same page shows the
+display-only results warnings: a red LOSING or amber BELOW RESEARCH badge, and
+the operator decides what to do about it. The backup keeps 2 local copies and
+never prunes copies dated before 2026-09-14. Holding those 2 copies needs about
+6.5 GB free on C: before the first run (OPERATIONS.md §11). The newest full `prod.db` snapshot
+under `data/backups/` is still from 2026-07-22, and the LSR / open-interest
+history past the ~30d upstream retention is not refetchable if the file is lost.
 
 Reading the ledger:
 
@@ -166,8 +174,8 @@ p300/
 ├── start_fleet.ps1                 # starts feed + 7 bots + dashboard, one console each
 ├── feed.py                         # the only fetcher; 60s cycle + startup gap heal
 ├── health.py                       # 9 invariant checks for live operation
-├── monitor.py                      # freshness / heartbeat / silence alerts (unscheduled)
-├── backup.py                       # VACUUM INTO snapshot of prod.db (unscheduled)
+├── monitor.py                      # freshness / heartbeat / silence / disk / backup alerts (task \p300\monitor-hourly)
+├── backup.py                       # verified VACUUM INTO snapshot of prod.db, 2 local copies (task \p300\backup-daily)
 ├── bootstrap.py                    # one-shot prod.db builder
 ├── botlib.py                       # the shared bot runtime: freshness contracts,
 │                                   #   heartbeats, variant registration, sizing, dry-run flags

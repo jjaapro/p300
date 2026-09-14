@@ -8,11 +8,13 @@ connections and would create the file if missing. botlib is imported for
 its registries only, plus `latest_age_s(table, con=...)` which accepts an
 injected connection. monitor.py is imported for its threshold constants so
 the dashboard and the hourly monitor can never disagree on what "stale" or
-"silent" means; `monitor.run()` is never called (it opens RW connections
-and pushes Telegram).
+"silent" means; `monitor.run()` is never called (it pushes Telegram and
+writes its status files). Its read-only file helpers (`read_status`,
+`disk_low`, `backup_stale`) and `results_evidence` are called, so both
+surfaces word those alerts the same way.
 
-`db.PROD_DB` is read at call time, never cached at import — tests
-monkeypatch `strategies.support.db.PROD_DB` (house convention).
+`db.PROD_DB` and `db.DATA_DIR` are read at call time, never cached at
+import — tests monkeypatch `strategies.support.db.PROD_DB` (house convention).
 
 Fleet-state precedence (the reason this dashboard exists — the
 2026-08-15→24 doubling ran 9 days unnoticed):
@@ -21,6 +23,8 @@ Fleet-state precedence (the reason this dashboard exists — the
   > WRITER_UNSEEN (fresh heartbeat, no scanned process — psutil blind spot)
   > DEGRADED (status != ok) > SILENT (eval older than BOT_EXPECTATIONS)
   > OK
+Results warnings (LOSING / BELOW RESEARCH, strategies/support/evidence.py)
+are badges on a tile, never a state: a losing bot that is also DEAD is DEAD.
 """
 from __future__ import annotations
 
@@ -273,9 +277,9 @@ def _data_alerts(con: sqlite3.Connection, now: datetime) -> list[dict]:
                 f"ARCHIVE STALE {name}: last written "
                 f"{monitor._fmt_age(age)} ago"))
 
-    # Overdue open trades. Unlike monitor.py, no `variants.enabled=1` join —
-    # enabled is NULL for every bot variant, which silently blinds monitor's
-    # version of this check to the whole fleet.
+    # Overdue open trades. Unlike monitor.py, no `variants.enabled=1` join:
+    # nothing in the fleet reads `enabled` (a variant is disabled by leaving
+    # its bot config), so an open trade is checked whatever the flag says.
     try:
         rows = con.execute(
             "SELECT id, strategy, strategy_variant, exit_time FROM trades "
@@ -301,6 +305,115 @@ def _data_alerts(con: sqlite3.Connection, now: datetime) -> list[dict]:
     return alerts
 
 
+# ─── Scheduled jobs (status files written by monitor.py and backup.py) ────────
+
+def _hhmm(iso: str | None) -> str:
+    try:
+        dt = datetime.fromisoformat(iso)
+    except (TypeError, ValueError):
+        return "?"
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(timezone.utc).strftime("%H:%MZ")
+
+
+def _job_alerts(now: datetime) -> tuple[list[dict], dict]:
+    """(alerts, jobs) from data/diagnostics/{monitor_last, monitor_last_deep,
+    backup_last}.json plus the live disk check. The cheap alerts in those
+    files are not replayed — _data_alerts recomputes them live — only the
+    deep scan's INTERIOR_GAPS, which is too heavy to run per poll. A
+    malformed file is MONITOR_ERROR; nothing here raises on file content."""
+    alerts: list[dict] = []
+    jobs: dict[str, dict] = {}
+
+    def load(name: str, key: str) -> tuple[dict | None, float | None]:
+        payload, err = monitor.read_status(name)
+        finished = payload.get("finished_utc") if payload else None
+        finished = finished if isinstance(finished, str) else None
+        age = monitor._age_s(finished, now)
+        n_alerts = payload.get("alerts") if payload else None
+        jobs[key] = {
+            "finished_utc": finished,
+            "age_s": None if age is None else round(max(0.0, age), 1),
+            "result": payload.get("result") if payload else None,
+            "n_alerts": len(n_alerts) if isinstance(n_alerts, list) else None,
+            "error": err,
+        }
+        if err:
+            alerts.append(_alert("red", "MONITOR_ERROR", f"MONITOR ERROR {err}"))
+        return payload, age
+
+    mon, age = load(monitor.MONITOR_STATUS, "monitor")
+    if mon is None and not jobs["monitor"]["error"]:
+        alerts.append(_alert(
+            "amber", "MONITOR_NEVER_RUN",
+            "MONITOR NEVER RUN: no monitor run recorded "
+            "(data/diagnostics/monitor_last.json) — register the scheduled "
+            "tasks with ops/register_tasks.ps1 (OPERATIONS.md §11)"))
+    elif mon is not None:
+        if mon.get("result") == "error":
+            alerts.append(_alert(
+                "red", "MONITOR_ERROR",
+                f"MONITOR ERROR: the last monitor run ({_hhmm(mon.get('finished_utc'))}) "
+                f"crashed (exit 2) — see data/diagnostics/{monitor.MONITOR_LOG}"))
+        if age is None or age > monitor.MONITOR_STALE_S:
+            alerts.append(_alert(
+                "red", "MONITOR_STALE",
+                f"MONITOR STALE: last monitor run {monitor._fmt_age(age)} ago "
+                f"(limit {monitor._fmt_age(monitor.MONITOR_STALE_S)}) — the "
+                f"\\p300\\monitor-hourly task is disabled or failing, or the "
+                f"machine slept; check its LastTaskResult"))
+
+    deep, _ = load(monitor.DEEP_STATUS, "deep")
+    if deep is not None and deep.get("result") == "error":
+        alerts.append(_alert(
+            "red", "MONITOR_ERROR",
+            f"MONITOR ERROR: the last deep scan ({_hhmm(deep.get('finished_utc'))}) "
+            f"crashed (exit 2) — see data/diagnostics/{monitor.MONITOR_LOG}"))
+    elif not jobs["deep"]["error"]:
+        stale = monitor.deep_scan_stale(now)
+        if stale:
+            alerts.append(_alert("amber", "DEEP_STALE", stale))
+    if deep is not None:
+        as_of = _hhmm(deep.get("finished_utc"))
+        recorded = deep.get("alerts")
+        for a in recorded if isinstance(recorded, list) else []:
+            if isinstance(a, dict) and a.get("code") == "INTERIOR_GAPS":
+                alerts.append(_alert("amber", "INTERIOR_GAPS",
+                                     f"{a.get('text')} (as of {as_of})"))
+
+    bk, _ = load(monitor.BACKUP_STATUS, "backup")
+    if bk is not None and bk.get("result") != "ok":
+        alerts.append(_alert(
+            "amber", "BACKUP_FAILED",
+            f"BACKUP FAILED: the last backup run ({_hhmm(bk.get('finished_utc'))}) "
+            f"ended '{bk.get('result')}' — existing copies were kept; see "
+            f"data/diagnostics/backup.log"))
+    stale_backup = monitor.backup_stale(now)
+    if stale_backup:
+        alerts.append(_alert("red" if stale_backup[0] else "amber",
+                             "BACKUP_STALE", stale_backup[1]))
+
+    low = monitor.disk_low()
+    if low:
+        alerts.append(_alert("red" if low[0] else "amber", "DISK_LOW", low[1]))
+    return alerts, jobs
+
+
+# ─── Results warnings (display only) ──────────────────────────────────────────
+
+def _results(con: sqlite3.Connection) -> tuple[dict[str, list[dict]], list[dict]]:
+    """(unit -> results rows, alert-strip entries) from evidence.evaluate via
+    monitor.results_evidence — the same lines monitor.py prints. A failure,
+    to import included, is an amber line, never allowed to break overview()."""
+    ev = monitor.results_evidence(con)
+    by_unit: dict[str, list[dict]] = {}
+    for row in ev["variants"]:
+        by_unit.setdefault(row["bot"], []).append(row)
+    return by_unit, [_alert(w["severity"], w["code"], w["text"])
+                     for w in ev["warnings"]]
+
+
 # ─── API payloads ─────────────────────────────────────────────────────────────
 
 def overview(scanres: procscan.ScanResult | None = None) -> dict:
@@ -310,14 +423,25 @@ def overview(scanres: procscan.ScanResult | None = None) -> dict:
     try:
         beats = _heartbeats(con)
         data_alerts = _data_alerts(con, now)
+        results_by_unit, result_alerts = _results(con)
     finally:
         con.close()
     fleet_rows, fleet_alerts = _fleet(scanres, beats, now)
-    alerts = fleet_alerts + data_alerts
+    for row in fleet_rows:
+        # a badge beside the state, never a state (see module docstring)
+        row["results"] = results_by_unit.get(row["unit"], [])
+    try:
+        job_alerts, jobs = _job_alerts(now)
+    except Exception as e:  # noqa: BLE001 — a job file must never take the fleet panel down
+        job_alerts = [_alert("red", "MONITOR_ERROR",
+                             f"MONITOR ERROR job status unreadable: {e!r}")]
+        jobs = {}
+    alerts = fleet_alerts + data_alerts + job_alerts + result_alerts
     return {
         "generated_utc": now.isoformat(timespec="seconds"),
         "alerts": alerts,
         "fleet": fleet_rows,
+        "jobs": jobs,
         "scan": {"scanned_python": scanres.scanned_python,
                  "access_denied": scanres.access_denied,
                  "legacy_bot_py": scanres.legacy_bot_py},

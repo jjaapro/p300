@@ -29,8 +29,12 @@
     here or via -Monitor.
 
 .PARAMETER Monitor
-    Also open a console that runs `python monitor.py` once an hour (there is
-    no Task Scheduler entry for it on this machine).
+    Also open a console that runs `python monitor.py` once an hour. This is a
+    FALLBACK: monitoring runs as scheduled tasks (\p300\monitor-hourly,
+    \p300\monitor-daily-deep, \p300\backup-daily — register them with
+    ops\register_tasks.ps1; OPERATIONS.md section 11). While those tasks are
+    registered this console only duplicates monitor-hourly, so use it only
+    when they are not.
 
 .PARAMETER SkipGapFix
     Pass --skip-gap-fix to feed.py (fast restart, no startup heal). Do NOT use
@@ -51,7 +55,7 @@
 
 .EXAMPLE
     .\start_fleet.ps1                      # everything that isn't already up
-    .\start_fleet.ps1 -Monitor             # plus the hourly monitor console
+    .\start_fleet.ps1 -Monitor             # plus the fallback hourly monitor console
     .\start_fleet.ps1 -Units adx,carry     # just two bots
     .\start_fleet.ps1 -Status              # what's running right now
 

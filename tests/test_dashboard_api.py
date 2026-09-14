@@ -55,6 +55,37 @@ def test_all_json_endpoints_respond(api):
         assert key in json.loads(body), path
 
 
+def test_overview_carries_results_jobs_and_severities(api, tmp_path, monkeypatch):
+    """The fields app.js renders: fleet[].results (badges + rows), jobs (the
+    footer), and alert severities from the results warnings."""
+    import sqlite3
+    import strategies.support.db as dbmod
+    monkeypatch.setattr("strategies.support.db.DATA_DIR", tmp_path / "data")
+    con = sqlite3.connect(str(dbmod.PROD_DB))
+    con.execute("ALTER TABLE trades ADD COLUMN actual_entry_time TEXT")
+    con.execute("UPDATE trades SET actual_entry_time = entry_time")
+    con.execute("INSERT INTO trades (id, strategy, direction, strategy_variant, "
+                "entry_time, actual_entry_time, exit_time, actual_exit_time, "
+                "pnl_usdt, status, execution_mode) VALUES ('SJ-60', 'SQUEEZE_BULL', "
+                "'LONG', 'bot_squeeze_bull_v1', '2026-09-11T18:00:00+00:00', "
+                "'2026-09-11T18:00:00+00:00', '2026-09-13T17:00:00+00:00', "
+                "'2026-09-13T17:00:20+00:00', -19.16, 'closed', 'paper')")
+    con.commit()
+    con.close()
+    status, _, body = _get(api + "/api/overview")
+    assert status == 200
+    ov = json.loads(body)
+    assert set(ov["jobs"]) == {"monitor", "deep", "backup"}
+    for row in ov["fleet"]:
+        assert isinstance(row["results"], list)
+    sb = next(r for r in ov["fleet"] if r["unit"] == "squeeze_bull")
+    assert sb["results"][0]["flags"] == ["LOSING_MONEY"]
+    codes = {a["code"]: a["severity"] for a in ov["alerts"]}
+    assert codes["LOSING_MONEY"] == "red"
+    assert codes["MONITOR_NEVER_RUN"] == "amber"
+    assert codes["RESEARCH_SAMPLE_SMALL"] == "info"
+
+
 def test_index_and_static(api):
     status, ctype, body = _get(api + "/")
     assert status == 200 and "html" in ctype and b"p300 dashboard" in body

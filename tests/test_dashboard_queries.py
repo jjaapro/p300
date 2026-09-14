@@ -7,8 +7,11 @@ synthetic prod.db via the house monkeypatch point
 """
 from __future__ import annotations
 
+import json
 import sqlite3
 import sys
+from collections import namedtuple
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -323,3 +326,300 @@ def test_candles_bad_params(fixture_db):
         queries.candles("BTC", "5m")
     with pytest.raises(ValueError):
         queries.candles("DOGE", "1h")
+
+
+# ─── scheduled jobs: monitor / deep scan / backup status files ────────────────
+
+_GB = 1_000_000_000
+_Usage = namedtuple("_Usage", "total used free")
+
+
+def _ago(seconds):
+    return (datetime.now(timezone.utc) - timedelta(seconds=seconds)).isoformat()
+
+
+@pytest.fixture
+def jobs_dir(tmp_path, monkeypatch):
+    """Empty tmp DATA_DIR, 50 GB free. Returns the diagnostics dir."""
+    data = tmp_path / "data"
+    monkeypatch.setattr("strategies.support.db.DATA_DIR", data)
+    monkeypatch.setattr(monitor.shutil, "disk_usage",
+                        lambda p: _Usage(500 * _GB, 0, 50 * _GB))
+    return data / "diagnostics"
+
+
+def _put(diag, name, payload):
+    diag.mkdir(parents=True, exist_ok=True)
+    (diag / name).write_text(payload if isinstance(payload, str)
+                             else json.dumps(payload), encoding="utf-8")
+
+
+def _fresh_all(diag):
+    _put(diag, monitor.MONITOR_STATUS, {"result": "green", "finished_utc": _ago(600), "alerts": []})
+    _put(diag, monitor.DEEP_STATUS, {"result": "green", "finished_utc": _ago(3600), "alerts": []})
+    _put(diag, monitor.BACKUP_STATUS, {"result": "ok", "finished_utc": _ago(3600)})
+
+
+def _by_code(alerts):
+    return {a["code"]: a for a in alerts}
+
+
+def _job_run():
+    return queries._job_alerts(datetime.now(timezone.utc))
+
+
+def test_job_alerts_nothing_ever_ran(jobs_dir):
+    alerts, jobs = _job_run()
+    got = _by_code(alerts)
+    assert set(got) == {"MONITOR_NEVER_RUN", "DEEP_STALE", "BACKUP_STALE"}
+    assert got["MONITOR_NEVER_RUN"]["severity"] == "amber"
+    assert got["DEEP_STALE"]["severity"] == "amber"
+    assert got["BACKUP_STALE"]["severity"] == "red"          # no backup at all
+    assert jobs["monitor"]["finished_utc"] is None and jobs["backup"]["result"] is None
+
+
+def test_job_alerts_all_fresh_is_silent(jobs_dir):
+    _fresh_all(jobs_dir)
+    alerts, jobs = _job_run()
+    assert alerts == []
+    assert jobs["monitor"]["result"] == "green" and jobs["monitor"]["n_alerts"] == 0
+    assert 500 < jobs["monitor"]["age_s"] < 700
+
+
+def test_monitor_stale_uses_the_monitor_threshold(jobs_dir):
+    _fresh_all(jobs_dir)
+    limit = monitor.MONITOR_STALE_S
+    assert limit == 2 * 3600 + 900
+    _put(jobs_dir, monitor.MONITOR_STATUS, {"result": "green", "finished_utc": _ago(limit - 60)})
+    assert _job_run()[0] == []
+    _put(jobs_dir, monitor.MONITOR_STATUS, {"result": "green", "finished_utc": _ago(limit + 60)})
+    a = _by_code(_job_run()[0])["MONITOR_STALE"]
+    assert a["severity"] == "red" and "monitor-hourly" in a["text"]
+
+
+def test_monitor_error_result_is_red(jobs_dir):
+    _fresh_all(jobs_dir)
+    _put(jobs_dir, monitor.MONITOR_STATUS, {"result": "error", "exit_code": 2,
+                                            "finished_utc": _ago(60), "error": "Traceback"})
+    got = _by_code(_job_run()[0])
+    assert set(got) == {"MONITOR_ERROR"}
+    assert got["MONITOR_ERROR"]["severity"] == "red"
+
+
+@pytest.mark.parametrize("junk", ["{not json", "[1, 2]", ""])
+def test_malformed_status_file_is_monitor_error_not_a_crash(jobs_dir, junk, fixture_db):
+    _fresh_all(jobs_dir)
+    _put(jobs_dir, monitor.MONITOR_STATUS, junk)
+    got = _by_code(_job_run()[0])
+    assert "MONITOR_ERROR" in got, sorted(got)
+    assert got["MONITOR_ERROR"]["severity"] == "red"
+    assert "MONITOR_NEVER_RUN" not in got
+    ov = queries.overview(scanres=_scanres())                # and overview() survives it
+    assert "MONITOR_ERROR" in {a["code"] for a in ov["alerts"]}
+
+
+@pytest.mark.parametrize("name, payload, expect", [
+    # valid JSON, wrong types: a hand edit or a future schema change
+    (monitor.DEEP_STATUS, {"result": "green", "finished_utc": 123, "alerts": []}, "DEEP_STALE"),
+    (monitor.DEEP_STATUS, {"result": "green", "finished_utc": ["x"], "alerts": []}, "DEEP_STALE"),
+    (monitor.DEEP_STATUS, {"result": "alerts", "finished_utc": _ago(60), "alerts": 5}, None),
+    (monitor.BACKUP_STATUS, {"result": "ok", "finished_utc": 123}, "BACKUP_STALE"),
+    (monitor.MONITOR_STATUS, {"result": "green", "finished_utc": True}, "MONITOR_STALE"),
+])
+def test_wrong_typed_status_fields_are_alerts_not_a_crash(jobs_dir, name, payload, expect):
+    _fresh_all(jobs_dir)
+    _put(jobs_dir, name, payload)
+    got = _by_code(_job_run()[0])
+    assert set(got) == ({expect} if expect else set())
+
+
+def test_a_job_check_that_raises_is_shown_and_overview_survives(fixture_db, jobs_dir, monkeypatch):
+    """The fleet panel is why the dashboard exists: a failing job check must
+    not take /api/overview down with it."""
+    _fresh_all(jobs_dir)
+
+    def drive_gone(path):
+        raise OSError(2, "drive gone")
+    monkeypatch.setattr(monitor.shutil, "disk_usage", drive_gone)
+    ov = queries.overview(scanres=_scanres())
+    a = next(a for a in ov["alerts"] if a["code"] == "MONITOR_ERROR")
+    assert a["severity"] == "red" and "drive gone" in a["text"]
+    assert ov["jobs"] == {}
+    assert {r["unit"] for r in ov["fleet"]} == set(queries.UNITS)
+
+
+def test_deep_file_replays_only_interior_gaps_with_as_of(jobs_dir):
+    _fresh_all(jobs_dir)
+    finished = datetime.now(timezone.utc) - timedelta(hours=3)
+    _put(jobs_dir, monitor.DEEP_STATUS, {
+        "result": "alerts", "finished_utc": finished.isoformat(),
+        "alerts": [{"code": "INTERIOR_GAPS", "text": "INTERIOR GAPS coinbase_spot_1h: 4 gap(s)"},
+                   {"code": "STALE_TABLE", "text": "STALE TABLE btc_1m: age 2h"}]})
+    alerts, _ = _job_run()
+    assert [a["code"] for a in alerts] == ["INTERIOR_GAPS"]
+    assert alerts[0]["severity"] == "amber"
+    assert alerts[0]["text"] == (f"INTERIOR GAPS coinbase_spot_1h: 4 gap(s) "
+                                 f"(as of {finished:%H:%M}Z)")
+
+
+def test_deep_stale_and_deep_error(jobs_dir):
+    _fresh_all(jobs_dir)
+    _put(jobs_dir, monitor.DEEP_STATUS, {"result": "green", "alerts": [],
+                                         "finished_utc": _ago(monitor.DEEP_STALE_S + 60)})
+    got = _by_code(_job_run()[0])
+    assert set(got) == {"DEEP_STALE"} and got["DEEP_STALE"]["severity"] == "amber"
+    _put(jobs_dir, monitor.DEEP_STATUS, {"result": "error", "finished_utc": _ago(60)})
+    got = _by_code(_job_run()[0])
+    assert set(got) == {"MONITOR_ERROR"}
+    assert got["MONITOR_ERROR"]["severity"] == "red" and "deep scan" in got["MONITOR_ERROR"]["text"]
+
+
+def test_backup_failed_and_stale(jobs_dir):
+    _fresh_all(jobs_dir)
+    _put(jobs_dir, monitor.BACKUP_STATUS, {"result": "ok", "finished_utc": _ago(40 * 3600)})
+    got = _by_code(_job_run()[0])
+    assert set(got) == {"BACKUP_STALE"} and got["BACKUP_STALE"]["severity"] == "amber"
+    _put(jobs_dir, monitor.BACKUP_STATUS, {"result": "ok", "finished_utc": _ago(80 * 3600)})
+    assert _by_code(_job_run()[0])["BACKUP_STALE"]["severity"] == "red"
+    # a failed run today, with yesterday's good copy still on disk
+    backups = jobs_dir.parent / "backups"
+    backups.mkdir(parents=True)
+    (backups / "prod-20260913.db").write_bytes(b"x")
+    _put(jobs_dir, monitor.BACKUP_STATUS, {"result": "check_failed", "finished_utc": _ago(60)})
+    got = _by_code(_job_run()[0])
+    assert set(got) == {"BACKUP_FAILED"} and got["BACKUP_FAILED"]["severity"] == "amber"
+    assert "check_failed" in got["BACKUP_FAILED"]["text"]
+
+
+@pytest.mark.parametrize("free_gb, severity", [(50, None), (3, "amber"), (1, "red")])
+def test_disk_low_is_computed_live(jobs_dir, monkeypatch, free_gb, severity):
+    _fresh_all(jobs_dir)
+    monkeypatch.setattr(monitor.shutil, "disk_usage",
+                        lambda p: _Usage(500 * _GB, 0, free_gb * _GB))
+    got = _by_code(_job_run()[0])
+    if severity is None:
+        assert "DISK_LOW" not in got
+    else:
+        assert got["DISK_LOW"]["severity"] == severity
+
+
+# ─── results warnings on the overview ─────────────────────────────────────────
+
+def _add_actual_entry_column(p):
+    con = sqlite3.connect(str(p))
+    con.execute("ALTER TABLE trades ADD COLUMN actual_entry_time TEXT")
+    con.execute("UPDATE trades SET actual_entry_time = entry_time")
+    con.commit()
+    con.close()
+
+
+def _insert_closed(p, tid, variant, pnl, strategy="SQUEEZE_BULL"):
+    con = sqlite3.connect(str(p))
+    con.execute(
+        "INSERT INTO trades (id, asset, direction, strategy, strategy_variant,"
+        " entry_time, exit_time, actual_entry_time, actual_exit_time,"
+        " pnl_usdt, status, execution_mode) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+        (tid, "BTC", "LONG", strategy, variant, _iso(200000), _iso(100000),
+         _iso(200000), _iso(100000), pnl, "closed", "paper"))
+    con.commit()
+    con.close()
+
+
+def test_overview_results_badge_and_alert_leave_liveness_alone(fixture_db, jobs_dir):
+    _fresh_all(jobs_dir)
+    _add_actual_entry_column(fixture_db)
+    _insert_closed(fixture_db, "SJ-50", "bot_squeeze_bull_v1", -19.16)
+    con = sqlite3.connect(str(fixture_db))
+    con.execute("INSERT INTO bot_heartbeats VALUES (?,?,?,?,?,?,?,?,?)",
+                ("squeeze_bull", _ago(10), _ago(60), None, 0, 60, "ok", "", 11))
+    con.commit()
+    con.close()
+    units = {u: [_inst(10, 11)] for u in queries.UNITS}
+    ov = queries.overview(scanres=_scanres(units))
+
+    sb = _row(ov["fleet"], "squeeze_bull")
+    assert sb["state"] == "OK"                        # a badge, not a state
+    assert [r["variant"] for r in sb["results"]] == ["bot_squeeze_bull_v1",
+                                                     "bot_squeeze_bull_nostop_v1"]
+    losing = sb["results"][0]
+    assert losing["flags"] == ["LOSING_MONEY"] and losing["n"] == 1
+    assert losing["total_usdt"] == -19.16
+    assert [c["id"] for c in losing["last_closes"]] == ["SJ-50"]
+    assert sb["results"][1]["flags"] == []
+    assert _row(ov["fleet"], "adx")["state"] == "MISSING"     # untouched
+    assert _row(ov["fleet"], "feed")["results"] == []
+
+    red = [a for a in ov["alerts"] if a["code"] == "LOSING_MONEY"]
+    assert len(red) == 1 and red[0]["severity"] == "red"
+    assert "squeeze_bull/bot_squeeze_bull_v1" in red[0]["text"]
+    info = {a["code"]: a["severity"] for a in ov["alerts"]
+            if a["code"] in ("RESEARCH_SAMPLE_SMALL",)}
+    assert info == {"RESEARCH_SAMPLE_SMALL": "info"}          # carry, research n=1
+    assert set(ov["jobs"]) == {"monitor", "deep", "backup"}
+    json.dumps(ov)
+
+
+def test_results_flags_never_change_a_fleet_state(fixture_db, jobs_dir):
+    """Through overview(), the same scan and heartbeats with and without losing
+    variants: DUPLICATE, DEAD and OK tiles keep their state, losing or not."""
+    _fresh_all(jobs_dir)
+    _add_actual_entry_column(fixture_db)
+    con = sqlite3.connect(str(fixture_db))
+    con.executemany("INSERT INTO bot_heartbeats VALUES (?,?,?,?,?,?,?,?,?)", [
+        ("chento_v3", _ago(10), _ago(60), None, 0, 60, "ok", "", 11),
+        ("adx", _ago(3600), _ago(3600), None, 0, 60, "ok", "", 31),
+        ("squeeze_bull", _ago(10), _ago(60), None, 0, 60, "ok", "", 41)])
+    con.commit()
+    con.close()
+    scan = _scanres({"chento_v3": [_inst(10, 11), _inst(20, 21)],
+                     "adx": [_inst(30, 31)], "squeeze_bull": [_inst(40, 41)]})
+    watched = ("chento_v3", "adx", "squeeze_bull")
+
+    def states(ov):
+        return {r["unit"]: r["state"] for r in ov["fleet"]}
+
+    before = states(queries.overview(scanres=scan))
+    assert [before[u] for u in watched] == ["DUPLICATE", "DEAD", "OK"]
+    for i, variant in enumerate(("bot_chento_v3_v1", "bot_adx_v1", "bot_squeeze_bull_v1")):
+        _insert_closed(fixture_db, f"SJ-7{i}", variant, -5000.0)
+    ov = queries.overview(scanres=scan)
+    assert states(ov) == before
+    for u in watched:
+        assert "LOSING_MONEY" in _row(ov["fleet"], u)["results"][0]["flags"], u
+
+
+@pytest.mark.parametrize("failure, needle", [("raises", "KeyError"),
+                                             ("unimportable", "strategies.support.evidence")])
+def test_results_failure_is_shown_and_overview_survives(fixture_db, jobs_dir, monkeypatch,
+                                                        failure, needle):
+    """Results are display only: evidence.py raising, or not importing at all
+    (a broken edit), is an amber line and never takes the fleet panel down."""
+    if failure == "raises":
+        def broken(con, **kw):
+            raise KeyError("values")
+        monkeypatch.setattr("strategies.support.evidence.evaluate", broken)
+    else:
+        import strategies.support
+        monkeypatch.setitem(sys.modules, "strategies.support.evidence", None)
+        monkeypatch.delattr(strategies.support, "evidence", raising=False)
+    ov = queries.overview(scanres=_scanres())
+    a = next(a for a in ov["alerts"] if a["code"] == "EVIDENCE_UNAVAILABLE")
+    assert a["severity"] == "amber" and needle in a["text"]
+    assert all(r["results"] == [] for r in ov["fleet"])
+    assert {r["unit"] for r in ov["fleet"]} == set(queries.UNITS)
+
+
+def test_overview_stays_read_only(fixture_db, jobs_dir, monkeypatch):
+    _add_actual_entry_column(fixture_db)
+    before = fixture_db.read_bytes()
+    seen = []
+    real = sqlite3.connect
+
+    def spy(database, *a, **k):
+        seen.append(str(database))
+        return real(database, *a, **k)
+    monkeypatch.setattr(sqlite3, "connect", spy)
+    queries.overview(scanres=_scanres())
+    assert seen and all(d.startswith("file:") and "mode=ro" in d for d in seen), seen
+    assert fixture_db.read_bytes() == before
+    assert not jobs_dir.parent.exists()           # read the status files, wrote none
