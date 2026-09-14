@@ -160,8 +160,20 @@ positive Δ as a reprieve: the rule was fixed before either number existed.
 - §7.6 still applies to live: until the OKX refresh is hour-aligned, live sees the R2 set on part
   of its decisions. It no longer matters for a switched-off gate, but it matters for any future
   use of `okx_delta_z`.
+- **The production-sequence approximation (§4.5) is further from the bot than it looked**
+  (found by the §6 sizing review, 2026-09-14). `run_overlays.tilt_sizes` zeroes a BTC trade after
+  ANY losing predecessor in trigger order, closed or not; the bot skips only for 48 h after a
+  CLOSED stop loss. On the OFF arm the approximation takes 94 of 208 BTC triggers where the coded
+  rule takes 198, with 36 look-ahead cases. So its OFF-arm figures above (total 206.3 R, MTM
+  15.1 %) do not describe the bot, and must not be carried into the calibration log. The
+  §4.5 text already labelled it an approximation; it could not move the verdict. The review's
+  per-bot numbers in the bots' own sequence are in `docs/calibration/chento_triple_v3.md`
+  (2026-09-14 row). ETH's half-after-loss has the same trigger-order look-ahead (54 of 184
+  sizing disagreements with the bot's last-actual-close rule; 49 look-ahead halvings). The same
+  rule mismatch sits under the overlay study's tilt ranking on both assets, which predates this
+  study — roadmap item 15.
 
 ## OPS follow-up (§6, separate go-ahead)
 
-Align the OKX refresh to HH:01 (`data/sources/binance.py:1096-1098`) so any future
+Align the OKX refresh to HH:01 (the elapsed-time check in `_refresh_hourly_okx`, `data/sources/binance.py`; frozen README cites :1096-1098) so any future
 `okx_delta_z` consumer sees the R1 information set on every bar.

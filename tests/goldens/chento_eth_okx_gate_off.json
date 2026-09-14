@@ -1,0 +1,59 @@
+{
+ "asset_under_test": "ETH",
+ "db_after": {
+  "n_trades": 0,
+  "trades": []
+ },
+ "filter_no_tilt": false,
+ "intents": [
+  {
+   "allocation_pct": 100.0,
+   "asset": "ETH",
+   "conviction": 100,
+   "direction": "SHORT",
+   "leverage": 1.0,
+   "priority": 100.0,
+   "reason": {
+    "_atr_at_entry": 4.124252459,
+    "_entry_price": 1856.4,
+    "_filter_diag": {
+     "resist_ob_dist_R": 2.824754332,
+     "ret_30d": 0.05632720879
+    },
+    "_inside_va": false,
+    "_ladder_size_frac": 0.5,
+    "_risk": 20.62126229,
+    "_state": {
+     "atr_at_entry": 4.124252459,
+     "entry_bar_ts": "2026-08-02T14:15:00+00:00",
+     "entry_price": 1856.4,
+     "ladder_added": false,
+     "ladder_entry": null,
+     "ladder_size_frac": 0.5,
+     "last_walked_ts": "2026-08-02T14:15:00+00:00",
+     "risk": 20.62126229,
+     "stop_price": 1877.021262,
+     "target_price": 1732.672426
+    },
+    "_stop_price": 1877.021262,
+    "_target_price": 1732.672426,
+    "_time_stop_iso": "2026-08-05T14:15:05+00:00",
+    "bar_ts": "2026-08-02T14:15:00+00:00",
+    "sleeve": "CHENTO_TRIPLE_V3",
+    "trigger": "chento_triple_v3",
+    "variant_id": "bot_chento_eth_test"
+   },
+   "scheduled_exit_dt": "2026-08-05T14:15:05+00:00"
+  }
+ ],
+ "status": {
+  "direction": "short",
+  "entry": 1856.4,
+  "inside_va": false,
+  "ladder_size_frac": 0.5,
+  "status": "decided",
+  "stop": 1877.021262,
+  "swept": 0,
+  "target": 1732.672426
+ }
+}

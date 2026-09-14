@@ -10,6 +10,11 @@ import TradingView/Request/3 as req
 //
 //  This is a CONVERSION / PRACTICE artifact, NOT a faithful backtest.
 //
+//  NOTE 2026-09-14 (verdict 2026-09-13): the bots' OKX filter (Filter 3) was RETIRED
+//    (FILTER_OKX_ALIGNED = False on both chento bots). This indicator still
+//    requires OKX alignment in long_sig / short_sig, so its signals now
+//    HIDE fires the bots take. Inputs and logic below are unchanged.
+//
 //  FAITHFUL (same data as production):
 //    B5  LSR extremes (cryptoDerivativeMetric "Long Accounts")
 //    Filter 3  OKX-Binance perp delta z-score gate

@@ -172,14 +172,26 @@ def test_tick_stale_entry_drops_intent_keeps_sweep(tmp_db, monkeypatch):
         "bots.chento_v3.strategy.execute", boom)
     monkeypatch.setattr(
         botlib, "stale_tables",
-        lambda tables=None: {"okx_perp_1h": None}
-        if "okx_perp_1h" in (tables or []) else {})
+        lambda tables=None: {"ca_long_short_ratio": None}
+        if "ca_long_short_ratio" in (tables or []) else {})
 
     out = runner.tick(variant)
     assert swept["n"] == 1                   # sweep/decide DID run
     assert out["status"] == "entry_blocked_stale_inputs"
     assert out["hb_status"] == "degraded"
     assert "opened" not in out
+
+
+def test_okx_tables_do_not_gate_entries():
+    """The OKX gate is off since 2026-09-14, so a stale OKX feed must not
+    refuse chento entries in either bot. The tables stay loaded (a MISSING one
+    still fails the rebuild), but they are no longer entry tables."""
+    from bots.chento_v3_eth import config as ethcfg
+    for cfg in (botcfg, ethcfg):
+        assert not any(t.startswith("okx_perp") for t in cfg.ENTRY_TABLES), \
+            (cfg.__name__, cfg.ENTRY_TABLES)
+    assert botcfg.ENTRY_TABLES == ["ca_long_short_ratio"]
+    assert ethcfg.ENTRY_TABLES == ["ca_long_short_ratio"]
 
 
 # ─── P0 boundary fix (2026-07-22): live entry-eval path ──────────────────────

@@ -266,7 +266,25 @@ HAVING COUNT(*) > 1;
 > cover the `bot_*` variants the fleet actually trades. Run the SQL above by
 > hand (without the LIKE) until that check is repointed.
 
-Investigate the specific bot, then close the duplicates (manually
+> **Stacked chento rows are not duplicates (2026-09-14).** `bot_chento_v3_v1`
+> and `bot_chento_v3_eth` have no single-open guard: each signal is its own
+> trade, spaced by the 6h cooldown and closed by the 72h TIF at the latest (at
+> most 12 open per bot), so the SQL above lists them whenever signals overlap.
+> Do **not** close those. The real duplicate is two rows with the **same**
+> trigger bar for one variant — how the 2026-08-15..24 double-start booked each
+> of three chento signals twice. (Closing a trade appends a plain-text `CHENTO_TRIPLE_V3_EXIT: ...` line after the JSON in `notes`, so `json_extract`
+> fails on these rows; the query slices the string instead.)
+> ```sql
+> SELECT strategy_variant,
+>        substr(notes, instr(notes, '"bar_ts": "') + 11, 25) AS bar_ts,
+>        COUNT(*)
+> FROM trades WHERE strategy='CHENTO_TRIPLE_V3' AND status='open'
+> GROUP BY strategy_variant, bar_ts
+> HAVING COUNT(*) > 1;
+> ```
+
+Investigate the specific bot, then close the duplicates — for chento, only the
+extra same-bar rows (manually
 via `UPDATE trades SET status='closed'` — they're paper, no exchange
 action needed).
 
@@ -423,10 +441,16 @@ python studies/simulation/archive_replay_variants.py --apply   # do it
    status='open', execution_mode='paper')`. Violation indicates a regression in
    the strategy logic. See the §4 caveat about health.py's check being scoped
    to the legacy variant prefix.
-   Note `r4` is the exception by design: its windows genuinely overlap, so up
+   Note `r4` is an exception by design: its windows genuinely overlap, so up
    to three concurrent R4 positions are intended — `_has_trade_for_day()` is
    per-window, not per-bot, and the overlap is bounded by `GROSS_MAX_X`, never
    by serialising windows.
+   The chento bots (`chento_v3`, `chento_v3_eth`) are the other exception by
+   design: they have **no** single-open guard, so positions from separate
+   signals stack, bounded only by the 6h entry cooldown and the 72h TIF (at
+   most 12 open per bot) — with no aggregate exposure cap. A violation there is
+   two rows with the same trigger bar for one variant (§4 query), not two open
+   rows.
 
 2. **No look-ahead.** Every DB read goes through `strategies.support.clock`
    so the simulated clock can be moved without any module reading future

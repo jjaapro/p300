@@ -27,7 +27,10 @@ TICK_SECONDS = 60             # sleeve self-gates entries to 15m boundaries
 #   MGMT_TABLES stale  → skip the whole tick (can't even manage positions)
 #   ENTRY_TABLES stale → still run the sweep, but discard any new Intent
 MGMT_TABLES = ["cd_futures_15m", "btc_1m"]
-ENTRY_TABLES = ["okx_perp_1h", "ca_long_short_ratio"]
+# okx_perp_1h left this list 2026-09-14 with the OKX gate: the sleeve still
+# loads it (a MISSING table still fails the rebuild), but no decision reads
+# it, so a stale one must not refuse entries.
+ENTRY_TABLES = ["ca_long_short_ratio"]
 
 # Per-day gate-kill diagnostics — permanently ON in live (the OKX lockout
 # went unseen for two months because these were off).

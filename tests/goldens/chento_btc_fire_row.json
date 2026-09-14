@@ -15,7 +15,6 @@
      "_entry_price": 77143.2,
      "_filter_diag": {
       "no_tilt": "pass",
-      "okx_delta_z": 0.1437340057,
       "resist_ob_dist_R": 99.0
      },
      "_inside_va": false,
@@ -65,7 +64,6 @@
     "_entry_price": 77143.2,
     "_filter_diag": {
      "no_tilt": "pass",
-     "okx_delta_z": 0.1437340057,
      "resist_ob_dist_R": 99.0
     },
     "_inside_va": false,

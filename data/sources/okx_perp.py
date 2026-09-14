@@ -161,7 +161,8 @@ def refresh_latest(inst: str = DEFAULT_INSTRUMENT, *,
     what surfaces those. Called from ``binance.refresh_all()`` on an
     hourly throttle so the table always has a live writer (2026-07-21
     lesson: manual-backfill-only left it stale and silently gate-locked
-    CHENTO_TRIPLE_V3's OKX filter).
+    CHENTO_TRIPLE_V3's OKX filter). That filter was retired 2026-09-13;
+    the tables keep this writer and their freshness contracts.
     """
     con = sqlite3.connect(str(DB_PATH))
     try:

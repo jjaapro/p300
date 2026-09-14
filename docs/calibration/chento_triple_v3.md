@@ -5,13 +5,16 @@ of each change. Update this file in the same commit as any config/sizing
 change (definition-of-done rule from the pool plan's A4, carried into the
 bot-extraction plan).
 
-## Current state (2026-09-12)
+## Current state (2026-09-14)
 
 **Strategy params** (`bots/chento_v3/strategy/config.py`) —
 signal unchanged from the 2026-06-05 calibration: 5×ATR(14) stop, 6R target,
-72h TIF, B1-anchored trigger (`b1_now & b5_w & b7_w`, 24h window), 4 filters
-ON (no_tilt, no_resist_OB_2R, okx_aligned, skip_up_30d_shorts),
-LADDER_ENABLED=False (P1 backward-only verdict), 6h cooldown.
+72h TIF, B1-anchored trigger (`b1_now & b5_w & b7_w`, 24h window), **3 filters
+ON for BTC** (no_tilt, no_resist_OB_2R, skip_up_30d_shorts), **2 for ETH** (no_tilt is
+BTC only; ETH halves risk after a loss at the bot layer); **okx_aligned OFF since
+2026-09-14** (verdict RETIRE, row below), LADDER_ENABLED=False (P1 backward-only
+verdict), 6h cooldown. No single-open guard: positions stack, bounded by the
+6h cooldown and the 72h TIF (see the 2026-09-14 row for the measured exposure).
 **Cost `COST_BP_RT` 10 bp since 2026-09-12** (was 18, the June research
 convention): measured on the sleeve's own fires, see the log row. Both the
 BTC and ETH legs share the constant.
@@ -24,8 +27,10 @@ BTC and ETH legs share the constant.
 - Diagnostics permanently ON (`CHENTO_V3_DIAG=1`,
   `bots/chento_v3/logs/diag.jsonl`).
 - Stale-input policy: mgmt tables (cd_futures_15m, btc_1m) stale → skip
-  tick; entry tables (okx_perp_1h, ca_long_short_ratio) stale → sweep runs,
-  entries refused loudly.
+  tick; entry tables (ca_long_short_ratio; okx_perp_1h until 2026-09-14) stale →
+  sweep runs, entries refused loudly. The OKX table must still EXIST — the
+  sleeve loads it and computes okx_delta_z every rebuild — but nothing reads
+  or records that z any more.
 
 ## Replay baseline (shipped config: ladder OFF)
 
@@ -37,7 +42,8 @@ BTC and ETH legs share the constant.
 > measures a different information set from anything the live bot can see — a new
 > baseline can move in EITHER direction by more than noise, and that move is not a
 > regression. No dial may be re-tuned to recover the old number. A new baseline
-> needs re-recording on the bounded loaders (and, per the 2026-09-12 row, at 10 bp).
+> needs re-recording on the bounded loaders (and, per the 2026-09-12 row, at 10 bp,
+> and per the 2026-09-14 row with the OKX gate off).
 > Walking replays are ~15x slower since the same fix (replay-only frame rebuild).
 
 `__replay_p0gate` (2026-07-22, window 2025-06-06 → 2025-12-06, 15m ticks,
@@ -51,6 +57,7 @@ firing where the shipped 1R stop exits earlier.
 
 | Date | Change | Why / provenance |
 |---|---|---|
+| 2026-09-14 | **OKX gate OFF on both legs** — `FILTER_OKX_ALIGNED = False` (the ETH leg resolves the same config). Also: `okx_perp_1h` / `okx_perp_eth_1h` removed from the two bots' `ENTRY_TABLES`, so a stale OKX table no longer refuses entries it no longer decides. okx_delta_z is still computed into the frame each rebuild but is no longer written to `_filter_diag`, `trades.notes` or the diag near-misses — **the per-row marker of a gated trade is that key: rows with `_filter_diag.okx_delta_z` are gated, rows without are gate-off.** Goldens re-baselined: six BTC documents lose exactly their `okx_delta_z` keys and nothing else; `chento_btc_okx_blocked` became `chento_btc_okx_gate_off` (the same 2026-07-16 06:30 bar now decides long); new `chento_eth_okx_gate_off` (a short at z +0.552 that now decides) and `chento_btc_resist_ob_veto` (the only filter_blocked golden left, a filter-2 veto at 1.35R). The live-ledger z pins now read the feature frame. Drill: the "gate removed" mutation (now dead code) replaced by "gate switched back on" in each process plus an OB-veto mutation; the drill now fails on a red baseline or any skipped entry. **Restart time: recorded in the follow-up row.** | Pre-registered verdict **RETIRE**, 2026-09-13 (`studies/notebooks/okx_gate_revalidation/findings.md`, run commit `2406b6a`): kept beat blocked by +0.30R, but the 90% CI [−0.04, +0.66] includes 0 while the blocked trades earned +111R; §6 fixed the direction in advance. Operator go-ahead to switch off 2026-09-14 ("a gate that cuts so much profit is not a good gate"). **§6 sizing and concurrency review (2026-09-14)**, two independent simulations reconciled, on the study's trades in the bots' own sequence (6h cooldown, BTC 48h skip after a stop loss, ETH half after a loss, fixed 10k capital, 3× per-trade cap), gated → gate-off: trades BTC 90 → 198, ETH 81 → 184 (5.44 y); max open BTC 3 → 5, ETH 4 → 6; peak open risk BTC 6% → 10%, ETH 8% → 12%; peak gross notional BTC 5.53× → 8.53×, ETH 3.40× → 4.39×; worst 72h stop cluster BTC −4.6% → −6.6%, ETH −8.3% both; mark-to-market max DD (additive, day-end + exit marks) BTC 23.2% → 33.4%, ETH 10.9% → 20.9% (both bots as one 20k book 11.1% → 19.7%); total additive return BTC +146% → +290%, ETH +80% → +130%. **Decision: keep RISK_PCT 2% and the 3× cap for paper; accept stacking.** A single-open guard would change which trades are taken for about half the gate-off pool, which RETIRE did not measure. Before real capital: a per-bot open-risk or gross budget, or lower risk (1.5% gives BTC 25% / ETH 16% DD), as its own pre-registered test. Known at the switch: no code caps total exposure (structural max 12 open per bot); BTC starts inside an unrecovered drawdown (peak 2026-02-06); the restart clears BTC's in-memory 48h skip (no BTC stop in the prior 48h); `strategy_health` will show negative gross headroom on bot_chento_* (2.5× default). **Numbers that describe the RETIRED config:** the +0.739 / +0.605 R expectancy row below, the ETH go/no-go and the ETH kill rule (< +0.3R after 15 trades) were set on OKX-gated pools — the ETH leg's first 15 trades will all be gate-off, so that rule needs its own decision before it is applied. The study's report-only gate-off arm: BTC +0.731 R (208), ETH +0.540 R (184), every trade taken. |
 | 2026-09-13 | **ETH half-after-loss reads the last ACTUAL close.** `bots/chento_v3/runner.py::_last_closed_was_loss` ordered by `exit_time`, which holds the SCHEDULED time stop and is never overwritten on close (SJ-4248 stopped 2026-08-22 but carries `exit_time` 2026-08-25). An early stop-out therefore sorted as if it closed days later. The bug cut both ways — it could halve the next ETH position after a win, or skip halving after a real loss; both are now tested. Now ordered by `COALESCE(actual_exit_time, exit_time)`. No parameter changed; BTC unaffected (it uses the sleeve's no-tilt skip, not this function). Latent until now: `bot_chento_v3_eth` has no closed trades | BACKLOG 12b, found by the item-11 time-stop census. User go-ahead 2026-09-13. The function had no test before this. Needs a chento_v3_eth restart |
 | 2026-09-13 | **Loaders bounded at the clock — no parameter changed, live unchanged, replay and goldens corrected.** `_load_15m_btc` and `_load_lsr_btc` now stop at `now` (still including the forming 15m bar); `_load_okx_1h` stops at `now − 3600`, the last CLOSED hour. Replay-only stale-frame rebuild added. **Live: measured no-op** — at a live clock the BTC and ETH frames are identical to before (8,640 bars, same last bar, all 36 columns and every order block). **Goldens: six BTC re-recorded, one moved.** Every changed line is `okx_delta_z`, and every new value equals what the live bot recorded in `trades.notes`: SJ-4243 1.4609786480, SJ-4245 0.1437340057, SJ-4248 1.6751492272. The old values (−0.7299, 0.4754, 0.9437) matched none. `chento_btc_okx_blocked` asserted the OKX gate blocked 2026-08-21 06:00 — **live traded that signal**; its anchor moved to 2026-07-16 06:30, which blocks on both information sets. A walking replay of 2026-08-21 00:00 → 08-22 06:00 now decides at exactly the three bars live traded (06:00, 19:30, 03:45), where before it blocked 06:00 on 59 minutes of future OKX data. ETH goldens unchanged | BACKLOG 7b. User go-ahead 2026-09-13. The old docstring claimed a trailing-only frame was safe unbounded; `ret_30d` and `okx_delta_z` come off resamples whose last bucket reaches past the bar. The `-3600` is load-bearing: `<= now` pairs a complete OKX hour with a truncated Binance hour and flips the gate on ~36% of bars. **Open consequence:** the OKX gate's study (−25% DD, +34% OOS) used same-hour complete bars on both venues, which live never sees — scheduled for re-validation on the causal information set. Guards: `tests/test_chento_clock_bound.py` (4 arms, both directions) and five drill mutations. Restart of both chento bots needed to put the code on disk into the running processes |
 | 2026-09-12 | `COST_BP_RT` 18 → 10 bp (`SLIPPAGE_BP_RT` stays 0) | `studies/notebooks/execution_2026_09/` E6: measured taker round trip on the sleeve's own 2020–2026 fires 9.6 bp BTC [CI90 8.4, 10.8], 10.0 bp ETH [8.0, 11.9]; half-spread < 1 bp, drift −0.5 / −0.2 bp, zero stop gap-throughs in 54 / 33 stops; the pre-registered change rule (> 3 bp and CI excludes the coded value) passed. Net expectancy on the same fires +0.685 → +0.739 R BTC, +0.563 → +0.605 R ETH. Trades closed before this date carry 18 bp, and the 2026-07-22 replay baseline (+$1,043.37) was booked at 18 bp — any later replay-equivalence gate must re-cost. User go-ahead 2026-09-12. |
@@ -74,5 +81,6 @@ firing where the shipped 1R stop exits earlier.
 - Go/no-go basis: backward-only research pool ETH +0.70R mean / 44% WR /
   n=73 (2021→2026-05), attribution timing +0.70R vs regime −0.10R.
   Underwrite expectancy: ~+0.7R region, NOT the +1.28R research figure.
-- Paper gate: ≥2 months or ≥10 trades; kill at < +0.3R/trade after 15
+- Paper gate (set on the OKX-GATED pool; the gate is off since 2026-09-14 —
+  see that row before applying it): ≥2 months or ≥10 trades; kill at < +0.3R/trade after 15
   trades (plan doc: studies/material/plans/multi_asset_chento_plan.md).

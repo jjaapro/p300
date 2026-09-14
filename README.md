@@ -99,9 +99,11 @@ venv\Scripts\python.exe feed.py --once      # one refresh cycle, to clear a stal
 ```
 
 `health.py` covers the databases, table freshness and continuity, regime/LSR
-warmup depth, the single-open invariant, that every variant the bots are
-configured to trade is registered and enabled, and that every entry point the
-runners call still exists. `monitor.py` is the alerting counterpart (Telegram)
+warmup depth, the single-open invariant (still scoped to the legacy `p300_%`
+variants, so it sees none of the `bot_*` ones — and chento and r4 stack
+positions by design), that every variant the bots are configured to trade is
+registered and enabled, and that every entry point the runners call still
+exists. `monitor.py` is the alerting counterpart (Telegram)
 — but it is **not running and has no scheduled task on this machine**, so run
 it by hand or with `-Monitor`. [backup.py](backup.py) is unscheduled too: the
 newest full `prod.db` snapshot under `data/backups/` is from 2026-07-22, and
@@ -220,7 +222,7 @@ cannot trade without in its `MGMT_TABLES` (stale ⇒ skip the whole tick) and
 | `cd_spot_binance` | Binance BTCUSDT spot 1h | `feed.py` every 60s | adx (daily ADX/EMA), carry, r4 (regime + gate inputs) |
 | `cd_futures_15m`, `cd_spot_15m` | Binance BTCUSDT perp/spot 15m with taker buy/sell split | `feed.py` every 60s | chento_v3, short_squeeze (CVD) |
 | `cd_futures_eth_15m` | Binance ETHUSDT perp 15m | `feed.py` every 60s | chento_v3_eth |
-| `okx_perp_1h`, `okx_perp_eth_1h` | OKX BTC/ETH-USDT-SWAP 1h | `feed.py`, hourly throttle | chento_v3 + chento_v3_eth cross-exchange gate |
+| `okx_perp_1h`, `okx_perp_eth_1h` | OKX BTC/ETH-USDT-SWAP 1h | `feed.py`, hourly throttle | chento_v3 + chento_v3_eth load it and compute `okx_delta_z`, but no decision reads the z, nothing records it, and it is not an entry table — the cross-exchange gate it fed was retired 2026-09-13, off since 2026-09-14 (freshness contract kept) |
 | `cd_open_interest` | Binance native OI (~30d retention) | `feed.py` every 60s | squeeze_bull (flush), short_squeeze |
 | `cd_funding_rate` | Binance BTC perp funding | `feed.py` every 60s | carry, adx, short_squeeze |
 | `cd_funding_rate_eth` | Binance ETH perp funding | `feed.py` every 60s | `strategies.support.funding` / `equity` — funding accrual on the ETH legs |

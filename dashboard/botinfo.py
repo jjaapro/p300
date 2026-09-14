@@ -33,7 +33,9 @@ BOTS: dict[str, dict] = {
         "card": "chento_v3.md",
         "calibration": "chento_triple_v3.md",
         "diag": REPO / "bots" / "chento_v3" / "logs" / "diag.jsonl",
-        "cadence_note": "evaluates every 15m bar; ~10–20 triples/yr",
+        "cadence_note": ("evaluates every 15m bar; ~36 entries/yr with the "
+                         "OKX gate off (study rate, off since 2026-09-14; "
+                         "~17/yr gated)"),
     },
     "chento_v3_eth": {
         "display": "Chento Triple v3 (ETH)",
@@ -120,7 +122,7 @@ def params(bot: str) -> list[dict]:
         if bot == "chento_v3":
             from bots.chento_v3 import config as b
             tables = (s.PERP_15M_TABLE, s.OKX_1H_TABLE)
-            tilt = ("skip next trade after a loss"
+            tilt = ("skip entries 48h after a stop loss (not TIF; cleared on restart)"
                     if s.FILTER_NO_TILT else "off")
         else:
             from bots.chento_v3_eth import config as b
@@ -131,7 +133,8 @@ def params(bot: str) -> list[dict]:
                     else "off")
         return [
             _p("Sizing", "risk per trade", b.RISK_PCT, "% of capital", bsrc),
-            _p("Sizing", "notional cap", b.NOTIONAL_MAX_X, "× capital", bsrc),
+            _p("Sizing", "notional cap", b.NOTIONAL_MAX_X,
+               "× capital per position (positions stack)", bsrc),
             _p("Sizing", "paper capital", b.CAPITAL_USDT, "USDT", bsrc),
             _p("Cadence", "tick", b.TICK_SECONDS, "s", bsrc),
             _p("Cadence", "trigger cooldown", s.COOLDOWN_HOURS, "h", ssrc),
@@ -149,7 +152,7 @@ def params(bot: str) -> list[dict]:
                if s.FILTER_NO_RESIST_OB else "off", "", ssrc),
             _p("Filters", "OKX delta alignment",
                "on" if s.FILTER_OKX_ALIGNED else "off",
-               f"z vs {tables[1]}", ssrc),
+               f"retired 2026-09-13 (was z vs {tables[1]})", ssrc),
             _p("Filters", "skip shorts in up-30d regime",
                f"on (>{s.UP_30D_THRESHOLD:.0%})"
                if s.FILTER_SKIP_UP_30D_SHORTS else "off", "", ssrc),

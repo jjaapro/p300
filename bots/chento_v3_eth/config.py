@@ -21,7 +21,8 @@ TICK_SECONDS = 60
 
 # Stale-input policy — the ETH twins of the BTC leg's tables.
 MGMT_TABLES = ["cd_futures_eth_15m", "eth_1m"]
-ENTRY_TABLES = ["okx_perp_eth_1h", "ca_long_short_ratio"]
+# okx_perp_eth_1h left 2026-09-14 with the OKX gate (see bots/chento_v3/config.py).
+ENTRY_TABLES = ["ca_long_short_ratio"]
 
 # Per-asset tilt policy (overlay study + backward-only confirmation,
 # 2026-08-23): ETH disables the sleeve's skip-after-loss (FILTER_NO_TILT is

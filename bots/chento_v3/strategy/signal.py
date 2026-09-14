@@ -12,7 +12,8 @@ Tick pattern (same as other sleeves):
 Data dependencies (loaded per tick from prod.db):
   - cd_futures_15m (BTC perp OHLC + taker buy/sell)
   - ca_long_short_ratio asset='BTC' (for B5)
-  - okx_perp_1h close (for OKX gate)
+  - okx_perp_1h close (for okx_delta_z, still computed each rebuild; the OKX
+    gate that read it is off since 2026-09-14 and nothing else records it)
 """
 from __future__ import annotations
 
@@ -234,12 +235,17 @@ def _load_okx_1h(now: datetime, days_back: int) -> pd.Series:
 
     The -3600 is load-bearing, not defensive. `<= now` would pair a COMPLETE
     OKX hour with the Binance hour truncated at the clock, and that mismatch
-    alone moves |okx_delta_z| from a 0.84 mean to 5.7 and flips the OKX gate
+    alone moves |okx_delta_z| from a 0.84 mean to 5.7 and flipped the OKX gate
     on ~36% of bars. Measured 2026-09-13 against the live ledger: with -3600
     the replay reproduces the okx_delta_z the running bot recorded
     (SJ-4243..4249) to 10 significant figures; with `<= now` it gives -11.34
     at a bar live traded. If okx_perp ever starts storing unconfirmed candles,
-    this bound starts dropping a live row — review both together."""
+    this bound starts dropping a live row — review both together.
+
+    The gate is off since 2026-09-14, so today the bound protects the z VALUE
+    in the feature frame (and the study that reproduces it), not a decision.
+    Keep it: re-enabling any OKX use without it would reintroduce the
+    mixed-hour artifact."""
     con = sqlite3.connect(str(db.TRADER_DB))
     try:
         cutoff = int((now - timedelta(days=days_back)).timestamp())
@@ -389,7 +395,9 @@ def _check_triple_at_idx(idx: int) -> str | None:
 
 def _filter_passes(direction: str, idx: int, entry_price: float, risk: float,
                     variant_id: str) -> tuple[bool, dict]:
-    """Apply all 4 filter gates. Returns (passes, diag_dict)."""
+    """Apply the filter gates. Returns (passes, diag_dict). Three are live on
+    BTC, two on ETH (FILTER_NO_TILT is BTC only);
+    filter 3 (OKX) is off since 2026-09-14 — see FILTER_OKX_ALIGNED."""
     df = _cached_features.get("df")
     if df is None:
         return False, {"reason": "no_cache"}
@@ -399,9 +407,10 @@ def _filter_passes(direction: str, idx: int, entry_price: float, risk: float,
     if FILTER_NO_TILT:
         last_loss = _last_loss_ts.get(variant_id)
         if last_loss is not None:
-            # Skip if loss happened since the last trigger AND it was the most
-            # recent trade for this sleeve. (Simplified: skip if any loss in
-            # the last 48h — same effect since cooldown is 4h and TIF is 72h.)
+            # Skip for 48h after a stop-loss exit (_last_loss_ts is stamped
+            # only there, in memory). This is NOT the overlay study's rule —
+            # skip after any losing predecessor in trigger order — and the two
+            # take very different trade sets (BACKLOG 15).
             now = clock.now_utc()
             if (now - last_loss).total_seconds() < 48 * 3600:
                 return False, {"reason": "no_tilt_recent_loss",
@@ -417,7 +426,9 @@ def _filter_passes(direction: str, idx: int, entry_price: float, risk: float,
             return False, {"reason": "resist_OB_too_close", "dist_R": dist_R}
         diag["resist_ob_dist_R"] = dist_R if np.isfinite(dist_R) else 99.0
 
-    # Filter 3: OKX delta z aligned with direction
+    # Filter 3: OKX delta z aligned with direction — RETIRED, flag False since
+    # 2026-09-14 (okx_gate_revalidation verdict RETIRE). Kept, not deleted, so
+    # re-enabling it is a one-line config change behind its own study.
     if FILTER_OKX_ALIGNED:
         okx_z = float(df.iloc[idx]["okx_delta_z"])
         if not ctm.okx_aligned(okx_z, direction, OKX_ALIGN_Z_MIN):

@@ -11,7 +11,7 @@ Reason-blob conventions across sleeves:
     the columns — dropped here); `_filter_diag` is the per-entry filter
     record.
   - non-underscore scalar keys are the sleeve's decision inputs (chento:
-    okx_delta_z...; adx: adx/ema50/funding_z; carry: fr_7d_avg_pct;
+    none at top level, its filter record is _filter_diag; adx: adx/ema50/funding_z; carry: fr_7d_avg_pct;
     short_squeeze: perp_cvd_pct/divergence_pct/...). Captured generically so
     a new sleeve needs no parser change.
 """

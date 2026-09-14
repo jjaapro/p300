@@ -72,6 +72,8 @@ SPECS = {
         # on future data; with a 31-day carve the OKX table starts 07-21 and
         # that anchor's okx_delta_z would be NaN — a fixture artifact, not a
         # gate. 45 days reaches back to 07-07. The loader reads 30 days.
+        # The gate is off since 2026-09-14 and that anchor now pins the switch
+        # (chento_btc_okx_gate_off), but its frame z is still pinned: keep 45.
         "tables": {"cd_futures_15m": 91, "cd_futures_eth_15m": 91,
                    "ca_long_short_ratio": 95, "okx_perp_1h": 45,
                    "okx_perp_eth_1h": 45},

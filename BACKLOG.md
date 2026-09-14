@@ -7,6 +7,31 @@ discussion) can pick it up.
 
 ---
 
+## Project status and roadmap — 2026-09-14
+
+### Where we are
+
+- **The OKX gate is OFF on both chento bots** (roadmap item 8, DONE). The pre-registered
+  re-test on the information set live can see returned RETIRE on 2026-09-13; the operator
+  switched it off on 2026-09-14. The commit also takes the OKX tables out of both bots'
+  `ENTRY_TABLES`, re-baselines the chento goldens (six lose only their `okx_delta_z` keys; the
+  bar the gate used to block now pins the switch in each process; a filter-2 veto twin replaces
+  the only filter_blocked golden), and hardens the mutation drill: it now fails on a red
+  baseline or a skipped entry, two holes that would have hidden this change. Restart time: in
+  the follow-up entry.
+- **§6 sizing and concurrency review, done before the switch:** keep RISK_PCT 2% and the 3×
+  cap for paper. Gate-off stacks more (BTC up to 5 open, 10% at risk, 8.5× gross; ETH 6 open,
+  12%, 4.4×) and draws down more (BTC 23% → 33%, ETH 11% → 21% of capital) for about twice the
+  return. Numbers and caveats in `docs/calibration/chento_triple_v3.md` (2026-09-14 row).
+- **Open, created by this change** (items 13–15 below): a per-bot exposure budget before any
+  real capital; the ETH kill rule and every other chento figure measured on OKX-gated pools
+  need their own decision; and the overlay study's tilt rules are not the bots' rules.
+- Unchanged: items 9 (R4_ETH weights), 11 (time-stop study — its chento arm now studies the
+  gate-off configuration), the OKX refresh HH:01 alignment, `monitor.py` unscheduled,
+  unpushed commits.
+
+---
+
 ## Project status and roadmap — 2026-09-13
 
 **This section is the roadmap.** It is updated in the same commit as anything that ships,
@@ -603,8 +628,13 @@ cap — the multi-asset plan's Phase B as written.
    "RETIRED (causal re-test)"; the −25 % / +34 % figures may no longer be cited, and every
    downstream study scored on the same-hour `okx_delta_z` needs its own decision.
 
+   **DONE 2026-09-14 — the gate is off** (operator go-ahead the same day). The §6 sizing and
+   concurrency review ran first: two independent simulations of the bots' own sequence,
+   reconciled line by line by a third; RISK_PCT 2% and the 3× cap kept, stacking accepted for
+   paper. Calibration row and the commit carry the numbers.
+
    **OPS follow-up, whatever the verdict:** the OKX refresh is an elapsed-time throttle
-   (`data/sources/binance.py:1096-1105`, >= 3300 s), not hour-aligned, so each closed hour
+   (the `min_interval_s` elapsed-time check in `_refresh_hourly_okx`, `data/sources/binance.py`, >= 3300 s), not hour-aligned, so each closed hour
    lands 0–56 min late and live sometimes sees an hour older than the 7b bound assumes.
    Aligning it to HH:01 makes live equal the causal information set on every bar.
 9. **Research defect: the R4_ETH weights correction is partial.** Found reviewing 7a, not
@@ -722,7 +752,9 @@ cap — the multi-asset plan's Phase B as written.
     - **Sequencing:** the chento arm reads the same backward-only Triple pool as the frozen OKX
       study's OFF arm, so it must wait for the OKX `verdict.json`, or it peeks at that study.
       (That verdict exists since 2026-09-13 — RETIRE. Its `report_pre.json` already carries the
-      OFF arm's 72 h exit mix, so the time-stop pre-registration must disclose it as seen.) The
+      OFF arm's 72 h exit mix, so the time-stop pre-registration must disclose it as seen. The
+      gate is off since 2026-09-14, so the chento arm studies the gate-off configuration, where
+      stacking is routine: about half of all entries open while another position is open.) The
       squeeze arms must not change a live TIF before the n = 20/30 paired re-cuts, which assume
       48h / 6h. Item 12's first defect must be fixed first, or the study's "shipped" arm is not
       the live rule.
@@ -768,6 +800,36 @@ cap — the multi-asset plan's Phase B as written.
     2026-08-25. So a trade that stops out early sorts as if it closed three days later, and can
     wrongly halve the next ETH position. Latent: `bot_chento_v3_eth` has no closed trades yet.
     Fix: order by `actual_exit_time`, which is what the function's own docstring promises.
+
+13. **A per-bot exposure budget for chento before any real capital.** Found by the item-8 §6
+    review, 2026-09-14. Nothing in code caps a chento bot's total exposure: no single-open
+    guard, no gross or open-risk budget, only the 6h cooldown and the per-trade 3× cap (the
+    structural maximum is 12 open positions, 24% of capital at risk). Gate-off history peaks at
+    BTC 5 open / 8.5× gross and ETH 6 open, all same-direction re-fires into one move (BTC
+    2023-10-07, three longs at 8.5× gross, all stopped). Accepted for paper. Before real money:
+    a per-bot open-risk or gross budget (r4's `GROSS_MAX_X` is the in-fleet precedent), or a
+    lower RISK_PCT (1.5% measured: BTC DD 25%, ETH 16%), as its own pre-registered test — a
+    guard changes which trades are taken for about half the pool. Related doc facts: OPERATIONS
+    §7 now exempts chento from the single-open invariant, and `health.py`'s single-open check
+    only sees `p300_%` variants.
+14. **Chento figures measured on OKX-gated pools need their own decisions.** The gate is off,
+    so these describe a configuration that no longer runs: the ETH leg's paper go/no-go and its
+    kill rule (< +0.3R after 15 trades; the first 15 ETH trades will all be gate-off), the
+    +0.739 / +0.605 R post-cost expectancy, the overlay study's tilt ranking, the attribution
+    layer's chento split, the LSR B5 variant scores and the validation audit's OKX threshold
+    re-filter (all also on the same-hour look-ahead z). Decide per item: re-cut on the gate-off
+    arm, or retire the number. Not re-cut by the switch.
+15. **The overlay study's tilt rules are not the bots' rules (both legs).** Found by the
+    item-8 review. `overlay_study/run_overlays.tilt_sizes` skips a BTC trade after ANY losing
+    predecessor in trigger order, closed or not (36 look-ahead cases on the gate-off pool); the
+    bot skips only for 48h after a CLOSED stop loss (`signal.py` filter 1). On the gate-off pool
+    the study rule takes 94 of 208 BTC triggers, the coded rule 198. ETH is affected too: the
+    study's half-after-loss (previous trade in trigger order lost, closed or not) and the bot's
+    (`runner._last_closed_was_loss`, the last trade actually closed) disagree on 54 of 184 ETH
+    trades, 49 of the study's 112 halvings using a predecessor that had not closed. Both
+    per-asset choices rest on the study rule: BTC's `FILTER_NO_TILT` and ETH's
+    `TILT_HALF_AFTER_LOSS` (2026-08-23). Needs its own measured decision; nothing changes until
+    then.
 
 **Gates:** parity tests byte-equal before and after every step; the full suite green;
 fleet restarted from the new paths with fresh heartbeats; one definition per rule (no

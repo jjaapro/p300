@@ -68,10 +68,32 @@ MUTATIONS = [
      "bots/short_squeeze/strategy/signal.py",
      'if not macro["is_short_macro"]:', 'if False:',
      "tests/test_golden_short_squeeze.py"),
-    ("chento: OKX alignment gate removed",
-     "bots/chento_v3/strategy/signal.py",
-     'if not ctm.okx_aligned(okx_z, direction, OKX_ALIGN_Z_MIN):', 'if False:',
-     "tests/test_golden_chento.py"),
+    # The OKX gate is OFF since 2026-09-14 (verdict RETIRE). The old mutation
+    # here — "gate removed" — became an equivalent mutant the moment the flag
+    # went False, so it is replaced by the change that matters now: the gate
+    # quietly switched back on, in either process.
+    ("chento: OKX gate switched back on (BTC process)",
+     "bots/chento_v3/strategy/config.py",
+     "FILTER_OKX_ALIGNED = False", "FILTER_OKX_ALIGNED = True",
+     "tests/test_golden_chento.py::test_golden_chento_btc_okx_gate_is_off"),
+    ("chento: OKX gate switched back on (ETH process)",
+     "bots/chento_v3/strategy/config.py",
+     "FILTER_OKX_ALIGNED = False", "FILTER_OKX_ALIGNED = True",
+     "tests/test_golden_chento.py::test_golden_chento_eth_okx_gate_is_off"),
+    ("chento: okx_perp_1h back in the BTC bot's ENTRY_TABLES",
+     "bots/chento_v3/config.py",
+     'ENTRY_TABLES = ["ca_long_short_ratio"]',
+     'ENTRY_TABLES = ["okx_perp_1h", "ca_long_short_ratio"]',
+     "tests/test_chento_bot.py::test_okx_tables_do_not_gate_entries"),
+    ("chento: okx_perp_eth_1h back in the ETH bot's ENTRY_TABLES",
+     "bots/chento_v3_eth/config.py",
+     'ENTRY_TABLES = ["ca_long_short_ratio"]',
+     'ENTRY_TABLES = ["okx_perp_eth_1h", "ca_long_short_ratio"]',
+     "tests/test_chento_bot.py::test_okx_tables_do_not_gate_entries"),
+    ("chento: order-block veto loosened from 2R to 1R",
+     "bots/chento_v3/strategy/config.py",
+     "SMC_OB_WITHIN_R = 2.0", "SMC_OB_WITHIN_R = 1.0",
+     "tests/test_golden_chento.py::test_golden_chento_btc_resist_ob_veto"),
     # The per-variant flags that separated the live paper twins moved from
     # the cfg dict to literal runner keywords when the sleeves were repointed,
     # so the mutation moves with them.
@@ -186,12 +208,15 @@ MUTATIONS = [
      'if df.index[-1] < pd.Timestamp(now).floor("15min"):', "if False:",
      "tests/test_chento_clock_bound.py::"
      "test_chento_walking_replay_reaches_every_boundary"),
-    # The most direct guard of all: unbound the OKX loader and the signal live
-    # actually traded (SJ-4243) flips back to the false OKX block. It is the
-    # OKX bound specifically — verified: removing only the 15m bound leaves
-    # this golden green, because the future that leaked into the 06:00 bar was
-    # OKX's hour-06 candle (closing 06:59), not the Binance frame.
-    ("lookahead: chento OKX bound removed -> the traded 06:00 signal re-blocks",
+    # The most direct guard of all: unbound the OKX loader and the z at the
+    # 06:00 bar live actually traded (SJ-4243) moves off the ledger value,
+    # +1.46 -> +12.58. That is the mixed-hour artifact: OKX's complete hour-06
+    # candle (closing 06:59) paired with a Binance hour cut off at the 06:00
+    # bar. +12.58 is aligned for a long, so even with the gate on this mutation
+    # never re-blocked; it is caught on the frame's z VALUE, which the node
+    # reads. The old golden's -0.73 needed the 15m loader unbounded as well;
+    # removing only the 15m bound leaves 1.46.
+    ("lookahead: chento OKX bound removed -> the traded 06:00 bar's z moves off the ledger",
      "bots/chento_v3/strategy/signal.py",
      "upto = int(now.timestamp()) - 3600       # last fully closed hour",
      "upto = 99999999999",
@@ -243,6 +268,20 @@ def _restore(p: pathlib.Path, orig_bytes: bytes) -> None:
 
 before_state = run(["git", "status", "--porcelain", "strategies/", "bots/", "data/"]).stdout
 
+# Baseline first. A target that is already red — or a node id that no longer
+# exists, which pytest reports as exit 4 — would count every mutation against
+# it as CAUGHT. Found 2026-09-14 while retiring the OKX gate: two entries
+# would have gone silently false that way.
+targets = sorted({t for *_, t in MUTATIONS})
+base = run([str(PY), "-m", "pytest", *targets, "-q", "-p", "no:cacheprovider"],
+           timeout=1800)
+if base.returncode != 0:
+    print("BASELINE RED — fix the suite before drilling:")
+    for line in base.stdout.strip().splitlines()[-15:]:
+        print(line)
+    sys.exit(1)
+print(f"baseline green: {len(targets)} targets")
+
 caught = missed = skipped = 0
 for label, rel, before, after, testfile in MUTATIONS:
     p = REPO / rel
@@ -276,4 +315,6 @@ after_state = run(["git", "status", "--porcelain", "strategies/", "bots/", "data
 st = "" if after_state == before_state else after_state.strip()
 print("restored to pre-drill state:" if not st else "!! DRILL LEFT RESIDUE:",
       st or "(yes)")
-sys.exit(1 if (missed or st) else 0)
+# A skipped entry is a guard that silently stopped existing (its file moved,
+# or an edit changed its before-string by one character), so it fails too.
+sys.exit(1 if (missed or skipped or st) else 0)

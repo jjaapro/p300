@@ -5,7 +5,7 @@ All parameters derived from the validation work in
 Key memories:
   - project_chento_triple_optimized_config.md  (the full stack)
   - project_chento_a4_ladder_finding.md         (A4 ladder tiers)
-  - project_cross_exchange_okx_gate.md          (OKX delta gate)
+  - project_cross_exchange_okx_gate.md          (OKX delta gate — RETIRED 2026-09-13)
   - project_chento_adaptive_hybrid.md           (H_B classifier)
   - project_chento_regime_filter.md             (asymmetric up_30d filter)
 
@@ -74,7 +74,9 @@ B7_Z_THRESHOLD = 2.0                # median |z| > threshold w/ all 4 TFs same s
 TRIPLE_WINDOW_HOURS = 24
 
 # ─── Filter gates ──────────────────────────────────────────────────────────
-# Filter 1: no-tilt (consec_losses_before == 0). Per-asset per the overlay
+# Filter 1: no-tilt. As coded (signal.py): skip entries for 48h after a stop
+# loss; the overlay study ranked a different rule (skip after any losing
+# predecessor in trigger order, BACKLOG 15). Per-asset per the overlay
 # study's backward-only confirmation (2026-08-23): BTC keeps skip-after-loss
 # (MAR champion); ETH disables the skip and instead HALVES risk after a loss
 # at the bot layer (skip≈half on ETH MAR but half keeps ~64% more income).
@@ -85,8 +87,16 @@ FILTER_NO_RESIST_OB = True
 SMC_PIVOT_N = 5                     # 5-bar pivot detection
 SMC_OB_WITHIN_R = 2.0               # skip if opposite OB within 2R
 
-# Filter 3: OKX-Binance perp delta z-score aligned with direction
-FILTER_OKX_ALIGNED = True
+# Filter 3: OKX-Binance perp delta z-score aligned with direction.
+# RETIRED 2026-09-13, OFF since 2026-09-14 on both legs. Its study measured the
+# z on same-hour complete bars live can never see; re-tested on the causal
+# information set it returned RETIRE (studies/notebooks/okx_gate_revalidation/
+# findings.md): kept trades beat blocked ones by +0.30R, but the interval
+# includes zero while the blocked trades earned +111R. Turning it back on, or
+# any replacement (tighter z, other window, Bybit, lagged z, size modulator),
+# needs its own pre-registration at N_TRIALS >= 54. The two OKX_* constants
+# stay: the study's frozen record and its tests pin them.
+FILTER_OKX_ALIGNED = False
 OKX_DELTA_WINDOW_HOURS = 24 * 7     # rolling 7d window for z-score
 OKX_ALIGN_Z_MIN = 0.0               # require z ≥ 0 (or ≤ 0 for shorts)
 

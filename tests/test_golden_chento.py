@@ -33,6 +33,15 @@ for a bar live had actually traded at +1.46. The $1 entry-price difference it
 cited is the live fill against the 1m feed; it cannot flip a z-score's sign.
 
 So: when a golden and the live ledger disagree, suspect the golden. BACKLOG 7b.
+
+**The OKX gate is off since 2026-09-14** (`FILTER_OKX_ALIGNED = False`, verdict
+RETIRE in studies/notebooks/okx_gate_revalidation/findings.md). okx_delta_z is
+still computed into the feature frame on every rebuild, but no decision, status
+or ledger row carries it any more. So the live-ledger z pins read the FRAME
+(`signal._cached_features`), which keeps them — and the look-ahead guard they
+are — working with the gate off. The bar the gate used to block now decides and
+is pinned as the gate-off record, in both processes; and because it was the
+only filter_blocked golden, an order-block veto twin keeps a veto branch pinned.
 """
 from __future__ import annotations
 
@@ -64,13 +73,23 @@ FIRE_B = datetime(2026, 8, 22, 3, 45, 5, tzinfo=timezone.utc)       # SJ-4248/42
 LIVE_OKX_Z = {FIRE_0600: 1.4609786480063527, FIRE_A: 0.14373400566189817,
               FIRE_B: 1.675149227184317}
 
-# A bar where the OKX gate genuinely blocks. It was 2026-08-21 06:00 until
-# 2026-09-13 — but that "block" existed only with future data, and live traded
-# the signal (see FIRE_0600). 2026-07-16 06:30 blocks on the causal
-# information set (z -2.66) AND blocked on the old peeking one (z -0.59), so it
-# is a real gate event rather than a boundary artifact. Needs the fixture's
-# 45-day OKX carve.
-OKX_BLOCKED = datetime(2026, 7, 16, 6, 30, 5, tzinfo=timezone.utc)
+# A long Triple whose OKX z is firmly misaligned (-2.66 causal, -0.59 on the
+# old peeking set): the OKX gate blocked it until 2026-09-14, and now it
+# DECIDES. It was 2026-08-21 06:00 until 2026-09-13 — but that "block" existed
+# only with future data, and live traded the signal (see FIRE_0600). Needs the
+# fixture's 45-day OKX carve for the z value pin.
+OKX_MISALIGNED = datetime(2026, 7, 16, 6, 30, 5, tzinfo=timezone.utc)
+OKX_MISALIGNED_Z = -2.6609709957818866
+
+# The ETH twin: a SHORT at z +0.552 the gate blocked, which now decides. It pins
+# the gate being off inside the ETH process, which imports the config itself.
+ETH_OKX_MISALIGNED = datetime(2026, 8, 2, 14, 15, 5, tzinfo=timezone.utc)
+
+# A filter-2 veto (opposite order block 1.35R away), independent of the OKX
+# flag because filter 2 runs first. With the OKX golden gone it is the only
+# pinned veto branch (memory: characterization pins gates, not arithmetic).
+OB_VETO = datetime(2026, 8, 20, 16, 0, 5, tzinfo=timezone.utc)
+OB_VETO_DIST_R = 1.3506248914
 
 
 #: The 2026-08-21 close. chento's sweep prices open positions off the live 1m
@@ -92,14 +111,19 @@ def env(tmp_path, monkeypatch):
     clock.set_simulated_now(None)
 
 
-def _decided_okx_z(intents) -> float:
-    """okx_delta_z for a DECIDED signal. It is not on the status dict — only a
-    filter_blocked status carries it at the top level — but on the intent's
-    filter diagnostics, the same blob the ledger writes to trades.notes."""
-    assert intents, "no intent — the signal did not decide"
-    reason = intents[0].reason
-    reason = reason if isinstance(reason, dict) else vars(reason)
-    return reason["_filter_diag"]["okx_delta_z"]
+def _frame_okx_z(bar: datetime) -> float:
+    """okx_delta_z at `bar` in the feature frame the last decide() built.
+
+    Until 2026-09-14 this read the intent's _filter_diag, where the OKX gate
+    wrote it. The gate is off and nothing records z any more, but the frame
+    still computes it on every rebuild, so the value pin — and the look-ahead
+    guard it is — reads the frame. The strategy PACKAGE does not re-export the
+    caches, so the signal module is imported explicitly."""
+    import pandas as pd
+    from bots.chento_v3.strategy import signal as sg
+    df = sg._cached_features["df"]
+    ts = pd.Timestamp(bar.replace(second=0, microsecond=0))
+    return float(df.loc[ts, "okx_delta_z"])
 
 
 def _check(name, at, db_path, *, execute=False, **kw):
@@ -141,26 +165,30 @@ def test_golden_chento_btc_bar_keyed_idempotency(env):
     assert row["notes"]["bar_ts"] is not None
 
 
-def test_golden_chento_btc_okx_gate_blocks(env):
-    """The cross-exchange OKX gate refuses a Triple whose delta z is
-    misaligned with the signal direction.
+def test_golden_chento_btc_okx_gate_is_off(env):
+    """The OKX gate is off: a long Triple at a firmly misaligned z DECIDES.
 
-    The VALUE is pinned, not just the key. At this anchor the gate blocks on
-    both the causal information set (z -2.66) and the old peeking one (z
-    -0.59), so `filter_blocked` alone cannot tell a correctly bounded loader
-    from an unbounded one — only the number can. The old assertion here was
-    `"okx_delta_z" in doc["status"]`, which passes for any value at all
-    (memory feedback_characterization_gates_not_arithmetic).
-
-    The gate's own study claimed -25% drawdown and +34% OOS expectancy, on
-    same-hour complete bars from both venues that live can never see; it is
-    scheduled for re-validation on the causal information set (BACKLOG).
+    Until 2026-09-14 this bar was the gate's filter_blocked golden. The study
+    that re-tested the gate on the information set live can see returned
+    RETIRE (studies/notebooks/okx_gate_revalidation/findings.md), so the bar
+    now pins the switch itself: turn FILTER_OKX_ALIGNED back on and the
+    document flips back to filter_blocked. The z VALUE stays pinned from the
+    frame, so the misalignment is shown to be real, not a NaN or a sign slip.
     """
-    doc = _check("btc_okx_blocked", OKX_BLOCKED, env)
+    doc = _check("btc_okx_gate_off", OKX_MISALIGNED, env)
+    assert doc["status"]["status"] == "decided"
+    assert doc["status"]["direction"] == "long"
+    assert "okx_delta_z" not in doc["intents"][0]["reason"]["_filter_diag"]
+    assert _frame_okx_z(OKX_MISALIGNED) == pytest.approx(OKX_MISALIGNED_Z, abs=1e-9)
+
+
+def test_golden_chento_btc_resist_ob_veto(env):
+    """Filter 2 refuses a Triple with an opposite order block inside 2R. The
+    distance VALUE is pinned, not just the reason."""
+    doc = _check("btc_resist_ob_veto", OB_VETO, env)
     assert doc["status"]["status"] == "filter_blocked"
-    assert doc["status"]["reason"] == "okx_misaligned"
-    assert doc["status"]["okx_delta_z"] == pytest.approx(-2.6609709957818866,
-                                                          abs=1e-9)
+    assert doc["status"]["reason"] == "resist_OB_too_close"
+    assert doc["status"]["dist_R"] == pytest.approx(OB_VETO_DIST_R, abs=1e-9)
     assert doc["intents"] == []
 
 
@@ -169,14 +197,16 @@ def test_golden_chento_btc_the_signal_the_old_golden_wrongly_blocked(env):
     2026-09-13 the golden at this bar said the OKX gate blocked it, because
     the unbounded loaders let it see 59 minutes of future OKX data.
 
-    This is the most direct guard against that look-ahead coming back: remove
-    the loader bounds and this flips to filter_blocked again. It also pins
-    agreement with the live ledger, to ten significant figures.
+    The z is pinned against the live ledger to ten significant figures, read
+    from the feature frame. That keeps it the most direct guard against the
+    look-ahead coming back even with the gate off: unbound the OKX loader and
+    the frame's z at this bar moves to +12.58 (the mixed-hour artifact); the
+    old golden's -0.73 needed the 15m loader unbounded too.
     """
     doc = _check("btc_fire_0600", FIRE_0600, env)
     assert doc["status"]["status"] == "decided"
     assert doc["status"]["direction"] == "long"
-    z = doc["intents"][0]["reason"]["_filter_diag"]["okx_delta_z"]
+    z = _frame_okx_z(FIRE_0600)
     assert z == pytest.approx(LIVE_OKX_Z[FIRE_0600], rel=1e-9), (
         f"okx_delta_z {z} no longer matches what the live bot recorded "
         f"(SJ-4243: {LIVE_OKX_Z[FIRE_0600]})")
@@ -191,7 +221,7 @@ def test_golden_chento_btc_fires_match_the_live_ledger(env, at):
     clock.set_simulated_now(at)
     intents, status = surface.decide("chento_btc", variant=VARIANT)
     assert status["status"] == "decided"
-    z = _decided_okx_z(intents)
+    z = _frame_okx_z(at)
     assert z == pytest.approx(LIVE_OKX_Z[at], rel=1e-9), (
         f"{at:%Y-%m-%d %H:%M}: okx_delta_z {z} != live ledger {LIVE_OKX_Z[at]}")
 
@@ -249,6 +279,19 @@ def test_golden_chento_eth_second_anchor(env):
     assert doc == expected
 
 
+def test_golden_chento_eth_okx_gate_is_off(env):
+    """The switch, inside the ETH process: a SHORT the OKX gate blocked at z
+    +0.552 now decides. The ETH leg imports the shared config, so an ETH-only
+    override of the flag would otherwise go unseen."""
+    doc = _run_eth(ETH_OKX_MISALIGNED, execute=False)
+    assert doc["asset_under_test"] == "ETH"
+    assert doc["status"]["status"] == "decided"
+    assert doc["status"]["direction"] == "short"
+    assert "okx_delta_z" not in doc["intents"][0]["reason"]["_filter_diag"]
+    expected = load_or_write(GOLDENS / "chento_eth_okx_gate_off.json", doc)
+    assert doc == expected
+
+
 def test_golden_chento_btc_and_eth_are_not_the_same_document(env):
     """Guards the process isolation itself: if the subprocess ever leaked the
     BTC env, these would be identical and both goldens would be fiction."""
@@ -261,4 +304,4 @@ def test_golden_chento_btc_and_eth_are_not_the_same_document(env):
 
 
 def test_goldens_exist():
-    assert len(list(GOLDENS.glob("chento_*.json"))) >= 9
+    assert len(list(GOLDENS.glob("chento_*.json"))) >= 13

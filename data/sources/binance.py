@@ -11,8 +11,9 @@ Handles 7 feeds via Binance public REST (no API key needed):
                          Binance serves only ~30d of history per call; rolling refresh keeps the table
                          current as long as binance_feed runs at least monthly. Older history is
                          backfilled by fetch_coinalyze.py during bootstrap.
-  okx_perp_1h          — OKX BTC-USDT-SWAP 1h klines (CHENTO_TRIPLE_V3 cross-exchange
-                         gate), via data.sources.okx_perp.refresh_latest() on an
+  okx_perp_1h          — OKX BTC-USDT-SWAP 1h klines (CHENTO_TRIPLE_V3 loads it for its
+                         okx_delta_z feature; the cross-exchange gate it fed was retired
+                         2026-09-13), via data.sources.okx_perp.refresh_latest() on an
                          hourly throttle. Not a Binance feed, but it lives in this
                          cycle so every live-read table has a live writer.
 
@@ -957,11 +958,13 @@ def refresh_all() -> dict[str, int]:
     except Exception as e:
         log.warning(f"open-interest fetch failed: {e}")
         results["cd_open_interest"] = -1
-    # okx_perp_1h — CHENTO_TRIPLE_V3's cross-exchange gate input. Hourly
+    # okx_perp_1h — was CHENTO_TRIPLE_V3's cross-exchange gate input until the
+    # gate was retired 2026-09-13; the sleeve still loads it (okx_delta_z) but
+    # no decision reads it, and it keeps its freshness contract. Hourly
     # cadence, throttled below. Must have a live writer: manual-backfill-only
-    # left it stale (last row 2026-05-26) and the NaN delta-z silently
-    # gate-locked every Chento candidate for its entire paper deployment
-    # (found 2026-07-21).
+    # left it stale (last row 2026-05-26) and, while the gate ran, the NaN
+    # delta-z silently gate-locked every Chento candidate for its entire paper
+    # deployment (found 2026-07-21).
     try:
         results["okx_perp_1h"] = _refresh_hourly_okx()
     except Exception as e:

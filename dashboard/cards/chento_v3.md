@@ -6,7 +6,8 @@ to a wide fixed target.
 
 ## What it trades
 BTC Binance perp on 15m bars. Long and short. It checks every 15m bar close but
-fires only ~10–20 times a year — silence is normal.
+fires only ~36 times a year in the study (~17 with the OKX gate on; off since 2026-09-14) — a
+quiet week or two is normal.
 
 ## Entry logic — the Triple composite
 A trade needs **three independent signals agreeing on direction** inside a trailing
@@ -24,10 +25,11 @@ A trade needs **three independent signals agreeing on direction** inside a trail
 A 6h cooldown separates triggers so one confluence can't emit duplicate trades.
 
 ## Filters (any one can veto the entry)
-1. **No-tilt** — after a losing trade, skip the next signal (BTC leg only).
+1. **No-tilt** — after a stop-loss exit, skip all signals for 48h (BTC leg only; a TIF-expiry loss does not count, and the timer is in memory, so a restart clears it).
 2. **No opposite order-block within 2R** (5-bar pivot SMC) — don't fade into a wall.
-3. **OKX alignment** — the OKX–Binance perp delta z-score must agree with trade
-   direction (cross-exchange confirmation).
+3. **OKX alignment — retired 2026-09-13, vetoes nothing.** It required the
+   OKX–Binance perp delta z-score to agree with trade direction; the causal
+   re-validation could not show it discriminates while it blocked profitable trades.
 4. **Regime, asymmetric** — skip **shorts** when BTC's 30d return is above +10%
    (don't short a running bull; longs unaffected).
 
@@ -36,7 +38,8 @@ Initial stop **5×ATR(14)**, fixed target **6R**, time-in-force **72h** — whic
 comes first. Counter-intuitive but validated: the wide 6R target and the 72h hold
 both beat tighter versions. Sizing is fixed-R: **2% of capital risked per trade**,
 notional capped at 3× capital. Ladder adds are **disabled** (failed the
-backward-only lookahead audit).
+backward-only lookahead audit). There is no one-position-at-a-time rule: signals
+6h+ apart stack as separate positions (up to 5 open at once in the ungated study).
 
 ## What "no trade today" looks like
 The diag counters below show which gate ate the day: `no_triple` (signals never

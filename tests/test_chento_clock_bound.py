@@ -74,8 +74,9 @@ def test_chento_loaders_are_clock_bounded(chento):
 
     The OKX bound is `now - 1h`, not `now`: a row stamped T is the bar
     [T, T+1h), OKX stores closed hours only, and `<= now` would pair a complete
-    OKX hour with a truncated Binance hour. That artifact alone flips the OKX
-    gate on ~36% of bars.
+    OKX hour with a truncated Binance hour. That artifact alone flipped the OKX
+    gate on ~36% of bars; with the gate off since 2026-09-14 it would corrupt
+    the frame's okx_delta_z, which the goldens still pin against the ledger.
 
     Proven to catch: the upper bound deleted from any one of the three loaders.
     """

@@ -18,7 +18,8 @@ and that is the only place a strategy's logic lives. There are **seven bot
 units** — `chento_v3` (BTC), `chento_v3_eth`, `short_squeeze`, `adx`, `carry`,
 `squeeze_bull`, `r4` — and **nine variants**: the two squeeze bots each carry a
 no-stop paper twin inside the same process, and `r4` trades its ETH windows
-only. Each runner owns its own tick loop, its own single-open guard and its own
+only. Each runner owns its own tick loop, its own open-position rule (one at a
+time for most; chento and r4 stack positions by design — §8) and its own
 variant row.
 
 `start_fleet.ps1` starts [feed.py](feed.py) + the seven runners + the dashboard
@@ -214,10 +215,10 @@ Signal / Entry / Exit / Edge thesis / Caveat. The running bots are §3.1, §3.2,
   1. **B1 money-flow divergence** — taker-CVD z-score (rolling 30d) crosses ±0.5 while price-velocity z-score stays within ±1.0 (volume builds without price following).
   2. **B5 LSR extremes** — Binance global long-account percentage hits p10 (oversold longs → LONG) or p90 (euphoric longs → SHORT) of the trailing 30 days.
   3. **B7 multi-TF CVD alignment** — CVD z-scores on 1h / 4h / 1d / 3d resamples all have the same sign with |z| ≥ 2.0.
-- **Filter gates** (all must pass):
-  1. `no_tilt` — skip if a recent CHENTO_TRIPLE_V3 trade closed in loss (48h window).
+- **Filter gates** (every active one must pass — three since 2026-09-14):
+  1. `no_tilt` — skip for 48h after a stop-loss exit with negative R (TIF-expiry losses do not count; in memory, cleared on restart; not the overlay study's skip-after-any-losing-predecessor rule, BACKLOG 15). BTC leg only — ETH halves risk on the trade after a loss instead (ETH leg, below).
   2. `no_resist_OB_within_2R` — skip if a fresh unfilled opposite-direction Order Block sits within 2R of entry (causally-detected 5-bar pivot OB).
-  3. `okx_aligned` — OKX-Binance perp price log-delta z-score (rolling 7d) must sign-match the trade direction.
+  3. ~~`okx_aligned`~~ — **RETIRED 2026-09-13, off since 2026-09-14** (`FILTER_OKX_ALIGNED = False`, both legs): the pre-registered causal re-validation returned RETIRE on 2026-09-13 ([findings](studies/notebooks/okx_gate_revalidation/findings.md)). The rule was: OKX-Binance perp price log-delta z-score (rolling 7d) must sign-match the trade direction. `math.okx_aligned` and the `OKX_*` constants stay; the sleeve still computes `okx_delta_z` into its feature frame each rebuild, but nothing records it and no decision reads it.
   4. `skip_up_30d_shorts` (asymmetric) — skip ONLY shorts when BTC 30d return > +10%. Longs still take.
 - **Entry**: at the 15m bar close, sized fixed-R at 2% of capital over the sleeve's own stop, capped at 3× notional. (The H_B adaptive-sizing split was **not** shipped — it failed the backward-only Pareto test; see below.)
 - **Math layer**: stop = entry ± 5×ATR(14, 15m), target = entry ± 6R fixed, TIF = 72 hours, 10bp RT cost scaled by stop distance (measured 2026-09-12; the research replays charged 18bp).
@@ -225,9 +226,9 @@ Signal / Entry / Exit / Edge thesis / Caveat. The running bots are §3.1, §3.2,
   - **Inside Value Area** (~34% of triggers): T3 sizing → 150% add. Worst-case combined loss ~3.3R (~4.4% NAV at 4% risk).
   - **Outside Value Area** (~66% of triggers): T1 sizing → 50% add. Worst-case combined loss ~2.0R (~2.5% NAV at 4% risk).
   - After a ladder fire the combined stop widens to −1.5R from original entry, with **strictly no further compounding** — a single-shot risk increase, not a martingale.
-- **Cooldown**: 6 hours between triggers (was 4 before the B1-anchored trigger). Triple fires sparsely (~20/yr) so the cooldown rarely binds.
-- **ETH leg**: `bots/chento_v3_eth/` runs the same sleeve with `CHENTO_V3_ASSET=ETH` against the ETH tables. Two rules differ per asset: ETH turns **off** the skip-after-loss filter and halves risk on the trade after a loss instead (matched skip's MAR while keeping ~64% more income, overlay study 2026-08-23).
-- **Backtest performance** (5.4y BTC, R-tracking framework, funding cost included): 106 trades / 20.2 per yr / mean R +4.13 / WR 82% / max DD −4.52R / MAR 18.4 / IS-OOS gap 0.05R. ETH-cross-validated at +2.9R mean / 78% WR.
+- **Cooldown**: 6 hours between triggers (was 4 before the B1-anchored trigger). With the OKX gate off the triple composite fires about 66 BTC / 62 ETH times a year (357 / 337 in the 2021-04..2026-09 study pool); filters 2 and 4 veto about 42% / 45% of those, leaving about 38 / 34 (the gated arm kept ~17 / ~15), and the cooldown plus BTC's 48h skip trim that to about 36 / 34 taken, so the cooldown rarely binds. It is also the only entry spacing: there is no single-open guard, so positions stack (§8).
+- **ETH leg**: `bots/chento_v3_eth/` runs the same sleeve with `CHENTO_V3_ASSET=ETH` against the ETH tables. Two rules differ per asset: ETH turns **off** the skip-after-loss filter and halves risk on the trade after a loss instead (matched skip's MAR while keeping ~64% more income, overlay study 2026-08-23, on the OKX-gated trade set).
+- **Backtest performance** (5.4y BTC, R-tracking framework, funding cost included): 106 trades / 20.2 per yr / mean R +4.13 / WR 82% / max DD −4.52R / MAR 18.4 / IS-OOS gap 0.05R. ETH-cross-validated at +2.9R mean / 78% WR. *(Gated-arm research figures: measured with the OKX gate on, partly on the same-hour look-ahead `okx_delta_z` — not the configuration running since 2026-09-14. The re-validation's report-only ungated arm at 10bp, funding not modelled, every trade taken, no tilt: BTC +0.731R mean over 208 trades, ETH +0.540R over 184.)*
 - **Caveats**:
   - The 30d-return threshold (+10%) is calibrated on BTC volatility; for ETH or alts this needs re-tuning.
   - The sleeve fires sparsely, so long empty stretches in the paper ledger are the expected behaviour rather than evidence of a wiring fault. Per-day gate-kill diagnostics are permanently on (`DIAG_PATH` in [bots/chento_v3/config.py](bots/chento_v3/config.py)) — the OKX gate once locked the sleeve out for two months unseen.
@@ -405,7 +406,8 @@ notional = capital × RISK_PCT% / stop_pct      (capped at NOTIONAL_MAX_X × cap
 The stop distance is the one the sleeve itself computed into the Intent
 (`_entry_price` / `_stop_price`), so R-space results are the study's and only
 dollars-per-R change. Per-bot values live in `bots/<name>/config.py`: ADX and
-both chento legs risk 2%, the two squeeze bots 1%; all cap at 3× notional.
+both chento legs risk 2%, the two squeeze bots 1%; all cap at 3× notional per
+position (chento positions stack, so its gross is not capped — §8).
 Fixed-R beat fixed-notional across the sizing study, and the 3× cap is a
 structural guard, not a working dial — except on `short_squeeze`, whose stop is
 often basis points wide, where it binds by design.
@@ -598,7 +600,7 @@ had to be non-zero for the fire to happen at all.
 
 > **Mostly retired 2026-09-13.** Cross-sleeve coordination existed because
 > eight sleeves shared one variant's capital and one margin pool. Each bot now
-> has its own variant, its own capital and its own single-open guard, so there
+> has its own variant, its own capital and its own position rules (§8), so there
 > is nothing left to arbitrate between them: **no live process calls
 > `reconcile_intents()`**, and the co-fire budget that *is* enforced is r4's
 > own `GROSS_MAX_X` (§3.9), inside one bot. The modules described in §5.1 and
@@ -765,7 +767,7 @@ runs once per UTC day; sim-mode-aware (no-op when `clock.is_simulated()`).
 | Binance klines / funding | `prod.db` (btc_1m, eth_1m, cd_funding_rate, cd_spot_binance, ca_long_short_ratio) | every bot + the regime classifier |
 | Open interest | `prod.db:cd_open_interest` | squeeze_bull (the flush trigger), short_squeeze (Asia-grind gate) |
 | 15m futures/spot CVD | `prod.db` (cd_futures_15m, cd_futures_eth_15m, cd_spot_15m) | chento B1/B7, short_squeeze divergence |
-| OKX perp | `prod.db` (okx_perp_1h, okx_perp_eth_1h) | chento's cross-exchange alignment gate |
+| OKX perp | `prod.db` (okx_perp_1h, okx_perp_eth_1h) | chento loads it and computes `okx_delta_z` each rebuild, but no decision reads it, nothing records it, and it is no longer an entry table; the feed and its freshness contract stay. *(Was chento's cross-exchange alignment gate — retired 2026-09-13, off since 2026-09-14.)* |
 | Macro daily / PAXG | `prod.db` (macro_daily, paxg_spot_1h) | research only (added 2026-09-06; the gold overlay was killed — §9.4) |
 | News headlines | `prod.db:news_headlines` | *(was AI_QUANT context only; gated table, not live-read)* |
 | CoinDesk derivatives | `prod.db` (cd_liquidations, cd_dvol) | *(gated tables; research only)* |
@@ -788,11 +790,13 @@ against the live trade ledger for current numbers.
 
 **Notional per bot.** Each variant has its own $10,000 and its own cap, so
 there is no portfolio-level gross number any more — add the per-bot ceilings if
-you want the fleet's worst case:
+you want the fleet's worst case (chento's is per position, and its positions
+stack):
 
 | Bot | Ceiling per open position | Concurrency |
 |---|---|---|
-| adx, chento_v3, chento_v3_eth, short_squeeze | 3× capital (`NOTIONAL_MAX_X`) | single-open guard — one position at a time |
+| adx, short_squeeze | 3× capital (`NOTIONAL_MAX_X`) | single-open guard — one position at a time |
+| chento_v3, chento_v3_eth | 3× capital (`NOTIONAL_MAX_X`) | **no single-open guard — positions stack**, bounded only by the 6h cooldown and the 72h TIF (structural max 12 open per bot); no aggregate cap |
 | squeeze_bull | 0.5× capital in practice (1% risk over a 2% stop); 3× cap never binds | single-open, per variant |
 | carry | 1× capital, delta-neutral | one position |
 | r4 | 1.5× capital per fire (0.20 × 7.5×) | **up to 3× gross across overlapping windows** |
@@ -803,6 +807,16 @@ alongside R4_ETH_V2, and a third if the BTC V2 window is ever re-enabled.
 Never serialise them; overlap risk is a sizing question, which is what
 `GROSS_MAX_X`, the per-window weight and the 7.5× leverage cap answer.
 
+**Stacked chento positions are by design too — but nothing budgets them.**
+Each signal is its own trade; the live BTC bot already held 3 overlapping
+signals on 2026-08-22 while the OKX gate was still on. The 2026-09-14 sizing
+review replayed the re-validation's ungated trades in the bots' own sequence:
+BTC peaks at 5 open positions, 10% of capital at risk, 8.53× gross notional and
+a 33.4% mark-to-market max drawdown (gated: 23.2%); ETH peaks at 6 open, 12% at
+risk, 4.39× gross and 20.9% (gated: 10.9%). Paper keeps `RISK_PCT` 2% and the
+per-trade 3× cap. Before any real capital, a per-bot open-risk or gross budget
+(or lower risk) goes in as its own pre-registered test.
+
 **Per-strategy time-occupancy** (approximate):
 
 | Strategy | Time in market | Why |
@@ -810,7 +824,7 @@ Never serialise them; overlap risk is a sizing question, which is what
 | CARRY | ~90% | always holding while funding regime is positive |
 | ADX | ~50% | trend follower; in market roughly half the time |
 | R4 (ETH pair) | calendar-windowed | Tue 20:00 → Wed 20:00 plus Wed/Fri 04:00–14:00, weeks 1-2 only |
-| CHENTO_TRIPLE_V3 | low | ~20 triggers/yr per leg, 72h TIF |
+| CHENTO_TRIPLE_V3 | low | ~36 BTC / ~34 ETH trades/yr with the OKX gate off (study rate; ~17 / ~15 gated), 72h TIF, positions can overlap |
 | SQUEEZE_BULL | low | bull-regime flushes only, ≤48h |
 | SHORT_SQUEEZE | low | London/NY sweeps only, ≤6h |
 
@@ -902,7 +916,9 @@ Never serialise them; overlap risk is a sizing question, which is what
    pre-2026-05-16 untrustworthy window (zero trustworthy R4 paper trades
    remain). Two measurement corrections fell out of the audit: chento's quoted
    **~+0.8R/trade is a zero-cost figure** (+0.69R BTC / +0.62R ETH once the
-   source pool's own 18bp model is charged), and the ADX study's "Sharpe 2.09"
+   source pool's own 18bp model is charged; *2026-09-14: every chento figure
+   in this item, DSRs included, was measured on OKX-aligned pools, and that
+   gate is retired — §3.7*), and the ADX study's "Sharpe 2.09"
    is a **per-trade t-statistic**, not an annualised Sharpe (that is 0.84
    baseline / 1.12 Tier-2). The audit imposed no KILL rules and changed no
    config. Still missing: White's reality check / SPA, and a full-grid PBO
@@ -1033,7 +1049,7 @@ only mode that exists.
 ```
 
 ```bash
-python health.py                # invariants: schema, freshness, single-open
+python health.py                # invariants: schema, freshness, single-open (p300_% variants only — blind to every bot_*)
 python monitor.py               # freshness + heartbeats + ghost registry
 python bots/adx/runner.py --once --verbose    # one tick of one bot and exit
 ```
