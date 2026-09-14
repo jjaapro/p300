@@ -17,8 +17,9 @@ discussion) can pick it up.
   `ENTRY_TABLES`, re-baselines the chento goldens (six lose only their `okx_delta_z` keys; the
   bar the gate used to block now pins the switch in each process; a filter-2 veto twin replaces
   the only filter_blocked golden), and hardens the mutation drill: it now fails on a red
-  baseline or a skipped entry, two holes that would have hidden this change. Restart time: in
-  the follow-up entry.
+  baseline or a skipped entry, two holes that would have hidden this change. Commit `53d3393`;
+  chento_v3, chento_v3_eth and the dashboard restarted 08:45–08:49 UTC, first gate-off bar
+  08:45 (evaluated at 09:00), fresh heartbeats, `health.py` 0.
 - **§6 sizing and concurrency review, done before the switch:** keep RISK_PCT 2% and the 3×
   cap for paper. Gate-off stacks more (BTC up to 5 open, 10% at risk, 8.5× gross; ETH 6 open,
   12%, 4.4×) and draws down more (BTC 23% → 33%, ETH 11% → 21% of capital) for about twice the
