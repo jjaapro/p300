@@ -12,8 +12,8 @@ All handlers:
   - use ``strategies.support.price_feed.get_current_price`` for live execution price
     (latest closed 1m bar; ~30s lag from instant);
   - open trades via ``strategies.trades.open_paper_trade`` with
-    ``scheduled_exit_dt`` set so ``orchestrator._close_due_paper_trades``
-    closes them at the right time;
+    ``scheduled_exit_dt`` set so ``botlib.close_due_trades`` (the r4 runner's
+    ``_exits``) closes them at the right time;
   - are idempotent per UTC day via the ``trades`` table existence check.
 
 See README.md for variant calendar / window summary and edge thesis.

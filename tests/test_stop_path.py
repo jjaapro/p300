@@ -332,7 +332,13 @@ def test_scheduled_backstops_cannot_bypass_recovered_thursday_stop(ledger, monke
     """The backstop must not book the due-time price over a stop the path
     already hit. Parametrized over three callers until 2026-09-13; the
     backtest_runner and orchestrator arms went with those modules, and
-    botlib.close_due_trades is the one the fleet actually runs."""
+    botlib.close_due_trades is the one the fleet actually runs.
+
+    Since 2026-09-14 the backstop calls whatever closer it is handed; THU_BEAR
+    has no bot, so it gets the generic close at the trades.py defaults, and
+    the -51.5 below still pins those defaults through the backstop: price
+    P&L -50 minus 15 bp of $1,000, funding stubbed to 0."""
+    from functools import partial
     from strategies.support import funding
     _seed(ledger, direction="SHORT", strategy="THU_BEAR",
           notes='{"sl_semantic_price_thresh_pct":5}')
@@ -344,7 +350,10 @@ def test_scheduled_backstops_cannot_bypass_recovered_thursday_stop(ledger, monke
     monkeypatch.setattr(clock, "_simulated_now", due)
     monkeypatch.setattr(funding, "accrued_pct", lambda *args: 0)
     import botlib
-    assert botlib.close_due_trades("v", due) == ["stop-test"]
+    assert botlib.close_due_trades(
+        "v", due,
+        closers={"THU_BEAR": partial(close_perp_trade, sleeve_name="THU_BEAR")},
+    ) == ["stop-test"]
     row = _trade(ledger)
     assert row["exit_price"] == pytest.approx(105)
     assert row["actual_exit_time"] == _at(1).isoformat()
@@ -394,8 +403,12 @@ def test_late_scheduled_close_uses_due_price_not_later_wick_or_quote(ledger, mon
     _bar(ledger, 25 * 60 + 9, o=80, h=81, l=79, c=80)
     monkeypatch.setattr(clock, "_simulated_now", _at(25 * 60 + 10))
     monkeypatch.setattr(funding, "accrued_pct", lambda *args: 0)
+    from functools import partial
     import botlib
-    assert botlib.close_due_trades("v", clock.now_utc()) == ["stop-test"]
+    assert botlib.close_due_trades(
+        "v", clock.now_utc(),
+        closers={"THU_BEAR": partial(close_perp_trade, sleeve_name="THU_BEAR")},
+    ) == ["stop-test"]
     row = _trade(ledger)
     assert row["actual_exit_time"] == due.isoformat()
     assert row["exit_price"] == 95

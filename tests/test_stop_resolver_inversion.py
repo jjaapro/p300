@@ -113,10 +113,13 @@ def test_closing_adx_without_a_resolver_raises(monkeypatch, tmp_path):
 def test_the_generic_backstops_cannot_reach_an_adx_trade():
     """Why the raise above is safe rather than a landmine.
 
-    `botlib.close_due_trades` and the orchestrator's equivalent close ANY
-    strategy and supply no resolver — but both only act once `now >=
-    exit_time`, and ADX writes the no-scheduled-exit sentinel (2099-12-31),
-    so neither can reach an ADX trade. If that sentinel ever changes, this
+    Until 2026-09-14 `botlib.close_due_trades` closed ANY strategy through
+    the generic close with no resolver, and would have hit the raise above.
+    It now calls the closer each runner hands it, and bots/adx/runner.py hands
+    it `_close_adx_paper`, which supplies the resolver — pinned end to end by
+    tests/test_adx_bot.py. The backstop still only acts once `now >=
+    exit_time`, and ADX writes the no-scheduled-exit sentinel (2099-12-31), so
+    it cannot reach an ADX trade today. If that sentinel ever changes, this
     test is what says why it mattered.
     """
     src = pathlib.Path(

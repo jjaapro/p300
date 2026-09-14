@@ -54,18 +54,51 @@ def size_intent(intent, capital: float):
     return resized, {"notional": capital * botcfg.CARRY_NOTIONAL_X}
 
 
+def _backstop(variant: dict, out: dict) -> dict:
+    """Scheduled-exit backstop, closing through the sleeve's own close so a
+    CARRY trade is booked delta-neutral, never as a directional long (BACKLOG
+    4.4). Unreachable today — CARRY trades carry the 2099 no-exit placeholder
+    — and kept as defence in depth. A trade it could not close marks the
+    heartbeat 'error' instead of raising."""
+    from bots.carry.strategy import signal as sleeve
+    try:
+        closed = botlib.close_due_trades(
+            variant["id"], closers={"CARRY": sleeve._close_carry_paper})
+    except botlib.BackstopRefused as e:
+        closed = e.closed
+        out.update(hb_status="error",
+                   hb_note="; ".join(n for n in (out.get("hb_note"), str(e)[:300]) if n),
+                   backstop_refused=[r[0] for r in e.refused + e.errors])
+    if closed:
+        out["backstop_closed"] = closed
+    return out
+
+
 def tick(variant: dict) -> dict:
     from bots.carry.strategy import signal as sleeve
 
     stale_mgmt = botlib.stale_tables(botcfg.MGMT_TABLES)
     if stale_mgmt:
+        # The backstop is skipped here too, on purpose: it prices off btc_1m
+        # and the carry close books funding from cd_funding_rate, and either
+        # may be the table that just went stale. 'degraded' surfaces the skip;
+        # exits resume on the next fresh tick.
         return {"status": "stale_mgmt_inputs", "stale": stale_mgmt,
                 "hb_status": "degraded",
                 "hb_note": f"mgmt tables stale: {sorted(stale_mgmt)}"}
 
     # Sizing is the runner's job (size_intent overwrites both), so the sleeve
     # gets the placeholders the cfg dict used to carry.
-    intents, status = sleeve.decide(variant, weight_pct=100.0, leverage=1.0)
+    try:
+        intents, status = sleeve.decide(variant, weight_pct=100.0, leverage=1.0)
+    except Exception as decide_error:  # noqa: BLE001
+        # decide() also runs the sleeve's 30-day cumulative exit. When it
+        # raises, enter nothing this tick but still run the backstop, then
+        # report the error the way the loop always has: heartbeat 'error',
+        # note repr(error).
+        log.exception(f"decide error: {decide_error}")
+        return _backstop(variant, {"status": "decide_error", "hb_status": "error",
+                                   "hb_note": repr(decide_error), "evaluated": False})
     st = status.get("status", "?")
     out = {"status": st, "detail": status, "hb_status": "ok", "hb_note": "",
            "evaluated": st not in _NOT_EVALUATED_STATUSES}
@@ -79,10 +112,7 @@ def tick(variant: dict) -> dict:
         out["opened"] = res.get("trade_id")
         out["signal"] = True
 
-    closed = botlib.close_due_trades(variant["id"])
-    if closed:
-        out["backstop_closed"] = closed
-    return out
+    return _backstop(variant, out)
 
 
 def main(argv: list[str] | None = None) -> int:

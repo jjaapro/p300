@@ -151,16 +151,53 @@ def _stop_sweep(variant_id: str) -> list[str]:
     return closed
 
 
+def _exits(variant: dict, out: dict) -> dict:
+    """The scheduled window close, then the optional stop sweep.
+
+    R4 has no close of its own, so this backstop IS its exit. It books the
+    trades.py defaults — 10 bp fee + 5 bp slippage + funding — exactly as
+    docs/calibration/r4.md documents; the partial only names the sleeve. The
+    2026-09-14 change that made the other bots close through their own close
+    (BACKLOG 4.4) leaves R4's cost where it was. Every window in ENABLED gets
+    a closer, on or off, so a trade whose window was switched off while it
+    was open still closes. A trade the backstop could not close marks the
+    heartbeat 'error' instead of raising.
+    """
+    import functools
+
+    from strategies import trades
+    closers = {s: functools.partial(trades.close_perp_trade, sleeve_name=s)
+               for s in botcfg.ENABLED}
+    try:
+        closed = botlib.close_due_trades(variant["id"], closers=closers)
+    except botlib.BackstopRefused as e:
+        closed = e.closed
+        out.update(hb_status="error",
+                   hb_note="; ".join(n for n in (out.get("hb_note"), str(e)[:300]) if n),
+                   backstop_refused=[r[0] for r in e.refused + e.errors])
+    if closed:
+        out["backstop_closed"] = closed
+    stopped = _stop_sweep(variant["id"])
+    if stopped:
+        out["stopped"] = stopped
+    return out
+
+
 def tick(variant: dict) -> dict:
     from strategies.support import clock
 
     stale_mgmt = botlib.stale_tables(botcfg.MGMT_TABLES)
     if stale_mgmt:
+        # The exits are skipped here too, on purpose (BACKLOG 18): a close
+        # may price off the 1m table that just failed its freshness contract.
+        # The check is not per asset, so with ETH-only windows a stale btc_1m
+        # alone also holds back an ETH close priced off a fresh eth_1m.
+        # 'degraded' surfaces the skip; the window close happens on the next
+        # fresh tick.
         return {"status": "stale_mgmt_inputs", "stale": stale_mgmt,
                 "hb_status": "degraded", "evaluated": False,
                 "hb_note": f"mgmt tables stale: {sorted(stale_mgmt)}"}
 
-    r4 = _sleeve()
     capital = float(variant["capital_usdt"])
     now = clock.now_utc()
     today = now.date().isoformat()
@@ -170,8 +207,20 @@ def tick(variant: dict) -> dict:
     blocked: dict = {}
     exhausted: list[str] = []
     evaluated = False
+    error = ""
 
-    for strategy, decide in deciders().items():
+    try:
+        r4 = _sleeve()
+        window_deciders = deciders()
+    except Exception as lookup_error:  # noqa: BLE001
+        # A sleeve that fails to import (say after a code change and a
+        # restart) must not hold back the exits either: they need only
+        # strategies.trades and botlib, and the window close is R4's only
+        # exit. Decide nothing, run the exits, report it as a decide error.
+        log.exception(f"decide lookup error: {lookup_error}")
+        r4, window_deciders, error = None, {}, repr(lookup_error)
+
+    for strategy, decide in window_deciders.items():
         if not botcfg.ENABLED.get(strategy, False):
             continue
         # No weight / gate / vol_scalar: their ABSENCE is the live path.
@@ -180,7 +229,16 @@ def tick(variant: dict) -> dict:
         # leverage from today_inputs, and the bot consumes the resulting
         # stacked leverage in size_intent. Passing any of them here would
         # override the regime gate.
-        intents, status = decide(variant)
+        try:
+            intents, status = decide(variant)
+        except Exception as decide_error:  # noqa: BLE001
+            # Enter nothing more this tick, but still run the exits below —
+            # for R4 the backstop is the only exit — then report the error the
+            # way the loop always has: heartbeat 'error', note repr(error).
+            log.exception(f"decide error {strategy}: {decide_error}")
+            detail[strategy] = "decide_error"
+            error = repr(decide_error)
+            break
         st = status.get("status", "?")
         detail[strategy] = st
         if st != "no_inputs":
@@ -241,14 +299,11 @@ def tick(variant: dict) -> dict:
                    hb_note="missed_window " + ",".join(missed) + f" {today}")
     elif exhausted:
         out.update(status="budget_exhausted")
+    if error:
+        out.update(status="decide_error", hb_status="error",
+                   hb_note="; ".join(n for n in (error, out["hb_note"]) if n))
 
-    closed = botlib.close_due_trades(variant["id"])
-    if closed:
-        out["backstop_closed"] = closed
-    stopped = _stop_sweep(variant["id"])
-    if stopped:
-        out["stopped"] = stopped
-    return out
+    return _exits(variant, out)
 
 
 def main(argv: list[str] | None = None) -> int:

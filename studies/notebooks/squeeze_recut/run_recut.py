@@ -70,9 +70,11 @@ def report(cfg: R.SleeveCfg, live, union, rep, div, verdict) -> str:
 
     if len(live) and live.backstop_exit.any():
         n = int(live.backstop_exit.sum())
-        L += [f"  !! {n} trade(s) closed by botlib.close_due_trades, which books the",
-              "     15 bp default rather than this sleeve's measured cost. That is a",
-              "     fidelity defect in the ledger, not a policy outcome (BACKLOG 4.4).",
+        L += [f"  !! {n} trade(s) closed by botlib.close_due_trades, not the sleeve's",
+              "     own sweep: labelled scheduled_exit, priced at the tick's quote.",
+              "     Since 2026-09-14 the backstop books the sleeve's own cost (before,",
+              "     15 bp + funding, BACKLOG 4.4); the `booked` column nets whichever",
+              "     cost was actually booked, so read this as a label, not a cost.",
               ""]
 
     if len(live) and live.legacy_ref_stop.any():
@@ -83,11 +85,11 @@ def report(cfg: R.SleeveCfg, live, union, rep, div, verdict) -> str:
     if not div.empty:
         L += ["  DIVERGENCE — live vs the sleeve's own replay of the same fires", ""]
         L.append("    trade      side     R live   R replay    diff   funding  "
-                 "backstop  RESIDUAL")
+                 "  booked  RESIDUAL")
         for d in div.itertuples():
             L.append(f"    {d.id:<10} {d.side:<7} {_fmt(d.r_live)}  "
                      f"{_fmt(d.r_replay)}  {_fmt(d.diff_R)}  {_fmt(d.funding_R)}  "
-                     f"{_fmt(d.backstop_cost_R)}  {_fmt(d.residual_R)}")
+                     f"{_fmt(d.booked_cost_R)}  {_fmt(d.residual_R)}")
         mism = div[~div.exit_matches]
         if len(mism):
             L.append(f"    {len(mism)} exit-kind mismatch(es) live vs replay: "

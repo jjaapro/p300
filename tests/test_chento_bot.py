@@ -599,3 +599,164 @@ def test_half_after_loss_still_sees_a_genuine_last_loss(tmp_db):
                  scheduled_exit=(d + timedelta(days=4)).isoformat(),
                  actual_exit=(d + timedelta(days=4)).isoformat())
     assert runner._last_closed_was_loss("bot_chento_v3_eth") is True
+
+
+# ─── Scheduled-exit backstop books the sleeve's cost (BACKLOG 4.4) ───────────
+# SJ-4243 / SJ-4245 (2026-08-24) were closed by the backstop at the trades.py
+# defaults — 10 bp fee + 5 bp slippage + funding — where the sleeve books
+# 10 bp with no slippage and no funding. The ETH process runs this same tick
+# with the same sleeve name and closer, so the BTC variant covers both.
+
+def _backstop_env(tmp_db, monkeypatch):
+    """A $10,000 long from 50,000 whose exit time passed a minute ago, priced
+    at 50,500 (+$100 of price P&L), with funding stubbed at -0.10% for a long
+    so a close that books funding shows it."""
+    from strategies import trades
+    from strategies.support import funding, price_feed
+    monkeypatch.setattr(botlib, "stale_tables", lambda tables=None: {})
+    monkeypatch.setattr(price_feed, "get_current_price", lambda a: 50_500.0)
+    monkeypatch.setattr(funding, "accrued_pct",
+                        lambda asset, a, b, d: -0.10 if str(d).upper() == "LONG" else 0.10)
+    variant = botlib.ensure_bot_variant(
+        botcfg.VARIANT_ID, short_name="t", capital_usdt=10_000.0,
+        bot_name=botcfg.BOT_NAME)
+    tid = trades.open_paper_trade(
+        variant=variant, sleeve_name="CHENTO_TRIPLE_V3", asset="BTC",
+        direction="LONG", entry_price=50_000.0, allocation_pct=100.0,
+        leverage=1.0, reason={"trigger": "chento_triple_v3"},
+        scheduled_exit_dt=T0 - timedelta(minutes=1),
+        entry_dt=T0 - timedelta(hours=6), signal_time_iso="backstop-test")
+    return variant, tid
+
+
+def _closed_row(db_path, tid):
+    con = sqlite3.connect(str(db_path))
+    try:
+        status, pnl, notes = con.execute(
+            "SELECT status, pnl_usdt, notes FROM trades WHERE id=?", (tid,)).fetchone()
+        fee = con.execute(
+            "SELECT fee_usdt FROM trade_adjustments WHERE trade_id=? "
+            "AND event_type='CLOSE'", (tid,)).fetchone()
+    finally:
+        con.close()
+    return status, pnl, notes, (fee[0] if fee else None)
+
+
+def test_backstop_books_the_sleeves_cost_not_trades_defaults(tmp_db, monkeypatch):
+    variant, tid = _backstop_env(tmp_db, monkeypatch)
+    # The sleeve's own sweep must not get there first.
+    monkeypatch.setattr("bots.chento_v3.strategy.decide",
+                        lambda *a, **k: ([], {"status": "no_triple"}))
+
+    out = runner.tick(variant)
+
+    assert out.get("backstop_closed") == [tid], out
+    assert out["hb_status"] == "ok"
+    status, pnl, notes, fee = _closed_row(tmp_db, tid)
+    assert status == "closed"
+    # +100 price P&L - 10 bp of $10,000; no slippage, no funding. The
+    # trades.py defaults book 100 - 15 - 10 = 75.00.
+    assert pnl == pytest.approx(90.00)
+    assert fee == pytest.approx(10.00)
+    assert notes.endswith(
+        "\nCHENTO_TRIPLE_V3_EXIT: scheduled_exit; fees=10bp RT, slip=0bp RT")
+
+
+def test_decide_raising_still_runs_the_backstop(tmp_db, monkeypatch):
+    """Until 2026-09-14 a raising decide() aborted the tick before the
+    backstop, so an overdue trade stayed open for as long as decide kept
+    failing. It must close, and the error must still reach the heartbeat."""
+    variant, tid = _backstop_env(tmp_db, monkeypatch)
+
+    def broken_decide(*a, **k):
+        raise RuntimeError("feature rebuild failed")
+    monkeypatch.setattr("bots.chento_v3.strategy.decide", broken_decide)
+
+    try:
+        out = runner.tick(variant)
+    except RuntimeError as escaped:
+        raise AssertionError("decide's error escaped the tick, so the backstop "
+                             "never ran") from escaped
+
+    assert out.get("backstop_closed") == [tid], out
+    assert _closed_row(tmp_db, tid)[0] == "closed"
+    assert out["status"] == "decide_error"
+    assert out["hb_status"] == "error"
+    assert out["hb_note"] == repr(RuntimeError("feature rebuild failed"))
+    assert out["evaluated"] is False and "opened" not in out
+
+
+def test_backstop_refusal_keeps_closed_ids_and_turns_the_heartbeat_error(tmp_db, monkeypatch):
+    """A due trade of a strategy chento has no closer for stays open, is named
+    in the heartbeat note with status 'error', and does not escape the tick;
+    the chento trade that did close is still reported."""
+    from strategies import trades
+    variant, own = _backstop_env(tmp_db, monkeypatch)
+    foreign = trades.open_paper_trade(
+        variant=variant, sleeve_name="SQUEEZE_BULL", asset="BTC",
+        direction="LONG", entry_price=50_000.0, allocation_pct=100.0,
+        leverage=1.0, reason={"t": "foreign"},
+        scheduled_exit_dt=T0 - timedelta(minutes=1),
+        entry_dt=T0 - timedelta(hours=6), signal_time_iso="foreign")
+    monkeypatch.setattr("bots.chento_v3.strategy.decide",
+                        lambda *a, **k: ([], {"status": "no_triple"}))
+
+    try:
+        out = runner.tick(variant)
+    except botlib.BackstopRefused as escaped:
+        raise AssertionError("the refusal escaped the tick") from escaped
+
+    assert out.get("backstop_closed") == [own], out
+    assert out.get("backstop_refused") == [foreign], out
+    assert out["hb_status"] == "error" and "SQUEEZE_BULL" in out["hb_note"]
+    assert _closed_row(tmp_db, own)[0] == "closed"
+    assert _closed_row(tmp_db, foreign)[0] == "open"
+
+
+def test_decide_error_and_backstop_refusal_both_reach_the_heartbeat(tmp_db, monkeypatch):
+    """On a tick where decide raises AND the backstop refuses a trade, the
+    note keeps the decide error first and appends the refusal."""
+    from strategies import trades
+    variant, own = _backstop_env(tmp_db, monkeypatch)
+    foreign = trades.open_paper_trade(
+        variant=variant, sleeve_name="SQUEEZE_BULL", asset="BTC",
+        direction="LONG", entry_price=50_000.0, allocation_pct=100.0,
+        leverage=1.0, reason={"t": "foreign"},
+        scheduled_exit_dt=T0 - timedelta(minutes=1),
+        entry_dt=T0 - timedelta(hours=6), signal_time_iso="foreign")
+
+    def broken_decide(*a, **k):
+        raise RuntimeError("feature rebuild failed")
+    monkeypatch.setattr("bots.chento_v3.strategy.decide", broken_decide)
+
+    try:
+        out = runner.tick(variant)
+    except (RuntimeError, botlib.BackstopRefused) as escaped:
+        raise AssertionError("an error escaped the tick") from escaped
+
+    assert out["status"] == "decide_error" and out["hb_status"] == "error"
+    assert out["hb_note"].startswith(
+        repr(RuntimeError("feature rebuild failed"))
+        + "; backstop left 1 due trade(s) open in "), out["hb_note"]
+    assert "SQUEEZE_BULL" in out["hb_note"]
+    assert out.get("backstop_closed") == [own], out
+    assert out.get("backstop_refused") == [foreign], out
+
+
+def test_stale_mgmt_tables_skip_the_backstop(tmp_db, monkeypatch):
+    """Kept on purpose (BACKLOG 18): the backstop would price off the 1m
+    table in MGMT_TABLES, so a stale-mgmt tick leaves a due trade open."""
+    variant, tid = _backstop_env(tmp_db, monkeypatch)
+
+    def boom(*a, **k):
+        raise AssertionError("decide must not run on stale mgmt tables")
+    monkeypatch.setattr("bots.chento_v3.strategy.decide", boom)
+    monkeypatch.setattr(botlib, "stale_tables",
+                        lambda tables=None: {"btc_1m": 900.0}
+                        if tables == botcfg.MGMT_TABLES else {})
+
+    out = runner.tick(variant)
+
+    assert out["status"] == "stale_mgmt_inputs" and out["hb_status"] == "degraded"
+    assert "backstop_closed" not in out, out
+    assert _closed_row(tmp_db, tid)[0] == "open"

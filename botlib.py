@@ -370,15 +370,51 @@ def ensure_bot_variant(variant_id: str, *, short_name: str,
 
 # ─── Scheduled-exit backstop ──────────────────────────────────────────────────
 
-def close_due_trades(variant_id: str,
-                     now_utc: datetime | None = None) -> list[str]:
+class BackstopRefused(Exception):
+    """close_due_trades could not close every due trade.
+
+    Raised only AFTER every due trade has been tried, so one bad trade never
+    strands the others. `closed` holds the ids that did close; `refused`
+    (no closer for the strategy) and `errors` (its price read or closer
+    raised) hold (trade_id, strategy, reason) tuples. Runners catch it, keep
+    the closed ids and mark the heartbeat 'error' rather than aborting the
+    tick.
+    """
+
+    def __init__(self, closed: list[str], refused: list[tuple[str, str, str]],
+                 errors: list[tuple[str, str, str]], *, variant_id: str = ""):
+        self.closed = list(closed)
+        self.refused = list(refused)
+        self.errors = list(errors)
+        self.variant_id = variant_id
+        failed = "; ".join(f"{tid} {strategy}: {why}"
+                           for tid, strategy, why in self.refused + self.errors)
+        super().__init__(f"backstop left {len(self.refused) + len(self.errors)} "
+                         f"due trade(s) open in {variant_id}: {failed}")
+
+
+def close_due_trades(variant_id: str, now_utc: datetime | None = None, *,
+                     closers: dict) -> list[str]:
     """Close this variant's open paper trades whose exit_time has passed.
 
-    Defense-in-depth behind the sleeve's own sweep (which normally closes
-    stop/target/time-stop first with better prices). Ports the semantics of
-    orchestrator._close_due_paper_trades scoped to one variant.
+    Defense in depth behind the sleeve's own sweep, which normally closes
+    stop / target / time stop first. `closers` maps strategy name to that
+    sleeve's OWN close function, called as closer(trade_id, price,
+    'scheduled_exit'). So a backstop close books exactly what the sleeve's
+    close books — cost, slippage, funding, ADX's stop resolver, CARRY's
+    delta-neutral P&L. What it does not match is the price source and the
+    label: it hands the closer get_current_price and reason
+    'scheduled_exit'; a stop-path sleeve's close (ADX) may still re-price
+    that to an earlier stop or to the due minute.
+
+    Until 2026-09-14 this called trades.close_perp_trade with no overrides,
+    so every strategy was booked at the trades.py defaults, 10 bp fee + 5 bp
+    slippage + funding (BACKLOG 4.4). A due trade whose strategy has no
+    closer is now REFUSED rather than booked at those defaults. A refusal, or
+    a price read or closer that raises, never stops the next trade: every
+    due trade is tried, then BackstopRefused names what stayed open and
+    carries the ids that closed.
     """
-    from strategies import trades
     from strategies.support.price_feed import get_current_price
 
     now_utc = now_utc or clock.now_utc()
@@ -394,6 +430,8 @@ def close_due_trades(variant_id: str,
         con.close()
 
     closed: list[str] = []
+    refused: list[tuple[str, str, str]] = []
+    errors: list[tuple[str, str, str]] = []
     for t in opens:
         exit_time = t["exit_time"]
         if not exit_time:
@@ -406,14 +444,30 @@ def close_due_trades(variant_id: str,
             continue
         if now_utc < exit_dt:
             continue
-        price = get_current_price(t["asset"])
-        if price is None:
-            log.warning(f"[backstop] no price for {t['id']} {t['asset']} — skip")
+        close = closers.get(t["strategy"])
+        if close is None:
+            refused.append((t["id"], t["strategy"],
+                            "no closer for this strategy, refusing to book "
+                            "it at the trades.py defaults"))
             continue
-        trades.close_perp_trade(t["id"], price, "scheduled_exit",
-                                sleeve_name=t["strategy"])
+        try:
+            # The price read sits inside the try too: a locked or broken 1m
+            # table must not strand the other due trades either.
+            price = get_current_price(t["asset"])
+            if price is None:
+                log.warning(f"[backstop] no price for {t['id']} {t['asset']} — skip")
+                continue
+            close(t["id"], price, "scheduled_exit")
+        except Exception as e:  # noqa: BLE001 — the other due trades still close
+            log.exception(f"[backstop] close failed for {t['id']} ({t['strategy']})")
+            errors.append((t["id"], t["strategy"], repr(e)))
+            continue
         closed.append(t["id"])
         log.info(f"[backstop] closed overdue {t['id']} ({t['strategy']})")
+    if refused or errors:
+        refusal = BackstopRefused(closed, refused, errors, variant_id=variant_id)
+        log.error(f"[backstop] {refusal}")
+        raise refusal
     return closed
 
 

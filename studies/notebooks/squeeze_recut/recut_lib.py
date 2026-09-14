@@ -134,6 +134,27 @@ def parse_notes(raw: str | None) -> tuple[dict, str | None]:
     return (blob if isinstance(blob, dict) else {}), (m.group(2).strip() if m else None)
 
 
+_BOOKED_RE = re.compile(r"fees=(\d+(?:\.\d+)?)bp RT(?:, slip=(\d+(?:\.\d+)?)bp RT)?")
+
+
+def booked_cost_bp(close_fee_usdt: float | None, size_usdt: float | None,
+                   notes: str | None) -> float:
+    """Round-trip cost the ledger booked on a closed trade, in bp of notional.
+
+    Taken from the trade's CLOSE adjustment: close_perp_trade persists
+    fee + slippage on the notional it closed as `fee_usdt`, exactly. The
+    notes suffix (`fees=10bp RT, slip=0bp RT`) is the fallback for a row with
+    no CLOSE adjustment; it rounds to whole bp, so it is never preferred.
+    NaN when neither is present.
+    """
+    if close_fee_usdt is not None and size_usdt:
+        return float(close_fee_usdt) / float(size_usdt) * 1e4
+    m = _BOOKED_RE.search(notes or "")
+    if m:
+        return float(m.group(1)) + float(m.group(2) or 0.0)
+    return float("nan")
+
+
 def _bar_ts(blob: dict, cfg: SleeveCfg) -> int | None:
     v = blob.get(cfg.bar_key)
     if v is None:
@@ -154,13 +175,22 @@ def load_live(cfg: SleeveCfg, as_of: datetime,
     own = con is None
     con = con or ro_prod()
     try:
+        # One CLOSE adjustment per trade, the first by seq: prod's
+        # trade_adjustments has only UNIQUE(trade_id, seq), so a plain join
+        # could return a trade twice if a duplicate CLOSE row exists
+        # (BACKLOG 4.5). The notional is the one the close costed.
         rows = con.execute("""
-            SELECT id, strategy_variant, status, actual_entry_time,
-                   actual_exit_time, entry_price, exit_price, size_usdt,
-                   leverage, pnl_usdt, pnl_pct, unique_key, notes
-            FROM trades
-            WHERE strategy_variant IN (?, ?) AND strategy = ?
-            ORDER BY actual_entry_time
+            SELECT t.id, t.strategy_variant, t.status, t.actual_entry_time,
+                   t.actual_exit_time, t.entry_price, t.exit_price, t.size_usdt,
+                   t.leverage, t.pnl_usdt, t.pnl_pct, t.unique_key, t.notes,
+                   COALESCE(NULLIF(t.current_size_usdt, 0), t.size_usdt)
+                       AS close_size_usdt,
+                   (SELECT a.fee_usdt FROM trade_adjustments a
+                     WHERE a.trade_id = t.id AND a.event_type = 'CLOSE'
+                     ORDER BY a.seq LIMIT 1) AS close_fee_usdt
+            FROM trades t
+            WHERE t.strategy_variant IN (?, ?) AND t.strategy = ?
+            ORDER BY t.actual_entry_time
         """, (cfg.stop_id, cfg.nostop_id, cfg.sleeve)).fetchall()
     finally:
         if own:
@@ -196,9 +226,15 @@ def load_live(cfg: SleeveCfg, as_of: datetime,
                         if r["pnl_usdt"] is not None and denom else float("nan")),
             bar_ts=_bar_ts(blob, cfg), exit_reason=exit_reason,
             legacy_ref_stop=legacy,
+            # What the ledger charged this trade, which divergence() nets
+            # against the replay's measured cost on every closed trade.
+            booked_bp=(booked_cost_bp(r["close_fee_usdt"], r["close_size_usdt"],
+                                      r["notes"])
+                       if r["status"] == "closed" else float("nan")),
             # `scheduled_exit` means botlib.close_due_trades beat the sleeve's
-            # own sweep, which books the 15 bp default instead of the sleeve's
-            # measured cost. A fidelity defect, not a policy outcome.
+            # own sweep. Since 2026-09-14 it closes through the sleeve's own
+            # close, so the cost matches and only the label differs; before
+            # that it booked 15 bp + funding (BACKLOG 4.4). A flag, not a cost.
             backstop_exit=(exit_reason == "scheduled_exit"),
             unique_key=r["unique_key"],
         ))
@@ -436,21 +472,33 @@ def divergence(cfg: SleeveCfg, live: pd.DataFrame,
         funding_r = 0.0
         try:
             if lv.entry_time and lv.exit_time and lv.risk_pct:
+                # Both twins are long-only; accrued_pct takes the direction as
+                # a string. It took +1 until 2026-09-14, which raised on every
+                # hold that crossed a settlement, so funding_R was NaN there.
                 pct = funding_mod.accrued_pct(
                     cfg.asset, datetime.fromisoformat(lv.entry_time),
-                    datetime.fromisoformat(lv.exit_time), +1)
+                    datetime.fromisoformat(lv.exit_time), "LONG")
                 funding_r = (pct / 100.0) / lv.risk_pct
         except Exception:  # noqa: BLE001 — reporting only, never fail the re-cut
             funding_r = float("nan")
-        # The backstop books 15 bp where the sleeve books its measured cost.
+        # Live nets the cost it BOOKED (7 / 10 bp, from the CLOSE adjustment);
+        # the replay nets the E6 measured mean (sl.cost_bp, 6.67 / 9.32 bp).
+        # That gap sits in every closed trade, not only backstop closes, and
+        # on SHORT_SQUEEZE's tight stops it is up to 0.045 R of D4's 0.05 R
+        # budget — so it is netted on every closed trade (since 2026-09-14;
+        # README). A backstop close with no recoverable booked cost falls back
+        # to the 15 bp the pre-2026-09-14 backstop booked.
+        booked = getattr(lv, "booked_bp", float("nan"))
+        if not np.isfinite(booked) and lv.backstop_exit:
+            booked = 15.0
         cost_r = 0.0
-        if lv.backstop_exit and lv.risk_pct:
-            cost_r = -((15.0 - sl.cost_bp(cfg.sleeve)) / 1e4) / lv.risk_pct
+        if np.isfinite(booked) and lv.risk_pct:
+            cost_r = -((booked - sl.cost_bp(cfg.sleeve)) / 1e4) / lv.risk_pct
         residual = d - (funding_r if np.isfinite(funding_r) else 0.0) - cost_r
         out.append(dict(id=lv.id, side=lv.side, bar_ts=int(lv.bar_ts),
                         r_live=lv.r_live_net, r_replay=rp.r_net, diff_R=d,
-                        funding_R=funding_r, backstop_cost_R=cost_r,
-                        residual_R=residual,
+                        funding_R=funding_r, booked_cost_R=cost_r,
+                        residual_R=residual, backstop_exit=lv.backstop_exit,
                         live_exit=lv.exit_reason, replay_exit=rp.kind,
                         exit_matches=(_norm_exit(lv.exit_reason) == rp.kind)))
     return pd.DataFrame(out)

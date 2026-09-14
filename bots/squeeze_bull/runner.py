@@ -93,6 +93,25 @@ def size_intent(intent, capital: float, *, use_stop: bool = True):
                      "notional": notional, "at_cap": False}
 
 
+def _backstop(variant: dict, out: dict) -> dict:
+    """Scheduled-exit backstop, closing through the sleeve's own close so it
+    books exactly what the sleeve books (BACKLOG 4.4). A trade it could not
+    close marks the heartbeat 'error' instead of raising, so tick_all still
+    ticks the next variant."""
+    from bots.squeeze_bull.strategy import signal as sleeve
+    try:
+        closed = botlib.close_due_trades(
+            variant["id"], closers={sleeve.SLEEVE_NAME: sleeve._close_paper})
+    except botlib.BackstopRefused as e:
+        closed = e.closed
+        out.update(hb_status="error",
+                   hb_note="; ".join(n for n in (out.get("hb_note"), str(e)[:300]) if n),
+                   backstop_refused=[r[0] for r in e.refused + e.errors])
+    if closed:
+        out["backstop_closed"] = closed
+    return out
+
+
 def tick(variant: dict, *, use_stop: bool = True, diag: bool = True) -> dict:
     """One tick for one variant. `use_stop` selects the exit policy — it is
     what separates `bot_squeeze_bull_v1` from `bot_squeeze_bull_nostop_v1`,
@@ -104,14 +123,27 @@ def tick(variant: dict, *, use_stop: bool = True, diag: bool = True) -> dict:
 
     stale_mgmt = botlib.stale_tables(botcfg.MGMT_TABLES)
     if stale_mgmt:
+        # The backstop is skipped here too, on purpose: it would close at a
+        # price from btc_1m, the table that just failed its freshness
+        # contract. 'degraded' surfaces the skip; exits resume on the next
+        # fresh tick.
         return {"status": "stale_mgmt_inputs", "stale": sorted(stale_mgmt),
                 "hb_status": "degraded",
                 "hb_note": f"mgmt tables stale: {sorted(stale_mgmt)}"}
 
     # Sizing is the runner's job (size_intent below overwrites both), so the
     # sleeve is handed the placeholders the cfg dict used to carry.
-    intents, status = sleeve.decide(variant, weight_pct=100.0, leverage=1.0,
-                                    use_stop=use_stop)
+    try:
+        intents, status = sleeve.decide(variant, weight_pct=100.0, leverage=1.0,
+                                        use_stop=use_stop)
+    except Exception as decide_error:  # noqa: BLE001
+        # decide() also runs the sleeve's exit sweep. When it raises, enter
+        # nothing this tick but still run the backstop, then report the error
+        # the way the loop always has: heartbeat 'error', note repr(error).
+        # Returning rather than raising lets tick_all tick the next variant.
+        log.exception(f"decide error [{variant['id']}]: {decide_error}")
+        return _backstop(variant, {"status": "decide_error", "hb_status": "error",
+                                   "hb_note": repr(decide_error), "evaluated": False})
     st = status.get("status", "?")
     out = {"status": st, "detail": status, "hb_status": "ok", "hb_note": "",
            "evaluated": st != "already_evaluated_this_hour"}
@@ -141,10 +173,7 @@ def tick(variant: dict, *, use_stop: bool = True, diag: bool = True) -> dict:
                 out["opened"] = res.get("trade_id")
                 out["signal"] = True
 
-    closed = botlib.close_due_trades(variant["id"])
-    if closed:
-        out["backstop_closed"] = closed
-    return out
+    return _backstop(variant, out)
 
 
 def tick_all(variants: list[dict]) -> dict:
@@ -152,11 +181,24 @@ def tick_all(variants: list[dict]) -> dict:
     {"row": <variants table row>, "use_stop": bool}. Returns what the
     heartbeat needs (worst status, joined notes, any evaluated / signalled,
     total open trades) plus the per-variant tick results; `status` is the
-    first variant's, which drives the idle-vs-info log decision."""
+    first variant's, which drives the idle-vs-info log decision.
+
+    One variant's tick raising never skips the next variant's: the twin's
+    own sweep is what closes ITS positions. tick() already returns on a
+    raising decide() or a backstop refusal; this also covers the entry path
+    after decide() (sizing, the entry-table check, execute() — including a
+    duplicate-instance refusal while this process stands down). That
+    variant's backstop is skipped for the tick; its heartbeat part is
+    'error' with the exception as note."""
     per: dict[str, dict] = {}
     for k, v in enumerate(variants):
-        per[v["row"]["id"]] = tick(v["row"], use_stop=bool(v["use_stop"]),
-                                   diag=(k == 0))
+        try:
+            per[v["row"]["id"]] = tick(v["row"], use_stop=bool(v["use_stop"]),
+                                       diag=(k == 0))
+        except Exception as tick_error:  # noqa: BLE001 — the twin still ticks
+            log.exception(f"tick error [{v['row']['id']}]: {tick_error}")
+            per[v["row"]["id"]] = {"status": "tick_error", "hb_status": "error",
+                                   "hb_note": repr(tick_error), "evaluated": False}
     outs = list(per.values())
     rank = {"ok": 0, "degraded": 1, "error": 2}
     hb_status = max((o.get("hb_status", "ok") for o in outs), key=lambda s: rank.get(s, 2))

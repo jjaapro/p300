@@ -82,18 +82,50 @@ DSR is computed.
 to catch "an execution or data fault rather than an edge failure"
 (squeeze_bull.md). A live-vs-replay difference that is fully explained by
 funding, by the booked cost, or by the 60 s poll cadence is not a fault, so
-`divergence()` decomposes the difference into `funding_R`, `backstop_cost_R`
+`divergence()` decomposes the difference into `funding_R`, `booked_cost_R`
 and a residual, and the clause fires on the residual. Both numbers are printed;
 if the decomposition ever fails to explain a large raw difference, the residual
 is what remains and the clause still fires.
 
-**`backstop_cost_R` is a real term, not a rounding.** `botlib.close_due_trades`
-closes overdue trades with no cost override, so it books the 15 bp default
-rather than the sleeve's measured 7 bp (SQUEEZE_BULL) or 10 bp
-(SHORT_SQUEEZE). It is a true fallback — the sleeve's own sweep runs first on
-every tick — but when it fires it is worth 0.04 R on SQUEEZE_BULL and
-0.07–0.5 R on SHORT_SQUEEZE, which alone would trip D4. Any trade closed by
-`scheduled_exit` is flagged in the report. See BACKLOG.md item 4.4.
+**`booked_cost_R` is netted on every closed trade, not a rounding.** Live R is
+net of the cost the ledger booked — the coded 7 bp (SQUEEZE_BULL) or 10 bp
+(SHORT_SQUEEZE) — while the replay nets the E6 measured mean on every trade
+(`sl.cost_bp`: 6.67 / 9.32 bp). On SHORT_SQUEEZE's tight stops that 0.68 bp
+gap is 0.004–0.045 R per trade (median 0.020 R), up to 90% of D4's 0.05 R
+budget. `booked_cost_R = −(booked_bp − sl.cost_bp) / 1e4 / risk_pct`, where
+`booked_bp` is the trade's CLOSE adjustment `fee_usdt` over the notional it
+closed (the first CLOSE row by `seq`, because prod's `trade_adjustments` can
+hold duplicates, BACKLOG 4.5), falling back to the `fees=…bp RT, slip=…bp RT`
+notes suffix (whole bp only) and, for a `scheduled_exit` close with neither,
+to the 15 bp the old backstop booked. Any trade closed by `scheduled_exit` is
+still flagged in the report: since 2026-09-14 that is a label and price-source
+difference, not a cost one.
+
+**Changed 2026-09-14: the cost term went from backstop-only to every closed
+trade.** Until then `backstop_cost_R` was computed only for `scheduled_exit`
+closes, at a hard-coded 15 bp, because `botlib.close_due_trades` booked the
+trades.py defaults (15 bp + funding) instead of the sleeve's cost. The same
+day the backstop was changed to close through each sleeve's own close
+(BACKLOG 4.4), so the hard-coded 15 bp would have invented a cost on every
+later backstop close — 0.04 R on SQUEEZE_BULL, 0.03–0.33 R on SHORT_SQUEEZE —
+and the gap above was never netted at all. D4's own clause text already read
+"residual, after funding and booked cost". **What had been judged under the
+old term: nothing.** D4 is evaluated at every n, including 0, and all five
+recorded runs (`results/recut_*_20260912T1555–1559Z.json`) show D4 = n/a: no
+closed live trade had been decomposed (SJ-4250, the only live fire, was still
+open then). `tests/test_squeeze_recut.py` pins the new term.
+
+**Also fixed 2026-09-14: `funding_R` was NaN on every hold that crossed a
+funding settlement.** `divergence()` passed the direction to
+`funding.accrued_pct` as `+1` where it takes the string `"LONG"`, so the
+lookup raised whenever a settlement row fell inside the hold, the broad
+`except` turned `funding_R` into NaN, and the residual kept all the funding
+live had booked. Every SQUEEZE_BULL hold (48 h) crosses settlements; on
+SHORT_SQUEEZE's stops one 0.01 % settlement is 0.006–0.066 R of residual
+(median 0.03 R, from the same E6 per-trade stop distances), past D4's 0.05 R
+on its own at the tightest stops. Nothing was judged on it, for the same reason as
+above: every recorded run had D4 = n/a. A test now runs the real lookup
+against a funding table instead of a stub.
 
 **A pair needs both sides CLOSED.** "Fires taken by both variants on the same
 bar" is read as both having a resolved R. Counting an open trade would let the
@@ -132,3 +164,4 @@ report prints this. Do not edit thresholds.
 | date | n paired (SB / SS) | verdict |
 |---|---|---|
 | 2026-09-12 | 0 / 0 | NOT_DUE — script written and tested before any fire exists |
+| 2026-09-14 | — (no run) | D4's cost term now nets the booked cost on every closed trade, and `funding_R` no longer comes out NaN on settlement-crossing holds (see "Changed 2026-09-14" and "Also fixed 2026-09-14" above); every earlier run had D4 = n/a |

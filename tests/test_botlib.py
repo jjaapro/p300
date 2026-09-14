@@ -164,19 +164,42 @@ def test_ensure_bot_variant_refreshes_short_name_from_config(tmp_db):
 
 # ─── Scheduled-exit backstop ──────────────────────────────────────────────────
 
+def _seed_btc_price(db_path, price=50_000.0):
+    """price feed needs a recent 1m bar strictly before clock"""
+    _seed_bar = int((NOW - timedelta(minutes=1)).timestamp() * 1000)
+    con = sqlite3.connect(str(db_path))
+    con.execute("CREATE TABLE IF NOT EXISTS btc_1m (open_time INTEGER, close REAL)")
+    con.execute("INSERT INTO btc_1m VALUES (?, ?)", (_seed_bar, price))
+    con.commit()
+    con.close()
+
+
+def _open(variant, strategy, *, due, tag, asset="BTC"):
+    from strategies import trades
+    return trades.open_paper_trade(
+        variant=variant, sleeve_name=strategy, asset=asset,
+        direction="LONG", entry_price=48_000.0, allocation_pct=100.0,
+        leverage=1.0, reason={"t": tag},
+        scheduled_exit_dt=NOW + (-timedelta(hours=1) if due else timedelta(hours=24)),
+        entry_dt=NOW - timedelta(hours=73), signal_time_iso=f"{strategy}-{tag}")
+
+
+def _statuses(db_path):
+    con = sqlite3.connect(str(db_path))
+    try:
+        return dict(con.execute("SELECT id, status FROM trades").fetchall())
+    finally:
+        con.close()
+
+
 def test_close_due_trades_closes_only_overdue(tmp_db):
+    from functools import partial
+
     from strategies import trades
 
     variant = botlib.ensure_bot_variant(
         "bot_x_v1", short_name="Bot X", capital_usdt=10000.0, bot_name="x")
-
-    # price feed needs a recent 1m bar strictly before clock
-    _seed_bar = int((NOW - timedelta(minutes=1)).timestamp() * 1000)
-    con = sqlite3.connect(str(tmp_db))
-    con.execute("CREATE TABLE btc_1m (open_time INTEGER, close REAL)")
-    con.execute("INSERT INTO btc_1m VALUES (?, ?)", (_seed_bar, 50_000.0))
-    con.commit()
-    con.close()
+    _seed_btc_price(tmp_db)
 
     overdue = trades.open_paper_trade(
         variant=variant, sleeve_name="TESTSLEEVE", asset="BTC",
@@ -191,7 +214,10 @@ def test_close_due_trades_closes_only_overdue(tmp_db):
         scheduled_exit_dt=NOW + timedelta(hours=24),
         entry_dt=NOW - timedelta(hours=1))
 
-    closed = botlib.close_due_trades(variant["id"], now_utc=NOW)
+    closed = botlib.close_due_trades(
+        variant["id"], now_utc=NOW,
+        closers={"TESTSLEEVE": partial(trades.close_perp_trade,
+                                       sleeve_name="TESTSLEEVE")})
     assert closed == [overdue]
 
     con = sqlite3.connect(str(tmp_db))
@@ -199,6 +225,144 @@ def test_close_due_trades_closes_only_overdue(tmp_db):
     con.close()
     assert rows[overdue] == "closed"
     assert rows[fresh] == "open"
+
+
+def test_close_due_trades_calls_the_supplied_closer_only_for_due_trades(tmp_db):
+    """The backstop books what the sleeve books because it CALLS the sleeve's
+    close (BACKLOG 4.4): the closer gets exactly (id, price, 'scheduled_exit'),
+    and nothing is closed behind its back at the trades.py defaults."""
+    variant = botlib.ensure_bot_variant(
+        "bot_x_v1", short_name="Bot X", capital_usdt=10000.0, bot_name="x")
+    _seed_btc_price(tmp_db)
+    overdue = _open(variant, "TESTSLEEVE", due=True, tag="overdue")
+    _open(variant, "TESTSLEEVE", due=False, tag="fresh")
+
+    calls = []
+    closed = botlib.close_due_trades(
+        variant["id"], closers={"TESTSLEEVE": lambda *a: calls.append(a)})
+    assert calls == [(overdue, 50_000.0, "scheduled_exit")]
+    assert closed == [overdue]
+    assert set(_statuses(tmp_db).values()) == {"open"}, \
+        "the recording closer closed nothing, so nothing else may have"
+
+
+def test_close_due_trades_refuses_a_strategy_without_a_closer(tmp_db, monkeypatch):
+    """A due trade whose strategy has no closer stays open and is named,
+    rather than being booked at the trades.py defaults. It is refused before
+    any price is fetched for it, and the trade that does have a closer still
+    closes."""
+    from functools import partial
+
+    from strategies import trades
+    from strategies.support import price_feed
+
+    variant = botlib.ensure_bot_variant(
+        "bot_x_v1", short_name="Bot X", capital_usdt=10000.0, bot_name="x")
+    known = _open(variant, "TESTSLEEVE", due=True, tag="known")
+    orphan = _open(variant, "ORPHAN", due=True, tag="orphan", asset="ETH")
+    priced = []
+    monkeypatch.setattr(price_feed, "get_current_price",
+                        lambda a: priced.append(a) or 50_000.0)
+
+    with pytest.raises(botlib.BackstopRefused, match="ORPHAN") as exc:
+        botlib.close_due_trades(
+            variant["id"],
+            closers={"TESTSLEEVE": partial(trades.close_perp_trade,
+                                           sleeve_name="TESTSLEEVE")})
+    assert exc.value.closed == [known]
+    assert [(r[0], r[1]) for r in exc.value.refused] == [(orphan, "ORPHAN")]
+    assert exc.value.errors == []
+    assert orphan in str(exc.value) and "bot_x_v1" in str(exc.value)
+    assert priced == ["BTC"], "no price may be fetched for a refused trade"
+    rows = _statuses(tmp_db)
+    assert rows[known] == "closed"
+    assert rows[orphan] == "open"
+
+
+def test_close_due_trades_isolates_a_failing_closer(tmp_db, monkeypatch):
+    """One closer raising (a locked database, ADX's unfinalised exit minute)
+    must not strand the other due trades — R4 can hold two at once (three
+    with BTC V2 enabled) and the backstop is its only exit. Whichever trade
+    is tried first fails; the second still closes, and the failure is
+    reported after the loop."""
+    from strategies.support import price_feed
+
+    variant = botlib.ensure_bot_variant(
+        "bot_x_v1", short_name="Bot X", capital_usdt=10000.0, bot_name="x")
+    a = _open(variant, "TESTSLEEVE", due=True, tag="a")
+    b = _open(variant, "TESTSLEEVE", due=True, tag="b")
+    monkeypatch.setattr(price_feed, "get_current_price", lambda asset: 50_000.0)
+
+    calls = []
+
+    def flaky(trade_id, price, reason):
+        calls.append(trade_id)
+        if len(calls) == 1:
+            raise RuntimeError("database is locked")
+
+    try:
+        with pytest.raises(botlib.BackstopRefused, match="database is locked") as exc:
+            botlib.close_due_trades(variant["id"], closers={"TESTSLEEVE": flaky})
+    except RuntimeError as escaped:
+        raise AssertionError("the first closer's error escaped mid-loop, so the "
+                             "second due trade was never tried") from escaped
+    assert sorted(calls) == sorted([a, b]), "the second due trade was never tried"
+    first, second = calls
+    assert [(r[0], r[1]) for r in exc.value.errors] == [(first, "TESTSLEEVE")]
+    assert exc.value.closed == [second]
+    assert exc.value.refused == []
+
+
+def test_close_due_trades_isolates_a_failing_price_fetch(tmp_db, monkeypatch):
+    """The price read is part of each trade's attempt too: a locked or broken
+    ETH 1m table must not strand a due BTC trade, and must surface as a
+    BackstopRefused (heartbeat 'error') rather than a raw sqlite error that
+    no runner catches."""
+    from strategies.support import price_feed
+
+    variant = botlib.ensure_bot_variant(
+        "bot_x_v1", short_name="Bot X", capital_usdt=10000.0, bot_name="x")
+    eth = _open(variant, "TESTSLEEVE", due=True, tag="eth", asset="ETH")
+    btc = _open(variant, "TESTSLEEVE", due=True, tag="btc")
+
+    def price(asset):
+        if asset == "ETH":
+            raise sqlite3.OperationalError("database is locked")
+        return 50_000.0
+    monkeypatch.setattr(price_feed, "get_current_price", price)
+
+    calls = []
+    try:
+        with pytest.raises(botlib.BackstopRefused, match="database is locked") as exc:
+            botlib.close_due_trades(variant["id"],
+                                    closers={"TESTSLEEVE": lambda *a: calls.append(a)})
+    except sqlite3.OperationalError as escaped:
+        raise AssertionError("the ETH price read's error escaped mid-loop, so "
+                             "the BTC trade may never have been tried") from escaped
+    assert calls == [(btc, 50_000.0, "scheduled_exit")]
+    assert [(r[0], r[1]) for r in exc.value.errors] == [(eth, "TESTSLEEVE")]
+    assert exc.value.closed == [btc]
+    assert exc.value.refused == []
+
+
+def test_close_due_trades_ignores_a_not_yet_due_trade_without_a_closer(tmp_db, monkeypatch):
+    """The closer lookup happens only once a trade is due. A trade of a
+    strategy with no closer that is not due yet is none of the backstop's
+    business; refusing it would hold the heartbeat at 'error' for the
+    trade's whole life."""
+    from strategies.support import price_feed
+
+    variant = botlib.ensure_bot_variant(
+        "bot_x_v1", short_name="Bot X", capital_usdt=10000.0, bot_name="x")
+    _open(variant, "ORPHAN", due=False, tag="later")
+    monkeypatch.setattr(price_feed, "get_current_price", lambda a: 50_000.0)
+
+    try:
+        closed = botlib.close_due_trades(variant["id"], closers={})
+    except botlib.BackstopRefused as escaped:
+        raise AssertionError("a trade that is not due yet was refused") from escaped
+    assert closed == []
+    assert set(_statuses(tmp_db).values()) == {"open"}
 
 
 # ─── open_gross_usdt + enabled backfill (R4 bot, 2026-09-06) ──────────────────

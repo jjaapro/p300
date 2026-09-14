@@ -289,6 +289,205 @@ def test_backstop_closes_due_eth_trade(env):
     assert _rows(env, STRATEGY_R4_ETH)[0]["status"] == "closed"
 
 
+# ─── backstop cost, refusal, and a raising decide (2026-09-14) ────────────────
+# R4 has no close of its own: the backstop IS its exit, so it must keep
+# running when decide() raises, and it keeps booking the trades.py defaults
+# that docs/calibration/r4.md documents.
+
+def _seed_due_eth(strategy=STRATEGY_R4_ETH, tag="due"):
+    """A $10,000 ETH long from 3,000 (+$100 of price P&L at 3,030) whose exit
+    time passed a minute before Wednesday 20:01."""
+    from strategies import trades
+    _at(WED.replace(hour=20, minute=1))
+    return trades.open_paper_trade(
+        variant=_variant(), sleeve_name=strategy, asset="ETH",
+        direction="LONG", entry_price=3_000.0, allocation_pct=100.0,
+        leverage=1.0, reason={"seed": True},
+        scheduled_exit_dt=WED.replace(hour=20), regime_value="uncertain",
+        entry_dt=TUE.replace(hour=20, minute=1), signal_time_iso=f"{strategy}-{tag}")
+
+
+def _backstop_prices(monkeypatch):
+    from strategies.support import funding
+    monkeypatch.setattr(price_feed, "get_current_price", lambda a: 3_030.0)
+    monkeypatch.setattr(funding, "accrued_pct",
+                        lambda asset, a, b, d: -0.10 if str(d).upper() == "LONG" else 0.10)
+
+
+def _closed_row(db_path, tid):
+    con = sqlite3.connect(str(db_path))
+    try:
+        status, pnl, notes = con.execute(
+            "SELECT status, pnl_usdt, notes FROM trades WHERE id=?", (tid,)).fetchone()
+        fee = con.execute(
+            "SELECT fee_usdt FROM trade_adjustments WHERE trade_id=? "
+            "AND event_type='CLOSE'", (tid,)).fetchone()
+    finally:
+        con.close()
+    return status, pnl, notes, (fee[0] if fee else None)
+
+
+def test_backstop_keeps_trades_py_defaults(env, monkeypatch):
+    """Characterization, green before and after 2026-09-14 by design: the
+    other bots' backstops moved to their sleeves' own costs, R4's did not.
+    Moving R4 to a measured cost needs its own calibration row."""
+    tid = _seed_due_eth()
+    _backstop_prices(monkeypatch)
+    monkeypatch.setattr(runner, "deciders", lambda: {})
+
+    out = runner.tick(_variant())
+
+    assert out.get("backstop_closed") == [tid], out
+    assert out["hb_status"] == "ok"
+    status, pnl, notes, fee = _closed_row(env, tid)
+    assert status == "closed"
+    # +100 price P&L - (10 bp fee + 5 bp slippage) of $10,000 - 0.10% funding
+    assert pnl == pytest.approx(75.00)
+    assert fee == pytest.approx(15.00)
+    assert notes.endswith(
+        "\nJPLUS_R4_ETH_EXIT: scheduled_exit; fees=10bp RT, slip=5bp RT, "
+        "funding=-0.100%")
+
+
+def test_backstop_refuses_a_trade_it_has_no_closer_for(env, monkeypatch):
+    """A due trade of a strategy R4 has no closer for is left open and named
+    in the heartbeat, not booked at the trades.py defaults — and the tick
+    returns rather than raising, keeping the id of R4's own due trade that
+    did close next to it."""
+    tid = _seed_due_eth(strategy="SQUEEZE_BULL", tag="foreign")
+    own = _seed_due_eth()
+    _backstop_prices(monkeypatch)
+    monkeypatch.setattr(runner, "deciders", lambda: {})
+
+    try:
+        out = runner.tick(_variant())
+    except botlib.BackstopRefused as escaped:
+        raise AssertionError("the refusal escaped the tick") from escaped
+
+    assert out["hb_status"] == "error"
+    assert out.get("backstop_refused") == [tid], out
+    assert "SQUEEZE_BULL" in out["hb_note"]
+    assert out.get("backstop_closed") == [own], out
+    assert _closed_row(env, tid)[0] == "open"
+    assert _closed_row(env, own)[0] == "closed"
+
+
+def test_backstop_still_closes_a_trade_whose_window_was_switched_off(env, monkeypatch):
+    """R4 has no other exit: a window switched off while its trade is open
+    (as the BTC windows were on 2026-09-12) must still close that trade, so
+    every window in ENABLED gets a closer, on or off."""
+    tid = _seed_due_eth(strategy=STRATEGY_R4_ETH_V2, tag="off")
+    _backstop_prices(monkeypatch)
+    monkeypatch.setitem(botcfg.ENABLED, STRATEGY_R4_ETH_V2, False)
+    monkeypatch.setattr(runner, "deciders", lambda: {})
+
+    out = runner.tick(_variant())
+
+    assert out["hb_status"] == "ok", out
+    assert out.get("backstop_closed") == [tid], out
+    assert _closed_row(env, tid)[0] == "closed"
+
+
+def test_stale_mgmt_tables_skip_the_window_close(env, monkeypatch):
+    """Kept on purpose (BACKLOG 18): on a stale-mgmt tick the window close is
+    skipped too, reported 'degraded', and happens on the next fresh tick."""
+    tid = _seed_due_eth()
+    _backstop_prices(monkeypatch)
+    monkeypatch.setattr(runner, "deciders", lambda: {})
+    monkeypatch.setattr(botlib, "stale_tables",
+                        lambda tables=None: {"eth_1m": 900.0}
+                        if tables == botcfg.MGMT_TABLES else {})
+
+    out = runner.tick(_variant())
+
+    assert out["status"] == "stale_mgmt_inputs" and out["hb_status"] == "degraded"
+    assert "backstop_closed" not in out, out
+    assert _closed_row(env, tid)[0] == "open"
+
+    monkeypatch.setattr(botlib, "stale_tables", lambda tables=None: {})
+    assert runner.tick(_variant()).get("backstop_closed") == [tid]
+
+
+def test_decide_raising_still_runs_the_exits(env, monkeypatch):
+    """Until 2026-09-14 a raising decide aborted the tick before the backstop,
+    which is R4's only exit. Now the tick enters nothing more, still closes
+    the due trade, and reports the error."""
+    tid = _seed_due_eth()
+    _backstop_prices(monkeypatch)
+    later = []
+
+    def broken(variant):
+        raise RuntimeError("today_inputs unavailable")
+    monkeypatch.setattr(runner, "deciders", lambda: {
+        STRATEGY_R4_ETH: broken,
+        STRATEGY_R4_ETH_V2: lambda variant: later.append(1) or ([], {"status": "x"})})
+
+    try:
+        out = runner.tick(_variant())
+    except RuntimeError as escaped:
+        raise AssertionError("decide's error escaped the tick, so the window "
+                             "close never ran") from escaped
+
+    assert out.get("backstop_closed") == [tid], out
+    assert _closed_row(env, tid)[0] == "closed"
+    assert later == [], "no further entries may be evaluated after decide raised"
+    assert out["status"] == "decide_error"
+    assert out["detail"] == {STRATEGY_R4_ETH: "decide_error"}
+    assert out["hb_status"] == "error"
+    assert out["hb_note"] == repr(RuntimeError("today_inputs unavailable"))
+
+
+def test_a_sleeve_that_fails_to_import_still_runs_the_exits(env, monkeypatch):
+    """The exits need neither the sleeve module nor its deciders, so a sleeve
+    that no longer imports (a code change, then a restart) must not hold back
+    R4's only exit: the tick decides nothing, closes the due trade, and
+    reports the import error."""
+    tid = _seed_due_eth()
+    _backstop_prices(monkeypatch)
+    error = ImportError("cannot import name 'decide_eth'")
+
+    def broken_sleeve():
+        raise error
+    monkeypatch.setattr(runner, "_sleeve", broken_sleeve)
+
+    try:
+        out = runner.tick(_variant())
+    except ImportError as escaped:
+        raise AssertionError("the import error escaped the tick, so the window "
+                             "close never ran") from escaped
+
+    assert out.get("backstop_closed") == [tid], out
+    assert _closed_row(env, tid)[0] == "closed"
+    assert out["status"] == "decide_error" and out["detail"] == {}
+    assert out["hb_status"] == "error" and out["evaluated"] is False
+    assert out["hb_note"] == repr(error)
+
+
+def test_decide_error_and_refusal_both_reach_the_heartbeat(env, monkeypatch):
+    """On a tick where decide raises AND the backstop refuses a trade, the
+    note keeps the decide error first and appends the refusal."""
+    foreign = _seed_due_eth(strategy="SQUEEZE_BULL", tag="foreign")
+    own = _seed_due_eth()
+    _backstop_prices(monkeypatch)
+
+    def broken(variant):
+        raise RuntimeError("today_inputs unavailable")
+    monkeypatch.setattr(runner, "deciders", lambda: {STRATEGY_R4_ETH: broken})
+
+    try:
+        out = runner.tick(_variant())
+    except (RuntimeError, botlib.BackstopRefused) as escaped:
+        raise AssertionError("an error escaped the tick") from escaped
+
+    assert out["status"] == "decide_error" and out["hb_status"] == "error"
+    assert out["hb_note"].startswith(
+        repr(RuntimeError("today_inputs unavailable"))
+        + "; backstop left 1 due trade(s) open in "), out["hb_note"]
+    assert "SQUEEZE_BULL" in out["hb_note"]
+    assert out.get("backstop_closed") == [own], out
+    assert out.get("backstop_refused") == [foreign], out
+
+
 # ─── calendar parity with the sleeve ──────────────────────────────────────────
 
 def test_calendar_matches_sleeve_decides_2025_2026(env):

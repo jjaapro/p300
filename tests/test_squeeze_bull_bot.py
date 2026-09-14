@@ -395,3 +395,240 @@ def test_time_stop_boundary_one_minute_early_stays_open(env, monkeypatch):
     clock.set_simulated_now(NOW + timedelta(hours=48))
     assert sleeve._sweep_open_positions(vid) == 1
     assert _trades(env["db"])[0]["status"] == "closed"
+
+
+# ─── scheduled-exit backstop (BACKLOG 4.4) and a raising decide ──────────
+# Until 2026-09-14 the backstop booked every trade at the trades.py defaults,
+# 10 bp fee + 5 bp slippage + funding, where this sleeve books PAPER_COST_BP_RT
+# 7 bp with no slippage (COST_BP_RT 18 is research-only); and a decide() that
+# raised skipped the backstop altogether.
+
+def _backstop_env(monkeypatch):
+    """A 50,500 quote and funding stubbed at -0.10% for a long, so a close
+    that books funding shows it."""
+    from strategies.support import funding
+    monkeypatch.setattr(price_feed, "get_current_price", lambda a: 50_500.0)
+    monkeypatch.setattr(funding, "accrued_pct",
+                        lambda asset, a, b, d: -0.10 if str(d).upper() == "LONG" else 0.10)
+
+
+def _seed_due(variant, *, strategy=sleeve.SLEEVE_NAME, tag="due", reason=None):
+    """A $10,000 long from 50,000 (+$100 of price P&L at 50,500) whose exit
+    time passed a minute before NOW."""
+    from strategies import trades
+    return trades.open_paper_trade(
+        variant=variant, sleeve_name=strategy, asset="BTC", direction="LONG",
+        entry_price=50_000.0, allocation_pct=100.0, leverage=1.0,
+        reason=reason or {"trigger": "squeeze_bull_long"},
+        scheduled_exit_dt=NOW - timedelta(minutes=1),
+        entry_dt=NOW - timedelta(hours=6), signal_time_iso=f"{strategy}-{tag}")
+
+
+def _closed_row(db_path, tid):
+    con = sqlite3.connect(str(db_path))
+    try:
+        status, pnl, notes = con.execute(
+            "SELECT status, pnl_usdt, notes FROM trades WHERE id=?", (tid,)).fetchone()
+        fee = con.execute(
+            "SELECT fee_usdt FROM trade_adjustments WHERE trade_id=? "
+            "AND event_type='CLOSE'", (tid,)).fetchone()
+    finally:
+        con.close()
+    return status, pnl, notes, (fee[0] if fee else None)
+
+
+@pytest.mark.parametrize("which", [0, 1], ids=["stop", "nostop"])
+def test_backstop_books_the_sleeves_cost_not_trades_defaults(env, monkeypatch, which):
+    v = botcfg.VARIANTS[which]
+    variant = botlib.ensure_bot_variant(v["id"], short_name=v["short_name"],
+                                        capital_usdt=CAPITAL, bot_name=botcfg.BOT_NAME)
+    _backstop_env(monkeypatch)
+    tid = _seed_due(variant)
+    # The sleeve's own sweep must not get there first.
+    monkeypatch.setattr(sleeve, "decide", lambda *a, **k: ([], {"status": "no_flush"}))
+
+    out = runner.tick(variant, use_stop=v["use_stop"])
+
+    assert out.get("backstop_closed") == [tid], out
+    assert out["hb_status"] == "ok"
+    status, pnl, notes, fee = _closed_row(env["db"], tid)
+    assert status == "closed"
+    # +100 price P&L - 7 bp of $10,000 - 0.10% funding. The trades.py
+    # defaults book 100 - 15 - 10 = 75.00; the research-only 18 bp, 72.00.
+    assert pnl == pytest.approx(83.00)
+    assert fee == pytest.approx(7.00)
+    assert notes.endswith(
+        "\nSQUEEZE_BULL_EXIT: scheduled_exit; fees=7bp RT, slip=0bp RT, "
+        "funding=-0.100%")
+
+
+def test_decide_raising_still_runs_the_backstop(env, monkeypatch):
+    """The error reaches the heartbeat, no entry is attempted, and the
+    overdue trade still closes."""
+    _backstop_env(monkeypatch)
+    tid = _seed_due(env["variant"])
+
+    def broken_decide(*a, **k):
+        raise RuntimeError("hourly load failed")
+    monkeypatch.setattr(sleeve, "decide", broken_decide)
+
+    try:
+        out = runner.tick(env["variant"])
+    except RuntimeError as escaped:
+        raise AssertionError("decide's error escaped the tick, so the backstop "
+                             "never ran") from escaped
+
+    assert out.get("backstop_closed") == [tid], out
+    assert _closed_row(env["db"], tid)[0] == "closed"
+    assert out["status"] == "decide_error"
+    assert out["hb_status"] == "error"
+    assert out["hb_note"] == repr(RuntimeError("hourly load failed"))
+    assert out["evaluated"] is False and "opened" not in out
+
+
+def test_backstop_refusal_keeps_closed_ids_and_turns_the_heartbeat_error(env, monkeypatch):
+    """A due trade of a strategy this bot has no closer for stays open, is
+    named in the heartbeat note with status 'error', and does not escape the
+    tick; the SQUEEZE_BULL trade that did close is still reported."""
+    _backstop_env(monkeypatch)
+    own = _seed_due(env["variant"])
+    foreign = _seed_due(env["variant"], strategy="SHORT_SQUEEZE", tag="foreign")
+    monkeypatch.setattr(sleeve, "decide", lambda *a, **k: ([], {"status": "no_flush"}))
+
+    try:
+        out = runner.tick(env["variant"])
+    except botlib.BackstopRefused as escaped:
+        raise AssertionError("the refusal escaped the tick") from escaped
+
+    assert out.get("backstop_closed") == [own], out
+    assert out.get("backstop_refused") == [foreign], out
+    assert out["hb_status"] == "error" and "SHORT_SQUEEZE" in out["hb_note"]
+    assert _closed_row(env["db"], own)[0] == "closed"
+    assert _closed_row(env["db"], foreign)[0] == "open"
+
+
+def test_decide_error_and_backstop_refusal_both_reach_the_heartbeat(env, monkeypatch):
+    """On a tick where decide raises AND the backstop refuses a trade, the
+    note keeps the decide error first and appends the refusal."""
+    _backstop_env(monkeypatch)
+    own = _seed_due(env["variant"])
+    foreign = _seed_due(env["variant"], strategy="SHORT_SQUEEZE", tag="foreign")
+
+    def broken_decide(*a, **k):
+        raise RuntimeError("hourly load failed")
+    monkeypatch.setattr(sleeve, "decide", broken_decide)
+
+    try:
+        out = runner.tick(env["variant"])
+    except (RuntimeError, botlib.BackstopRefused) as escaped:
+        raise AssertionError("an error escaped the tick") from escaped
+
+    assert out["status"] == "decide_error" and out["hb_status"] == "error"
+    assert out["hb_note"].startswith(
+        repr(RuntimeError("hourly load failed"))
+        + "; backstop left 1 due trade(s) open in "), out["hb_note"]
+    assert "SHORT_SQUEEZE" in out["hb_note"]
+    assert out.get("backstop_closed") == [own], out
+    assert out.get("backstop_refused") == [foreign], out
+
+
+def test_stale_mgmt_tables_skip_the_backstop(env, monkeypatch):
+    """Kept on purpose (BACKLOG 18): the backstop would price off btc_1m, the
+    table that just went stale, so a stale-mgmt tick leaves a due trade open."""
+    _backstop_env(monkeypatch)
+    tid = _seed_due(env["variant"])
+
+    def boom(*a, **k):
+        raise AssertionError("decide must not run on stale mgmt tables")
+    monkeypatch.setattr(sleeve, "decide", boom)
+    monkeypatch.setattr(botlib, "stale_tables",
+                        lambda tables=None: {"btc_1m": 999.0}
+                        if tables == botcfg.MGMT_TABLES else {})
+
+    out = runner.tick(env["variant"])
+
+    assert out["status"] == "stale_mgmt_inputs" and out["hb_status"] == "degraded"
+    assert "backstop_closed" not in out, out
+    assert _closed_row(env["db"], tid)[0] == "open"
+
+
+def test_tick_all_still_sweeps_the_twin_when_the_first_variant_has_a_refused_trade(
+        env, monkeypatch):
+    """A due trade the backstop has no closer for stays open and turns the
+    heartbeat 'error' — but it must not stop the no-stop twin's tick, whose
+    sweep is the only thing closing ITS positions. Real decide on both
+    variants, with no hourly bars so it only sweeps."""
+    monkeypatch.setattr(sleeve, "_load_hourly", lambda now, lookback_days=45: [])
+    _backstop_env(monkeypatch)
+    v2 = _nostop_variant()
+    foreign = _seed_due(env["variant"], strategy="SHORT_SQUEEZE", tag="foreign")
+    own = _seed_due(v2, tag="own", reason={
+        "trigger": "squeeze_bull_long", "exit_policy": "target_time",
+        "_stop_price": None, "_target_price": None,
+        "_time_stop_iso": (NOW - timedelta(minutes=1)).isoformat()})
+    variants = [{"row": env["variant"], "use_stop": True},
+                {"row": v2, "use_stop": False}]
+
+    try:
+        out = runner.tick_all(variants)
+    except botlib.BackstopRefused as escaped:
+        raise AssertionError("the first variant's refusal escaped tick_all, so "
+                             "the twin never ticked") from escaped
+
+    first = out["per_variant"][env["variant"]["id"]]
+    assert first["hb_status"] == "error" and first.get("backstop_refused") == [foreign]
+    assert "SHORT_SQUEEZE" in first["hb_note"]
+    assert out["hb_status"] == "error"
+    assert _closed_row(env["db"], foreign)[0] == "open"
+    status, _, notes, _ = _closed_row(env["db"], own)
+    assert status == "closed"
+    assert "\nSQUEEZE_BULL_EXIT: time_stop;" in notes
+
+
+def test_tick_all_still_sweeps_the_twin_when_the_first_variants_entry_raises(
+        env, monkeypatch):
+    """While this process stands down as a duplicate instance, entries raise
+    and exits must keep running (strategies/support/instance_guard.py). A
+    fire on the stop variant raises out of its execute(); the no-stop twin
+    must still tick and close its due time stop. Real decide on the twin,
+    with no hourly bars so it only sweeps."""
+    from strategies.support import instance_guard
+    from strategies.support.dispatch import Intent
+    from strategies.support.instance_guard import DuplicateInstanceError
+    monkeypatch.setattr(sleeve, "_load_hourly", lambda now, lookback_days=45: [])
+    _backstop_env(monkeypatch)
+    v2 = _nostop_variant()
+    own = _seed_due(v2, tag="own", reason={
+        "trigger": "squeeze_bull_long", "exit_policy": "target_time",
+        "_stop_price": None, "_target_price": None,
+        "_time_stop_iso": (NOW - timedelta(minutes=1)).isoformat()})
+    intent = Intent(asset="BTC", direction="LONG", allocation_pct=100.0,
+                    leverage=1.0, conviction=100, priority=100,
+                    reason={"_entry_price": ENTRY, "_stop_price": ENTRY * 0.98,
+                            "_target_price": ENTRY * 1.03, "bar_ts": 1},
+                    scheduled_exit_dt=NOW + timedelta(hours=48))
+    real_decide = sleeve.decide
+
+    def decide(variant, **kw):
+        if kw.get("use_stop", True):
+            return [intent], {"status": "decided"}
+        return real_decide(variant, **kw)
+    monkeypatch.setattr(sleeve, "decide", decide)
+    # Set after seeding: a standing-down process refuses every open.
+    monkeypatch.setattr(instance_guard, "_reason", "duplicate heartbeat")
+    variants = [{"row": env["variant"], "use_stop": True},
+                {"row": v2, "use_stop": False}]
+
+    try:
+        out = runner.tick_all(variants)
+    except DuplicateInstanceError as escaped:
+        raise AssertionError("the first variant's entry error escaped tick_all, "
+                             "so the twin never ticked") from escaped
+
+    first = out["per_variant"][env["variant"]["id"]]
+    assert first["status"] == "tick_error" and first["hb_status"] == "error"
+    assert first["hb_note"].startswith("DuplicateInstanceError("), first
+    assert out["hb_status"] == "error" and not out["opened"]
+    status, _, notes, _ = _closed_row(env["db"], own)
+    assert status == "closed"
+    assert "\nSQUEEZE_BULL_EXIT: time_stop;" in notes

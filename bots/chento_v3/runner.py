@@ -9,7 +9,9 @@ pooling, or margin sim here. What the runner adds around the sleeve:
   - stale-input refusal   stale mgmt tables → skip tick (degraded);
                           stale entry tables → sweep runs, intents dropped
   - scheduled-exit backstop  botlib.close_due_trades, behind the sleeve's
-                          own stop/target/TIF bar-walking sweep
+                          own stop/target/TIF bar-walking sweep; closes
+                          through the sleeve's own close, and still runs
+                          on a tick where decide() raised
   - heartbeat             every tick, for monitor.py
   - diagnostics           CHENTO_V3_DIAG permanently on (OKX-lockout lesson)
 
@@ -99,19 +101,50 @@ def size_intent(intent, capital: float, risk_scale: float = 1.0):
         notional_max_x=botcfg.NOTIONAL_MAX_X)
 
 
+def _backstop(variant: dict, out: dict) -> dict:
+    """Scheduled-exit backstop, closing through the sleeve's own close so it
+    books exactly what the sleeve books (BACKLOG 4.4; one closer covers the
+    ETH process, which reuses this tick). A trade it could not close marks
+    the heartbeat 'error' instead of raising."""
+    from bots.chento_v3 import strategy as sleeve
+    try:
+        closed = botlib.close_due_trades(
+            variant["id"],
+            closers={sleeve.config_module.SLEEVE_NAME: sleeve.signal_module._close_paper})
+    except botlib.BackstopRefused as e:
+        closed = e.closed
+        out.update(hb_status="error",
+                   hb_note="; ".join(n for n in (out.get("hb_note"), str(e)[:300]) if n),
+                   backstop_refused=[r[0] for r in e.refused + e.errors])
+    if closed:
+        out["backstop_closed"] = closed
+    return out
+
+
 def tick(variant: dict) -> dict:
     """One bot tick. Returns a status dict for logging/heartbeat."""
     from bots.chento_v3 import strategy as sleeve
 
     stale_mgmt = botlib.stale_tables(botcfg.MGMT_TABLES)
     if stale_mgmt:
+        # The backstop is skipped here too, on purpose: it would close at a
+        # price from the 1m table in MGMT_TABLES, which may be the stale one.
+        # 'degraded' surfaces the skip; exits resume on the next fresh tick.
         return {"status": "stale_mgmt_inputs", "stale": stale_mgmt,
                 "hb_status": "degraded",
                 "hb_note": f"mgmt tables stale: {sorted(stale_mgmt)}"}
 
     # Sizing is the runner's job (size_intent overwrites both), so the sleeve
     # gets the placeholders the cfg dict used to carry.
-    intents, status = sleeve.decide(variant, weight_pct=100.0, leverage=1.0)
+    try:
+        intents, status = sleeve.decide(variant, weight_pct=100.0, leverage=1.0)
+    except Exception as decide_error:  # noqa: BLE001
+        # decide() also runs the sleeve's exit sweep. When it raises, enter
+        # nothing this tick but still run the backstop, then report the error
+        # the way the loop always has: heartbeat 'error', note repr(error).
+        log.exception(f"decide error: {decide_error}")
+        return _backstop(variant, {"status": "decide_error", "hb_status": "error",
+                                   "hb_note": repr(decide_error), "evaluated": False})
     st = status.get("status", "?")
     out = {"status": st, "detail": status, "hb_status": "ok", "hb_note": "",
            # "evaluated" = a real 15m-boundary evaluation happened, so the
@@ -145,10 +178,7 @@ def tick(variant: dict) -> dict:
                 out["opened"] = res.get("trade_id")
                 out["signal"] = True
 
-    closed = botlib.close_due_trades(variant["id"])
-    if closed:
-        out["backstop_closed"] = closed
-    return out
+    return _backstop(variant, out)
 
 
 def main(argv: list[str] | None = None) -> int:

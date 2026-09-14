@@ -65,6 +65,7 @@ forfeited counter-trend shorts; veto z matches the documented 2025-10-05
 
 | Date | Change | Why / provenance |
 |---|---|---|
+| 2026-09-14 | **No calibration change.** The scheduled-exit backstop now closes an overdue ADX trade through `signal._close_adx_paper` (10 bp + 1 bp slippage + funding, with the sleeve's stop resolver). Before, it used the generic close with no resolver, which raises "ADX closes need a stop_resolver". The path is still unreachable: ADX trades carry the 2099 no-exit placeholder (open SJ-4247 does). Also: a tick whose `decide()` raises now still runs the backstop and reports heartbeat `error`. Takes effect when adx restarts. | BACKLOG 4.4 and 18; operator go-ahead 2026-09-14. Kept as defence in depth; `test_adx_bot.py` forces a real exit time (79.00 on +$100 of price P&L; a 10 % stop crossed three hours before the due time books `stop_loss` at the stop, −1,021.00). |
 | 2026-09-12 | Close books `SLIPPAGE_BP_RT = 1.0` explicitly (15 → 11 bp round trip) | `execution_2026_09` E6 measured 10.5 bp all-in; user go-ahead 2026-09-12. Account design note above (D8). |
 | 2026-07-22 | Tier-2 + veto shipped (symmetric filter, ATR×4 trail, funding veto — all config-flagged, ON); extracted to standalone bot `bots/adx/` | User decision 2026-07-22 (T2+veto option); studies/notebooks/adx_study/findings.md (2026-06-26). Carry cost: forfeits counter-trend-short funding harvest — S-078 CARRY owns that stream delta-neutrally. |
 | 2026-05-04 | Asymmetric trend filter (LONG-only EMA150) | funding-aware replay 2023-09→2026-05 (superseded by T2a) |
