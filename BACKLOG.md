@@ -38,8 +38,10 @@ dated blocks below.*
   (`53d3393`). Chento fires about twice as often and stacks more positions; RISK_PCT 2% and the
   3× cap were kept for paper after a sizing review.
 - **Operations had no safety net until today:** no scheduled monitor, no deep scan, no backup
-  since 2026-07-22 (C: has ~9 GB free), and no alert channel. Being closed today, see
-  "In progress".
+  since 2026-07-22, and no alert channel. Since 2026-09-14 the monitor runs hourly, the deep
+  scan and a verified backup (2 copies) run daily, and alerts and the results warnings show on
+  the dashboard (items 16, 17). Tasks run only while the user is logged on. Telegram push is
+  deferred (decision 10).
 
 ### Decided on 2026-09-14
 
@@ -89,10 +91,24 @@ and the commit that carries this text (16 + 17, roadmap, drill). How it went:
 - The index migration was applied on prod with the fleet running (18:53Z, lock held 3.7 ms).
 - Full suite 1430 passed / 6 xfailed; mutation drill 139/139 caught, tree restored.
 
-**Still to do:** restart the seven bot units (4.4, 4.5's `persist_close` and 18 take effect then)
-and the dashboard (16, 17). The slot must be HH:04–HH:13 after an :00/:15/:30 boundary and never
-across HH:00. Then register the three scheduled tasks and run the first monitor and deep scan.
-The follow-up commit records the restart times.
+**Deployed 2026-09-14:**
+- **Restart:** the seven bot units and the dashboard stopped at 19:06:27Z and started again at
+  19:06:59Z. That was inside the 19:04–19:13 slot: chento had already evaluated the 19:00 bar,
+  and short_squeeze's next bar was 19:15. The feed was left running, and SJ-4242 / SJ-4247 were
+  untouched.
+- **Checks:** fresh heartbeats from the new pids; exactly one instance per unit; `health.py`
+  exits 0.
+- **Scheduled tasks:** `ops/register_tasks.ps1` registered `\p300\monitor-hourly` (:07),
+  `monitor-daily-deep` (09:10) and `backup-daily` (04:40), Interactive logon.
+- **First runs through Task Scheduler** (19:08Z, `pythonw`, result 1 = alerts, as expected):
+  - Hourly: DEEP_SCAN_STALE only, raised before the deep scan finished.
+  - Deep: INTERIOR_GAPS on `coinbase_spot_1h` (22 rows) and `binance_quarterly_1h` (4 rows), the
+    known 2026-09-08/09 disk-full gaps.
+  - Warnings tier: RED squeeze_bull SJ-4250; info lines for carry's small research sample and
+    chento's 3 ignored duplicate rows.
+- **Dashboard:** the new alerts, badges and job footer are served.
+
+**Next ops item:** heal or accept the two interior gaps ("Next, in order" 1).
 
 ### Next, in order (after today's stop)
 
