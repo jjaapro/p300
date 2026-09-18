@@ -468,6 +468,28 @@ def _db_checks(con: sqlite3.Connection, now: datetime, deep: bool,
                     "INTERIOR_GAPS", f"INTERIOR GAPS {spec.table}: "
                     f"{len(gaps)} gap(s), {n_rows} rows missing "
                     f"(oldest {oldest_iso}Z)"))
+        # 1g. open-interest stamp convention (--deep, daily). The row stamped
+        # H must hold the snapshot at H+1h, the close of hour H — what the
+        # squeeze bots were researched on. From 2026-06-10 to 2026-09-19 it
+        # held the snapshot at H, one bar stale, and SJ-4250 fired on it
+        # (BACKLOG 30). Freshness cannot see a shift; this can.
+        try:
+            from data.sources import binance as _binance
+            oi = _binance.check_oi_semantics()
+        except Exception as e:  # noqa: BLE001 — network/schema: say it went unverified
+            alerts.append(_alert("OI_SEMANTICS",
+                                 f"OI SEMANTICS cd_open_interest: check could "
+                                 f"not run: {e!r}"))
+        else:
+            if oi["verdict"] != "ok":
+                alerts.append(_alert(
+                    "OI_SEMANTICS", f"OI SEMANTICS cd_open_interest: "
+                    f"{oi['verdict']} — of {oi['scored']} stamps, "
+                    f"{oi['end_of_hour']} sit closer to the close-of-hour "
+                    f"snapshot and {oi['start_of_hour']} to the start-of-hour one"))
+            else:
+                info.append(f"oi semantics: {oi['end_of_hour']}/{oi['scored']} "
+                            f"closer to close-of-hour")
         info.append("deep gap scan: done")
 
     # 2 + 3. heartbeats

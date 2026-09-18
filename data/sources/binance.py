@@ -339,15 +339,26 @@ def fetch_open_interest(symbol: str = "BTCUSDT",
 
     Binance's /futures/data/openInterestHist gives a point snapshot per period
     boundary (not OHLC), so all four oi_* settlement columns get the same
-    snapshot value, likewise the oi_value_* columns. Timestamps land exactly
-    on the hour (seconds), matching the cd_futures_ohlcv join key short_squeeze
-    relies on.
+    snapshot value, likewise the oi_value_* columns.
+
+    Stamp convention (BACKLOG item 30). The table's row stamped H holds the
+    open interest at the END of hour H — CoinDesk's CLOSE_SETTLEMENT, the
+    convention squeeze_bull and short_squeeze were researched and validated
+    on, and the one that makes `JOIN ... ON o.timestamp = p.timestamp` pair a
+    price bar with the open interest at its close. Binance's row stamped T is
+    the snapshot AT T, i.e. the close of hour T-1, so it is stored under T
+    minus one period. From 2026-06-10 to 2026-09-19 it was stored under T,
+    one bar stale against every price bar it was joined to; SJ-4250 fired on
+    that shift (-2.48 % on the stale values, -1.79 % at bar closes) and would
+    not have on the researched convention. `check_oi_semantics` below is the
+    daily monitor check that a shift like it cannot pass silently again.
 
     NOTE: like the other /futures/data endpoints, this only serves the last
     ~30 days regardless of startTime. limit=500 hourly ≈ 20 days, which more
     than covers a freshly-stale table for live use. Historical CoinDesk rows
     (pre-2026-06-10) are preserved via INSERT OR IGNORE.
     """
+    period_s = OI_PERIOD_SECONDS[period]
     con = sqlite3.connect(str(DB_PATH))
     try:
         # Canonical schema lives in data/sources/coindesk.py::_ensure_schema;
@@ -365,7 +376,8 @@ def fetch_open_interest(symbol: str = "BTCUSDT",
         cur = con.cursor()
         inserted = 0
         for r in rows:
-            ts_s = int(r["timestamp"]) // 1000
+            # The snapshot at T closes the bar that started at T - period.
+            ts_s = int(r["timestamp"]) // 1000 - period_s
             oi = float(r["sumOpenInterest"])
             oiv = float(r["sumOpenInterestValue"])
             cur.execute(
@@ -380,6 +392,73 @@ def fetch_open_interest(symbol: str = "BTCUSDT",
     finally:
         con.close()
     return inserted
+
+
+OI_PERIOD_SECONDS = {"5m": 300, "15m": 900, "30m": 1800, "1h": 3600, "2h": 7200,
+                     "4h": 14400, "6h": 21600, "12h": 43200, "1d": 86400}
+def score_oi_alignment(rows, snaps: dict[int, float]) -> dict:
+    """Which 5-minute snapshot is each stored hourly value closer to — the one
+    at its own stamp H (start of hour, the 2026-06-10 defect) or the one at
+    H+1h (close of hour, the table's convention)?
+
+    Threshold-free on purpose. The 1-hour endpoint and the 5-minute series
+    never agree exactly (measured 2026-09-19 over 2,390 rows: median 0.02 %
+    apart, p99 0.4 %, max 2 %, zero equal), so any tolerance credits a slow
+    hour to both alignments and blurs the answer. Closer-to is unambiguous:
+    the defective table scored 88.6 % closer-to-start, the corrected one
+    85.9 % closer-to-close, month after month. The 70 % bars sit well outside
+    both, and over ~40 rows a daily false alarm is a sub-percent event.
+
+    `rows` are (stamp, oi_close) pairs; `snaps` maps epoch seconds to the
+    5-minute sum_open_interest. Hours where the two snapshots are equal say
+    nothing and are counted as ties.
+    """
+    end = start = tie = unscored = 0
+    for h, stored in rows:
+        at_start, at_close = snaps.get(h), snaps.get(h + 3600)
+        if at_start is None or at_close is None:
+            unscored += 1
+        elif at_start == at_close:
+            tie += 1
+        elif abs(stored - at_close) < abs(stored - at_start):
+            end += 1
+        else:
+            start += 1
+    n = end + start
+    if n and end >= 0.7 * n:
+        verdict = "ok"
+    elif n and start >= 0.7 * n:
+        verdict = "start_of_hour"
+    else:
+        verdict = "indeterminate"
+    return {"scored": n, "end_of_hour": end, "start_of_hour": start,
+            "tie": tie, "unscored": unscored, "verdict": verdict}
+
+
+def check_oi_semantics(table: str = "cd_open_interest",
+                       symbol: str = "BTCUSDT") -> dict:
+    """The monitor's daily check that the row stamped H holds the close of
+    hour H and not its start. Pulls Binance's 5-minute snapshots (limit 500,
+    about 41 hours) and scores every stored hourly stamp they cover with
+    `score_oi_alignment`. Freshness checks cannot see a one-bar shift — the
+    2026-06-10 defect passed "values match within 0.1 % at the seam" for
+    three months. Raises on network or schema trouble; the caller decides
+    how loudly to say the check did not run.
+    """
+    snaps = {int(r["timestamp"]) // 1000: float(r["sumOpenInterest"])
+             for r in _get(f"{FAPI_DATA}/openInterestHist",
+                           {"symbol": symbol, "period": "5m", "limit": 500})}
+    if not snaps:
+        raise RuntimeError("openInterestHist 5m returned no rows")
+    con = sqlite3.connect(f"file:{DB_PATH}?mode=ro", uri=True)
+    try:
+        rows = con.execute(
+            f"SELECT timestamp, oi_close FROM {table} "
+            f"WHERE timestamp >= ? AND timestamp + 3600 <= ? ORDER BY timestamp",
+            (min(snaps), max(snaps))).fetchall()
+    finally:
+        con.close()
+    return score_oi_alignment(rows, snaps)
 
 
 def _find_gaps(con: sqlite3.Connection, table: str, ts_col: str,

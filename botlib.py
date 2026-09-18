@@ -41,7 +41,9 @@ FRESHNESS_CONTRACTS: dict[str, tuple[str, float, int]] = {
     "btc_1m":              ("open_time", 0.001, 10 * 60),
     "eth_1m":              ("open_time", 0.001, 10 * 60),
     "okx_perp_1h":         ("timestamp", 1.0,   3 * 3600),
-    "cd_open_interest":    ("timestamp", 1.0,   3 * 3600),
+    # The row stamped H is written when the H+1h snapshot exists (item 30), so
+    # the newest stamp is 1-2 h old by design; 4 h leaves one missed poll.
+    "cd_open_interest":    ("timestamp", 1.0,   4 * 3600),
     "ca_long_short_ratio": ("timestamp", 1.0,   26 * 3600),
     "cd_funding_rate":     ("timestamp", 1.0,   9 * 3600),
     "cd_funding_rate_eth": ("timestamp", 1.0,   9 * 3600),

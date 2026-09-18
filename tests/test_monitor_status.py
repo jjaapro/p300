@@ -92,6 +92,12 @@ def env(tmp_path, monkeypatch):
     monkeypatch.setattr(monitor.shutil, "disk_usage",
                         lambda p: _Usage(500 * GB, 450 * GB, 50 * GB))
     monkeypatch.setattr(monitor, "_db_checks", lambda *a, **k: None)
+    # The deep run's open-interest semantics check (1g) pulls Binance's
+    # 5-minute series; no test may reach the network, and the tests that
+    # restore the real _db_checks below run --deep.
+    monkeypatch.setattr("data.sources.binance.check_oi_semantics",
+                        lambda **k: {"scored": 40, "end_of_hour": 37, "start_of_hour": 3,
+                                     "tie": 0, "unscored": 0, "verdict": "ok"})
     pushed: list[str] = []
     monkeypatch.setattr(monitor, "_notify", lambda text: pushed.append(text) or False)
     monkeypatch.setattr("strategies.support.env.load_env_file", lambda *a, **k: None)
