@@ -1,0 +1,19 @@
+{
+ "freeze": "F0",
+ "created_utc": "2026-09-18T23:40:42+00:00",
+ "note": "Before any number. The README's rules, bars and placebo are fixed here.",
+ "files": {
+  "README.md": "5502a83360970899b874ac5b77983db908bbb1a5e016aab8e44d8cfe683a973a",
+  "spread_lib.py": "0722d14f5379deb85d67a819bbfca6c7d0913a6d7203f1657f43475d9dbbc127",
+  "run_spread.py": "8146c90d4498f39cdd8a47858fbb71bc792cf0a389566e052b1f9f523494c6d0",
+  "tests/test_spread.py": "8ef9b817ef191d8c020018c8aab09f7e06bba39aea3aa29e11ab73e0e21486aa"
+ },
+ "data": {
+  "funding_BTCUSDT": "ebf99ba14cd75ca66dfbadedecca0ffc841614149abe125215ce617b83340b59",
+  "funding_ETHUSDT": "64ae476cd1f9a72a81fed8c27485f3152348a168b969ff154f94e6f297941990",
+  "stage1_trades": "9d30f1d3b094f8654b6fd4843b9a0f5a4783345721f35b771cc2362579a8ddcd",
+  "perp_BTC": "b085372e6b3f4c743cdbb2f766f67b8765a6f563b5268c3ad515b24f52606563",
+  "perp_ETH": "77edf3f64467b2b130b6c75476895c61d347c87d6d6208270b7829ced35320e7",
+  "classifier": "edd9ca1aa8d1adb1a234ab441cc2870120f928be7c2b523b56901242eb5e6cf4"
+ }
+}

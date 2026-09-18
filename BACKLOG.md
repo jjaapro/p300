@@ -152,10 +152,9 @@ Pre-registered notebooks; every replay charges measured per-leg costs and fundin
    and its research engine exists only inside two never-executed notebooks (`short_squeeze_sessions/`), so that study
    is an engine build first. SQUEEZE_BULL on ETH has the same open-interest route and no live feed. Alts are blocked
    (the screener feed stopped 2026-05-23). The most direct lever on breadth.
-2. **ETH/BTC regime spread** (strong-bull days only) and hedged expressions of existing signals.
-3. **Shelf re-cost** under the no-stop style at measured costs (R4 windows, PDO), then fleet compounding through the
+2. **Shelf re-cost** under the no-stop style at measured costs (R4 windows, PDO), then fleet compounding through the
    liquidation walk. Bar: net ≥ 2× the round trip in both halves.
-4. **Hawkes / liquidation cascades.** The hourly feed it needs is live since 2026-09-18 (it works on hourly counts, not
+3. **Hawkes / liquidation cascades.** The hourly feed it needs is live since 2026-09-18 (it works on hourly counts, not
    prints), so its clock runs without the collector. Stored hourly history is 2026-02-25 → now, less the lost
    2026-05-24 → 06-21. Re-date its estimate against that before picking it up; the old "≥ 2028-06" assumed no feed.
 
@@ -259,7 +258,13 @@ smallest-first sizing with a circuit breaker.
 - Do not re-propose: the estimated liquidation map, spot- vs perp-led highs as an exit, absorption in any form, FVG /
   LVN magnets, the OKX gate, calendar cells, ORB, Coinbase premium, delta-neutral, basis carry, the VRP strangle,
   the implied-range exit (any multiplier, scale or anchor) and the rejection wick at levels (any bar size or level
-  set) — exit-policy stage R, 2026-09-19, the exhaustion brainstorm's last pair.
+  set) — exit-policy stage R, 2026-09-19, the exhaustion brainstorm's last pair; the ETH/BTC spread on any bull
+  state as a sleeve and cross-asset hedging of chento's trades (`studies/notebooks/eth_btc_spread_2026_09/`,
+  2026-09-19: the spread is one year, 2025, at a 63 % drawdown; a hedge in the other asset removes the market move
+  chento's timing is paid in, −1.04 R and −0.59 R per trade).
+- The ETH/BTC regime thesis, for the record: on strong_bull days long ETH beat long BTC over 2020-26 (+190.7 % vs
+  +93.1 % net of 10 bp and funding), but as a relative position it gives back more than it protects, and even the
+  long is a 2020-and-2025 story (2021 −5.5 %, 2024 +2.6 %).
 
 **Operations hygiene** — batch when convenient; none affects a strategy result.
 19. Live schema drift from the 2026-05-18 PK rebuild: `trades` lost NOT NULL and DEFAULTs; `variants` has no PRIMARY
