@@ -122,7 +122,7 @@ excludes the coded value) passed. Trades closed before 2026-09-12 carry
 same 0.5× notional (sized as if the 2 % stop existed); exits on the +3 %
 target or the 48 h time stop only — no stop. Sizing study
 `studies/notebooks/sizing_style_2026_09/` (S1 policy P1b, 122 fires
-2022-01 → 2026-06 on 1 m bars, measured cost, shipped sizing):
+2022-03-25 → 2026-09-04 on 1 m bars, measured cost, shipped sizing):
 
 | policy | mean R | win | worst trade | MTM maxDD | MAR | halves |
 |---|---|---|---|---|---|---|

@@ -63,7 +63,7 @@ python bootstrap.py
 #    expected to fail until the fleet has been started once.
 python health.py                              # data + schema + entry points
 python bots/adx/runner.py --once              # one tick of one bot; <30s
-python -m pytest tests/ -q                    # 1128 tests as of 2026-09-13
+python -m pytest tests/ -q                    # 1601 tests as of 2026-09-19
 ```
 
 `bootstrap.py` prints the same two next steps when it finishes
@@ -303,10 +303,11 @@ FROM trades WHERE status='open'
 GROUP BY strategy_variant, strategy, asset
 HAVING COUNT(*) > 1;
 ```
-> **Caveat, 2026-09-13:** `health.py::check_single_open_invariant` filters on
-> `strategy_variant LIKE 'p300_%'`, i.e. the *legacy* variant only. It does not
-> cover the `bot_*` variants the fleet actually trades. Run the SQL above by
-> hand (without the LIKE) until that check is repointed.
+> **Since 2026-09-19** `health.py::check_single_open_invariant` covers the
+> `bot_*` variants the fleet trades (and the legacy `p300_%` rows). chento and
+> r4 are held to their own rule — one open trade per trigger bar, one per
+> window — so their stacking passes and only a true duplicate fails (BACKLOG 22).
+> The SQL above is the by-hand form.
 
 > **Stacked chento rows are not duplicates (2026-09-14).** `bot_chento_v3_v1`
 > and `bot_chento_v3_eth` have no single-open guard: each signal is its own
@@ -508,8 +509,9 @@ python studies/simulation/archive_replay_variants.py --apply   # do it
    output at different clock positions, covering `jplus.simulate`, the ADX
    signal, the regime classifier and Carry's funding loader. The four arms that
    covered CPR, PDO, THU_BEAR and FOMC moved with those sleeves to
-   `studies/material/archive/tests/test_lookahead.py` on 2026-09-13. Porting
-   the contract to the bots that still have none is an open backlog item.
+   `studies/material/archive/tests/test_lookahead.py` on 2026-09-13, and the
+   four bots carry the same clock-bound contract since that day
+   (`tests/test_bot_lookahead.py`).
 
 3. **Idempotent registration.** `botlib.ensure_bot_variant` is a no-op when the
    variants row already exists; it only backfills `enabled` when NULL and

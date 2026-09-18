@@ -3,7 +3,7 @@
 Single source of truth for "what is calibrated right now" + provenance.
 Update in the same commit as any config/sizing change.
 
-## Current state (2026-07-22 — Tier-2 + veto, standalone bot)
+## Shipped configuration (2026-07-22 — Tier-2 + veto, standalone bot; the file of record is `bots/adx/strategy/config.py`)
 
 **Strategy** (`bots/adx/strategy/config.py`): ADX(14) cross <20→≥25
 (was_low machine), direction close-vs-EMA(50), **symmetric** EMA(150) trend
@@ -51,7 +51,7 @@ forfeited counter-trend shorts; veto z matches the documented 2025-10-05
   short was on during 96.6 % of those long-days, so in one cross-margin
   account the perp legs net and the pair is "ADX long on spot" → pool plan
   decision D8 (same account, or ADX longs on spot). The study numbers in
-  "Current state" above are the harness's no-funding, fill-model figures;
+  "Shipped configuration" above are the harness's no-funding, fill-model figures;
   the harness now takes `with_funding=True` and any future comparison with
   the live sleeve must use it.
 - **No other change**, each by its pre-registered rule: phase ensembles

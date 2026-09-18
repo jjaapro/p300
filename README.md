@@ -7,10 +7,10 @@ APIs (Binance, OKX, Bybit, Coinbase, Deribit, Yahoo), the event calendar is
 computed in-process, and the long-short-ratio history was seeded once from
 Coinalyze.
 
-> **Status 2026-09-13: the fleet runs, the evidence is still thin.** Nine paper
+> **Status 2026-09-19: the fleet runs, the evidence is still thin.** Nine paper
 > variants across seven bot units; the ledgers hold far too few closed trades
-> for a verdict on any of them. Current status and roadmap: the dated section at
-> the top of [BACKLOG.md](BACKLOG.md). Validation protocol:
+> for a verdict on any of them. The roadmap is [BACKLOG.md](BACKLOG.md) — §0 is
+> the road, one topic at a time. Validation protocol:
 > [GATE_VALIDATION.md](GATE_VALIDATION.md); the honest-Sharpe audit of our own
 > record is
 > [studies/notebooks/validation_audit_2026_09/findings.md](studies/notebooks/validation_audit_2026_09/findings.md).
@@ -296,4 +296,4 @@ back that far — run `python fetch_coinalyze.py` to fill it. If
 | Why is this bot's dial set to that number? | [docs/calibration/](docs/calibration/) |
 | What did study X conclude? | `studies/notebooks/<study>/findings.md` |
 | Why was a sleeve archived, and can it come back? | [studies/material/archive/README.md](studies/material/archive/README.md) |
-| Can I trade this by hand? | [MANUAL.md](MANUAL.md) — written for the orchestrator-era sleeve set, not the current fleet |
+| Can I trade this by hand? | Not the current fleet. The orchestrator-era guide is archived at [studies/material/archive/MANUAL.md](studies/material/archive/MANUAL.md) |

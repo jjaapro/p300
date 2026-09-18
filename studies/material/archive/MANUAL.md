@@ -1,3 +1,7 @@
+> **Archived 2026-09-19.** This guide describes hand execution of the orchestrator-era P-300 Aggressive 2.0
+> sleeve set, retired by the bot refactor on 2026-09-13. Nothing here matches the running fleet; its relative
+> links were written for the repository root. Kept for the record.
+
 # P-300 Manual Execution Guide
 
 > **Can I run P-300 by hand without the bot?** Yes — but it's a real

@@ -159,7 +159,9 @@ Pre-registered notebooks; every replay charges measured per-leg costs and fundin
    liquidation walk. Bar: net ≥ 2× the round trip in both halves.
 3. **Hawkes / liquidation cascades.** The hourly feed it needs is live since 2026-09-18 (it works on hourly counts, not
    prints), so its clock runs without the collector. Stored hourly history is 2026-02-25 → now, less the lost
-   2026-05-24 → 06-21. Re-date its estimate against that before picking it up; the old "≥ 2028-06" assumed no feed.
+   2026-05-24 → 06-21. Re-dated 2026-09-19 against the coverage plan's gates (≥ 2 years and ≥ 500 events): the two
+   years land 2028-03-24 counting through the hole, 2028-06-22 contiguous from its end; the event gate is met earlier
+   at the measured rate (~440 a year). The daily series since 2021 cannot see a cascade. Not before 2028-03.
 
 Evidence-dated, not effort-dated:
 
@@ -275,12 +277,8 @@ smallest-first sizing with a circuit breaker.
     KEY (two simultaneous starts of one bot can register a duplicate); `trade_adjustments` and `ai_quant_decisions`
     lost DEFAULTs. `tests/test_live_schema_constraints.py` pins each; a fix updates its pin.
 21. 288 orphan `trade_adjustments` rows (ids 69–356). Archive, delete or leave, and record it.
-22. `health.py`'s single-open check only sees legacy `p300_%` variants; a repoint must exempt chento's and r4's stacking.
 - 27 tests open prod.db read-write for SELECTs; the dry-run probe covers only `botlib.point_at_db_copy`; the chento
   fixture hash alarm fires on B-tree page layout; `strategy_health`'s 2.5× gross-headroom default reads negative for
   chento; cadences with no owner (weekly `strategy_health`, monthly attribution, periodic memory audit); MFE/MAE per
   closed trade (confirm `btc_1m` retention first); `.env` still names the archived AI_QUANT variables.
-- Docs: OPERATIONS §7.2 calls the look-ahead port open and has old test counts; `portfolio_with_pools.md` calls chento
-  BTC-only; README status date; "Current state" headers in `docs/calibration/adx.md` and `short_squeeze.md`;
-  `squeeze_bull.md` dates the sizing pool "2022-01 to 2026-06" (fires run 2022-03-25 → 2026-09-04); archive or rewrite
-  MANUAL.md; rewrite GATE_VALIDATION.md (dead paths; its §5 promotion rule is not the one the OKX re-test used).
+- Docs: rewrite GATE_VALIDATION.md (dead paths; its §5 promotion rule is not the one the OKX re-test used).

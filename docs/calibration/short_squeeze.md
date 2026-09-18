@@ -3,7 +3,7 @@
 Single source of truth for "what is calibrated right now" + provenance.
 Update in the same commit as any config/sizing change.
 
-## Current state (2026-07-21 — first-ever paper deployment)
+## Shipped configuration (2026-07-21 — first paper deployment; the file of record is `bots/short_squeeze/strategy/config.py`)
 
 **Strategy params** (`bots/short_squeeze/strategy/config.py`) — frozen
 from the 2026-05-18 notebook sweep, unchanged: perp_cvd pct < 0.15,
