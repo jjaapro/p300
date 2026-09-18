@@ -137,16 +137,23 @@ On each tick a runner:
   tick), heartbeat `error`, note = the exception. It does not run on a
   `stale_mgmt_inputs` tick (on purpose; heartbeat `degraded`; `r4` checks
   btc_1m and eth_1m together, so a stale btc_1m also holds back an ETH close).
-  Nor does it run when anything after `decide()` raises (entry-table check,
-  sizing, `execute()`, including `DuplicateInstanceError` while standing down)
-  or, for `r4`, when loading the sleeve fails; the loop reports those as
-  `error`, and in the two-variant bots such an exception also skips the second
-  variant for that tick (BACKLOG 23). A due trade whose strategy has no closer,
+  Since 2026-09-19 it also runs when anything after `decide()` raises (the
+  entry-table check, sizing, `execute()`, including `DuplicateInstanceError`
+  while standing down; for `r4` also a sleeve that fails to load): status
+  `entry_error`, heartbeat `error`, note = the exception, and in the
+  two-variant bots the other variant still ticks. A due trade whose strategy has no closer,
   or whose price read or close raises, stays open and is named in the heartbeat
   note with status `error`; the other due trades still close, and the other
   variant still ticks;
 - writes its `bot_heartbeats` row (`last_tick_utc`, `last_eval_utc`,
-  `last_signal_utc`, `open_trades`, status, note).
+  `last_signal_utc`, `open_trades`, status, note);
+- counts the tick in `bot_tick_daily` (one counter per day, bot, variant and
+  status — every tick) and, when it is worth a row, appends it to `bot_ticks`
+  with the sleeve's decision detail as JSON: the first tick after a start,
+  every status change, every non-ok heartbeat, every fire and every backstop
+  close; idle ticks repeating the previous status are counted, not stored
+  (`botlib.record_tick`, since 2026-09-19 — before that the heartbeat row was
+  the only trace of a tick, and nothing counted fires).
 
 All bots open / close paper trades in the `trades` table with
 `execution_mode='paper'`, each tagged with its own `strategy_variant`
@@ -227,6 +234,18 @@ sqlite3 "file:data/databases/prod.db?mode=ro" "
   SELECT name, last_tick_utc, last_eval_utc, open_trades, status, note
   FROM bot_heartbeats ORDER BY name"
 ```
+
+**Fires — the count behind every "revisit at n OOS fires" rule:**
+```bash
+sqlite3 "file:data/databases/prod.db?mode=ro" "
+  SELECT bot, variant, status, SUM(n) AS n
+  FROM bot_tick_daily WHERE day >= '2026-09-19'
+  GROUP BY bot, variant, status ORDER BY bot, variant, n DESC"
+```
+A fire is a `decided` tick (`r4`: `opened`); `entry_blocked_stale_inputs` and
+`entry_error` are fires that produced no trade. Each fire's gate values are in
+`bot_ticks.detail` (`SELECT tick_utc, variant, detail FROM bot_ticks WHERE
+status='decided'`). Python: `botlib.tick_summary(since_day="2026-09-19")`.
 
 (The simulator-driven daily-return accrual that previously wrote to
 `variant_daily_returns.source='live_computed'` was removed in the

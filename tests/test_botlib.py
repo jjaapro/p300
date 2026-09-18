@@ -415,3 +415,125 @@ def test_ensure_bot_variant_backfills_enabled_null(tmp_path, monkeypatch):
     con = sqlite3.connect(str(legacy))
     assert con.execute("SELECT enabled FROM variants WHERE id='bot_null_v1'").fetchone()[0] == 1
     con.close()
+
+
+# ─── Tick log ─────────────────────────────────────────────────────────────────
+
+def _tick_rows(db_path, table="bot_ticks"):
+    con = sqlite3.connect(str(db_path))
+    con.row_factory = sqlite3.Row
+    try:
+        order = "tick_utc, variant" if table == "bot_ticks" else "day, variant, status"
+        return [dict(r) for r in con.execute(f"SELECT * FROM {table} ORDER BY {order}")]
+    finally:
+        con.close()
+
+
+def test_record_tick_counts_every_tick_and_keeps_only_the_ticks_worth_a_row(tmp_db, monkeypatch):
+    """BACKLOG §4 'count fires': every tick lands in the daily counter; the
+    row log keeps a process's first tick, each status change and every fire
+    with its gate values — idle repeats are counted, not stored."""
+    import json
+    monkeypatch.setattr(botlib, "_last_tick_status", {})
+    idle = {"status": "no_flush", "hb_status": "ok", "hb_note": "", "evaluated": True,
+            "detail": {"status": "no_flush", "oi_chg_4h": -0.004, "regime": "bull_30d"}}
+    fire = {"status": "decided", "hb_status": "ok", "hb_note": "", "evaluated": True,
+            "signal": True, "opened": "SJ-9001",
+            "detail": {"status": "decided", "oi_chg_4h": -0.031, "px_chg_4h": -0.021,
+                       "regime": "bull_30d", "swept": ("SJ-8990",), "bars": {"nested": 1}}}
+    for k, out in enumerate([idle, idle, idle, fire, idle]):
+        clock.set_simulated_now(NOW + timedelta(minutes=k))
+        written = botlib.record_tick("squeeze_bull", {"bot_squeeze_bull_v1": out})
+        assert written == (1 if k in (0, 3, 4) else 0), k
+    rows = _tick_rows(tmp_db)
+    assert [(r["status"], r["signal"], r["opened"], r["evaluated"]) for r in rows] == [
+        ("no_flush", 0, None, 1), ("decided", 1, "SJ-9001", 1), ("no_flush", 0, None, 1)]
+    assert rows[1]["tick_utc"] == (NOW + timedelta(minutes=3)).isoformat()
+    assert json.loads(rows[1]["detail"]) == {
+        "status": "decided", "oi_chg_4h": -0.031, "px_chg_4h": -0.021,
+        "regime": "bull_30d", "swept": ["SJ-8990"]}          # nested dict dropped
+    day = NOW.date().isoformat()
+    assert [(r["day"], r["status"], r["n"]) for r in _tick_rows(tmp_db, "bot_tick_daily")] == [
+        (day, "decided", 1), (day, "no_flush", 4)]
+    summary = botlib.tick_summary(since_day=day)
+    assert [(s["bot"], s["variant"], s["status"], s["n"]) for s in summary] == [
+        ("squeeze_bull", "bot_squeeze_bull_v1", "no_flush", 4),
+        ("squeeze_bull", "bot_squeeze_bull_v1", "decided", 1)]
+    assert botlib.tick_summary(since_day="2099-01-01") == []
+    assert botlib.tick_summary(bot="adx") == []
+
+
+def test_record_tick_keeps_non_ok_ticks_and_backstop_closes_even_when_the_status_repeats(
+        tmp_db, monkeypatch):
+    monkeypatch.setattr(botlib, "_last_tick_status", {})
+    degraded = {"status": "stale_mgmt_inputs", "hb_status": "degraded",
+                "hb_note": "mgmt tables stale: ['btc_1m']"}
+    for k in range(3):
+        clock.set_simulated_now(NOW + timedelta(minutes=k))
+        assert botlib.record_tick("adx", {"bot_adx_v1": degraded}) == 1
+    clock.set_simulated_now(NOW + timedelta(minutes=3))
+    assert botlib.record_tick("adx", {"bot_adx_v1": {"status": "no_action", "hb_status": "ok"}}) == 1
+    clock.set_simulated_now(NOW + timedelta(minutes=4))
+    assert botlib.record_tick("adx", {"bot_adx_v1": {
+        "status": "no_action", "hb_status": "ok", "backstop_closed": ["SJ-1", "SJ-2"]}}) == 1
+    clock.set_simulated_now(NOW + timedelta(minutes=5))
+    assert botlib.record_tick("adx", {"bot_adx_v1": {"status": "no_action", "hb_status": "ok"}}) == 0
+    rows = _tick_rows(tmp_db)
+    assert [(r["hb_status"], r["closed"]) for r in rows] == \
+        [("degraded", None)] * 3 + [("ok", None), ("ok", "SJ-1,SJ-2")]
+    assert rows[0]["note"] == "mgmt tables stale: ['btc_1m']"
+    assert rows[3]["note"] is None
+    daily = {r["status"]: r["n"] for r in _tick_rows(tmp_db, "bot_tick_daily")}
+    assert daily == {"stale_mgmt_inputs": 3, "no_action": 3}
+
+
+def test_record_tick_twins_get_their_own_rows_and_a_raising_tick_is_a_tick_error(tmp_db, monkeypatch):
+    """The two-variant bots hand over tick_all's per_variant dict; a loop
+    whose tick raised hands over None per variant with the exception."""
+    monkeypatch.setattr(botlib, "_last_tick_status", {})
+    per = {"bot_squeeze_bull_v1": {"status": "decided", "hb_status": "ok",
+                                   "signal": True, "opened": "SJ-1"},
+           "bot_squeeze_bull_nostop_v1": {"status": "entry_error", "hb_status": "error",
+                                          "hb_note": "RuntimeError('sizing')"}}
+    assert botlib.record_tick("squeeze_bull", per) == 2
+    clock.set_simulated_now(NOW + timedelta(minutes=1))
+    assert botlib.record_tick("squeeze_bull", {v: None for v in per},
+                              error_note="KeyError('status')") == 2
+    by = {(r["variant"], r["tick_utc"]): r for r in _tick_rows(tmp_db)}
+    assert by[("bot_squeeze_bull_nostop_v1", NOW.isoformat())]["note"] == "RuntimeError('sizing')"
+    late = by[("bot_squeeze_bull_v1", (NOW + timedelta(minutes=1)).isoformat())]
+    assert (late["status"], late["hb_status"], late["note"]) == \
+        ("tick_error", "error", "KeyError('status')")
+    daily = {(r["variant"], r["status"]): r["n"] for r in _tick_rows(tmp_db, "bot_tick_daily")}
+    assert daily == {("bot_squeeze_bull_v1", "decided"): 1, ("bot_squeeze_bull_v1", "tick_error"): 1,
+                     ("bot_squeeze_bull_nostop_v1", "entry_error"): 1,
+                     ("bot_squeeze_bull_nostop_v1", "tick_error"): 1}
+
+
+def test_record_tick_never_raises_and_forgets_a_failed_write(tmp_db, monkeypatch):
+    """A tick log that could stop a bot would cost more than it records: a
+    missing table is a warning and -1, nothing is counted, and the status
+    memory is untouched so the transition is written once a write works."""
+    monkeypatch.setattr(botlib, "_last_tick_status", {})
+    con = sqlite3.connect(str(tmp_db))
+    con.execute("DROP TABLE bot_ticks")
+    con.commit()
+    con.close()
+    assert botlib.record_tick("adx", {"bot_adx_v1": {"status": "no_action"}}) == -1
+    assert botlib._last_tick_status == {}
+    botlib.init_heartbeat_schema()
+    assert botlib.record_tick("adx", {"bot_adx_v1": {"status": "no_action"}}) == 1
+    assert botlib._last_tick_status == {("adx", "bot_adx_v1"): "no_action"}
+    assert [(s["status"], s["n"]) for s in botlib.tick_summary()] == [("no_action", 1)]
+
+
+def test_compact_detail_bounds_the_gate_values():
+    import json
+    assert botlib._compact_detail(None) is None
+    assert botlib._compact_detail({}) is None
+    assert botlib._compact_detail({"nested": {"a": 1}}) is None
+    assert json.loads(botlib._compact_detail(
+        {"status": "decided", "swept": list(range(21)), "ids": ("a", "b"), "x": None})) == \
+        {"status": "decided", "ids": ["a", "b"], "x": None}
+    over = json.loads(botlib._compact_detail({"status": "decided", "big": "x" * 5000}))
+    assert set(over) == {"_truncated"} and over["_truncated"] > 4000

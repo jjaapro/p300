@@ -42,7 +42,8 @@ from tests.test_trade_adjustments import old_shape_ddl
 REPO = Path(__file__).resolve().parents[1]
 LIVE = REPO / "data" / "databases" / "prod.db"
 
-DECLARED_TABLES = ("ai_quant_decisions", "bot_heartbeats", "config",
+DECLARED_TABLES = ("ai_quant_decisions", "bot_heartbeats", "bot_tick_daily",
+                   "bot_ticks", "config",
                    "fear_greed_index", "trade_adjustments", "trades",
                    "variant_events", "variants")
 

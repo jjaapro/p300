@@ -653,3 +653,39 @@ def test_overview_stays_read_only(fixture_db, jobs_dir, monkeypatch):
     assert seen and all(d.startswith("file:") and "mode=ro" in d for d in seen), seen
     assert fixture_db.read_bytes() == before
     assert not jobs_dir.parent.exists()           # read the status files, wrote none
+
+
+def test_r_multiple_derives_from_the_stop_when_the_sleeve_wrote_no_risk(fixture_db):
+    """squeeze_bull and short_squeeze write the stop (their no-stop twins only
+    the reference stop their size was set from) and never `_risk`, so their R
+    multiple was blank on the dashboard. SJ-4250's shape: entry 77493.9, stop
+    75944.022, qty 0.0645, pnl -19.16 -> -0.19 R."""
+    con = sqlite3.connect(str(fixture_db))
+    con.executemany("INSERT INTO variants VALUES (?,?)", [
+        ("bot_squeeze_bull_v1", '{"bot": "squeeze_bull"}'),
+        ("bot_squeeze_bull_nostop_v1", '{"bot": "squeeze_bull"}')])
+    con.executemany(
+        "INSERT INTO trades VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", [
+            ("SJ-5", "BTC", "LONG", "SQUEEZE_BULL", "bot_squeeze_bull_v1",
+             _iso(200000), _iso(100000), _iso(100000), 77493.9, 77196.9, 5000.0,
+             0.06452120747568531, 0.5, -19.161338139904906, -0.38, "closed", "paper",
+             '{"trigger": "squeeze_bull_oi_flush", "_stop_price": 75944.022, '
+             '"_target_price": 79818.717, "_time_stop_iso": "2026-09-13T17:00:00+00:00"}'
+             "\nSQUEEZE_BULL_EXIT: time_stop"),
+            ("SJ-6", "BTC", "LONG", "SQUEEZE_BULL", "bot_squeeze_bull_nostop_v1",
+             _iso(200000), _iso(100000), _iso(100000), 77493.9, 79043.778, 5000.0,
+             0.0645, 0.5, 100.0, 2.0, "closed", "paper",
+             '{"exit_policy": "target_time", "_stop_price": null, '
+             '"_reference_stop_price": 75944.022, "_target_price": 79818.717}'),
+        ])
+    con.commit()
+    con.close()
+    by_id = {t["id"]: t for t in queries.trades("all")["trades"]}
+    assert by_id["SJ-5"]["r_multiple"] == -0.19
+    assert by_id["SJ-5"]["plan"]["risk_price"] == pytest.approx(1549.878)
+    assert by_id["SJ-6"]["r_multiple"] == 1.0          # 100 / (0.0645 x 1549.878)
+    assert by_id["SJ-6"]["plan"]["stop_price"] is None
+    assert by_id["SJ-6"]["plan"]["reference_stop_price"] == 75944.022
+    assert by_id["SJ-4"]["r_multiple"] == 2.0          # chento's own _risk still wins
+    assert by_id["SJ-1"]["r_multiple"] is None         # open trades have none
+    assert by_id["SJ-2"]["plan"] is None               # carry: no stop, nothing invented

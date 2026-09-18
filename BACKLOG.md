@@ -30,17 +30,18 @@ In order. Each step names its section.
 2. **Second assets** (§3.1) — CARRY on ETH is studied and waits on the operator (§2.4); SHORT_SQUEEZE on ETH needs
    its data built first. The validation audit's one-line conclusion was that the constraint is breadth, not edge.
 3. **Chento** (§2.2) — close decisions 14 and 15, then the replay baseline and the time-stop twin.
-4. **Paper-ledger fidelity** (§4) — the defects that would make paper results lie, batched once, before the paper tracks
-   are old enough to be read.
-5. **Move-vs-implied-range and the rejection-wick exit** (§3.2) — the two free on-disk tests the exhaustion brainstorm
+4. **Move-vs-implied-range and the rejection-wick exit** (§3.2) — the two free on-disk tests the exhaustion brainstorm
    left; the last of that family worth running.
-6. **R4** (§2.3) — after its first windows have traded; nothing to do before 2026-10-02 but watch.
-7. Then §3.3 onward, in the order listed there.
+5. **R4** (§2.3) — after its first windows have traded; nothing to do before 2026-10-02 but watch.
+6. Then §3.3 onward, in the order listed there.
 
 ## 1. Now
 
 - **Watch r4's first enabled window**, Fri 2026-10-02 04:00 UTC (R4_ETH V1: Tue 2026-10-06 20:00). r4 has never
   traded; confirm the first open and its scheduled close.
+- **Restart the bots** (`start_fleet.ps1`) to pick up the 2026-09-19 runner changes: the entry-path exit guard
+  (item 23) and the tick log. Until then every bot process runs the old code, and the fire count starts at the
+  restart, not at the commit.
 - **Disk.** C: hit 0 bytes free on 2026-09-18 with the fleet live; ~20 GB returned when Firefox closed (deleted-but-open
   handles, invisible to any directory scan). `backup.py` refuses to snapshot below 2 × prod.db (~3.3 GB), so a repeat
   silently skips the nightly backup that protects the paper record, and nothing alerts on free space. Smallest fix: a
@@ -178,13 +179,9 @@ Evidence-dated, not effort-dated:
 
 ## 4. Paper-ledger fidelity
 
-Paper trading is the progress measure, so the ledger has to be true. These are the defects that would make it lie.
-Batch them; each needs its own go-ahead as a prod change.
-
-- **Count fires.** Every "revisit at n OOS fires" rule in §2 and §3 counts fires, and nothing counts them:
-  `bot_heartbeats` is overwritten every 60 s. An append-only `bot_ticks` log (coverage plan §1 item 3) is the smallest
-  thing that makes those gates checkable without a hand recount.
-- The dashboard shows no R multiple for squeeze_bull trades (no `_risk` key in the notes).
+Paper trading is the progress measure, so the ledger has to be true. This is where the defects that would make it
+lie go, batched, each with its own go-ahead as a prod change. Nothing open. Fires are counted in `bot_tick_daily`
+(OPERATIONS §11) from the bots' next restart on.
 
 ## 5. Data
 
@@ -192,7 +189,8 @@ Batch them; each needs its own go-ahead as a prod change.
 reference for what each venue publishes, what is forward-only and what an archive still sells. Its measurements hold.
 Its *ordering* does not: it was written under "data itself has value for future research", and this roadmap puts
 strategy work first. So an item is pulled from it only when a scheduled study needs it. Pulled so far: the 5-minute
-`metrics` archive (item 30's verification, done), the bot tick log (§4), and **the feed-vintage table** (its item 5),
+`metrics` archive (item 30's verification, done), the bot tick log (its item 3, done 2026-09-19), and **the
+feed-vintage table** (its item 5),
 still open — it is what would have caught the open-interest shift on 2026-06-10 instead of 2026-09-15. Its item 2 is
 done.
 

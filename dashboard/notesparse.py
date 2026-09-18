@@ -6,7 +6,8 @@ plain-text lines after "\\n" (e.g. "CHENTO_TRIPLE_V3_EXIT: stop_hit; ...").
 
 Reason-blob conventions across sleeves:
   - underscore keys are execution plan written by the sizing/exit layer
-    (`_stop_price`, `_target_price`, `_time_stop_iso`, `_risk`, ...);
+    (`_stop_price`, `_target_price`, `_time_stop_iso`, `_risk`, the squeeze
+    twins' `_reference_stop_price`, ...);
     `_state` is the sleeve's mutable position-walking state (redundant with
     the columns — dropped here); `_filter_diag` is the per-entry filter
     record.
@@ -25,6 +26,8 @@ _PLAN_KEYS = {
     "_time_stop_iso": "time_stop",
     "_entry_price": "entry_price_planned",
     "_risk": "risk_price",
+    "_reference_stop_price": "reference_stop_price",
+    "_reference_target_price": "reference_target_price",
     "_atr_at_entry": "atr_at_entry",
     "_inside_va": "inside_va",
     "_ladder_size_frac": "ladder_size_frac",

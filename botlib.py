@@ -10,6 +10,7 @@ is the whole "platform library" — deliberately one flat file:
                                    (loud degradation, never a silent NaN
                                    gate-block — the CHENTO/okx lesson)
   - bot_heartbeats table           every process upserts a row per tick;
+  - bot_ticks + bot_tick_daily     append-only tick log, so fires are countable;
                                    monitor.py alerts on stale rows
   - WAL mode                       multi-process safety (feed + N bots +
                                    monitor all touch prod.db)
@@ -20,6 +21,7 @@ is the whole "platform library" — deliberately one flat file:
 """
 from __future__ import annotations
 
+import json
 import logging
 import sqlite3
 from datetime import datetime, timezone
@@ -119,6 +121,8 @@ FROZEN_TABLES: dict[str, str] = {
     "screener_universe":      "2026-05-23 — screener research one-shot, never a live feed",
     "tv_btc_perp_15m":        "2026-05-25 — manual TradingView CSV import",
     "tv_btc_perp_1h":         "2026-05-25 — manual TradingView CSV import",
+    "cd_open_interest_bak_20260919": "2026-09-19 — item 30: the Binance-era open-interest rows before "
+                                     "the close-of-hour re-stamp; drop on the operator's word",
 }
 
 # Writers exist but are switched off (AI_QUANT_ENABLED=false since 2026-06).
@@ -128,7 +132,8 @@ GATED_TABLES: set[str] = {"news_headlines", "cd_liquidations", "cd_dvol"}
 # Bot/ledger state — covered by heartbeat, ledger-coherence and trade checks,
 # not by row-age freshness.
 STATE_TABLES: set[str] = {
-    "ai_quant_decisions", "bot_heartbeats", "config", "fomc_observer",
+    "ai_quant_decisions", "bot_heartbeats", "bot_tick_daily", "bot_ticks",
+    "config", "fomc_observer",
     "sqlite_sequence", "trade_adjustments", "trades",
     "variant_daily_returns", "variant_events", "variants",
 }
@@ -219,6 +224,34 @@ def init_heartbeat_schema() -> None:
             "PRAGMA table_info(bot_heartbeats)").fetchall()}
         if "pid" not in cols:
             con.execute("ALTER TABLE bot_heartbeats ADD COLUMN pid INTEGER")
+        # The tick log (record_tick below), created here because every runner
+        # already calls this at startup.
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS bot_ticks (
+                bot        TEXT NOT NULL,
+                variant    TEXT NOT NULL,
+                tick_utc   TEXT NOT NULL,
+                status     TEXT NOT NULL,
+                hb_status  TEXT NOT NULL DEFAULT 'ok',
+                note       TEXT,
+                evaluated  INTEGER NOT NULL DEFAULT 0,
+                signal     INTEGER NOT NULL DEFAULT 0,
+                opened     TEXT,
+                closed     TEXT,
+                detail     TEXT,
+                PRIMARY KEY (bot, variant, tick_utc)
+            )
+        """)
+        con.execute("""
+            CREATE TABLE IF NOT EXISTS bot_tick_daily (
+                day      TEXT NOT NULL,
+                bot      TEXT NOT NULL,
+                variant  TEXT NOT NULL,
+                status   TEXT NOT NULL,
+                n        INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (day, bot, variant, status)
+            )
+        """)
         con.commit()
     finally:
         con.close()
@@ -309,6 +342,159 @@ def get_heartbeats() -> list[dict]:
         try:
             rows = con.execute(
                 "SELECT * FROM bot_heartbeats ORDER BY name").fetchall()
+        except sqlite3.OperationalError:
+            return []
+        return [dict(r) for r in rows]
+    finally:
+        con.close()
+
+
+# ─── Tick log ─────────────────────────────────────────────────────────────────
+#
+# Every "revisit at n OOS fires" rule counts fires, and until 2026-09-19
+# nothing counted them: bot_heartbeats is one row per bot, overwritten every
+# tick (BACKLOG §4, coverage plan §1 item 3). Two append-only tables:
+#   bot_tick_daily  one counter per (day, bot, variant, status). EVERY tick
+#                   is counted, so fires, blocked entries and errors per day
+#                   are a SUM away.
+#   bot_ticks       one row per tick worth keeping — a status different from
+#                   this process's previous tick for the variant, a non-ok
+#                   heartbeat, a signal or open, a backstop close — with the
+#                   decision detail's scalar values as JSON: the gate values
+#                   the bot saw at the time, which a replay on since-revised
+#                   data cannot reproduce (item 30). Idle ticks repeating the
+#                   previous status are counted, not stored: tens of KB a
+#                   day for the fleet instead of a MB.
+
+_TICK_DETAIL_MAX_CHARS = 4000
+_TICK_LIST_MAX_ITEMS = 20
+
+# Per-process memory of the last status recorded per (bot, variant) — the
+# basis of the "status changed" rule. Empty after a restart, so a process's
+# first tick always leaves a row.
+_last_tick_status: dict[tuple[str, str], str] = {}
+
+
+def _compact_detail(detail) -> str | None:
+    """The decision detail as bounded JSON: top-level scalars, and lists of
+    up to 20 scalars (swept trade ids); nested dicts and longer lists are
+    dropped. Too long even as scalars -> a marker, never a blob."""
+    if not isinstance(detail, dict) or not detail:
+        return None
+    scalars = (str, int, float, bool)
+
+    def keep(v) -> bool:
+        if v is None or isinstance(v, scalars):
+            return True
+        return (isinstance(v, (list, tuple)) and len(v) <= _TICK_LIST_MAX_ITEMS
+                and all(x is None or isinstance(x, scalars) for x in v))
+
+    kept = {k: (list(v) if isinstance(v, tuple) else v)
+            for k, v in detail.items() if keep(v)}
+    if not kept:
+        return None
+    text = json.dumps(kept, default=str, separators=(",", ":"))
+    if len(text) > _TICK_DETAIL_MAX_CHARS:
+        kept = {k: v for k, v in kept.items() if not isinstance(v, list)}
+        text = json.dumps(kept, default=str, separators=(",", ":"))
+    if len(text) > _TICK_DETAIL_MAX_CHARS:
+        text = json.dumps({"_truncated": len(text)})
+    return text
+
+
+def _joined(ids) -> str | None:
+    """Trade ids as one comma-separated string: r4 opens a list per tick,
+    the other bots one id, the backstop returns a list."""
+    if not ids:
+        return None
+    if isinstance(ids, (list, tuple, set)):
+        return ",".join(str(i) for i in ids)
+    return str(ids)
+
+
+def record_tick(bot: str, ticks: dict[str, dict | None], *,
+                error_note: str = "") -> int:
+    """Count every variant's tick in bot_tick_daily and keep the ones worth a
+    row in bot_ticks. `ticks` maps variant id -> the tick's result dict
+    (status, hb_status, hb_note, evaluated, signal, opened, backstop_closed,
+    detail); None means the tick itself raised, recorded as 'tick_error'
+    with `error_note`. Never raises — a tick log that could stop a bot would
+    cost more than it records. Returns the number of bot_ticks rows written,
+    -1 when the write failed (the status memory is then left alone, so the
+    transition is still written once a write succeeds)."""
+    try:
+        return _record_tick(bot, ticks, error_note)
+    except Exception as e:  # noqa: BLE001
+        log.warning(f"tick log write failed: {e!r}")
+        return -1
+
+
+def _record_tick(bot: str, ticks: dict, error_note: str) -> int:
+    now_iso = clock.now_utc().isoformat()
+    day = now_iso[:10]
+    written = 0
+    remembered: dict[tuple[str, str], str] = {}
+    con = sqlite3.connect(str(db.PROD_DB))
+    try:
+        for variant, out in ticks.items():
+            if out is None:
+                out = {"status": "tick_error", "hb_status": "error",
+                       "hb_note": error_note}
+            status = str(out.get("status") or "?")
+            hb_status = str(out.get("hb_status") or "ok")
+            signal = bool(out.get("signal"))
+            opened = _joined(out.get("opened"))
+            closed = _joined(out.get("backstop_closed"))
+            con.execute("""
+                INSERT INTO bot_tick_daily (day, bot, variant, status, n)
+                VALUES (?, ?, ?, ?, 1)
+                ON CONFLICT(day, bot, variant, status) DO UPDATE SET n = n + 1
+            """, (day, bot, variant, status))
+            remembered[(bot, variant)] = status
+            worth_a_row = (status != _last_tick_status.get((bot, variant))
+                           or hb_status != "ok" or signal or opened or closed)
+            if not worth_a_row:
+                continue
+            con.execute("""
+                INSERT OR REPLACE INTO bot_ticks
+                    (bot, variant, tick_utc, status, hb_status, note,
+                     evaluated, signal, opened, closed, detail)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, (bot, variant, now_iso, status, hb_status,
+                  out.get("hb_note") or None, int(bool(out.get("evaluated"))),
+                  int(signal), opened, closed,
+                  _compact_detail(out.get("detail"))))
+            written += 1
+        con.commit()
+    finally:
+        con.close()
+    _last_tick_status.update(remembered)
+    return written
+
+
+def tick_summary(*, since_day: str | None = None,
+                 bot: str | None = None) -> list[dict]:
+    """Ticks per (bot, variant, status) summed from bot_tick_daily, from
+    `since_day` (YYYY-MM-DD, inclusive) on. The fire count behind every
+    "revisit at n OOS fires" rule: a fire is a 'decided' tick ('opened' for
+    r4); 'entry_blocked_stale_inputs' and 'entry_error' are fires that
+    produced no trade. bot_ticks carries each fire's gate values."""
+    where, args = [], []
+    if since_day:
+        where.append("day >= ?")
+        args.append(since_day)
+    if bot:
+        where.append("bot = ?")
+        args.append(bot)
+    sql = ("SELECT bot, variant, status, SUM(n) AS n, "
+           "MIN(day) AS first_day, MAX(day) AS last_day FROM bot_tick_daily"
+           + (" WHERE " + " AND ".join(where) if where else "")
+           + " GROUP BY bot, variant, status ORDER BY bot, variant, n DESC")
+    con = sqlite3.connect(str(db.PROD_DB))
+    con.row_factory = sqlite3.Row
+    try:
+        try:
+            rows = con.execute(sql, args).fetchall()
         except sqlite3.OperationalError:
             return []
         return [dict(r) for r in rows]

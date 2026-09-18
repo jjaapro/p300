@@ -266,7 +266,7 @@ def main(argv: list[str] | None = None) -> int:
     from strategies.support import clock
     while not _stop.is_set():
         t0 = time.time()
-        hb_status, hb_note, evaluated, signalled, open_n = "ok", "", False, False, None
+        hb_status, hb_note, evaluated, signalled, open_n, out = "ok", "", False, False, None, None
         try:
             out = tick_all(variants)
             hb_status = out["hb_status"]
@@ -292,6 +292,10 @@ def main(argv: list[str] | None = None) -> int:
                 open_trades=open_n)
         except Exception as e:  # noqa: BLE001
             log.warning(f"heartbeat write failed: {e!r}")
+        botlib.record_tick(
+            botcfg.BOT_NAME,
+            out["per_variant"] if out else {v["row"]["id"]: None for v in variants},
+            error_note=hb_note)
         if args.once:
             return 0
         for _ in range(args.interval):

@@ -613,8 +613,20 @@ def _trade_dict(r: sqlite3.Row, variants: dict[str, str],
             ts_ts or 0, tz=timezone.utc).year >= _SENTINEL_YEAR:
         timed_stop = None
 
-    r_multiple = None
+    # The R unit is the stop distance. chento writes it (`_risk`); adx and
+    # the squeeze bots write the stop, and the no-stop twins only the
+    # reference stop their size was set from — so derive it from the entry
+    # (paper fills at the planned entry) when the sleeve did not write it.
     risk = plan.get("risk_price")
+    ref_stop = plan.get("reference_stop_price") or plan.get("stop_price")
+    if not risk and ref_stop and r["entry_price"]:
+        try:
+            risk = abs(float(r["entry_price"]) - float(ref_stop)) or None
+        except (TypeError, ValueError):
+            risk = None
+        if risk:
+            plan["risk_price"] = round(risk, 6)
+    r_multiple = None
     if not is_open and r["pnl_usdt"] is not None and risk and r["qty"]:
         r_multiple = round(r["pnl_usdt"] / (r["qty"] * risk), 2)
 

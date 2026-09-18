@@ -107,3 +107,15 @@ def test_unknown_underscore_scalars_kept_in_other():
     p = notesparse.parse(json.dumps({"_stop_price": 1.0, "_new_dial": 7,
                                      "_nested": {"x": 1}}))
     assert p["plan"]["other"] == {"new_dial": 7}   # nested non-scalar dropped
+
+
+def test_reference_stop_is_plan_not_other():
+    """The no-stop twins write `_stop_price: null` and the reference stop
+    their size was set from; the dashboard's R multiple reads it from the plan."""
+    p = notesparse.parse(json.dumps({"_stop_price": None, "_reference_stop_price": 75944.0,
+                                     "_reference_target_price": 79818.7,
+                                     "_target_price": 79818.7}))
+    assert p["plan"]["stop_price"] is None
+    assert p["plan"]["reference_stop_price"] == 75944.0
+    assert p["plan"]["reference_target_price"] == 79818.7
+    assert "other" not in p["plan"]
