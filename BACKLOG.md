@@ -26,10 +26,13 @@ is not here is closed; look it up in git history. When an item is finished, dele
   - **Fix.** In `data/sources/binance.py::fetch_open_interest()`, store the end-of-hour value under each bar's stamp.
     Backfill from 06-10, add a monitor check against the 5-minute series, then re-cut the post-June ledger rows.
   - Evidence: `studies/notebooks/exit_policy_2026_09/findings_top_anatomy.md` §7.
-- **Restart `feed.py`** to load `5c72c8c` (the coinbase and quarterly refresh resume from the last stored bar). The
-  running feed started 2026-09-14 19:20 UTC, before that commit.
 - **Watch r4's first enabled window**, Fri 2026-10-02 04:00 UTC (R4_ETH V1: Tue 2026-10-06 20:00). r4 has never
   traded; confirm the first open and its scheduled close.
+- **Free disk, and decide what guards it.** C: hit **0 bytes free** on 2026-09-18 with the fleet live; ~20 GB came
+  back the moment Firefox was closed, which means it was holding that much in deleted-but-still-open handles —
+  invisible to any directory scan, so nothing that walks the filesystem can see this coming. Two things ride on it:
+  `backup.py` refuses to snapshot below 2 × prod.db (~3.3 GB), so a repeat skips the nightly backup without failing
+  loudly, and item 9's collector has no runway at all until there is slack. Nothing currently alerts on free space.
 
 ## 2. Decisions waiting on the operator
 
@@ -66,11 +69,17 @@ Recommendation in brackets.
 7. **E7 live quoting probe** (API key, ≤ $50, two weeks) [no, unless maker entries are wanted].
 8. **Does SJ-4250 count** toward squeeze_bull's n = 20 / 30 re-cut, given item 30?
 9. **microstructure.db runway.** The collector (`collector.py`, 2026-09-17/18) records ~170–230 MB/day into a database
-   that is not backed up, on the prod.db drive (~24 GB free on 2026-09-18 → roughly three months). It pauses only its
-   depth_1s rows below 5 GB free (resumes above 8 GB) and keeps everything else recording; the 1-second depth cadence and
-   the full hl_asset_ctx / hl_positions sets were kept on purpose (extensive dataset). Options when the runway runs
-   short: free the 8.6 GB Claude VM bundle (OPERATIONS §11), move the database to another drive via `--db`, or thin
-   depth_1s to 2 s / float16 (−37 / −28 MB/day) [free space first; keep the cadence].
+   that is not backed up, on the prod.db drive. It pauses only its depth_1s rows below 5 GB free (resumes above 8 GB)
+   and keeps everything else recording; the 1-second depth cadence and the full hl_asset_ctx / hl_positions sets were
+   kept on purpose (extensive dataset).
+   - **The runway assumption is gone.** The ~3 months in the original sizing came from 24 GB free on 2026-09-18. C:
+     hit 0 that evening and sits near 20 GB after closing Firefox, so the figure is not a floor — it moves by tens of
+     GB for reasons outside this repo (§1). Starting the collector against that is how the depth pause becomes the
+     normal state rather than the emergency one.
+   - **Options:** move the database off C: via `--db` — **D: has 631 GB free and X: 900 GB**, which makes this the
+     cheapest fix by far and removes the coupling to prod.db's drive entirely; free the Claude VM bundle
+     (OPERATIONS §11 says 8.6 GB, measured 10.76 GB on 2026-09-18); or thin depth_1s to 2 s / float16
+     (−37 / −28 MB/day) [**`--db` onto D:**; keep the cadence].
 
 ## 3. Defects and code (each needs its own go-ahead)
 
@@ -137,7 +146,7 @@ Documentation
 | VRP options study | re-run both modes at OOS n ≥ 6 | `studies/notebooks/vrp_study/findings.md` | ≈ 2026-12, else 2027-03 |
 | LSR B5 V4 (365-row window) | fresh pre-registration at BTC OOS n ≥ 20 | `studies/notebooks/lsr_b5_study/findings.md` | ≈ 2027-09 |
 | SQUEEZE_BULL Rule B (funding + CVD) | revisit at ≥ 10 of its own OOS fires; nothing counts them live, so recount periodically | `docs/calibration/squeeze_bull.md` | unknown |
-| Hawkes / liquidation cascades | paid backfill, or a liquidation feed and waiting (research 2) | `studies/notebooks/hawkes_note.md` | ≥ 2028-06 without backfill |
+| Hawkes / liquidation cascades | the hourly feed it needs is live since 2026-09-18, so the clock now runs without the collector — the note works on hourly counts, not prints. Stored hourly history is 2026-02-25 → now (~7 months, less the lost 2026-05-24 → 06-21). Re-date the estimate against that before picking it up | `studies/notebooks/hawkes_note.md` | was "≥ 2028-06 without backfill", premised on no feed |
 
 ## 5. Research queue
 
@@ -157,7 +166,26 @@ Pre-registered notebooks. Every replay charges measured per-leg costs and fundin
    - **First, ask** which tools the trader the user saw was using.
    - **Collect** what cannot be bought back: `collector.py` is written, tested and dry-run clean (liquidation prints
      from Binance, Bybit and OKX; 1-second L2 depth buckets; Hyperliquid asset contexts, leaderboard and positions).
-     **It needs the operator's go-ahead to start as a fleet unit**; see item 9 for its disk runway.
+     **It needs the operator's go-ahead to start as a fleet unit**; see item 9 for its disk runway. Note what it is
+     and is not: *prints*, per event, which no venue keeps and no archive sells. The aggregate hourly series below is
+     now safe without it.
+   - **Aggregate liquidations are covered again as of 2026-09-18**, so nothing further is expiring on that front.
+     `ca_liquidations` (hourly, BTC + ETH) and `ca_liquidations_daily` (2021-01-01 →) have a live Coinalyze writer in
+     `data/sources/coinalyze.py` and freshness contracts. What that leaves, and why:
+     - **CoinDesk is closed.** `/futures/v1/historical/liquidation/hours` returns 401 unauthenticated and a key is
+       paid-only. `cd_liquidations` is complete 2026-02-25 → 2026-09-18 from three hand-pulled pages
+       (`data/archive/1788192000.json`, `1780992000.json`, `1789759539.json`, replayed by
+       `data/import_coindesk_export.py`) and will not advance again. Do not plan work that needs it live.
+     - **Its 2026-04-23 18:00 → 2026-06-01 15:00 hours are zeros, not data** — 934 of them, a CoinDesk-side outage
+       (a re-pull returns the same zeros with `CLOSE_LONG_PRICE` frozen). `check_gaps` cannot see this: the rows are
+       present, so the series looks unbroken, and a study reading that window gets 39 days of "no liquidations" that
+       are really "no data". Coinalyze covers it at **daily** resolution (41/41 days real, 15,013 BTC long / 6,756
+       short); the hourly detail is unrecoverable.
+     - **Hourly 2026-05-24 → 2026-06-21 is gone for good** — aged out of Coinalyze's ~89-day window while nothing was
+       fetching. Recorded in `known_unfillable.json`.
+     - **The two sources are interchangeable**, contrary to what `fetch_coinalyze.py` used to claim: on the 1,368
+       hours where both hold real data, long ρ 0.9999 (totals within 0.1 %), short ρ 0.9911 (within 2.9 %), 98.2 % of
+       hours equal to 1e-6 on both sides. A study may treat them as one series for `BTCUSDT_PERP.A`.
    - **Gamma levels are BLOCKED on data, checked 2026-09-18.** No per-strike open interest history exists anywhere.
      `trader.db cd_options_oi` is misnamed: it holds mark-price OHLC and an update *count*, no OI and no IV, and its
      settlement columns are zero. prod.db `deribit_options_daily` does carry `open_interest` and `mark_iv`, but only
