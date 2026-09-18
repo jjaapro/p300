@@ -16,6 +16,11 @@ mplfinance>=0.12.10b0
 anthropic>=0.40
 feedparser>=6.0
 
+# collector.py: websockets carries the public liquidation / depth streams
+# (Binance, Bybit, OKX) into data/databases/microstructure.db
+# (data/sources/micro/wsclient.py). asyncio-native; no aiohttp needed.
+websockets>=15.0
+
 # dashboard/: psutil is the ground-truth process scan behind the fleet
 # panel's duplicate-instance detection (dashboard/procscan.py). The scan
 # collapses the Windows venv-shim parent/child pair — see that module's

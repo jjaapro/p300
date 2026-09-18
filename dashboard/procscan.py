@@ -30,6 +30,7 @@ from dataclasses import dataclass, field
 # runs VS Code language servers.
 UNIT_SCRIPTS: dict[str, str] = {
     "feed":          "feed.py",
+    "collector":     "collector.py",
     "chento_v3":     "bots/chento_v3/runner.py",
     "chento_v3_eth": "bots/chento_v3_eth/runner.py",
     "short_squeeze": "bots/short_squeeze/runner.py",

@@ -23,10 +23,10 @@
     they log stale-input skips until the tables are fresh.
 
 .PARAMETER Units
-    Which units to start. Default: all of them (feed, the seven bots, the
-    dashboard). Names: feed chento_v3 chento_v3_eth short_squeeze adx carry
-    squeeze_bull r4 dashboard monitor. `monitor` is only started when named
-    here or via -Monitor.
+    Which units to start. Default: all of them (feed, collector, the seven
+    bots, the dashboard). Names: feed collector chento_v3 chento_v3_eth
+    short_squeeze adx carry squeeze_bull r4 dashboard monitor. `monitor` is
+    only started when named here or via -Monitor.
 
 .PARAMETER Monitor
     Also open a console that runs `python monitor.py` once an hour. This is a
@@ -46,6 +46,12 @@
     two minutes ago and its own stale-heartbeat guard refuses to start
     (exit code 3 in the feed console). The process scan in this script still
     refuses to start a second feed regardless of this switch.
+
+.PARAMETER ForceCollector
+    Pass --force-start to collector.py: the same stale-heartbeat guard as the
+    feed's (exit code 3 in the collector console when its heartbeat row is
+    younger than two minutes). The process scan still refuses a second
+    collector regardless of this switch.
 
 .PARAMETER Status
     Only print what is running and exit.
@@ -67,11 +73,12 @@ param(
     # r4 was held out of the defaults 2026-09-09 (a calendar anomaly with no
     # mechanism) and rejoined them 2026-09-12 with ONLY its ETH windows enabled
     # (bots/r4/config.py ENABLED; reasoning in docs/calibration/r4.md).
-    [string[]]$Units = @("feed", "chento_v3", "chento_v3_eth", "short_squeeze",
+    [string[]]$Units = @("feed", "collector", "chento_v3", "chento_v3_eth", "short_squeeze",
                          "adx", "carry", "squeeze_bull", "r4", "dashboard"),
     [switch]$Monitor,
     [switch]$SkipGapFix,
     [switch]$ForceFeed,
+    [switch]$ForceCollector,
     [switch]$Status,
     [switch]$DryRun
 )
@@ -93,9 +100,12 @@ if (-not (Test-Path (Join-Path $Repo $Python))) {
 $feedArgs = @()
 if ($SkipGapFix) { $feedArgs += "--skip-gap-fix" }
 if ($ForceFeed)  { $feedArgs += "--force-start" }
+$collectorArgs = @()
+if ($ForceCollector) { $collectorArgs += "--force-start" }
 
 $Fleet = [ordered]@{
     feed          = @{ Script = "feed.py";                      Args = $feedArgs }
+    collector     = @{ Script = "collector.py";                 Args = $collectorArgs }
     chento_v3     = @{ Script = "bots/chento_v3/runner.py";     Args = @() }
     chento_v3_eth = @{ Script = "bots/chento_v3_eth/runner.py"; Args = @() }
     short_squeeze = @{ Script = "bots/short_squeeze/runner.py"; Args = @() }

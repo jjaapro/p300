@@ -39,8 +39,9 @@ import monitor
 from strategies.support import db
 from dashboard import notesparse, procscan
 
-# feed first (everything depends on it), then bots alphabetically.
-UNITS: tuple[str, ...] = ("feed",) + tuple(sorted(monitor.BOT_EXPECTATIONS))
+# feed first (everything depends on it), then the collector (heartbeat only,
+# no eval cadence -> expectation None, never SILENT), then bots alphabetically.
+UNITS: tuple[str, ...] = ("feed", "collector") + tuple(sorted(monitor.BOT_EXPECTATIONS))
 
 # feed.py heartbeat notes name refresh_all() result keys, not always table
 # names — map the aliases so the feeds grid can attribute failures.

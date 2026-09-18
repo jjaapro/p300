@@ -593,6 +593,7 @@ The operated fleet is what `start_fleet.ps1` launches (feed first, dashboard las
 | unit | script | what it is |
 |---|---|---|
 | feed | feed.py | the only process that fetches; every bot reads prod.db |
+| collector | collector.py | public liquidation / depth / Hyperliquid recorder → data/databases/microstructure.db; research only, no bot reads it; not in backup.py. Its tile has no eval limit (tick / instance state only); a run with `--db` or `--no-heartbeat` shows MISSING by design. `-ForceCollector` mirrors `-ForceFeed`. depth_1s buckets are exact only within `bid_reach_pct` / `ask_reach_pct` (the 1000-level snapshot range, ~0.1–0.5 % from mid); beyond it they are lower bounds, and NaN means nothing known there — see data/sources/micro/store.py |
 | chento_v3 | bots/chento_v3/runner.py | Chento Triple v3, BTC |
 | chento_v3_eth | bots/chento_v3_eth/runner.py | Chento Triple v3, ETH |
 | short_squeeze | bots/short_squeeze/runner.py | S-105 sweep + CVD-divergence long; + no-stop twin |
@@ -700,6 +701,17 @@ The dashboard footer reads `monitor HH:MMZ · deep HH:MMZ · backup HH:MMZ`.
 - `DISK_LOW`.
 - `BACKUP_STALE`: the first run raises it, because the newest copy is from 2026-07-22.
 - `DEEP_SCAN_STALE`, on hourly runs only.
+
+**microstructure.db (the collector's database) is not backed up.** It grows
+~170–230 MB/day (~6 GB/month; depth_1s ~75, hl_asset_ctx ~39, hl_positions
+40–65, hl_accounts ~9, liquidations 10–40) and lives on the same drive as
+prod.db. The collector guards the drive itself: below 5 GB free it stops
+recording depth_1s (heartbeat `degraded`, `depth_paused_low_disk` and
+`dropped_depth_low_disk` in `data\diagnostics\collector_last.json`) and resumes
+above 8 GB; every other table keeps writing. At ~24 GB free on 2026-09-18 that
+is roughly three months of runway unless space is freed (the 8.6 GB Claude VM
+bundle noted under disk space later in this section) or the database is moved to another drive with
+`collector.py --db <path>` (which also turns the heartbeat off — see §10).
 
 A logged-off or sleeping machine gets no monitoring. When you come back, the
 dashboard shows `MONITOR_STALE` in red, which is the honest signal.

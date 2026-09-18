@@ -192,6 +192,36 @@ def test_feed_has_no_silence_expectation():
     assert _row(rows, "feed")["state"] == "OK"
 
 
+def test_collector_is_a_fleet_unit():
+    assert queries.UNITS[:2] == ("feed", "collector")
+    # every scannable unit is rendered, so a second collector can never hide
+    assert set(queries.UNITS) == set(procscan.UNIT_SCRIPTS)
+
+
+def test_collector_tile_states():
+    """Heartbeat only, no eval cadence: OK without SILENT, and the collector
+    still goes DEGRADED / DEAD / DUPLICATE / MISSING like any unit."""
+    beats = {"collector": _beat("collector", eval_age=None, pid=11)}
+    rows, alerts = queries._fleet(_scanres({"collector": [_inst(10, 11)]}), beats, NOW)
+    r = _row(rows, "collector")
+    assert r["state"] == "OK" and r["expectation_s"] is None
+    assert _codes_for(alerts, "collector") == []
+    beats = {"collector": _beat("collector", eval_age=None, pid=11, status="degraded",
+                                note="silent: bybit_liq")}
+    rows, alerts = queries._fleet(_scanres({"collector": [_inst(10, 11)]}), beats, NOW)
+    assert _row(rows, "collector")["state"] == "DEGRADED"
+    assert "DEGRADED" in _codes_for(alerts, "collector")
+    beats = {"collector": _beat("collector", tick_age=600.0, eval_age=None, pid=11)}
+    rows, alerts = queries._fleet(_scanres({"collector": [_inst(10, 11)]}), beats, NOW)
+    assert _row(rows, "collector")["state"] == "DEAD"
+    beats = {"collector": _beat("collector", eval_age=None, pid=11)}
+    rows, alerts = queries._fleet(_scanres({"collector": [_inst(10, 11), _inst(20, 21)]}), beats, NOW)
+    assert _row(rows, "collector")["state"] == "DUPLICATE"
+    assert "DUPLICATE" in _codes_for(alerts, "collector")
+    rows, alerts = queries._fleet(_scanres({}), {}, NOW)
+    assert _row(rows, "collector")["state"] == "MISSING"
+
+
 def test_pid_mismatch_corroboration():
     beats = {"adx": _beat("adx", pid=999)}
     rows, alerts = queries._fleet(
