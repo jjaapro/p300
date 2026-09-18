@@ -574,25 +574,64 @@ def check_minute_resolution(con: sqlite3.Connection, failures: list[str]) -> Non
         _ok("btc_1m resolution", "no proven fifteen-minute clones in reference overlap")
 
 
+# Bots whose open trades stack by design (BACKLOG 22, 2026-09-19). chento books
+# one trade per signal, spaced by its 6 h cooldown and closed by the 72 h TIF
+# (at most 12 open); its real duplicate is two rows with the SAME trigger bar
+# for one variant (the 2026-08-15..24 double start). r4 holds up to three
+# concurrent calendar windows; its real duplicate is one window opened twice.
+STACKING_STRATEGIES = {
+    "CHENTO_TRIPLE_V3": ("bar", "substr(notes, instr(notes, '\"bar_ts\": \"') + 11, 25)"),
+    "R4": ("window", "entry_time"),
+}
+
+
+def _stacking_key(strategy: str):
+    if strategy in STACKING_STRATEGIES:
+        return STACKING_STRATEGIES[strategy]
+    if strategy.startswith("R4"):
+        return STACKING_STRATEGIES["R4"]
+    return None
+
+
 def check_single_open_invariant() -> None:
+    """One open trade per (variant, strategy, asset), for the bot variants the
+    fleet trades and the legacy p300_% ones alike; the two stacking bots are
+    held to their own rule instead (one open trade per trigger bar / window)."""
     print("\n=== single-open invariant ===")
     con = sqlite3.connect(str(db.DASH_DB))
     con.row_factory = sqlite3.Row
-    # Count open trades per (variant, strategy, asset)
-    rows = con.execute("""
-        SELECT strategy_variant, strategy, asset, COUNT(*) AS n
-        FROM trades
-        WHERE status = 'open' AND strategy_variant LIKE 'p300_%'
-        GROUP BY strategy_variant, strategy, asset
-        HAVING COUNT(*) > 1
-    """).fetchall()
-    con.close()
-    if rows:
+    try:
+        rows = con.execute("""
+            SELECT strategy_variant, strategy, asset, COUNT(*) AS n
+            FROM trades
+            WHERE status = 'open'
+              AND (strategy_variant LIKE 'bot_%' OR strategy_variant LIKE 'p300_%')
+            GROUP BY strategy_variant, strategy, asset
+            HAVING COUNT(*) > 1
+        """).fetchall()
         for r in rows:
-            _fail("invariant",
-                  f"{r['n']} open {r['strategy']} trades for "
-                  f"{r['strategy_variant']} / {r['asset']}", 6)
-    _ok("single-open", "no (variant, sleeve, asset) has >1 open trade")
+            key = _stacking_key(r["strategy"])
+            if key is None:
+                _fail("invariant",
+                      f"{r['n']} open {r['strategy']} trades for "
+                      f"{r['strategy_variant']} / {r['asset']}", 6)
+            label, expr = key
+            dup = con.execute(f"""
+                SELECT {expr} AS k, COUNT(*) AS n
+                FROM trades
+                WHERE status = 'open' AND strategy_variant = ? AND strategy = ? AND asset = ?
+                GROUP BY k HAVING COUNT(*) > 1
+            """, (r["strategy_variant"], r["strategy"], r["asset"])).fetchall()
+            for d in dup:
+                _fail("invariant",
+                      f"{d['n']} open {r['strategy']} trades on the same {label} "
+                      f"{d['k']} for {r['strategy_variant']} / {r['asset']}", 6)
+            print(f"  [note] {r['strategy_variant']}: {r['n']} open {r['strategy']} trades stack by design "
+                  f"(one per {label}); no duplicate {label}")
+    finally:
+        con.close()
+    _ok("single-open", "no (variant, sleeve, asset) has >1 open trade, "
+        "and the stacking bots have no duplicate bar / window")
 
 
 # ─── Entry ───────────────────────────────────────────────────────────────────
