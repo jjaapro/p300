@@ -65,6 +65,12 @@ class LedgerCoherence:
     n_duplicate_adjustment_events: int = 0        # (trade_id, event_date, event_type) groups with >1 row
     duplicate_adjustment_event_samples: tuple[dict, ...] = ()
 
+    # Repeated lifecycle events (system-wide, ANY dates): a second OPEN or a
+    # second CLOSE for one trade — what the keyed check above misses when the
+    # two fall on different UTC days (BACKLOG 28, a double close across 00:00)
+    n_trades_with_repeated_lifecycle_events: int = 0
+    repeated_lifecycle_event_samples: tuple[dict, ...] = ()
+
     # Replay-variant isolation (the SJ-1169-class concern, fixed 2026-05-16)
     n_disabled_variants_with_recent_opens: int = 0  # opened a trade in last 7d (should be 0)
     recent_disabled_opens_sample: tuple[dict, ...] = ()
@@ -225,6 +231,29 @@ def _duplicate_adjustment_events(con: sqlite3.Connection
     return len(rows), tuple(dict(r) for r in rows[:5])
 
 
+def _repeated_lifecycle_events(con: sqlite3.Connection
+                               ) -> tuple[int, tuple[dict, ...]]:
+    """Trades with more than one OPEN or more than one CLOSE event, on ANY
+    dates. The keyed check above groups on event_date, so a close booked at
+    23:59:xx and again at 00:00:xx the next UTC day — the shape a race across
+    midnight takes — passes it (BACKLOG 28). A trade opens once and closes
+    once; a second of either is a booking that did not happen or happened
+    twice, whatever the dates. System-wide, like the keyed check."""
+    try:
+        rows = con.execute("""
+            SELECT trade_id, event_type, COUNT(*) AS cnt,
+                   group_concat(event_date) AS dates, group_concat(seq) AS seqs
+            FROM trade_adjustments
+            WHERE event_type IN ('OPEN', 'CLOSE')
+            GROUP BY trade_id, event_type
+            HAVING COUNT(*) > 1
+            ORDER BY trade_id, event_type
+        """).fetchall()
+    except sqlite3.OperationalError:
+        return 0, ()
+    return len(rows), tuple(dict(r) for r in rows[:5])
+
+
 def _replay_isolation(con: sqlite3.Connection,
                        as_of_dt: datetime) -> tuple[int, tuple[dict, ...]]:
     """Detect disabled-variant opens in the last 7 days — these would
@@ -260,6 +289,7 @@ def audit_ledger(variant_id_filter: str | None = None,
         n_no_open, n_no_close, n_seq_gaps = _adjustment_coherence(
             con, variant_id_filter)
         n_dup_events, dup_event_samples = _duplicate_adjustment_events(con)
+        n_repeat, repeat_samples = _repeated_lifecycle_events(con)
         n_replay_recent, replay_samples = _replay_isolation(con, as_of_dt)
     finally:
         con.close()
@@ -275,6 +305,8 @@ def audit_ledger(variant_id_filter: str | None = None,
         n_trades_with_adjustment_seq_gaps=n_seq_gaps,
         n_duplicate_adjustment_events=n_dup_events,
         duplicate_adjustment_event_samples=dup_event_samples,
+        n_trades_with_repeated_lifecycle_events=n_repeat,
+        repeated_lifecycle_event_samples=repeat_samples,
         n_disabled_variants_with_recent_opens=n_replay_recent,
         recent_disabled_opens_sample=replay_samples,
     )
@@ -315,6 +347,8 @@ def format_ledger_coherence(lc: LedgerCoherence) -> str:
         f"  [{status(lc.n_duplicate_adjustment_events)}] duplicate "
         f"(trade_id,event_date,event_type) adjustment events: "
         f"{lc.n_duplicate_adjustment_events}",
+        f"  [{status(lc.n_trades_with_repeated_lifecycle_events)}] trades with a second OPEN or CLOSE "
+        f"event (any dates): {lc.n_trades_with_repeated_lifecycle_events}",
         f"  [{status(lc.n_open_trades_stale, threshold=0, severity_above='WARN')}] "
         f"open trades > {STALE_OPEN_DAYS}d old in enabled variants: "
         f"{lc.n_open_trades_stale}",
@@ -332,6 +366,11 @@ def format_ledger_coherence(lc: LedgerCoherence) -> str:
         lines.append("")
         lines.append("  Duplicate adjustment-event samples:")
         for s in lc.duplicate_adjustment_event_samples:
+            lines.append(f"    {s}")
+    if lc.repeated_lifecycle_event_samples:
+        lines.append("")
+        lines.append("  Repeated lifecycle-event samples:")
+        for s in lc.repeated_lifecycle_event_samples:
             lines.append(f"    {s}")
     if lc.recent_disabled_opens_sample:
         lines.append("")
@@ -357,7 +396,8 @@ def _main(argv: list[str] | None = None) -> int:
              + lc.n_post_jplus_open_missing_open_event
              + lc.n_post_jplus_closed_missing_close_event
              + lc.n_trades_with_adjustment_seq_gaps
-             + lc.n_duplicate_adjustment_events)
+             + lc.n_duplicate_adjustment_events
+             + lc.n_trades_with_repeated_lifecycle_events)
     return 0 if fail == 0 else 1
 
 

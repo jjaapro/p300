@@ -736,3 +736,27 @@ def test_open_paper_trade_falls_back_to_paper_account_default(empty_trades_db, m
     con.close()
     # 10000 (stub default) × 10% × 1 = 1000.
     assert r[0] == pytest.approx(1000.0)
+
+
+def test_close_carry_trade_lost_race_books_nothing_and_says_so(trades_db, monkeypatch, caplog):
+    """BACKLOG 26: close_carry_trade reads the trade outside any write lock, so
+    two callers can both find it open; persist_close lets only one of them
+    close it. The loser must book nothing and must not report a close."""
+    from strategies.support import funding
+    monkeypatch.setattr(funding, "accrued_pct", lambda *a, **k: 0.50)
+    clock.set_simulated_now(datetime(2024, 1, 1, 1, 0, tzinfo=timezone.utc))
+    try:
+        first = trades.close_carry_trade("TX-1", exit_price=110.0, reason="window_end")
+        with caplog.at_level("WARNING"):
+            second = trades.close_carry_trade("TX-1", exit_price=999.0, reason="retry")
+    finally:
+        clock.set_simulated_now(None)
+    assert first is True and second is False
+    con = sqlite3.connect(str(trades_db))
+    exit_price = con.execute("SELECT exit_price FROM trades WHERE id='TX-1'").fetchone()[0]
+    n_close = con.execute("SELECT COUNT(*) FROM trade_adjustments "
+                          "WHERE trade_id='TX-1' AND event_type='CLOSE'").fetchone()[0]
+    con.close()
+    assert exit_price == 110.0, "the loser overwrote the winner's close"
+    assert n_close <= 1, "a second CLOSE event was booked"
+    assert any("lost a race" in r.getMessage() for r in caplog.records)

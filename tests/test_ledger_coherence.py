@@ -399,3 +399,36 @@ def test_cli_exit_code_zero_on_clean_db(tmp_path, monkeypatch, capsys):
 def test_cli_exit_code_one_on_failures(synthetic_ledger_db):
     """CLI returns exit 1 when any FAIL detector trips."""
     assert lc._main([]) == 1
+
+
+def _add_event(db_path, trade_id, seq, event_type, event_time):
+    con = sqlite3.connect(str(db_path))
+    con.execute("INSERT INTO trade_adjustments (trade_id, seq, event_type, event_time, event_date) "
+                "VALUES (?, ?, ?, ?, ?)", (trade_id, seq, event_type, event_time, event_time[:10]))
+    con.commit()
+    con.close()
+
+
+def test_a_second_close_across_midnight_is_caught(tmp_path, monkeypatch):
+    """BACKLOG 28: a CLOSE booked again at 00:00 the next UTC day lands on a
+    different event_date, so the keyed duplicate check cannot see it; the
+    lifecycle check groups on the trade alone and fails the run."""
+    _old_shape_ledger(tmp_path, monkeypatch, duplicate=False)      # OPEN + CLOSE on 2026-08-22
+    _add_event(tmp_path / "old_shape.db", "SJ-4247", 2, "CLOSE", "2026-08-23T00:00:20+00:00")
+    audit = lc.audit_ledger()
+    assert audit.n_duplicate_adjustment_events == 0, "the keyed check is blind to this by design"
+    assert audit.n_trades_with_repeated_lifecycle_events == 1
+    sample = audit.repeated_lifecycle_event_samples[0]
+    assert (sample["trade_id"], sample["event_type"], sample["cnt"]) == ("SJ-4247", "CLOSE", 2)
+    assert sorted(sample["dates"].split(",")) == ["2026-08-22", "2026-08-23"]
+    assert ("[FAIL] trades with a second OPEN or CLOSE event (any dates): 1"
+            in lc.format_ledger_coherence(audit))
+    assert lc._main([]) == 1
+
+
+def test_one_open_and_one_close_are_not_repeated_lifecycle_events(tmp_path, monkeypatch):
+    """Twin: the normal life of a trade, on any two days, is clean."""
+    _old_shape_ledger(tmp_path, monkeypatch, duplicate=False)
+    audit = lc.audit_ledger()
+    assert audit.n_trades_with_repeated_lifecycle_events == 0
+    assert audit.repeated_lifecycle_event_samples == ()

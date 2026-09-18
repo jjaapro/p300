@@ -133,9 +133,7 @@ Cadence: squeeze_bull ~25 fires/yr in bull tape, none in bear; short_squeeze dro
 
 ### 2.4 ADX and CARRY
 
-ADX on ETH was killed (Sharpe 0.72, corr 0.47 with BTC ADX). CARRY's 30-day cumulative exit shipped 2026-09-12. The
-one defect: **26. `close_carry_trade` takes no write lock** — the losing caller of a race logs a close that did not
-happen (§4).
+ADX on ETH was killed (Sharpe 0.72, corr 0.47 with BTC ADX). CARRY's 30-day cumulative exit shipped 2026-09-12.
 
 - **Decision: an ETH paper twin of CARRY** (`studies/notebooks/carry_eth_2026_09/`, pre-registered, CONCLUDED
   2026-09-19, verdict RECOMMEND). The shipped CUM-30D rule on ETHUSDT settlement prints nets 12.8 %/yr (CI90 9.5 →
@@ -183,9 +181,6 @@ Evidence-dated, not effort-dated:
 Paper trading is the progress measure, so the ledger has to be true. These are the defects that would make it lie.
 Batch them; each needs its own go-ahead as a prod change.
 
-26. **`close_carry_trade` takes no write lock.** The losing caller of a race logs a close that did not happen.
-28. **A double close across 00:00 UTC is not caught** — every duplicate check groups by `event_date`. Candidate: a
-    date-independent "more than one OPEN or CLOSE per trade" count.
 - **Count fires.** Every "revisit at n OOS fires" rule in §2 and §3 counts fires, and nothing counts them:
   `bot_heartbeats` is overwritten every 60 s. An append-only `bot_ticks` log (coverage plan §1 item 3) is the smallest
   thing that makes those gates checkable without a hand recount.

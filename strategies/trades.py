@@ -583,8 +583,10 @@ def close_perp_trade(trade_id: str, exit_price: float, reason: str,
 
 def close_carry_trade(trade_id: str, exit_price: float, reason: str,
                       *, cost_pct: float = CARRY_COST_PCT,
-                      slippage_pct: float = CARRY_SLIPPAGE_PCT) -> None:
+                      slippage_pct: float = CARRY_SLIPPAGE_PCT) -> bool:
     """End-to-end close for CARRY (delta-neutral long-spot + short-perp).
+    Returns True if this call closed the trade, False if another caller had
+    already closed it (BACKLOG 26) — in which case nothing is booked.
 
     P&L is collected funding minus (round-trip fees + slippage) on both legs.
     Price PnL is assumed zero (delta-neutral). The short-perp leg's funding
@@ -625,9 +627,18 @@ def close_carry_trade(trade_id: str, exit_price: float, reason: str,
              f"(per-settlement), fees={cost_pct:.2f}%, slip={slippage_pct:.2f}%, "
              f"net={net_pct:.3f}%")
     fee_carry = float(row["size_usdt"] or 0.0) * total_cost_pct / 100.0
-    persist_close(trade_id, exit_price, now.isoformat(),
-                  pnl_usdt, net_pct, notes,
-                  fee_usdt=fee_carry)
+    closed = persist_close(trade_id, exit_price, now.isoformat(),
+                           pnl_usdt, net_pct, notes,
+                           fee_usdt=fee_carry)
+    if closed is None:
+        # BACKLOG 26: the SELECT above runs outside any write lock, so two
+        # callers can both find the trade open; persist_close's conditional
+        # UPDATE lets only one of them close it and hands the other None.
+        # The loser used to log a CLOSED summary for a close that never
+        # happened. Book nothing, say so.
+        log.warning(f"[carry] close of {trade_id} lost a race — already closed; "
+                    f"nothing booked (reason {reason})")
+        return False
 
     from strategies.support.trade_db import format_close_summary
     log.info("[carry] " + format_close_summary(
@@ -636,6 +647,7 @@ def close_carry_trade(trade_id: str, exit_price: float, reason: str,
         pnl_pct=net_pct, pnl_usdt=pnl_usdt,
         entry_time_iso=row["actual_entry_time"], exit_time_iso=now.isoformat(),
         reason=reason))
+    return True
 
 
 # ─── Position-adjustment helpers (Core J+ + future tactical use) ────────────
