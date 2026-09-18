@@ -1,0 +1,689 @@
+{
+ "env": {
+  "python": "3.13.11",
+  "numpy": "2.2.6",
+  "pandas": "3.0.0",
+  "run_at": "2026-09-18T22:04:46+00:00"
+ },
+ "pre_registration": "README.md",
+ "c0_gate": {
+  "table": "cd_funding_rate_eth",
+  "table_rows": 7359,
+  "fetched_prints": 7463,
+  "common": 7359,
+  "only_in_table": 0,
+  "only_fetched": 104,
+  "max_abs_diff": 0.0,
+  "pass_": true
+ },
+ "parity": {
+  "got": {
+   "CUM30D": {
+    "net_ann_pct": 11.567993012031904,
+    "rt_per_year": 0.7401649317290794
+   },
+   "ALWAYS_ON": {
+    "net_ann_pct": 11.678817907259699
+   },
+   "LIVE": {
+    "net_ann_pct": 10.833638078950928,
+    "rt_per_year": 4.737055563066108
+   }
+  },
+  "expected": {
+   "CUM30D": {
+    "net_ann_pct": 11.58,
+    "rt_per_year": 0.74
+   },
+   "ALWAYS_ON": {
+    "net_ann_pct": 11.69
+   },
+   "LIVE": {
+    "net_ann_pct": 10.85,
+    "rt_per_year": 4.75
+   }
+  },
+  "pass_": true
+ },
+ "combined": {
+  "common_span": [
+   "2020-03-06",
+   "2026-09-18"
+  ],
+  "btc_alone": {
+   "days": 2388,
+   "net_ann_pct": 10.939385557788942,
+   "max_dd_pct": -2.2420430000000002,
+   "net_over_dd": 4.879204171279918
+  },
+  "eth_alone": {
+   "days": 2388,
+   "net_ann_pct": 12.841802113065325,
+   "max_dd_pct": -2.144139000000038,
+   "net_over_dd": 5.989258211834725
+  },
+  "equal_weight": {
+   "days": 2388,
+   "net_ann_pct": 11.890593835427135,
+   "max_dd_pct": -0.7861130000000001,
+   "net_over_dd": 15.125807403550295
+  },
+  "corr_daily_funding": 0.8667571653798872,
+  "corr_daily_net_cum30d": 0.8706581841676867
+ },
+ "decision": {
+  "a_net_and_ci": true,
+  "a_net_ann_pct": 12.834803948066451,
+  "a_bar": 5.0,
+  "a_ci90_low": 9.482122017939412,
+  "b_worst_year_ok": true,
+  "b_worst_year": 0.3551819999999997,
+  "b_bar": -2.0,
+  "c_equal_weight_not_worse": true,
+  "c_equal_weight_net_over_dd": 15.125807403550295,
+  "c_btc_alone_net_over_dd": 4.879204171279918,
+  "verdict": "RECOMMEND an ETH paper twin"
+ },
+ "eth": {
+  "symbol": "ETHUSDT",
+  "n_prints": 7463,
+  "eval_span": [
+   "2020-03-06",
+   "2026-09-18"
+  ],
+  "years": 6.541552511415525,
+  "rules": {
+   "CUM30D": {
+    "share_held": 0.989948345665224,
+    "round_trips": 9,
+    "rt_per_year": 1.3758201870724556,
+    "gross_ann_pct": 13.109967985480944,
+    "net_ann_pct": 12.834803948066451
+   },
+   "ALWAYS_ON": {
+    "share_held": 1.0,
+    "round_trips": 1,
+    "rt_per_year": 0.15286890967471728,
+    "gross_ann_pct": 12.93142841128019,
+    "net_ann_pct": 12.900854629345245
+   },
+   "LIVE": {
+    "share_held": 0.9133044813625576,
+    "round_trips": 25,
+    "rt_per_year": 3.8217227418679323,
+    "gross_ann_pct": 13.264372769091162,
+    "net_ann_pct": 12.500028220717576
+   }
+  },
+  "per_year": [
+   {
+    "symbol": "ETHUSDT",
+    "rule": "CUM30D",
+    "year": 2020,
+    "n": 902,
+    "share_held": 1.0,
+    "round_trips": 1,
+    "net_ann_pct": 22.76871861419069
+   },
+   {
+    "symbol": "ETHUSDT",
+    "rule": "CUM30D",
+    "year": 2021,
+    "n": 1095,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 37.537255
+   },
+   {
+    "symbol": "ETHUSDT",
+    "rule": "CUM30D",
+    "year": 2022,
+    "n": 1095,
+    "share_held": 0.9342465753424658,
+    "round_trips": 8,
+    "net_ann_pct": 0.3551819999999997
+   },
+   {
+    "symbol": "ETHUSDT",
+    "rule": "CUM30D",
+    "year": 2023,
+    "n": 1095,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 8.259507000000003
+   },
+   {
+    "symbol": "ETHUSDT",
+    "rule": "CUM30D",
+    "year": 2024,
+    "n": 1098,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 12.961408292349727
+   },
+   {
+    "symbol": "ETHUSDT",
+    "rule": "CUM30D",
+    "year": 2025,
+    "n": 1095,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 4.928719
+   },
+   {
+    "symbol": "ETHUSDT",
+    "rule": "CUM30D",
+    "year": 2026,
+    "n": 783,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 1.5751777777777778
+   },
+   {
+    "symbol": "ETHUSDT",
+    "rule": "ALWAYS_ON",
+    "year": 2020,
+    "n": 902,
+    "share_held": 1.0,
+    "round_trips": 1,
+    "net_ann_pct": 22.76871861419069
+   },
+   {
+    "symbol": "ETHUSDT",
+    "rule": "ALWAYS_ON",
+    "year": 2021,
+    "n": 1095,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 37.537255
+   },
+   {
+    "symbol": "ETHUSDT",
+    "rule": "ALWAYS_ON",
+    "year": 2022,
+    "n": 1095,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 0.7872559999999997
+   },
+   {
+    "symbol": "ETHUSDT",
+    "rule": "ALWAYS_ON",
+    "year": 2023,
+    "n": 1095,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 8.259507000000003
+   },
+   {
+    "symbol": "ETHUSDT",
+    "rule": "ALWAYS_ON",
+    "year": 2024,
+    "n": 1098,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 12.961408292349727
+   },
+   {
+    "symbol": "ETHUSDT",
+    "rule": "ALWAYS_ON",
+    "year": 2025,
+    "n": 1095,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 4.928719
+   },
+   {
+    "symbol": "ETHUSDT",
+    "rule": "ALWAYS_ON",
+    "year": 2026,
+    "n": 783,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 1.5751777777777778
+   },
+   {
+    "symbol": "ETHUSDT",
+    "rule": "LIVE",
+    "year": 2020,
+    "n": 902,
+    "share_held": 1.0,
+    "round_trips": 1,
+    "net_ann_pct": 22.76871861419069
+   },
+   {
+    "symbol": "ETHUSDT",
+    "rule": "LIVE",
+    "year": 2021,
+    "n": 1095,
+    "share_held": 0.9972602739726028,
+    "round_trips": 1,
+    "net_ann_pct": 37.32358
+   },
+   {
+    "symbol": "ETHUSDT",
+    "rule": "LIVE",
+    "year": 2022,
+    "n": 1095,
+    "share_held": 0.7150684931506849,
+    "round_trips": 9,
+    "net_ann_pct": 0.806627
+   },
+   {
+    "symbol": "ETHUSDT",
+    "rule": "LIVE",
+    "year": 2023,
+    "n": 1095,
+    "share_held": 0.9726027397260274,
+    "round_trips": 3,
+    "net_ann_pct": 7.655220000000002
+   },
+   {
+    "symbol": "ETHUSDT",
+    "rule": "LIVE",
+    "year": 2024,
+    "n": 1098,
+    "share_held": 0.994535519125683,
+    "round_trips": 2,
+    "net_ann_pct": 12.57115448087432
+   },
+   {
+    "symbol": "ETHUSDT",
+    "rule": "LIVE",
+    "year": 2025,
+    "n": 1095,
+    "share_held": 0.989041095890411,
+    "round_trips": 4,
+    "net_ann_pct": 4.098557
+   },
+   {
+    "symbol": "ETHUSDT",
+    "rule": "LIVE",
+    "year": 2026,
+    "n": 783,
+    "share_held": 0.6704980842911877,
+    "round_trips": 5,
+    "net_ann_pct": 0.7333689080459771
+   }
+  ],
+  "era": {
+   "CUM30D": {
+    "pre_etf": {
+     "net_ann_pct": 16.995215082997394,
+     "round_trips": 9
+    },
+    "post_etf": {
+     "net_ann_pct": 6.879456440936865,
+     "round_trips": 0
+    }
+   },
+   "ALWAYS_ON": {
+    "pre_etf": {
+     "net_ann_pct": 17.107408829736784,
+     "round_trips": 1
+    },
+    "post_etf": {
+     "net_ann_pct": 6.879456440936865,
+     "round_trips": 0
+    }
+   },
+   "LIVE": {
+    "pre_etf": {
+     "net_ann_pct": 16.900044081100308,
+     "round_trips": 14
+    },
+    "post_etf": {
+     "net_ann_pct": 6.201702734215888,
+     "round_trips": 11
+    }
+   }
+  },
+  "tail_stress": {
+   "worst_30d": {
+    "cum_funding_pct": -1.777489,
+    "window": [
+     "2022-08-27",
+     "2022-09-25"
+    ],
+    "net_pct_in_window": {
+     "CUM30D": -0.6684680000000001,
+     "ALWAYS_ON": -1.777489,
+     "LIVE": 0.0
+    }
+   },
+   "worst_90d": {
+    "cum_funding_pct": -1.668843,
+    "window": [
+     "2022-08-27",
+     "2022-11-24"
+    ],
+    "net_pct_in_window": {
+     "CUM30D": -2.100917,
+     "ALWAYS_ON": -1.668843,
+     "LIVE": -0.044618000000000047
+    }
+   },
+   "worst_180d": {
+    "cum_funding_pct": -1.2417799999999999,
+    "window": [
+     "2022-06-11",
+     "2022-12-07"
+    ],
+    "net_pct_in_window": {
+     "CUM30D": -1.673854,
+     "ALWAYS_ON": -1.2417799999999999,
+     "LIVE": -0.6931930000000001
+    }
+   }
+  },
+  "bootstrap_cum30d_vs_zero": {
+   "net_ann_pct": 12.834803948066453,
+   "ci90_ann_pct": [
+    9.482122017939412,
+    16.631198940946533
+   ],
+   "p_gt_0": 1.0
+  }
+ },
+ "btc": {
+  "symbol": "BTCUSDT",
+  "n_prints": 7697,
+  "eval_span": [
+   "2019-12-19",
+   "2026-09-18"
+  ],
+  "years": 6.755251141552511,
+  "rules": {
+   "CUM30D": {
+    "share_held": 0.9955387319183453,
+    "round_trips": 5,
+    "rt_per_year": 0.7401649317290794,
+    "gross_ann_pct": 11.716025998377722,
+    "net_ann_pct": 11.567993012031904
+   },
+   "ALWAYS_ON": {
+    "share_held": 1.0,
+    "round_trips": 1,
+    "rt_per_year": 0.14803298634581588,
+    "gross_ann_pct": 11.708424504528862,
+    "net_ann_pct": 11.678817907259699
+   },
+   "LIVE": {
+    "share_held": 0.9060429904015141,
+    "round_trips": 32,
+    "rt_per_year": 4.737055563066108,
+    "gross_ann_pct": 11.781049191564149,
+    "net_ann_pct": 10.833638078950928
+   }
+  },
+  "per_year": [
+   {
+    "symbol": "BTCUSDT",
+    "rule": "CUM30D",
+    "year": 2020,
+    "n": 1098,
+    "share_held": 0.9699453551912568,
+    "round_trips": 4,
+    "net_ann_pct": 16.44601143442623
+   },
+   {
+    "symbol": "BTCUSDT",
+    "rule": "CUM30D",
+    "year": 2021,
+    "n": 1095,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 30.608423000000002
+   },
+   {
+    "symbol": "BTCUSDT",
+    "rule": "CUM30D",
+    "year": 2022,
+    "n": 1095,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 4.164925
+   },
+   {
+    "symbol": "BTCUSDT",
+    "rule": "CUM30D",
+    "year": 2023,
+    "n": 1095,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 7.865712000000001
+   },
+   {
+    "symbol": "BTCUSDT",
+    "rule": "CUM30D",
+    "year": 2024,
+    "n": 1098,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 11.924213920765029
+   },
+   {
+    "symbol": "BTCUSDT",
+    "rule": "CUM30D",
+    "year": 2025,
+    "n": 1095,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 5.126428
+   },
+   {
+    "symbol": "BTCUSDT",
+    "rule": "CUM30D",
+    "year": 2026,
+    "n": 783,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 2.7197142911877394
+   },
+   {
+    "symbol": "BTCUSDT",
+    "rule": "ALWAYS_ON",
+    "year": 2020,
+    "n": 1098,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 17.192615942622947
+   },
+   {
+    "symbol": "BTCUSDT",
+    "rule": "ALWAYS_ON",
+    "year": 2021,
+    "n": 1095,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 30.608423000000002
+   },
+   {
+    "symbol": "BTCUSDT",
+    "rule": "ALWAYS_ON",
+    "year": 2022,
+    "n": 1095,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 4.164925
+   },
+   {
+    "symbol": "BTCUSDT",
+    "rule": "ALWAYS_ON",
+    "year": 2023,
+    "n": 1095,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 7.865712000000001
+   },
+   {
+    "symbol": "BTCUSDT",
+    "rule": "ALWAYS_ON",
+    "year": 2024,
+    "n": 1098,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 11.924213920765029
+   },
+   {
+    "symbol": "BTCUSDT",
+    "rule": "ALWAYS_ON",
+    "year": 2025,
+    "n": 1095,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 5.126428
+   },
+   {
+    "symbol": "BTCUSDT",
+    "rule": "ALWAYS_ON",
+    "year": 2026,
+    "n": 783,
+    "share_held": 1.0,
+    "round_trips": 0,
+    "net_ann_pct": 2.7197142911877394
+   },
+   {
+    "symbol": "BTCUSDT",
+    "rule": "LIVE",
+    "year": 2020,
+    "n": 1098,
+    "share_held": 0.8661202185792349,
+    "round_trips": 6,
+    "net_ann_pct": 16.324720737704915
+   },
+   {
+    "symbol": "BTCUSDT",
+    "rule": "LIVE",
+    "year": 2021,
+    "n": 1095,
+    "share_held": 0.9397260273972603,
+    "round_trips": 3,
+    "net_ann_pct": 30.080262999999995
+   },
+   {
+    "symbol": "BTCUSDT",
+    "rule": "LIVE",
+    "year": 2022,
+    "n": 1095,
+    "share_held": 0.8876712328767123,
+    "round_trips": 8,
+    "net_ann_pct": 2.487841
+   },
+   {
+    "symbol": "BTCUSDT",
+    "rule": "LIVE",
+    "year": 2023,
+    "n": 1095,
+    "share_held": 0.9835616438356164,
+    "round_trips": 3,
+    "net_ann_pct": 7.237679
+   },
+   {
+    "symbol": "BTCUSDT",
+    "rule": "LIVE",
+    "year": 2024,
+    "n": 1098,
+    "share_held": 0.9453551912568307,
+    "round_trips": 2,
+    "net_ann_pct": 11.533537267759563
+   },
+   {
+    "symbol": "BTCUSDT",
+    "rule": "LIVE",
+    "year": 2025,
+    "n": 1095,
+    "share_held": 0.9424657534246575,
+    "round_trips": 3,
+    "net_ann_pct": 4.512276
+   },
+   {
+    "symbol": "BTCUSDT",
+    "rule": "LIVE",
+    "year": 2026,
+    "n": 783,
+    "share_held": 0.7432950191570882,
+    "round_trips": 5,
+    "net_ann_pct": 1.696608103448276
+   }
+  ],
+  "era": {
+   "CUM30D": {
+    "pre_etf": {
+     "net_ann_pct": 14.66917820152775,
+     "round_trips": 5
+    },
+    "post_etf": {
+     "net_ann_pct": 6.882529577393077,
+     "round_trips": 0
+    }
+   },
+   "ALWAYS_ON": {
+    "pre_etf": {
+     "net_ann_pct": 14.853355184228267,
+     "round_trips": 1
+    },
+    "post_etf": {
+     "net_ann_pct": 6.882529577393077,
+     "round_trips": 0
+    }
+   },
+   "LIVE": {
+    "pre_etf": {
+     "net_ann_pct": 13.876216644574257,
+     "round_trips": 22
+    },
+    "post_etf": {
+     "net_ann_pct": 6.236721176171081,
+     "round_trips": 10
+    }
+   }
+  },
+  "tail_stress": {
+   "worst_30d": {
+    "cum_funding_pct": -1.311426,
+    "window": [
+     "2020-03-12",
+     "2020-04-10"
+    ],
+    "net_pct_in_window": {
+     "CUM30D": -1.5474409999999998,
+     "ALWAYS_ON": -1.311426,
+     "LIVE": -1.297504
+    }
+   },
+   "worst_90d": {
+    "cum_funding_pct": -0.3855839999999998,
+    "window": [
+     "2026-02-06",
+     "2026-05-06"
+    ],
+    "net_pct_in_window": {
+     "CUM30D": -0.38558399999999987,
+     "ALWAYS_ON": -0.38558399999999987,
+     "LIVE": -0.768518
+    }
+   },
+   "worst_180d": {
+    "cum_funding_pct": 0.529983,
+    "window": [
+     "2025-12-31",
+     "2026-06-28"
+    ],
+    "net_pct_in_window": {
+     "CUM30D": 0.529983,
+     "ALWAYS_ON": 0.529983,
+     "LIVE": -0.2016079999999999
+    }
+   }
+  },
+  "bootstrap_cum30d_vs_zero": {
+   "net_ann_pct": 11.567993012031904,
+   "ci90_ann_pct": [
+    8.875569752129241,
+    14.539849413715016
+   ],
+   "p_gt_0": 1.0
+  }
+ }
+}
