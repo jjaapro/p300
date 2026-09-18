@@ -97,21 +97,20 @@ Cadence: squeeze_bull ~25 fires/yr in bull tape, none in bear; short_squeeze dro
   0.726 → 0.461). A study is designed, not written (`studies/notebooks/post_loss_rules/`). [retire: take the default,
   no rule on either asset, and close it — more data sharpens an estimate nobody should size on]
 - **A new replay baseline** (bounded loaders, 10 bp, gate off), replacing the superseded `__replay_p0gate`. This is
-  also where chento's core calibration gets its executed notebook.
+  also where chento's core calibration gets its executed notebook. **Scoped 2026-09-19: an engineering task, not a
+  research one.** The runner has no replay mode (`--once`, `--interval`, `--verbose` only); the tooling that
+  produced `__replay_p0gate` is gone; the only walking replay left is inside `tests/test_chento_clock_bound.py`, and
+  the calibration log says walking replays are ~15× slower since the clock bound. It needs a replay harness first —
+  the same harness the time-stop twin below needs to be validated — so build them together, with the operator.
 - **What would settle the 72 h time stop.** Data after 2026-09-11: a paper twin without the time stop, under a per-bot
   open-risk budget (the research half of item 13 — r4's `GROSS_MAX_X` is the precedent; RISK_PCT 1.5 % is the
   alternative, drawdown BTC 25 % / ETH 16 %). The go-live half of 13 is in §6.
-- **Partial take-profits, as a pre-registered arm of the replay baseline.** Chento's own rule: first TP at 1R, partials
-  after, tiered (`studies/notebooks/chento_journal/strategy_spec.md`). Never tested on our sleeves. The prior is
-  against it on cumulative R — wider fixed targets up to ~8R beat tighter ones on this signal, and a fixed TP beats
-  every trailing variant — so the arm is judged on MAR and drawdown, not cum R, and its placebo is the same trim at a
-  random fraction of the target. If it holds, the squeeze pair inherits the design.
-  - **Comparator, from chento's hedging (2026-09-19):** at a resistance trigger on an open winner — do nothing /
-    partial close / counter-short at the same fraction — scored on MAR and drawdown with a placebo trigger. The
-    prior is that the counter-short loses: shorts against an up_30d regime were +0.67 R / 55 % WR and were removed
-    from the sleeve, B13's opposite leg wins 5 % of the time, and the one chento instance scoreable on tape
-    (`chento_journal/material_2026_09_19_comment_and_tv_chart.md` §6–§7) lost. Hedge-and-hold on the same
-    instrument is a partial close minus costs; the only thing the short adds is the un-hedge decision.
+- **Partial take-profits: DONE, KEEP_6R** (`studies/notebooks/chento_partial_tp_2026_09/`, pre-registered and
+  frozen before the run, 2026-09-19). Chento's own ladder, his 3R default, his 1R first take-profit and 500
+  random-level ladders of the same fractions all lower MAR on both assets and in both halves (A0 2.54 vs the ladder
+  2.09 pooled; paired −0.20 R per trade, CI95 −0.33 to −0.08). Trimming is wrong on this signal, not the levels;
+  58 % of trades touch +1R and holding still wins. The squeeze pair does not inherit it. Do not re-propose fixed-level
+  trims on chento; the Exits constraint stands unmet on this arm.
 - **24. About 1 in 8 time-stop exits go through the backstop** — the sleeve's `not walked_any` misses under the 90 s
   settle margin, so those exits are labelled `scheduled_exit` and close at the tick's quote. A sleeve and golden change;
   do it with the replay baseline.
@@ -269,6 +268,10 @@ smallest-first sizing with a circuit breaker.
   ADX veto (never backtested; the original pivot had look-ahead).
 - Spot-lagging highs as an *entry* on chento (the one thing the spot-vs-perp study left: flow leg +1.046 vs −1.064;
   unprotected by the family correction, absent on squeeze_bull). Needs its own pre-registration.
+- The counter-short comparator from chento's hedging (§2.2's partial-TP study, stage 2): at a causal resistance
+  trigger on an open winner, do nothing vs counter-short. With the partial-close leg dead it is a two-arm test, and
+  the counter-short carries the regime table's prior (shorts against an up_30d regime +0.67 R / 55 %, removed from
+  the sleeve; B13's opposite leg 5 % WR; the one scoreable chento instance lost). Needs the trigger defined first.
 - Institutional trader ("Astronomer") material, when the rules are shared (likely needs L2).
 - Tooling for an honest go/no-go: SPA / White's reality check and full-grid PBO.
 - Study validation reviews (`studies/notebooks/study_validation_audit_2026_09/`, 51 plans): folded into §2 — each
