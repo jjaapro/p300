@@ -358,6 +358,14 @@ are normal operation, not defects:
 > `margin_headroom` / `conflict_resolver` / `signal_aggregator` modules survive
 > as read-only reporting for `strategy_health` (§3); they gate nothing.
 
+### C: is full and no directory scan accounts for it
+2026-09-18: C: hit 0 bytes free with the fleet live, and about 20 GB came back the moment Firefox was closed. A
+process can hold files that are already deleted (downloads, cache, crash dumps); the space is gone until the handle
+closes and no directory scan shows it. Close browsers first, then look at disk. What the monitor does meanwhile:
+`DISK_LOW` (warn below 5 GB, critical below 2 GB, hourly and live on the dashboard, `monitor.disk_low`); `backup.py`
+refuses to snapshot below 2 × prod.db (~3.3 GB) and records `low_disk`, which surfaces as `BACKUP_STALE` once the
+newest good copy is older than its threshold. The feed and the bots keep running until SQLite cannot grow the WAL.
+
 ### Tests fail after a code change
 ```bash
 python -m pytest tests/ -v                          # verbose, see what fails

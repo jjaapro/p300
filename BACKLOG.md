@@ -41,10 +41,6 @@ In order. Each step names its section.
 - **Restart the bots** (`start_fleet.ps1`) to pick up the 2026-09-19 runner changes: the entry-path exit guard
   (item 23) and the tick log. Until then every bot process runs the old code, and the fire count starts at the
   restart, not at the commit.
-- **Disk.** C: hit 0 bytes free on 2026-09-18 with the fleet live; ~20 GB returned when Firefox closed (deleted-but-open
-  handles, invisible to any directory scan). `backup.py` refuses to snapshot below 2 × prod.db (~3.3 GB), so a repeat
-  silently skips the nightly backup that protects the paper record, and nothing alerts on free space. Smallest fix: a
-  free-space check in `monitor.py` at the backup floor.
 
 ## 2. Existing strategies
 
