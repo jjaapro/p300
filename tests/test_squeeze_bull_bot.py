@@ -626,9 +626,40 @@ def test_tick_all_still_sweeps_the_twin_when_the_first_variants_entry_raises(
                              "so the twin never ticked") from escaped
 
     first = out["per_variant"][env["variant"]["id"]]
-    assert first["status"] == "tick_error" and first["hb_status"] == "error"
+    # BACKLOG 23 (2026-09-19): the entry error is now caught inside the
+    # variant's own tick, whose backstop still runs; before, it escaped to
+    # tick_all as "tick_error" and only the twin was protected.
+    assert first["status"] == "entry_error" and first["hb_status"] == "error"
     assert first["hb_note"].startswith("DuplicateInstanceError("), first
     assert out["hb_status"] == "error" and not out["opened"]
     status, _, notes, _ = _closed_row(env["db"], own)
     assert status == "closed"
     assert "\nSQUEEZE_BULL_EXIT: time_stop;" in notes
+
+
+def test_entry_path_raising_still_runs_the_backstop(env, monkeypatch):
+    """BACKLOG 23: until 2026-09-19 an error after decide() — sizing, the
+    entry-table check, execute() — escaped the tick before the backstop at its
+    end, so that tick's exits were skipped. The overdue trade must still close,
+    nothing must open, and the error must reach the heartbeat."""
+    _backstop_env(monkeypatch)
+    tid = _seed_due(env["variant"])
+    monkeypatch.setattr("botlib.stale_tables", lambda tables=None: {})
+    monkeypatch.setattr(sleeve, "decide", lambda *a, **k: ([object()], {"status": "signal"}))
+
+    def broken_sizing(*a, **k):
+        raise RuntimeError("sizing failed")
+    monkeypatch.setattr(runner, "size_intent", broken_sizing)
+
+    try:
+        out = runner.tick(env["variant"])
+    except RuntimeError as escaped:
+        raise AssertionError("the entry path's error escaped the tick, so the "
+                             "backstop never ran") from escaped
+
+    assert out.get("backstop_closed") == [tid], out
+    assert _closed_row(env["db"], tid)[0] == "closed"
+    assert out["status"] == "entry_error"
+    assert out["hb_status"] == "error"
+    assert out["hb_note"] == repr(RuntimeError("sizing failed"))
+    assert "opened" not in out

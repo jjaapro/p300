@@ -183,9 +183,6 @@ Evidence-dated, not effort-dated:
 Paper trading is the progress measure, so the ledger has to be true. These are the defects that would make it lie.
 Batch them; each needs its own go-ahead as a prod change.
 
-23. **An exception after `decide()` still skips that tick's exits**, and in the squeeze bots the second variant. Where:
-    the entry-table check, sizing, `execute()`, `open_gross_usdt`, `DuplicateInstanceError`, r4's `_sleeve()` /
-    `deciders()`. Fix: wrap the entry path in the same try as `decide()`.
 26. **`close_carry_trade` takes no write lock.** The losing caller of a race logs a close that did not happen.
 28. **A double close across 00:00 UTC is not caught** — every duplicate check groups by `event_date`. Candidate: a
     date-independent "more than one OPEN or CLOSE per trade" count.

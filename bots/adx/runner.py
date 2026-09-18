@@ -106,23 +106,32 @@ def tick(variant: dict) -> dict:
     out = {"status": st, "detail": status, "hb_status": "ok", "hb_note": "",
            "evaluated": st not in _NOT_EVALUATED_STATUSES}
 
-    if intents:
-        stale_entry = botlib.stale_tables(botcfg.ENTRY_TABLES)
-        if stale_entry:
-            log.warning(f"ENTRY BLOCKED — stale entry tables: {stale_entry}")
-            out.update(status="entry_blocked_stale_inputs",
-                       hb_status="degraded",
-                       hb_note=f"entry tables stale: {sorted(stale_entry)}")
-        else:
-            for intent in intents:
-                resized, info = size_intent(intent, float(variant["capital_usdt"]))
-                res = sleeve.execute(variant, resized)
-                log.info(f"OPENED {res.get('trade_id')} {resized.direction} "
-                         f"notional=${info['notional']:,.0f} "
-                         f"(stop_pct={info['stop_pct']:.2%}, "
-                         f"at_cap={info['at_cap']})")
-                out["opened"] = res.get("trade_id")
-                out["signal"] = True
+    try:
+        if intents:
+            stale_entry = botlib.stale_tables(botcfg.ENTRY_TABLES)
+            if stale_entry:
+                log.warning(f"ENTRY BLOCKED — stale entry tables: {stale_entry}")
+                out.update(status="entry_blocked_stale_inputs",
+                           hb_status="degraded",
+                           hb_note=f"entry tables stale: {sorted(stale_entry)}")
+            else:
+                for intent in intents:
+                    resized, info = size_intent(intent, float(variant["capital_usdt"]))
+                    res = sleeve.execute(variant, resized)
+                    log.info(f"OPENED {res.get('trade_id')} {resized.direction} "
+                             f"notional=${info['notional']:,.0f} "
+                             f"(stop_pct={info['stop_pct']:.2%}, "
+                             f"at_cap={info['at_cap']})")
+                    out["opened"] = res.get("trade_id")
+                    out["signal"] = True
+    except Exception as entry_error:  # noqa: BLE001
+        # BACKLOG 23: sizing, the entry-table check and execute() ran outside
+        # any try, so an error there escaped the tick before the backstop at
+        # its end — that tick's exits were skipped (and the twin bots' tick_all
+        # only kept the OTHER variant ticking). Enter nothing more, run the
+        # backstop, and report it the way a decide error is reported.
+        log.exception(f"entry error: {entry_error}")
+        out.update(status="entry_error", hb_status="error", hb_note=repr(entry_error))
 
     return _backstop(variant, out)
 

@@ -187,3 +187,30 @@ def test_stale_mgmt_tables_skip_the_backstop(env, monkeypatch):
     assert out["status"] == "stale_mgmt_inputs" and out["hb_status"] == "degraded"
     assert "backstop_closed" not in out, out
     assert _closed_row(db_path, tid)[0] == "open"
+
+
+def test_entry_path_raising_still_runs_the_backstop(env, monkeypatch):
+    """BACKLOG 23: until 2026-09-19 an error after decide() — sizing, the
+    entry-table check, execute() — escaped the tick before the backstop at its
+    end, so that tick's exits were skipped. The overdue trade must still close,
+    nothing must open, and the error must reach the heartbeat."""
+    db_path, variant, tid = env
+    monkeypatch.setattr("botlib.stale_tables", lambda tables=None: {})
+    monkeypatch.setattr("bots.carry.strategy.signal.decide", lambda *a, **k: ([object()], {"status": "signal"}))
+
+    def broken_sizing(*a, **k):
+        raise RuntimeError("sizing failed")
+    monkeypatch.setattr(runner, "size_intent", broken_sizing)
+
+    try:
+        out = runner.tick(variant)
+    except RuntimeError as escaped:
+        raise AssertionError("the entry path's error escaped the tick, so the "
+                             "backstop never ran") from escaped
+
+    assert out.get("backstop_closed") == [tid], out
+    assert _closed_row(db_path, tid)[0] == "closed"
+    assert out["status"] == "entry_error"
+    assert out["hb_status"] == "error"
+    assert out["hb_note"] == repr(RuntimeError("sizing failed"))
+    assert "opened" not in out

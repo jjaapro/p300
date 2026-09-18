@@ -220,72 +220,81 @@ def tick(variant: dict) -> dict:
         log.exception(f"decide lookup error: {lookup_error}")
         r4, window_deciders, error = None, {}, repr(lookup_error)
 
-    for strategy, decide in window_deciders.items():
-        if not botcfg.ENABLED.get(strategy, False):
-            continue
-        # No weight / gate / vol_scalar: their ABSENCE is the live path.
-        # The sleeve then reads the timing-anomaly weights table (including
-        # its bear-regime zero), the gated inner leverage and the vol
-        # leverage from today_inputs, and the bot consumes the resulting
-        # stacked leverage in size_intent. Passing any of them here would
-        # override the regime gate.
-        try:
-            intents, status = decide(variant)
-        except Exception as decide_error:  # noqa: BLE001
-            # Enter nothing more this tick, but still run the exits below —
-            # for R4 the backstop is the only exit — then report the error the
-            # way the loop always has: heartbeat 'error', note repr(error).
-            log.exception(f"decide error {strategy}: {decide_error}")
-            detail[strategy] = "decide_error"
-            error = repr(decide_error)
-            break
-        st = status.get("status", "?")
-        detail[strategy] = st
-        if st != "no_inputs":
-            evaluated = True
-        if not intents:
-            continue
-        intent = intents[0]
-        open_dt = r4cal.window_open_for(strategy, intent.scheduled_exit_dt)
-        late_s = (now - open_dt).total_seconds()
-        if late_s > botcfg.LATE_ENTRY_MAX_S:
-            detail[strategy] = "missed_window"
-            missed.append(strategy)
-            key = (strategy, today)
-            if key not in _missed:
-                _missed.add(key)
-                log.warning(f"MISSED WINDOW {strategy} {today}: now is "
-                            f"+{late_s / 60:.0f} min after open (grace "
-                            f"{botcfg.LATE_ENTRY_MAX_S}s) — not entering")
-                _diag({"ts": now.isoformat(), "event": "missed_window",
-                       "strategy": strategy, "late_s": round(late_s)})
-            continue
-        stale_entry = botlib.stale_tables(botcfg.ENTRY_TABLES)
-        if stale_entry:
-            log.warning(f"ENTRY BLOCKED {strategy} — stale entry tables: {stale_entry}")
-            detail[strategy] = "entry_blocked_stale_inputs"
-            blocked = stale_entry
-            continue
-        open_gross = botlib.open_gross_usdt(variant["id"])
-        resized, info = size_intent(intent, capital, open_gross, late_s=late_s)
-        if resized is None:
-            detail[strategy] = "budget_exhausted"
-            exhausted.append(strategy)
-            log.warning(f"BUDGET EXHAUSTED {strategy}: remaining "
-                        f"${info['budget']:,.0f} < min ${botcfg.MIN_NOTIONAL_USDT:,.0f} "
-                        f"(open gross ${open_gross:,.0f})")
-            _diag({"ts": now.isoformat(), "event": "budget_exhausted",
-                   "strategy": strategy, **info})
-            continue
-        res = r4.execute(variant, resized)
-        detail[strategy] = "opened"
-        opened.append(res.get("trade_id"))
-        log.info(f"OPENED {res.get('trade_id')} {strategy} notional="
-                 f"${info['notional']:,.0f} (weight {info['weight']:.2f}, "
-                 f"lev {info['lev']:.2f}x, capped={info['capped']}, "
-                 f"latency {late_s:.0f}s)")
-        _diag({"ts": now.isoformat(), "event": "opened", "trade_id": res.get("trade_id"),
-               "late_s": round(late_s), **info})
+    entry_failed = None
+    try:
+        for strategy, decide in window_deciders.items():
+            if not botcfg.ENABLED.get(strategy, False):
+                continue
+            # No weight / gate / vol_scalar: their ABSENCE is the live path.
+            # The sleeve then reads the timing-anomaly weights table (including
+            # its bear-regime zero), the gated inner leverage and the vol
+            # leverage from today_inputs, and the bot consumes the resulting
+            # stacked leverage in size_intent. Passing any of them here would
+            # override the regime gate.
+            try:
+                intents, status = decide(variant)
+            except Exception as decide_error:  # noqa: BLE001
+                # Enter nothing more this tick, but still run the exits below —
+                # for R4 the backstop is the only exit — then report the error the
+                # way the loop always has: heartbeat 'error', note repr(error).
+                log.exception(f"decide error {strategy}: {decide_error}")
+                detail[strategy] = "decide_error"
+                error = repr(decide_error)
+                break
+            st = status.get("status", "?")
+            detail[strategy] = st
+            if st != "no_inputs":
+                evaluated = True
+            if not intents:
+                continue
+            intent = intents[0]
+            open_dt = r4cal.window_open_for(strategy, intent.scheduled_exit_dt)
+            late_s = (now - open_dt).total_seconds()
+            if late_s > botcfg.LATE_ENTRY_MAX_S:
+                detail[strategy] = "missed_window"
+                missed.append(strategy)
+                key = (strategy, today)
+                if key not in _missed:
+                    _missed.add(key)
+                    log.warning(f"MISSED WINDOW {strategy} {today}: now is "
+                                f"+{late_s / 60:.0f} min after open (grace "
+                                f"{botcfg.LATE_ENTRY_MAX_S}s) — not entering")
+                    _diag({"ts": now.isoformat(), "event": "missed_window",
+                           "strategy": strategy, "late_s": round(late_s)})
+                continue
+            stale_entry = botlib.stale_tables(botcfg.ENTRY_TABLES)
+            if stale_entry:
+                log.warning(f"ENTRY BLOCKED {strategy} — stale entry tables: {stale_entry}")
+                detail[strategy] = "entry_blocked_stale_inputs"
+                blocked = stale_entry
+                continue
+            open_gross = botlib.open_gross_usdt(variant["id"])
+            resized, info = size_intent(intent, capital, open_gross, late_s=late_s)
+            if resized is None:
+                detail[strategy] = "budget_exhausted"
+                exhausted.append(strategy)
+                log.warning(f"BUDGET EXHAUSTED {strategy}: remaining "
+                            f"${info['budget']:,.0f} < min ${botcfg.MIN_NOTIONAL_USDT:,.0f} "
+                            f"(open gross ${open_gross:,.0f})")
+                _diag({"ts": now.isoformat(), "event": "budget_exhausted",
+                       "strategy": strategy, **info})
+                continue
+            res = r4.execute(variant, resized)
+            detail[strategy] = "opened"
+            opened.append(res.get("trade_id"))
+            log.info(f"OPENED {res.get('trade_id')} {strategy} notional="
+                     f"${info['notional']:,.0f} (weight {info['weight']:.2f}, "
+                     f"lev {info['lev']:.2f}x, capped={info['capped']}, "
+                     f"latency {late_s:.0f}s)")
+            _diag({"ts": now.isoformat(), "event": "opened", "trade_id": res.get("trade_id"),
+                   "late_s": round(late_s), **info})
+    except Exception as entry_error:  # noqa: BLE001
+        # BACKLOG 23: the window lookup, the budget and execute() ran outside
+        # any try inside the loop, so an error there escaped the tick before
+        # _exits — and for R4 the window close is the only exit. Enter
+        # nothing more, run the exits, report it beside any decide error.
+        log.exception(f"entry error: {entry_error}")
+        entry_failed = repr(entry_error)
 
     out = {"status": "no_action", "detail": detail, "hb_status": "ok", "hb_note": "",
            "evaluated": evaluated}
@@ -302,6 +311,9 @@ def tick(variant: dict) -> dict:
     if error:
         out.update(status="decide_error", hb_status="error",
                    hb_note="; ".join(n for n in (error, out["hb_note"]) if n))
+    if entry_failed:
+        out.update(status="entry_error", hb_status="error",
+                   hb_note="; ".join(n for n in (entry_failed, out["hb_note"]) if n))
 
     return _exits(variant, out)
 

@@ -575,3 +575,28 @@ def test_shipped_config_skips_monday_and_trades_the_eth_pair(env, monkeypatch):
     assert _rows(env, STRATEGY_R4_BTC_V2) == []
     assert len(_rows(env, STRATEGY_R4_ETH_V2)) == 1
     assert botlib.open_gross_usdt("bot_r4_test") <= botcfg.GROSS_MAX_X * CAPITAL
+
+
+def test_entry_path_raising_still_runs_the_exits(env, monkeypatch):
+    """BACKLOG 23: an error inside the decider loop after decide() — the window
+    lookup, the budget, execute() — escaped the tick before _exits, which is
+    R4's only exit. Here decide returns an intent with no scheduled_exit_dt, so
+    the window lookup raises; the due trade must still close and the error
+    must reach the heartbeat under its own status."""
+    tid = _seed_due_eth()
+    _backstop_prices(monkeypatch)
+    monkeypatch.setattr(runner, "deciders", lambda: {
+        STRATEGY_R4_ETH: lambda variant: ([object()], {"status": "signal"})})
+
+    try:
+        out = runner.tick(_variant())
+    except AttributeError as escaped:
+        raise AssertionError("the entry path's error escaped the tick, so the "
+                             "window close never ran") from escaped
+
+    assert out.get("backstop_closed") == [tid], out
+    assert _closed_row(env, tid)[0] == "closed"
+    assert out["status"] == "entry_error"
+    assert out["hb_status"] == "error"
+    assert "AttributeError" in out["hb_note"]
+    assert "opened" not in out

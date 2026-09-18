@@ -103,14 +103,23 @@ def tick(variant: dict) -> dict:
     out = {"status": st, "detail": status, "hb_status": "ok", "hb_note": "",
            "evaluated": st not in _NOT_EVALUATED_STATUSES}
 
-    for intent in intents:
-        resized, info = size_intent(intent, float(variant["capital_usdt"]))
-        res = sleeve.execute(variant, resized)
-        log.info(f"OPENED {res.get('trade_id')} delta-neutral "
-                 f"notional=${info['notional']:,.0f} "
-                 f"(7d FR {res.get('fr_7d_avg_pct')}%)")
-        out["opened"] = res.get("trade_id")
-        out["signal"] = True
+    try:
+        for intent in intents:
+            resized, info = size_intent(intent, float(variant["capital_usdt"]))
+            res = sleeve.execute(variant, resized)
+            log.info(f"OPENED {res.get('trade_id')} delta-neutral "
+                     f"notional=${info['notional']:,.0f} "
+                     f"(7d FR {res.get('fr_7d_avg_pct')}%)")
+            out["opened"] = res.get("trade_id")
+            out["signal"] = True
+    except Exception as entry_error:  # noqa: BLE001
+        # BACKLOG 23: sizing, the entry-table check and execute() ran outside
+        # any try, so an error there escaped the tick before the backstop at
+        # its end — that tick's exits were skipped (and the twin bots' tick_all
+        # only kept the OTHER variant ticking). Enter nothing more, run the
+        # backstop, and report it the way a decide error is reported.
+        log.exception(f"entry error: {entry_error}")
+        out.update(status="entry_error", hb_status="error", hb_note=repr(entry_error))
 
     return _backstop(variant, out)
 
