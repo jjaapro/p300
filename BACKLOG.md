@@ -28,8 +28,9 @@ In order. Each step names its section.
 
 1. **Squeeze pair** (§2.1) — decision 8 and the D4 trip are the operator's; then the short_squeeze exit arm and
    stage B if wanted. Its n = 20 / 30 gates are the nearest real verdict in the fleet.
-2. **Second assets** (§3.1) — CARRY on ETH is studied and waits on the operator (§2.4); SHORT_SQUEEZE on ETH needs
-   its data built first. The validation audit's one-line conclusion was that the constraint is breadth, not edge.
+2. **Second assets** (§3.1) — CARRY on ETH is studied and waits on the operator (§2.4); SHORT_SQUEEZE on ETH is
+   killed; SQUEEZE_BULL on ETH is the one left, and its data route now exists. The validation audit's one-line
+   conclusion was that the constraint is breadth, not edge.
 3. **Chento** (§2.2) — close decisions 14 and 15, then the replay baseline and the time-stop twin.
 4. **R4** (§2.3) — after its first windows have traded; nothing to do before 2026-10-02 but watch.
 5. Then §3.2 onward, in the order listed there.
@@ -145,13 +146,15 @@ ADX on ETH was killed (Sharpe 0.72, corr 0.47 with BTC ADX). CARRY's 30-day cumu
 
 Pre-registered notebooks; every replay charges measured per-leg costs and funding. Order:
 
-1. **Second assets.** CARRY on ETH is studied — RECOMMEND, waiting on the operator (§2.4). **SHORT_SQUEEZE on ETH is
-   not "data exists":** the sleeve reads `cd_spot_15m` and `cd_open_interest`, and neither has an ETH twin. It needs
-   Binance Vision spot ETHUSDT 15-minute klines and the 5-minute `metrics` archive (ETHUSDT from 2021-12) rolled to
-   close-of-hour open interest, built as a study-local twin database so the sleeve's own code runs on it unchanged —
-   and its research engine exists only inside two never-executed notebooks (`short_squeeze_sessions/`), so that study
-   is an engine build first. SQUEEZE_BULL on ETH has the same open-interest route and no live feed. Alts are blocked
-   (the screener feed stopped 2026-05-23). The most direct lever on breadth.
+1. **Second assets.** CARRY on ETH is studied — RECOMMEND, waiting on the operator (§2.4). **SHORT_SQUEEZE on ETH:
+   KILL** (`studies/notebooks/short_squeeze_eth_2026_09/`, 2026-09-19, pre-registered: 70 triggers, net +0.14 R at
+   10 bp with the second half −0.09 R, DSR 0.75; the edge is 2022, and BTC itself would fail the same bar at net
+   +0.18 R). The five tables the sleeve reads are now built from on-disk panels for any asset the panels cover
+   (`ss_eth_lib.tables_from_panels`: 15-minute perp and spot bar for bar what prod holds, hourly bars, close-of-hour
+   open interest from the 5-minute archive), faithful to prod for BTC (Jaccard 0.986, fills identical), and the
+   execution study's port of the sleeve ran on them unchanged. **SQUEEZE_BULL on ETH** is the one second-asset study
+   left: the same open-interest route, the revalidation study's hourly engine, and no live ETH feed. Alts are blocked
+   (the screener feed stopped 2026-05-23).
 2. **Shelf re-cost** under the no-stop style at measured costs (R4 windows, PDO), then fleet compounding through the
    liquidation walk. Bar: net ≥ 2× the round trip in both halves.
 3. **Hawkes / liquidation cascades.** The hourly feed it needs is live since 2026-09-18 (it works on hourly counts, not
@@ -261,7 +264,8 @@ smallest-first sizing with a circuit breaker.
   set) — exit-policy stage R, 2026-09-19, the exhaustion brainstorm's last pair; the ETH/BTC spread on any bull
   state as a sleeve and cross-asset hedging of chento's trades (`studies/notebooks/eth_btc_spread_2026_09/`,
   2026-09-19: the spread is one year, 2025, at a 63 % drawdown; a hedge in the other asset removes the market move
-  chento's timing is paid in, −1.04 R and −0.59 R per trade).
+  chento's timing is paid in, −1.04 R and −0.59 R per trade); SHORT_SQUEEZE on ETH at the shipped rule
+  (`short_squeeze_eth_2026_09/`, 2026-09-19: net +0.14 R, second half negative, the edge is 2022).
 - The ETH/BTC regime thesis, for the record: on strong_bull days long ETH beat long BTC over 2020-26 (+190.7 % vs
   +93.1 % net of 10 bp and funding), but as a relative position it gives back more than it protects, and even the
   long is a 2020-and-2025 story (2021 −5.5 %, 2024 +2.6 %).

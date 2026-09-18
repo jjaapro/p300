@@ -1,0 +1,22 @@
+{
+ "freeze": "F0",
+ "created_utc": "2026-09-18T23:49:57+00:00",
+ "note": "Before any ETH number. The README's engine, costs, gates and bars are fixed here.",
+ "files": {
+  "README.md": "57af1a8927a6c11ee12ad3f58d276c7b7d60e6866501ba0aa63bdde71927af8a",
+  "ss_eth_lib.py": "efddf1327db75ed89a5358f9437cd21cb71027fec32c2ea326ee94657627dfba",
+  "run_ss_eth.py": "054495c751c0a9e377fa7788b5c9ec5978882112ad271c6997c18733386ad97b",
+  "tests/test_ss_eth.py": "33f867f09302027c7128a7b1960af466cc87a00f0eb588af0cf8785b5717ac39"
+ },
+ "data": {
+  "perp_BTC": "b085372e6b3f4c743cdbb2f766f67b8765a6f563b5268c3ad515b24f52606563",
+  "perp_ETH": "77edf3f64467b2b130b6c75476895c61d347c87d6d6208270b7829ced35320e7",
+  "spot_BTC": "32830d0a2520fa0df162c2ea38fd05e7c5d2f5c4845543b34cbb46092ab5b4da",
+  "spot_ETH": "1a3bb33d16b44a17f85112b2cded0ab7003ce85bdfb32e7824bfd983e724fea8",
+  "metrics_BTC": "1db73c137568580f8842e03e9197a38f33d4b63066a03d12e82704a7b2cdff5d",
+  "metrics_ETH": "4aa257bcad5ef49ca9ad31750e6675fd696d0677e59783eabfb26780d0c8cf56",
+  "path_eth_1m": "4caf65061657bff20aee856f90a0d767dd139b775a286965a7531a134d84883b",
+  "path_btc_1m": "f470a6defd70794a3adb1882e91036295a4f0ce5414fffaa5105f278287764db",
+  "engine": "607058ea3eccb590fc501ca83e003cae96bda987732e90449fc66d9c8ef6b062"
+ }
+}
