@@ -712,6 +712,14 @@
       "end_ts": 1679662800,
       "reason": "Binance PAXGUSDT had no trades in this hour, so no kline exists at source (verified: api.binance.com/api/v3/klines returns the bars either side and nothing between)",
       "recorded_at": "2026-09-09"
+    },
+    {
+      "table": "ca_liquidations",
+      "asset": "BTC",
+      "start_ts": 1779645600,
+      "end_ts": 1782067439,
+      "reason": "older than Coinalyze's 89-day rolling window for interval 1hour",
+      "recorded_at": "2026-09-18"
     }
   ]
 }

@@ -253,14 +253,34 @@ def fetch_lsr(assets: tuple[str, ...] = ("BTC", "ETH")) -> dict[str, int]:
         con.close()
 
 
-def _ensure_liq_table(con: sqlite3.Connection) -> None:
-    """Coinalyze liquidations — separate table from cd_liquidations because
-    Coinalyze and CoinDesk report on different aggregation methodologies and
-    their absolute values are NOT comparable. ca_liquidations spans 2021+
-    for multi-year B4 validation; cd_liquidations is the higher-fidelity
-    87-day window we already have."""
-    con.execute("""
-        CREATE TABLE IF NOT EXISTS ca_liquidations (
+# Coinalyze serves sub-daily liquidations only for a rolling window — measured
+# 2026-09-18 on BTCUSDT_PERP.A, 88 days back returns rows and 90 returns none —
+# while its daily history runs years deep (1,500 days back still answers).
+LIQ_ROLLING_WINDOW_DAYS = 89
+EARLIEST_LIQ_TS = EARLIEST_LSR_TS  # 2021-01-01, same floor as the LSR series
+
+# The two cadences go to different tables on purpose. Their timestamps collide
+# at every UTC midnight and neither table carries an interval column, so one
+# table holding both would silently overwrite an hour with a whole day.
+LIQ_TABLES = {"daily": "ca_liquidations_daily"}
+LIQ_DEFAULT_TABLE = "ca_liquidations"
+
+
+def _liq_table(interval: str) -> str:
+    return LIQ_TABLES.get(interval, LIQ_DEFAULT_TABLE)
+
+
+def _ensure_liq_table(con: sqlite3.Connection, table: str) -> None:
+    """Coinalyze liquidations, kept apart from cd_liquidations because the two
+    are fetched and maintained independently — not because they disagree.
+    Measured 2026-09-18 on the 1,368 hours where both hold real data
+    (2026-02-25 17:00 → 2026-04-23 16:00): long correlation 0.9999 and totals
+    within 0.1 %, short 0.9911 and within 2.9 %, with 98.2 % of hours matching
+    to 1e-6 on both sides. For BTCUSDT_PERP.A the Coinalyze series continues
+    the CoinDesk one; an earlier version of this docstring claimed they were
+    not comparable, and that was wrong."""
+    con.execute(f"""
+        CREATE TABLE IF NOT EXISTS {table} (
             asset      TEXT NOT NULL,
             timestamp  INTEGER NOT NULL,
             long_qty   REAL,
@@ -268,16 +288,18 @@ def _ensure_liq_table(con: sqlite3.Connection) -> None:
             PRIMARY KEY (asset, timestamp)
         )
     """)
-    con.execute("""
-        CREATE INDEX IF NOT EXISTS ix_caliq_ts ON ca_liquidations(timestamp)
+    con.execute(f"""
+        CREATE INDEX IF NOT EXISTS ix_{table}_ts ON {table}(timestamp)
     """)
     con.commit()
 
 
 def fetch_liquidations(assets: tuple[str, ...] = ("BTC",),
                         interval: str = "1hour") -> dict[str, int]:
-    """Backfill ca_liquidations from Coinalyze. Hourly granularity by default.
-    Idempotent via INSERT OR REPLACE on (asset, timestamp).
+    """Backfill Coinalyze liquidations. Hourly granularity by default, into
+    ca_liquidations; ``daily`` goes to ca_liquidations_daily instead, because
+    the two cadences share timestamps at UTC midnight. Idempotent via
+    INSERT OR REPLACE on (asset, timestamp).
 
     Coinalyze returns:
       t = timestamp (seconds)
@@ -285,13 +307,19 @@ def fetch_liquidations(assets: tuple[str, ...] = ("BTC",),
       s = short-side liquidations (base asset units)
 
     Symbol `BTCUSDT_PERP.A` is Coinalyze's Binance USDT-M perp feed.
+
+    Sub-daily intervals only ask for the rolling window the API actually
+    serves. Asking beyond it returns empty pages, which the gap handler would
+    otherwise record in known_unfillable.json as a verified source-side hole —
+    a false claim, since the daily series covers those years.
     """
     cadence_s = {'1min': 60, '5min': 300, '15min': 900, '30min': 1800,
                  '1hour': 3600, '4hour': 14400, 'daily': 86400}[interval]
     now_s = int(datetime.now(timezone.utc).timestamp())
+    table = _liq_table(interval)
     con = sqlite3.connect(str(DB_PATH))
     try:
-        _ensure_liq_table(con)
+        _ensure_liq_table(con, table)
         out: dict[str, int] = {}
         for asset in assets:
             symbol = SYMBOLS.get(asset)
@@ -301,18 +329,38 @@ def fetch_liquidations(assets: tuple[str, ...] = ("BTC",),
                 continue
             # Coverage gap detection
             rows = con.execute(
-                "SELECT MIN(timestamp), MAX(timestamp) FROM ca_liquidations "
+                f"SELECT MIN(timestamp), MAX(timestamp) FROM {table} "
                 "WHERE asset=?", (asset,)).fetchone()
             min_ts, max_ts = rows
-            earliest = EARLIEST_LSR_TS  # 2021-01-01
+            earliest = (EARLIEST_LIQ_TS if interval == "daily"
+                        else now_s - LIQ_ROLLING_WINDOW_DAYS * 86400)
+            rolling = interval != "daily"
             gaps = []
             if max_ts is None:
                 gaps.append((earliest, now_s))
             else:
-                if int(min_ts) - earliest > cadence_s:
+                # A rolling-window source has no fillable leading gap: the
+                # window edge advances with the clock, so every run would find
+                # a fresh sliver before the earliest stored row, fail to fetch
+                # it, and record it as unfillable — a new entry every hour,
+                # forever. Only the trailing gap is real there.
+                if not rolling and int(min_ts) - earliest > cadence_s:
                     gaps.append((earliest, int(min_ts) - cadence_s))
                 if now_s - int(max_ts) > cadence_s:
                     gaps.append((int(max_ts) + cadence_s, now_s))
+            # Anything before `earliest` has aged out of the API's window and
+            # will never be served at this cadence. Record it as unfillable
+            # once, then stop asking for it.
+            expired = [(s, min(e, earliest - cadence_s))
+                       for s, e in gaps if s < earliest]
+            for exp_start, exp_end in expired:
+                if exp_end >= exp_start:
+                    _record_unfillable(
+                        table, asset, exp_start, exp_end,
+                        f"older than Coinalyze's {LIQ_ROLLING_WINDOW_DAYS}-day "
+                        f"rolling window for interval {interval}",
+                    )
+            gaps = [(max(s, earliest), e) for s, e in gaps if e >= earliest]
             if not gaps:
                 print(f"  {asset}: up to date")
                 out[asset] = 0
@@ -338,7 +386,7 @@ def fetch_liquidations(assets: tuple[str, ...] = ("BTC",),
                                  float(r.get("s") or 0))
                                 for r in hist]
                         con.executemany(
-                            "INSERT OR REPLACE INTO ca_liquidations "
+                            f"INSERT OR REPLACE INTO {table} "
                             "(asset, timestamp, long_qty, short_qty) "
                             "VALUES (?, ?, ?, ?)", ins)
                         con.commit()
@@ -347,7 +395,7 @@ def fetch_liquidations(assets: tuple[str, ...] = ("BTC",),
                     cursor = chunk_end + cadence_s
                 if rows_for_gap == 0:
                     _record_unfillable(
-                        "ca_liquidations", asset, gap_start, gap_end,
+                        table, asset, gap_start, gap_end,
                         "Coinalyze returned empty response for liquidation gap",
                     )
             print(f"    -> {total:,} rows inserted")

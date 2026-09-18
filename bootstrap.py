@@ -179,6 +179,31 @@ SCHEMAS["bybit_funding"] = """
     )
 """
 
+# Coinalyze liquidations (2026-09-18). Two cadences, two tables: the hourly
+# and daily bars share a timestamp at every UTC midnight and neither table
+# carries an interval column, so one table holding both would overwrite an
+# hour with a whole day. fetch_coinalyze.py owns the identical DDL (it creates
+# the tables on first fetch, since feed.py never runs bootstrap);
+# tests/test_feed_coinalyze.py asserts the two stay equivalent.
+SCHEMAS["ca_liquidations"] = """
+    CREATE TABLE IF NOT EXISTS ca_liquidations (
+        asset      TEXT NOT NULL,
+        timestamp  INTEGER NOT NULL,
+        long_qty   REAL,
+        short_qty  REAL,
+        PRIMARY KEY (asset, timestamp)
+    )
+"""
+SCHEMAS["ca_liquidations_daily"] = """
+    CREATE TABLE IF NOT EXISTS ca_liquidations_daily (
+        asset      TEXT NOT NULL,
+        timestamp  INTEGER NOT NULL,
+        long_qty   REAL,
+        short_qty  REAL,
+        PRIMARY KEY (asset, timestamp)
+    )
+"""
+
 # Binance USDⓈ-M quarterly futures, hourly continuous-contract klines plus the
 # listed-contract calendar (Track D5, 2026-09-08).
 # data/sources/binance_quarterly.py owns the identical DDL (it creates the

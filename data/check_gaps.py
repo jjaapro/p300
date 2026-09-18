@@ -57,6 +57,11 @@ SPECS: tuple[Spec, ...] = (
     Spec("cd_funding_rate_eth", "timestamp",  None,    28800),
     Spec("cd_dvol",             "timestamp",  "asset", 86400),
     Spec("ca_long_short_ratio", "timestamp",  "asset", 86400),
+    # Coinalyze liquidations, live-fed since 2026-09-18. Two cadences, two
+    # tables: their timestamps collide at UTC midnight and neither carries an
+    # interval column, so they cannot share one.
+    Spec("ca_liquidations",       "timestamp", "asset", 3600),
+    Spec("ca_liquidations_daily", "timestamp", "asset", 86400),
     Spec("paxg_spot_1h",        "timestamp",  None,    3600),
     Spec("deribit_dvol_daily",  "timestamp",  "asset", 86400),
     Spec("coinbase_spot_1h",    "timestamp",  "asset", 3600),

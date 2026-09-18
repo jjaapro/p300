@@ -1027,6 +1027,21 @@ def refresh_all() -> dict[str, int]:
     except Exception as e:
         log.warning(f"coinbase refresh failed: {e}")
         results["coinbase_spot_1h"] = -1
+    # Coinalyze liquidations (2026-09-18) — the live writer ca_liquidations
+    # never had. The fleet ran 2026-05-24 → 2026-09-18 with no liquidation
+    # series at all and nothing alarmed: cd_liquidations is CoinDesk-fed and
+    # that endpoint is behind a paid key now (401 unauthenticated), while
+    # ca_liquidations sat in FROZEN_TABLES where staleness is not a failure.
+    # Self-throttled inside: hourly for ca_liquidations, whose source window
+    # is a rolling ~89 days, and daily for ca_liquidations_daily, which is not
+    # time-limited.
+    try:
+        cl = __import__("data.sources.coinalyze", fromlist=["refresh"]).refresh()
+        for k, v in cl.items():
+            results[f"coinalyze_{k}"] = v
+    except Exception as e:
+        log.warning(f"coinalyze refresh failed: {e}")
+        results["coinalyze"] = -1
     # OKX + Bybit funding settlements — Track D6 (2026-09-08), the
     # funding-dispersion study's cross-venue legs against cd_funding_rate.
     # Self-throttled to one pull per instrument per UTC hour inside

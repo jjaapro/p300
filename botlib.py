@@ -76,6 +76,17 @@ FRESHNESS_CONTRACTS: dict[str, tuple[str, float, int]] = {
     # UTC day from exchangeInfo, so 2 days leaves room for one missed pull.
     "binance_quarterly_1h":        ("timestamp",    1.0, 2 * 3600 + 900),
     "binance_quarterly_contracts": ("last_seen_ts", 1.0, 2 * 86400),
+    # Coinalyze liquidations (2026-09-18), moved out of FROZEN_TABLES when
+    # data/sources/coinalyze.py gave them a live writer. The hourly table is
+    # the one that must not be allowed to go stale: its source window is a
+    # rolling ~89 days, so an hour not collected inside that window is gone
+    # for good — which is exactly how 2026-05-24 → 2026-06-21 was lost. The
+    # feed pulls hourly, so 3h leaves room for one missed poll. The daily
+    # table has no such deadline (history reaches 2021) but is written once
+    # per UTC day; its newest row is the still-forming day, rewritten each
+    # pull, so 2 days plus an hour covers a missed run.
+    "ca_liquidations":       ("timestamp", 1.0, 3 * 3600),
+    "ca_liquidations_daily": ("timestamp", 1.0, 2 * 86400 + 3600),
 }
 
 # ─── Table classification ─────────────────────────────────────────────────────
@@ -93,7 +104,6 @@ FROZEN_TABLES: dict[str, str] = {
     "bybit_perp_1h":          "2026-05-26 — cross-exchange study backfill",
     "bybit_perp_eth_1h":      "2026-05-26 — cross-exchange study backfill",
     "bybit_perp_op_1h":       "2026-05-26 — cross-exchange study backfill",
-    "ca_liquidations":        "2026-05-24 — Coinalyze one-shot (30d-retention source)",
     "cd_futures_op_15m":      "2026-05-26 — multi-asset validation backfill",
     "cd_spot_5s":             "2026-06-07 — dwell-block study (Binance Vision bulk)",
     "cm_daily_metrics":       "2026-05-24 — CoinMetrics community one-shot",
