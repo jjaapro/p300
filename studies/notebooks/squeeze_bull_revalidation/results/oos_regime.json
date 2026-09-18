@@ -1,16 +1,16 @@
 {
   "june_construction": {
-    "hours": 3528,
-    "share_bull_gt_10pct": 0.2789,
-    "share_bear_lt_m10pct": 0.2041,
-    "share_flat": 0.517,
-    "bull_hours": 984,
-    "bull_days": 41.0,
+    "hours": 3768,
+    "share_bull_gt_10pct": 0.3248,
+    "share_bear_lt_m10pct": 0.1911,
+    "share_flat": 0.4841,
+    "bull_hours": 1224,
+    "bull_days": 51.0,
     "ret_30d_min": -0.2503,
     "ret_30d_max": 0.2677,
     "ret_30d_max_at": "2026-09-03 00:00:00+00:00",
     "ret_30d_min_at": "2026-06-05 00:00:00+00:00",
-    "ret_30d_median": 0.0182,
+    "ret_30d_median": 0.0243,
     "bull_spans": [
       [
         "2026-04-20",
@@ -26,22 +26,22 @@
       ],
       [
         "2026-08-21",
-        "2026-09-07"
+        "2026-09-17"
       ]
     ]
   },
   "backward_only": {
-    "hours": 3528,
-    "share_bull_gt_10pct": 0.2721,
-    "share_bear_lt_m10pct": 0.2041,
-    "share_flat": 0.5238,
-    "bull_hours": 960,
-    "bull_days": 40.0,
+    "hours": 3768,
+    "share_bull_gt_10pct": 0.3185,
+    "share_bear_lt_m10pct": 0.1911,
+    "share_flat": 0.4904,
+    "bull_hours": 1200,
+    "bull_days": 50.0,
     "ret_30d_min": -0.2503,
     "ret_30d_max": 0.2677,
     "ret_30d_max_at": "2026-09-04 00:00:00+00:00",
     "ret_30d_min_at": "2026-06-06 00:00:00+00:00",
-    "ret_30d_median": 0.0182,
+    "ret_30d_median": 0.0243,
     "bull_spans": [
       [
         "2026-04-21",
@@ -57,7 +57,7 @@
       ],
       [
         "2026-08-22",
-        "2026-09-07"
+        "2026-09-17"
       ]
     ]
   },

@@ -1,14 +1,14 @@
 {
   "study": "S-SqueezeBull OOS re-validation",
   "tag": "AUDIT/re-validation, N_TRIALS=1 (frozen rules)",
-  "generated_at_utc": "2026-09-08 17:12:29.730809+00:00",
+  "generated_at_utc": "2026-09-18 21:55:27.955936+00:00",
   "oos_window": [
     "2026-04-14 00:00:00+00:00",
-    "2026-09-07 23:59:59+00:00"
+    "2026-09-17 23:59:59+00:00"
   ],
-  "last_full_day": "2026-09-07",
+  "last_full_day": "2026-09-17",
   "verdict": "BUILD",
-  "reason": "(a) n=10 mean R +0.202 >= +0.10 and (b) combined MAR 1.60 >= 1.5",
+  "reason": "(a) n=10 mean R +0.190 >= +0.10 and (b) combined MAR 1.59 >= 1.5",
   "clause_map": {
     "parity_all_pass": {
       "required": true,
@@ -26,13 +26,13 @@
     },
     "a_oos_bull_gated_mean_R": {
       "required": ">= +0.10 (BUILD) / <= 0 (KILL)",
-      "measured": 0.2021
+      "measured": 0.1904
     },
     "b_full_sample_combined_MAR": {
       "required": ">= 1.5",
-      "measured": 1.6,
+      "measured": 1.59,
       "june_formula_MAR": 1.67,
-      "handling_B_MAR": 1.74,
+      "handling_B_MAR": 1.73,
       "june_reference_MAR": 1.77
     },
     "clause_a": true,
@@ -44,20 +44,20 @@
   },
   "oos_bull_gated_bootstrap_informational": {
     "n": 10,
-    "p05": -0.306,
-    "p50": 0.202,
-    "p95": 0.702,
-    "P_mean_gt_0": 0.727,
-    "P_mean_ge_0.10": 0.606,
-    "mean_without_best_fire": 0.068,
-    "mean_without_worst_fire": 0.346,
+    "p05": -0.317,
+    "p50": 0.19,
+    "p95": 0.69,
+    "P_mean_gt_0": 0.725,
+    "P_mean_ge_0.10": 0.591,
+    "mean_without_best_fire": 0.055,
+    "mean_without_worst_fire": 0.333,
     "fires_sorted_R": [
       -1.09,
       -1.09,
       -1.09,
       0.16,
+      0.195,
       0.234,
-      0.311,
       0.355,
       1.41,
       1.41,
@@ -73,43 +73,43 @@
   },
   "oos_oi_flush_bull_gated": {
     "n": 10,
-    "mean_R": 0.2021,
-    "median_R": 0.273,
-    "sum_R": 2.021,
+    "mean_R": 0.1904,
+    "median_R": 0.2145,
+    "sum_R": 1.904,
     "WR": 0.7,
     "maxDD": -1.59,
     "stops": 3,
     "targets": 3,
     "tifs": 4,
     "first": "2026-04-21 19:00:00+00:00",
-    "last": "2026-09-04 14:00:00+00:00"
+    "last": "2026-09-04 13:00:00+00:00"
   },
   "oos_oi_flush_pooled": {
-    "n": 20,
-    "mean_R": -0.1719,
-    "median_R": -0.8695,
-    "sum_R": -3.438,
-    "WR": 0.45,
-    "maxDD": -7.369,
+    "n": 21,
+    "mean_R": -0.1184,
+    "median_R": -0.649,
+    "sum_R": -2.486,
+    "WR": 0.476,
+    "maxDD": -6.301,
     "stops": 10,
     "targets": 5,
-    "tifs": 5,
+    "tifs": 6,
     "first": "2026-04-16 16:00:00+00:00",
-    "last": "2026-09-04 14:00:00+00:00"
+    "last": "2026-09-04 13:00:00+00:00"
   },
   "oos_oi_flush_by_regime": {
     "bear_30d": {
-      "n": 5,
-      "mean_R": -0.59,
+      "n": 6,
+      "mean_R": -0.3135,
       "median_R": -1.09,
-      "sum_R": -2.95,
-      "WR": 0.2,
-      "maxDD": -3.27,
+      "sum_R": -1.881,
+      "WR": 0.333,
+      "maxDD": -2.201,
       "stops": 4,
       "targets": 1,
-      "tifs": 0,
+      "tifs": 1,
       "first": "2026-06-02 22:00:00+00:00",
-      "last": "2026-07-01 07:00:00+00:00"
+      "last": "2026-07-01 06:00:00+00:00"
     },
     "flat_30d": {
       "n": 5,
@@ -126,30 +126,30 @@
     },
     "bull_30d": {
       "n": 10,
-      "mean_R": 0.2021,
-      "median_R": 0.273,
-      "sum_R": 2.021,
+      "mean_R": 0.1904,
+      "median_R": 0.2145,
+      "sum_R": 1.904,
       "WR": 0.7,
       "maxDD": -1.59,
       "stops": 3,
       "targets": 3,
       "tifs": 4,
       "first": "2026-04-21 19:00:00+00:00",
-      "last": "2026-09-04 14:00:00+00:00"
+      "last": "2026-09-04 13:00:00+00:00"
     }
   },
   "oos_oi_flush_bull_gated_backonly_regime": {
     "n": 10,
-    "mean_R": 0.2462,
-    "median_R": 0.273,
-    "sum_R": 2.462,
+    "mean_R": 0.2345,
+    "median_R": 0.2145,
+    "sum_R": 2.345,
     "WR": 0.7,
     "maxDD": -1.149,
     "stops": 2,
     "targets": 3,
     "tifs": 5,
     "first": "2026-04-21 19:00:00+00:00",
-    "last": "2026-09-04 14:00:00+00:00"
+    "last": "2026-09-04 13:00:00+00:00"
   },
   "oos_funding_cvd": {
     "A": {
@@ -190,17 +190,17 @@
     }
   },
   "oos_regime": {
-    "hours": 3528,
-    "share_bull_gt_10pct": 0.2789,
-    "share_bear_lt_m10pct": 0.2041,
-    "share_flat": 0.517,
-    "bull_hours": 984,
-    "bull_days": 41.0,
+    "hours": 3768,
+    "share_bull_gt_10pct": 0.3248,
+    "share_bear_lt_m10pct": 0.1911,
+    "share_flat": 0.4841,
+    "bull_hours": 1224,
+    "bull_days": 51.0,
     "ret_30d_min": -0.2503,
     "ret_30d_max": 0.2677,
     "ret_30d_max_at": "2026-09-03 00:00:00+00:00",
     "ret_30d_min_at": "2026-06-05 00:00:00+00:00",
-    "ret_30d_median": 0.0182,
+    "ret_30d_median": 0.0243,
     "bull_spans": [
       [
         "2026-04-20",
@@ -216,7 +216,7 @@
       ],
       [
         "2026-08-21",
-        "2026-09-07"
+        "2026-09-17"
       ]
     ],
     "bull_gate_never_open": false
@@ -227,15 +227,15 @@
         "OI_bull": {
           "label": "OI_bull",
           "n": 114,
-          "meanR": 0.273,
-          "sumR": 31.14,
+          "meanR": 0.272,
+          "sumR": 31.02,
           "WR": 0.605,
           "maxDD": -3.72,
-          "annual_R": 6.89,
-          "MAR": 1.85,
-          "span_y": 4.521,
+          "annual_R": 6.82,
+          "MAR": 1.83,
+          "span_y": 4.548,
           "first_fire": "2022-03-01 16:00:00+00:00",
-          "window_end": "2026-09-07 23:59:59+00:00"
+          "window_end": "2026-09-17 23:59:59+00:00"
         },
         "fCVD": {
           "label": "fCVD_A",
@@ -244,24 +244,24 @@
           "sumR": 7.4,
           "WR": 0.562,
           "maxDD": -3.61,
-          "annual_R": 1.65,
-          "MAR": 0.46,
-          "span_y": 4.494,
+          "annual_R": 1.64,
+          "MAR": 0.45,
+          "span_y": 4.522,
           "first_fire": "2022-03-11 12:00:00+00:00",
-          "window_end": "2026-09-07 23:59:59+00:00"
+          "window_end": "2026-09-17 23:59:59+00:00"
         },
         "combined": {
           "label": "combined",
           "n": 130,
           "meanR": 0.296,
-          "sumR": 38.54,
+          "sumR": 38.42,
           "WR": 0.6,
           "maxDD": -5.31,
-          "annual_R": 8.52,
-          "MAR": 1.6,
-          "span_y": 4.521,
+          "annual_R": 8.45,
+          "MAR": 1.59,
+          "span_y": 4.548,
           "first_fire": "2022-03-01 16:00:00+00:00",
-          "window_end": "2026-09-07 23:59:59+00:00"
+          "window_end": "2026-09-17 23:59:59+00:00"
         }
       },
       "june_formula": {
@@ -303,7 +303,7 @@
           "span_y": 4.268
         }
       },
-      "monthly_pearson": 0.016948143249209235,
+      "monthly_pearson": 0.017183777556039025,
       "active_months": 36,
       "maxDD_additive_worst": -7.33
     },
@@ -312,15 +312,15 @@
         "OI_bull": {
           "label": "OI_bull",
           "n": 114,
-          "meanR": 0.273,
-          "sumR": 31.14,
+          "meanR": 0.272,
+          "sumR": 31.02,
           "WR": 0.605,
           "maxDD": -3.72,
-          "annual_R": 6.89,
-          "MAR": 1.85,
-          "span_y": 4.521,
+          "annual_R": 6.82,
+          "MAR": 1.83,
+          "span_y": 4.548,
           "first_fire": "2022-03-01 16:00:00+00:00",
-          "window_end": "2026-09-07 23:59:59+00:00"
+          "window_end": "2026-09-17 23:59:59+00:00"
         },
         "fCVD": {
           "label": "fCVD_B",
@@ -329,24 +329,24 @@
           "sumR": 10.75,
           "WR": 0.667,
           "maxDD": -1.49,
-          "annual_R": 2.44,
-          "MAR": 1.63,
-          "span_y": 4.406,
+          "annual_R": 2.42,
+          "MAR": 1.62,
+          "span_y": 4.434,
           "first_fire": "2022-04-12 15:15:00+00:00",
-          "window_end": "2026-09-07 23:59:59+00:00"
+          "window_end": "2026-09-17 23:59:59+00:00"
         },
         "combined": {
           "label": "combined",
           "n": 129,
-          "meanR": 0.325,
-          "sumR": 41.89,
+          "meanR": 0.324,
+          "sumR": 41.77,
           "WR": 0.612,
           "maxDD": -5.31,
-          "annual_R": 9.27,
-          "MAR": 1.74,
-          "span_y": 4.521,
+          "annual_R": 9.18,
+          "MAR": 1.73,
+          "span_y": 4.548,
           "first_fire": "2022-03-01 16:00:00+00:00",
-          "window_end": "2026-09-07 23:59:59+00:00"
+          "window_end": "2026-09-17 23:59:59+00:00"
         }
       },
       "june_formula": {
@@ -388,7 +388,7 @@
           "span_y": 4.18
         }
       },
-      "monthly_pearson": 0.01943919898029189,
+      "monthly_pearson": 0.01979600008085881,
       "active_months": 36,
       "maxDD_additive_worst": -5.21
     }
@@ -404,9 +404,9 @@
     "june_bull_days": 411.0,
     "june_bull_fires_per_bull_day": 0.2725,
     "june_share_bull_hours": 0.2589,
-    "oos_span_days": 147.0,
-    "oos_bull_days": 41.0,
+    "oos_span_days": 157.0,
+    "oos_bull_days": 51.0,
     "oos_bull_fires_resolved": 10,
-    "oos_pooled_fires_per_year": 49.69
+    "oos_pooled_fires_per_year": 48.86
   }
 }

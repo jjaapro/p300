@@ -510,3 +510,58 @@ the mean falls to +0.068, drop two and it is negative; 6 of the 10 outcomes are 
 barrier payoffs, so clause (a) is in substance "did 3 of 6 barrier-resolved trades hit +3 %
 before -2 %" — the honest summary is: **the rule says BUILD, the evidence says wait for
 n = 20.**
+
+---
+
+## Addendum 2026-09-19 — re-cut on the corrected open-interest table (BACKLOG item 30)
+
+**Why.** From 2026-06-10 09:00 UTC the live `cd_open_interest` held the open interest at the *start* of each
+hour, one bar stale against the convention these June rules were written on (the close of the hour, CoinDesk's
+`CLOSE_SETTLEMENT`). The table was re-stamped on 2026-09-18 21:49 UTC (`data/migrations/2026_09_19_oi_close_of_hour.py`,
+verified against Binance Vision's 5-minute archive: 85.9 % of rows closer to the close-of-hour snapshot after,
+88.6 % closer to the start-of-hour one before). Every result from this study's 2026-09-08 run that used a fire at
+or after that seam was built on the stale alignment. This addendum re-runs the frozen pipeline unchanged
+(`run_parity → run_oos → run_combined → run_fragility`) on the corrected table and reports what moved. The
+2026-09-08 results are preserved in git at `f0f5abe`; the fire-level diff is `results/recut_2026_09_19.json`
+(`recut_oi_table_2026_09_19.py`). The OOS window, defined as "the last full UTC day", ran to 2026-09-17 instead of
+09-07; that extension added no fire, so every difference below is the table's.
+
+**Parity.** P1–P4 all pass, unchanged — the anchors sit on rows the migration did not touch.
+
+**OOS OI-flush fires, fire by fire** (20 → 21; 16 unchanged, none with a changed R, nothing before the seam moved):
+
+| 2026-09-08 run (stale alignment) | corrected table | R |
+|---|---|---|
+| 2026-06-17 21:00 bear | 2026-06-17 20:00 bear | −1.09 → −1.09 |
+| 2026-06-23 07:00 bear | 2026-06-23 06:00 bear | −1.09 → −1.09 |
+| 2026-07-01 07:00 bear | 2026-07-01 06:00 bear | +1.41 → +1.41 |
+| **2026-09-04 14:00 bull** | **2026-09-04 13:00 bull** | **+0.311 → +0.195** |
+| — | 2026-06-11 16:00 bear (new) | +1.069 |
+| (window ended 09-07) | **no fire on 2026-09-11** | — |
+
+Three bear fires are the same event relabelled one hour earlier with the same outcome. The one bull fire in the
+post-seam set is also the same event an hour earlier, entered a bar sooner, worth 0.12 R less. One bear fire exists
+only on the corrected alignment. And the bar that fired SJ-4250 in the paper ledger (2026-09-11 17:00) does not fire
+here — consistent with the top-anatomy note's −1.79 % at bar closes against the −2 % trigger. That is the evidence
+behind decision 8 in the study's own harness.
+
+**Decision (frozen rule, unchanged).** BUILD → **BUILD**, by the same margin:
+
+| clause | 2026-09-08 | corrected table | floor |
+|---|---|---|---|
+| (a) OOS bull-gated n | 10 | 10 (the same ten fires; only 09-04's R moved) | ≥ 10 |
+| (a) OOS bull-gated mean R | +0.202 | **+0.190** | ≥ +0.10 |
+| (b) full-sample combined MAR (handling A, strict) | 1.60 | **1.59** | ≥ 1.5 |
+| bootstrap P(mean ≥ +0.10), n = 10 | — | 59 % | informational |
+| without the best fire | +0.068 | +0.055 | informational |
+
+The correction lowers the decision statistics by 0.012 R and 0.01 MAR and changes no verdict. The margins remain
+one fire wide, exactly as the original findings said. Full-sample bull-gated n rises 112 → 114 (the new 06-11 fire
+and 09-04), DSR 0.9955 unchanged in substance.
+
+**Caveats carried, not lifted.** The 2026-09-14 review's P0 status stands: the combined MAR is trade R concatenated
+by signal time, not a marked, capital-aware portfolio, and funding provenance across the 2026-04-13 cutover is
+historical. Nothing here is a new current-policy protocol; it is the old one on the right data.
+
+**Artifacts.** `results/` regenerated 2026-09-19; `squeeze_bull_revalidation.ipynb` re-executed on the corrected
+table (the 2026-09-08 execution is in git at `f0f5abe`); `results/recut_2026_09_19.json`.

@@ -4,11 +4,11 @@
       "note": "CoinDesk rows through 2026-06-10 08:00 UTC; native Binance rows since (migration 2026-06-19)",
       "last_ohlc_row_utc": "2026-06-10 08:00:00+00:00",
       "first_snapshot_row_utc": "2026-06-10 09:00:00+00:00",
-      "snapshot_rows_after_seam": 2169,
+      "snapshot_rows_after_seam": 2412,
       "all_rows_after_seam_are_snapshots": true,
-      "seam_1h_change_pct": 0.0601,
-      "median_abs_1h_change_pct_2026": 0.1739,
-      "p99_abs_1h_change_pct_2026": 2.1351,
+      "seam_1h_change_pct": -0.0125,
+      "median_abs_1h_change_pct_2026": 0.1728,
+      "p99_abs_1h_change_pct_2026": 2.1201,
       "snapshot_rows_before_seam_total": 33,
       "snapshot_rows_before_seam_stale_coindesk": 15,
       "snapshot_rows_in_backfill_reach": [
@@ -33,20 +33,20 @@
       ]
     },
     "oi_continuity_oos": {
-      "rows": 3546,
+      "rows": 3789,
       "first": "2026-04-14 00:00:00+00:00",
-      "last": "2026-09-08 17:00:00+00:00",
-      "expected_on_grid": 3546,
+      "last": "2026-09-18 20:00:00+00:00",
+      "expected_on_grid": 3789,
       "missing": 0,
       "off_grid_rows": 0,
       "gap_runs": [],
       "duplicates": 0
     },
     "oi_continuity_full": {
-      "rows": 40380,
+      "rows": 40623,
       "first": "2022-01-30 06:00:00+00:00",
-      "last": "2026-09-08 17:00:00+00:00",
-      "expected_on_grid": 40380,
+      "last": "2026-09-18 20:00:00+00:00",
+      "expected_on_grid": 40623,
       "missing": 0,
       "off_grid_rows": 0,
       "gap_runs": [],
@@ -54,30 +54,30 @@
     },
     "oi_nan_close": 0,
     "px_hourly_continuity_oos": {
-      "rows": 3546,
+      "rows": 3790,
       "first": "2026-04-14 00:00:00+00:00",
-      "last": "2026-09-08 17:00:00+00:00",
-      "expected_on_grid": 3546,
+      "last": "2026-09-18 21:00:00+00:00",
+      "expected_on_grid": 3790,
       "missing": 0,
       "off_grid_rows": 0,
       "gap_runs": [],
       "duplicates": 0
     },
     "px_hourly_continuity_since_2022": {
-      "rows": 40386,
+      "rows": 40630,
       "first": "2022-01-30 00:00:00+00:00",
-      "last": "2026-09-08 17:00:00+00:00",
-      "expected_on_grid": 40386,
+      "last": "2026-09-18 21:00:00+00:00",
+      "expected_on_grid": 40630,
       "missing": 0,
       "off_grid_rows": 0,
       "gap_runs": [],
       "duplicates": 0
     },
     "px_15m_continuity_oos": {
-      "rows": 14181,
+      "rows": 15160,
       "first": "2026-04-14 00:00:00+00:00",
-      "last": "2026-09-08 17:00:00+00:00",
-      "expected_on_grid": 14181,
+      "last": "2026-09-18 21:45:00+00:00",
+      "expected_on_grid": 15160,
       "missing": 0,
       "off_grid_rows": 0,
       "gap_runs": [],
@@ -86,13 +86,13 @@
     "funding_cadence": {
       "cutover_utc": "2026-04-13 00:00:00+00:00",
       "rows_pre": 57398,
-      "rows_post": 447,
+      "rows_post": 477,
       "rows_per_day_last30d_pre": 23.93,
       "rows_per_day_first30d_post": 3.0,
       "post_hour_of_day_counts": {
-        "0": 149,
-        "8": 149,
-        "16": 149
+        "0": 159,
+        "8": 159,
+        "16": 159
       },
       "post_rows_off_8h_grid": 0,
       "pre_rows_off_the_hour": 0,
@@ -101,7 +101,7 @@
       "post_first30d_mean_abs": 4.1101888888888885e-05,
       "pre_last30d_std": 4.0556675328431925e-05,
       "post_first30d_std": 4.216265746199092e-05,
-      "last_row_utc": "2026-09-08 16:00:00+00:00"
+      "last_row_utc": "2026-09-18 16:00:00+00:00"
     }
   },
   "june_table_reconstruction": {
@@ -132,8 +132,8 @@
     "row_count_matches_phase1": true,
     "rows_june_cut": 38084,
     "rows_today_cut": 38102,
-    "rows_today_full": 40380,
-    "today_last_row": "2026-09-08 17:00:00+00:00"
+    "rows_today_full": 40623,
+    "today_last_row": "2026-09-18 20:00:00+00:00"
   },
   "P2c_backup_equality": {
     "available": true,

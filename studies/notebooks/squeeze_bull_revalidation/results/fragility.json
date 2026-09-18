@@ -1,5 +1,5 @@
 {
-  "generated_at_utc": "2026-09-09 08:17:15.563826+00:00",
+  "generated_at_utc": "2026-09-18 21:55:28.021240+00:00",
   "headline_verdict_unchanged": "BUILD",
   "thresholds": {
     "n_min": 10,
@@ -8,8 +8,8 @@
   },
   "margins": {
     "n_margin": 0,
-    "mean_R_margin": 0.1021,
-    "MAR_margin": 0.1
+    "mean_R_margin": 0.0904,
+    "MAR_margin": 0.09
   },
   "F1_leave_k_out": {
     "fires_sorted_desc": [
@@ -30,12 +30,12 @@
         "R": 0.3551
       },
       {
-        "ts": "2026-09-04 14:00:00+00:00",
-        "R": 0.3115
-      },
-      {
         "ts": "2026-05-11 03:00:00+00:00",
         "R": 0.2345
+      },
+      {
+        "ts": "2026-09-04 13:00:00+00:00",
+        "R": 0.1945
       },
       {
         "ts": "2026-04-23 10:00:00+00:00",
@@ -62,8 +62,8 @@
         }
       ],
       "n": 9,
-      "mean_R": 0.0679,
-      "sum_R": 0.611,
+      "mean_R": 0.0549,
+      "sum_R": 0.494,
       "WR": 0.667,
       "verdict": "INCONCLUSIVE",
       "why": "n = 9 < 10",
@@ -81,8 +81,8 @@
         }
       ],
       "n": 8,
-      "mean_R": -0.0999,
-      "sum_R": -0.799,
+      "mean_R": -0.1145,
+      "sum_R": -0.916,
       "WR": 0.625,
       "verdict": "INCONCLUSIVE",
       "why": "n = 8 < 10",
@@ -90,25 +90,25 @@
     },
     "jackknife_leave_one_out": {
       "n_each": 9,
-      "min_mean_R": 0.0679,
-      "max_mean_R": 0.3456,
-      "median_mean_R": 0.1942,
+      "min_mean_R": 0.0549,
+      "max_mean_R": 0.3327,
+      "median_mean_R": 0.1877,
       "n_subsets_mean_ge_0.10": 7,
       "n_subsets": 10
     },
     "leave_two_out_all_pairs": {
       "n_each": 8,
       "n_pairs": 45,
-      "min_mean_R": -0.0999,
-      "max_mean_R": 0.5251,
-      "median_mean_R": 0.2126,
+      "min_mean_R": -0.1145,
+      "max_mean_R": 0.5105,
+      "median_mean_R": 0.198,
       "share_pairs_mean_ge_0.10": 0.667,
       "share_pairs_mean_le_0": 0.067
     },
     "concentration": {
-      "sum_R": 2.021,
+      "sum_R": 1.904,
       "sum_R_from_target_exits": 4.23,
-      "share_of_sum_R_from_targets": 2.093,
+      "share_of_sum_R_from_targets": 2.222,
       "n_targets": 3,
       "note": "every target exit pays exactly +1.410 R (3 % move / 2 % stop, minus 18 bp)"
     }
@@ -116,11 +116,11 @@
   "F2_regime_gate_lookahead": {
     "construction_june": "daily close resampled 1D (stamped at 00:00, value = last close of that day), pct_change(30), reindexed onto the hourly grid with method=\"ffill\"",
     "consequence": "an hourly bar at HH:00 of day D reads a 30d return whose numerator is the LAST close of day D \u2014 i.e. up to 23 h of the same day that has not happened yet at the fire",
-    "oos_fires": 20,
-    "fires_whose_gate_source_close_is_at_or_after_the_fire": 20,
+    "oos_fires": 21,
+    "fires_whose_gate_source_close_is_at_or_after_the_fire": 21,
     "max_lookahead_hours": 21.0,
     "min_lookahead_hours": 1.0,
-    "mean_lookahead_hours": 10.85,
+    "mean_lookahead_hours": 10.86,
     "bull_gated_fires_with_lookahead": 10,
     "bull_gated_max_lookahead_hours": 20.0,
     "backonly_max_lookahead_hours": -3.0,
@@ -153,8 +153,8 @@
     ],
     "june_bull_set": {
       "n": 10,
-      "mean_R": 0.2021,
-      "sum_R": 2.021,
+      "mean_R": 0.1904,
+      "sum_R": 1.904,
       "WR": 0.7,
       "ts": [
         "2026-04-21 19:00:00+00:00",
@@ -166,13 +166,13 @@
         "2026-05-07 17:00:00+00:00",
         "2026-05-11 03:00:00+00:00",
         "2026-08-21 12:00:00+00:00",
-        "2026-09-04 14:00:00+00:00"
+        "2026-09-04 13:00:00+00:00"
       ]
     },
     "backonly_bull_set": {
       "n": 10,
-      "mean_R": 0.2462,
-      "sum_R": 2.462,
+      "mean_R": 0.2345,
+      "sum_R": 2.345,
       "WR": 0.7,
       "ts": [
         "2026-04-21 19:00:00+00:00",
@@ -184,7 +184,7 @@
         "2026-05-07 17:00:00+00:00",
         "2026-05-11 03:00:00+00:00",
         "2026-05-13 13:00:00+00:00",
-        "2026-09-04 14:00:00+00:00"
+        "2026-09-04 13:00:00+00:00"
       ]
     },
     "set_symmetric_difference": [
@@ -193,21 +193,21 @@
     ],
     "verdict_june_construction": [
       "BUILD",
-      "n = 10, mean R +0.2021, MAR 1.60"
+      "n = 10, mean R +0.1904, MAR 1.60"
     ],
     "verdict_backonly_construction": [
       "BUILD",
-      "n = 10, mean R +0.2462, MAR 1.60"
+      "n = 10, mean R +0.2345, MAR 1.60"
     ]
   },
   "F3_oi_seam": {
     "seam": {
       "last_coindesk_ohlc_row": "2026-06-10 08:00:00+00:00",
       "first_binance_snapshot_row": "2026-06-10 09:00:00+00:00",
-      "seam_1h_oi_change_pct": 0.0601,
-      "median_abs_1h_change_pct_2026": 0.1739,
-      "p99_abs_1h_change_pct_2026": 2.1351,
-      "seam_move_vs_median": 0.35
+      "seam_1h_oi_change_pct": -0.0125,
+      "median_abs_1h_change_pct_2026": 0.1728,
+      "p99_abs_1h_change_pct_2026": 2.1201,
+      "seam_move_vs_median": -0.07
     },
     "bull_gated_pre_seam": {
       "n": 8,
@@ -234,19 +234,19 @@
     },
     "bull_gated_post_seam": {
       "n": 2,
-      "mean_R": -0.3893,
-      "median_R": -0.3893,
-      "sum_R": -0.779,
+      "mean_R": -0.4477,
+      "median_R": -0.4477,
+      "sum_R": -0.895,
       "WR": 0.5,
       "maxDD": 0.0,
       "stops": 1,
       "targets": 0,
       "tifs": 1,
       "first": "2026-08-21 12:00:00+00:00",
-      "last": "2026-09-04 14:00:00+00:00",
+      "last": "2026-09-04 13:00:00+00:00",
       "ts": [
         "2026-08-21 12:00:00+00:00",
-        "2026-09-04 14:00:00+00:00"
+        "2026-09-04 13:00:00+00:00"
       ]
     },
     "pooled_pre_seam": {
@@ -263,17 +263,17 @@
       "last": "2026-06-04 02:00:00+00:00"
     },
     "pooled_post_seam": {
-      "n": 6,
-      "mean_R": -0.4398,
+      "n": 7,
+      "mean_R": -0.241,
       "median_R": -1.09,
-      "sum_R": -2.639,
-      "WR": 0.333,
-      "maxDD": -2.18,
+      "sum_R": -1.687,
+      "WR": 0.429,
+      "maxDD": -2.95,
       "stops": 4,
       "targets": 1,
-      "tifs": 1,
-      "first": "2026-06-17 21:00:00+00:00",
-      "last": "2026-09-04 14:00:00+00:00"
+      "tifs": 2,
+      "first": "2026-06-11 16:00:00+00:00",
+      "last": "2026-09-04 13:00:00+00:00"
     },
     "post_seam_verdict_if_it_were_the_whole_sample": [
       "INCONCLUSIVE",
@@ -285,24 +285,24 @@
   "F4_uncertainty": {
     "iid_bootstrap_mean_R": {
       "n": 10,
-      "point_mean_R": 0.2021,
+      "point_mean_R": 0.1904,
       "n_iter": 20000,
-      "p02.5": -0.4229,
-      "p05": -0.3054,
-      "p50": 0.2021,
-      "p95": 0.7052,
-      "p97.5": 0.8119,
-      "P_mean_gt_0": 0.7327,
-      "P_mean_ge_0.10": 0.6065
+      "p02.5": -0.4346,
+      "p05": -0.3171,
+      "p50": 0.1903,
+      "p95": 0.6904,
+      "p97.5": 0.8045,
+      "P_mean_gt_0": 0.7306,
+      "P_mean_ge_0.10": 0.5912
     },
     "block_bootstrap_mean_R_block3": {
       "block": 3,
       "n_iter": 20000,
-      "p05": -0.119,
-      "p50": 0.2021,
+      "p05": -0.1267,
+      "p50": 0.1904,
       "p95": 0.535,
       "P_mean_gt_0": 0.8306,
-      "P_mean_ge_0.10": 0.6639
+      "P_mean_ge_0.10": 0.6395
     },
     "episode_cluster_bootstrap_mean_R": {
       "n_episodes": 3,
@@ -312,36 +312,36 @@
         1,
         1
       ],
-      "p05": -0.6228,
-      "p50": 0.2021,
-      "p95": 0.3477,
+      "p05": -0.6618,
+      "p50": 0.1904,
+      "p95": 0.3408,
       "P_mean_gt_0": 0.7419,
       "P_mean_ge_0.10": 0.6312
     },
     "dsr_oos_bull_gated": {
       "label": "OOS bull-gated OI flush",
       "n": 10,
-      "trades_per_year": 24.85,
-      "sr_per_trade": 0.1975,
-      "sr_ann": 0.984,
-      "skew": -0.11,
+      "trades_per_year": 23.26,
+      "sr_per_trade": 0.1862,
+      "sr_ann": 0.898,
+      "skew": -0.08,
       "kurtosis_full": 1.345,
       "n_trials": 1,
       "sr_expected_under_H0": 0.0,
-      "dsr": 0.7208,
-      "dsr_z": 0.585,
+      "dsr": 0.7101,
+      "dsr_z": 0.554,
       "dsr_rejects_null_at_0.95": false,
       "sr_per_trade_required_for_dsr_0.95_at_N1": 0.5483,
       "sr_per_trade_required_for_dsr_0.95_at_N5": 0.9458,
-      "bootstrap_sharpe_p05": -0.3298,
-      "bootstrap_sharpe_p50": 0.2016,
-      "bootstrap_sharpe_p95": 0.8467,
-      "P_sharpe_gt_0": 0.7276
+      "bootstrap_sharpe_p05": -0.3458,
+      "bootstrap_sharpe_p50": 0.1896,
+      "bootstrap_sharpe_p95": 0.826,
+      "P_sharpe_gt_0": 0.7248
     },
     "clustering": {
       "n_fires": 10,
       "first": "2026-04-21 19:00:00+00:00",
-      "last": "2026-09-04 14:00:00+00:00",
+      "last": "2026-09-04 13:00:00+00:00",
       "median_gap_hours": 82.0,
       "min_gap_hours": 27.0,
       "consecutive_pairs_closer_than_TIF_48h": 2,
@@ -362,11 +362,11 @@
           "sum_R": -1.09
         },
         {
-          "start": "2026-09-04 14:00:00+00:00",
-          "end": "2026-09-04 14:00:00+00:00",
+          "start": "2026-09-04 13:00:00+00:00",
+          "end": "2026-09-04 13:00:00+00:00",
           "n": 1,
           "span_days": 0.0,
-          "sum_R": 0.311
+          "sum_R": 0.195
         }
       ]
     },
@@ -374,63 +374,63 @@
     "dsr_full_sample_bull_gated_context": {
       "label": "full-sample bull-gated OI flush",
       "n": 114,
-      "trades_per_year": 25.22,
-      "sr_per_trade": 0.253,
-      "sr_ann": 1.27,
-      "skew": -0.185,
-      "kurtosis_full": 1.328,
+      "trades_per_year": 25.06,
+      "sr_per_trade": 0.252,
+      "sr_ann": 1.262,
+      "skew": -0.182,
+      "kurtosis_full": 1.327,
       "n_trials": 1,
       "sr_expected_under_H0": 0.0,
-      "dsr": 0.9956,
-      "dsr_z": 2.622,
+      "dsr": 0.9955,
+      "dsr_z": 2.613,
       "dsr_rejects_null_at_0.95": true,
       "sr_per_trade_required_for_dsr_0.95_at_N1": 0.1547,
       "sr_per_trade_required_for_dsr_0.95_at_N5": 0.2669,
-      "bootstrap_sharpe_p05": 0.099,
-      "bootstrap_sharpe_p50": 0.2536,
-      "bootstrap_sharpe_p95": 0.4186,
-      "P_sharpe_gt_0": 0.9964
+      "bootstrap_sharpe_p05": 0.0981,
+      "bootstrap_sharpe_p50": 0.2527,
+      "bootstrap_sharpe_p95": 0.4175,
+      "P_sharpe_gt_0": 0.9963
     },
     "n_trials_breakeven_full_sample": {
       "n_trials_where_dsr_falls_below_0.95": 4,
-      "dsr_at_that_n": 0.9448,
-      "dsr_at_n_minus_1": 0.9633
+      "dsr_at_that_n": 0.9438,
+      "dsr_at_n_minus_1": 0.9626
     },
     "n_trials_breakeven_oos": {
       "n_trials_where_dsr_falls_below_0.95": 1,
-      "dsr_at_that_n": 0.7208,
-      "dsr_at_n_minus_1": 0.7208
+      "dsr_at_that_n": 0.7101,
+      "dsr_at_n_minus_1": 0.7101
     }
   },
   "F5_clause_b": {
     "combined_full_sample": {
       "n": 130,
       "meanR": 0.296,
-      "sumR": 38.54,
+      "sumR": 38.42,
       "maxDD": -5.31,
-      "annual_R": 8.52,
-      "MAR": 1.6,
-      "span_y": 4.521
+      "annual_R": 8.45,
+      "MAR": 1.59,
+      "span_y": 4.548
     },
     "oi_bull_only_full_sample": {
       "n": 114,
-      "meanR": 0.273,
-      "sumR": 31.14,
+      "meanR": 0.272,
+      "sumR": 31.02,
       "maxDD": -3.72,
-      "annual_R": 6.89,
-      "MAR": 1.85,
-      "span_y": 4.521
+      "annual_R": 6.82,
+      "MAR": 1.83,
+      "span_y": 4.548
     },
     "fcd_only_full_sample": {
       "n": 16,
       "meanR": 0.462,
       "sumR": 7.4,
       "maxDD": -3.61,
-      "annual_R": 1.65,
-      "MAR": 0.46,
-      "span_y": 4.494
+      "annual_R": 1.64,
+      "MAR": 0.45,
+      "span_y": 4.522
     },
-    "fcd_share_of_combined_sum_R": 0.192,
+    "fcd_share_of_combined_sum_R": 0.193,
     "combined_pre_OOS_only": {
       "n": 118,
       "meanR": 0.313,
@@ -458,7 +458,7 @@
       "MAR": 0.61,
       "span_y": 4.092
     },
-    "oos_contribution_to_combined_sum_R": 1.572,
+    "oos_contribution_to_combined_sum_R": 1.455,
     "clause_b_is_mostly_in_sample_note": "clause (b) is a FULL-SAMPLE statistic: only the OOS window is unseen, and it contributes the sum R above out of the total; the rest of MAR was already known in June",
     "fcd_oos": {
       "A": {

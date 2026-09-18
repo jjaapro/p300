@@ -1,0 +1,164 @@
+{
+  "seam": "2026-06-10 09:00:00+00:00",
+  "old_window_end": "2026-09-07 23:59:59+00:00",
+  "oos_oi_flush_ledger.csv": {
+    "old_fires": 20,
+    "new_fires": 21,
+    "unchanged": 16,
+    "changed_r": [],
+    "removed": [
+      {
+        "ts": "2026-06-17 21:00:00+00:00",
+        "r_outcome": -1.09,
+        "regime": "bear_30d",
+        "resolved": true
+      },
+      {
+        "ts": "2026-06-23 07:00:00+00:00",
+        "r_outcome": -1.0899999999999996,
+        "regime": "bear_30d",
+        "resolved": true
+      },
+      {
+        "ts": "2026-07-01 07:00:00+00:00",
+        "r_outcome": 1.410000000000003,
+        "regime": "bear_30d",
+        "resolved": true
+      },
+      {
+        "ts": "2026-09-04 14:00:00+00:00",
+        "r_outcome": 0.3114630930344627,
+        "regime": "bull_30d",
+        "resolved": true
+      }
+    ],
+    "added": [
+      {
+        "ts": "2026-06-11 16:00:00+00:00",
+        "r_outcome": 1.06881598680024,
+        "regime": "bear_30d",
+        "resolved": true,
+        "beyond_old_window": false
+      },
+      {
+        "ts": "2026-06-17 20:00:00+00:00",
+        "r_outcome": -1.09,
+        "regime": "bear_30d",
+        "resolved": true,
+        "beyond_old_window": false
+      },
+      {
+        "ts": "2026-06-23 06:00:00+00:00",
+        "r_outcome": -1.09,
+        "regime": "bear_30d",
+        "resolved": true,
+        "beyond_old_window": false
+      },
+      {
+        "ts": "2026-07-01 06:00:00+00:00",
+        "r_outcome": 1.410000000000003,
+        "regime": "bear_30d",
+        "resolved": true,
+        "beyond_old_window": false
+      },
+      {
+        "ts": "2026-09-04 13:00:00+00:00",
+        "r_outcome": 0.1945245132204636,
+        "regime": "bull_30d",
+        "resolved": true,
+        "beyond_old_window": false
+      }
+    ],
+    "pre_seam_differences": []
+  },
+  "full_oi_flush_ledger.csv": {
+    "old_fires": 423,
+    "new_fires": 424,
+    "unchanged": 419,
+    "changed_r": [],
+    "removed": [
+      {
+        "ts": "2026-06-17 21:00:00+00:00",
+        "r_outcome": -1.09,
+        "regime": "bear_30d",
+        "resolved": true
+      },
+      {
+        "ts": "2026-06-23 07:00:00+00:00",
+        "r_outcome": -1.0899999999999996,
+        "regime": "bear_30d",
+        "resolved": true
+      },
+      {
+        "ts": "2026-07-01 07:00:00+00:00",
+        "r_outcome": 1.410000000000003,
+        "regime": "bear_30d",
+        "resolved": true
+      },
+      {
+        "ts": "2026-09-04 14:00:00+00:00",
+        "r_outcome": 0.3114630930344627,
+        "regime": "bull_30d",
+        "resolved": true
+      }
+    ],
+    "added": [
+      {
+        "ts": "2026-06-11 16:00:00+00:00",
+        "r_outcome": 1.06881598680024,
+        "regime": "bear_30d",
+        "resolved": true,
+        "beyond_old_window": false
+      },
+      {
+        "ts": "2026-06-17 20:00:00+00:00",
+        "r_outcome": -1.09,
+        "regime": "bear_30d",
+        "resolved": true,
+        "beyond_old_window": false
+      },
+      {
+        "ts": "2026-06-23 06:00:00+00:00",
+        "r_outcome": -1.09,
+        "regime": "bear_30d",
+        "resolved": true,
+        "beyond_old_window": false
+      },
+      {
+        "ts": "2026-07-01 06:00:00+00:00",
+        "r_outcome": 1.410000000000003,
+        "regime": "bear_30d",
+        "resolved": true,
+        "beyond_old_window": false
+      },
+      {
+        "ts": "2026-09-04 13:00:00+00:00",
+        "r_outcome": 0.1945245132204636,
+        "regime": "bull_30d",
+        "resolved": true,
+        "beyond_old_window": false
+      }
+    ],
+    "pre_seam_differences": []
+  },
+  "decision_before": {
+    "verdict": "BUILD",
+    "reason": "(a) n=10 mean R +0.202 >= +0.10 and (b) combined MAR 1.60 >= 1.5",
+    "oos_window": [
+      "2026-04-14 00:00:00+00:00",
+      "2026-09-07 23:59:59+00:00"
+    ],
+    "a": {},
+    "b": {}
+  },
+  "decision_after": {
+    "verdict": "BUILD",
+    "reason": "(a) n=10 mean R +0.190 >= +0.10 and (b) combined MAR 1.59 >= 1.5",
+    "oos_window": [
+      "2026-04-14 00:00:00+00:00",
+      "2026-09-17 23:59:59+00:00"
+    ],
+    "a": {},
+    "b": {}
+  }
+}

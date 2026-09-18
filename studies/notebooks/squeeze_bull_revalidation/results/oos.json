@@ -1,59 +1,59 @@
 {
   "oos_window": [
     "2026-04-14 00:00:00+00:00",
-    "2026-09-07 23:59:59+00:00"
+    "2026-09-17 23:59:59+00:00"
   ],
-  "last_full_day": "2026-09-07",
-  "table_end_hourly": "2026-09-08 17:00:00+00:00",
-  "table_end_15m": "2026-09-08 17:00:00+00:00",
+  "last_full_day": "2026-09-17",
+  "table_end_hourly": "2026-09-18 21:00:00+00:00",
+  "table_end_15m": "2026-09-18 21:00:00+00:00",
   "oi_flush": {
     "window": [
       "2026-04-14 00:00:00+00:00",
-      "2026-09-07 23:59:59+00:00"
+      "2026-09-17 23:59:59+00:00"
     ],
-    "last_full_day": "2026-09-07",
-    "fires_pooled": 20,
-    "resolved_pooled": 20,
+    "last_full_day": "2026-09-17",
+    "fires_pooled": 21,
+    "resolved_pooled": 21,
     "unresolved": 0,
     "bull_gated_resolved": {
       "n": 10,
-      "mean_R": 0.2021,
-      "median_R": 0.273,
-      "sum_R": 2.021,
+      "mean_R": 0.1904,
+      "median_R": 0.2145,
+      "sum_R": 1.904,
       "WR": 0.7,
       "maxDD": -1.59,
       "stops": 3,
       "targets": 3,
       "tifs": 4,
       "first": "2026-04-21 19:00:00+00:00",
-      "last": "2026-09-04 14:00:00+00:00"
+      "last": "2026-09-04 13:00:00+00:00"
     },
     "pooled_resolved": {
-      "n": 20,
-      "mean_R": -0.1719,
-      "median_R": -0.8695,
-      "sum_R": -3.438,
-      "WR": 0.45,
-      "maxDD": -7.369,
+      "n": 21,
+      "mean_R": -0.1184,
+      "median_R": -0.649,
+      "sum_R": -2.486,
+      "WR": 0.476,
+      "maxDD": -6.301,
       "stops": 10,
       "targets": 5,
-      "tifs": 5,
+      "tifs": 6,
       "first": "2026-04-16 16:00:00+00:00",
-      "last": "2026-09-04 14:00:00+00:00"
+      "last": "2026-09-04 13:00:00+00:00"
     },
     "by_regime_resolved": {
       "bear_30d": {
-        "n": 5,
-        "mean_R": -0.59,
+        "n": 6,
+        "mean_R": -0.3135,
         "median_R": -1.09,
-        "sum_R": -2.95,
-        "WR": 0.2,
-        "maxDD": -3.27,
+        "sum_R": -1.881,
+        "WR": 0.333,
+        "maxDD": -2.201,
         "stops": 4,
         "targets": 1,
-        "tifs": 0,
+        "tifs": 1,
         "first": "2026-06-02 22:00:00+00:00",
-        "last": "2026-07-01 07:00:00+00:00"
+        "last": "2026-07-01 06:00:00+00:00"
       },
       "flat_30d": {
         "n": 5,
@@ -70,30 +70,30 @@
       },
       "bull_30d": {
         "n": 10,
-        "mean_R": 0.2021,
-        "median_R": 0.273,
-        "sum_R": 2.021,
+        "mean_R": 0.1904,
+        "median_R": 0.2145,
+        "sum_R": 1.904,
         "WR": 0.7,
         "maxDD": -1.59,
         "stops": 3,
         "targets": 3,
         "tifs": 4,
         "first": "2026-04-21 19:00:00+00:00",
-        "last": "2026-09-04 14:00:00+00:00"
+        "last": "2026-09-04 13:00:00+00:00"
       }
     },
     "bull_gated_backonly_regime_resolved": {
       "n": 10,
-      "mean_R": 0.2462,
-      "median_R": 0.273,
-      "sum_R": 2.462,
+      "mean_R": 0.2345,
+      "median_R": 0.2145,
+      "sum_R": 2.345,
       "WR": 0.7,
       "maxDD": -1.149,
       "stops": 2,
       "targets": 3,
       "tifs": 5,
       "first": "2026-04-21 19:00:00+00:00",
-      "last": "2026-09-04 14:00:00+00:00"
+      "last": "2026-09-04 13:00:00+00:00"
     },
     "bull_gated_fires": [
       {
@@ -181,25 +181,25 @@
         "r_outcome": -1.0899999999999996,
         "exit_kind": "stop",
         "ret_30d": 0.18502920613782892,
-        "oi_chg_4h": -0.02097487296486611,
+        "oi_chg_4h": -0.025074413976685417,
         "px_chg_4h": -0.025746508723460515,
         "window_span_h": 4.0,
         "resolved": true
       },
       {
-        "ts": "2026-09-04 14:00:00+00:00",
-        "r_outcome": 0.3114630930344627,
+        "ts": "2026-09-04 13:00:00+00:00",
+        "r_outcome": 0.19452451322046366,
         "exit_kind": "tif",
         "ret_30d": 0.23180095893950403,
         "oi_chg_4h": -0.021885418343815077,
-        "px_chg_4h": -0.02804682686383242,
+        "px_chg_4h": -0.020675652324174898,
         "window_span_h": 4.0,
         "resolved": true
       }
     ],
     "unresolved_fires": [],
     "fires_with_window_span_gt_4h": 0,
-    "fires_after_oi_seam_2026_06_10": 6
+    "fires_after_oi_seam_2026_06_10": 7
   },
   "funding_cvd": {
     "A": {
@@ -293,17 +293,17 @@
   },
   "regime": {
     "june_construction": {
-      "hours": 3528,
-      "share_bull_gt_10pct": 0.2789,
-      "share_bear_lt_m10pct": 0.2041,
-      "share_flat": 0.517,
-      "bull_hours": 984,
-      "bull_days": 41.0,
+      "hours": 3768,
+      "share_bull_gt_10pct": 0.3248,
+      "share_bear_lt_m10pct": 0.1911,
+      "share_flat": 0.4841,
+      "bull_hours": 1224,
+      "bull_days": 51.0,
       "ret_30d_min": -0.2503,
       "ret_30d_max": 0.2677,
       "ret_30d_max_at": "2026-09-03 00:00:00+00:00",
       "ret_30d_min_at": "2026-06-05 00:00:00+00:00",
-      "ret_30d_median": 0.0182,
+      "ret_30d_median": 0.0243,
       "bull_spans": [
         [
           "2026-04-20",
@@ -319,22 +319,22 @@
         ],
         [
           "2026-08-21",
-          "2026-09-07"
+          "2026-09-17"
         ]
       ]
     },
     "backward_only": {
-      "hours": 3528,
-      "share_bull_gt_10pct": 0.2721,
-      "share_bear_lt_m10pct": 0.2041,
-      "share_flat": 0.5238,
-      "bull_hours": 960,
-      "bull_days": 40.0,
+      "hours": 3768,
+      "share_bull_gt_10pct": 0.3185,
+      "share_bear_lt_m10pct": 0.1911,
+      "share_flat": 0.4904,
+      "bull_hours": 1200,
+      "bull_days": 50.0,
       "ret_30d_min": -0.2503,
       "ret_30d_max": 0.2677,
       "ret_30d_max_at": "2026-09-04 00:00:00+00:00",
       "ret_30d_min_at": "2026-06-06 00:00:00+00:00",
-      "ret_30d_median": 0.0182,
+      "ret_30d_median": 0.0243,
       "bull_spans": [
         [
           "2026-04-21",
@@ -350,7 +350,7 @@
         ],
         [
           "2026-08-22",
-          "2026-09-07"
+          "2026-09-17"
         ]
       ]
     },
@@ -367,13 +367,13 @@
     "june_bull_days": 411.0,
     "june_bull_fires_per_bull_day": 0.2725,
     "june_share_bull_hours": 0.2589,
-    "oos_span_days": 147.0,
-    "oos_bull_days": 41.0,
+    "oos_span_days": 157.0,
+    "oos_bull_days": 51.0,
     "oos_bull_fires_resolved": 10,
-    "oos_pooled_fires_per_year": 49.69
+    "oos_pooled_fires_per_year": 48.86
   },
   "unresolved_cutoffs": {
-    "oi_flush_needs_bars_through": "2026-09-09 23:59:59+00:00",
-    "fcd_needs_bars_through": "2026-09-10 23:59:59+00:00"
+    "oi_flush_needs_bars_through": "2026-09-19 23:59:59+00:00",
+    "fcd_needs_bars_through": "2026-09-20 23:59:59+00:00"
   }
 }
