@@ -113,6 +113,12 @@ Cadence: squeeze_bull ~25 fires/yr in bull tape, none in bear; short_squeeze dro
   against it on cumulative R — wider fixed targets up to ~8R beat tighter ones on this signal, and a fixed TP beats
   every trailing variant — so the arm is judged on MAR and drawdown, not cum R, and its placebo is the same trim at a
   random fraction of the target. If it holds, the squeeze pair inherits the design.
+  - **Comparator, from chento's hedging (2026-09-19):** at a resistance trigger on an open winner — do nothing /
+    partial close / counter-short at the same fraction — scored on MAR and drawdown with a placebo trigger. The
+    prior is that the counter-short loses: shorts against an up_30d regime were +0.67 R / 55 % WR and were removed
+    from the sleeve, B13's opposite leg wins 5 % of the time, and the one chento instance scoreable on tape
+    (`chento_journal/material_2026_09_19_comment_and_tv_chart.md` §6–§7) lost. Hedge-and-hold on the same
+    instrument is a partial close minus costs; the only thing the short adds is the un-hedge decision.
 - **24. About 1 in 8 time-stop exits go through the backstop** — the sleeve's `not walked_any` misses under the 90 s
   settle margin, so those exits are labelled `scheduled_exit` and close at the tick's quote. A sleeve and golden change;
   do it with the replay baseline.
