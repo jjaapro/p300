@@ -154,7 +154,10 @@ def _open_trade_counts(con: sqlite3.Connection,
 def _adjustment_coherence(con: sqlite3.Connection,
                            variant_filter: str | None) -> tuple[int, int, int]:
     """Return (n_open_missing_OPEN, n_closed_missing_CLOSE, n_seq_gaps)."""
-    base_where = [f"t.created_at >= ?"]
+    # A row's own creation time, falling back to the times it certainly has.
+    # created_at was NULL on every bot-era trade from the 2026-05-18 rebuild to
+    # the 2026-09-19 backfill (BACKLOG 20); keying on it alone audited nothing.
+    base_where = ["COALESCE(t.created_at, t.actual_entry_time, t.entry_time) >= ?"]
     params: list = [JPLUS_MIGRATION_CUTOFF_ISO]
     if variant_filter:
         base_where.append("t.strategy_variant = ?")
@@ -202,9 +205,10 @@ def _duplicate_adjustment_events(con: sqlite3.Connection
     impossible, but prod ran without it after the 2026-05-18 PK rebuild and
     another rebuild could drop it again. A duplicate lands at seq+1, so the
     seq-gap check above cannot see it. Deliberately system-wide and NOT
-    filtered on trades.created_at: bot-era trades carry created_at NULL (the
-    same rebuild dropped its DEFAULT), and events whose trade row is gone
-    should be counted too."""
+    filtered on trades.created_at: bot-era trades carried created_at NULL
+    until the 2026-09-19 backfill (the same rebuild dropped its DEFAULT, and a
+    rebuild could again), and events whose trade row is gone should be
+    counted too."""
     try:
         rows = con.execute("""
             SELECT trade_id, event_date, event_type,

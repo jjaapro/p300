@@ -183,9 +183,6 @@ Evidence-dated, not effort-dated:
 Paper trading is the progress measure, so the ledger has to be true. These are the defects that would make it lie.
 Batch them; each needs its own go-ahead as a prod change.
 
-20. **`created_at` is NULL on every trade and variant since 2026-05-18**, so `ledger_coherence`'s OPEN/CLOSE/seq checks
-    have audited no bot-era trade. Options: write it in `open_paper_trade`; `COALESCE(created_at, actual_entry_time)`
-    in the checks; backfill. Remove the strict xfail in `tests/test_ledger_coherence.py` with the fix.
 23. **An exception after `decide()` still skips that tick's exits**, and in the squeeze bots the second variant. Where:
     the entry-table check, sizing, `execute()`, `open_gross_usdt`, `DuplicateInstanceError`, r4's `_sleeve()` /
     `deciders()`. Fix: wrap the entry path in the same try as `decide()`.

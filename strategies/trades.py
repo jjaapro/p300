@@ -240,16 +240,20 @@ def open_paper_trade(*, variant: dict, sleeve_name: str,
                     execution_mode, strategy_variant, actual_entry_time,
                     entry_price, size_usdt, qty, order_ids, notes,
                     current_qty, current_leverage, current_size_usdt,
-                    realized_pnl_usdt, avg_entry_price, unique_key)
+                    realized_pnl_usdt, avg_entry_price, unique_key, created_at)
                 VALUES (?, 'SJ', ?, ?, ?, ?, ?, ?, ?, ?, 'open',
-                        'paper', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+                        'paper', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
             """, (tid, asset, direction.upper(), sleeve_name.upper(),
                   regime_value, allocation_pct, leverage,
                   now_iso, exit_iso, variant["id"], now_iso,
                   entry_price, size_usdt, qty,
                   json.dumps([f"paper-{tid}"]),
                   json.dumps(reason, default=str),
-                  qty, leverage, size_usdt, entry_price, unique_key))
+                  qty, leverage, size_usdt, entry_price, unique_key,
+                  # BACKLOG 20: the 2026-05-18 PK rebuild dropped this column's
+                  # DEFAULT and nothing wrote it, so ledger_coherence — which
+                  # keys on created_at — audited no bot-era trade for months.
+                  now_iso))
         except sqlite3.IntegrityError as e:
             # Race-condition fallback: another writer beat us to the UNIQUE
             # index. Look up THEIR SJ-ID and return it. This is rare under
@@ -869,9 +873,10 @@ def apply_flip(trade_id: str, *, new_direction: str, price: float,
                 status, execution_mode, strategy_variant, actual_entry_time,
                 entry_price, size_usdt, qty, order_ids, notes,
                 current_qty, current_leverage, current_size_usdt,
-                realized_pnl_usdt, parent_position_id, avg_entry_price)
+                realized_pnl_usdt, parent_position_id, avg_entry_price,
+                created_at)
             VALUES (?, 'SJ', ?, ?, ?, ?, ?, ?, ?, ?, 'open',
-                    'paper', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?)
+                    'paper', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)
         """, (new_tid, row["asset"], new_direction, row["strategy"],
               row["regime"], row["allocation_pct"], cur_lev,
               now_iso, row["exit_time"] or _NO_SCHEDULED_EXIT_ISO,
@@ -879,7 +884,7 @@ def apply_flip(trade_id: str, *, new_direction: str, price: float,
               json.dumps([f"paper-{new_tid}"]),
               json.dumps((notes or {}) | {"opened_via": "flip",
                                             "parent": trade_id}, default=str),
-              new_qty, cur_lev, new_size, trade_id, price))
+              new_qty, cur_lev, new_size, trade_id, price, now_iso))
         record_adjustment(
             trade_id=new_tid, event_type=EV_OPEN,
             event_time=now_iso, event_date=event_date,

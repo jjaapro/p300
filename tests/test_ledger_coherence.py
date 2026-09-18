@@ -378,13 +378,10 @@ def test_trade_with_created_at_is_audited_for_a_missing_close(tmp_path, monkeypa
     assert lc.audit_ledger().n_post_jplus_closed_missing_close_event == 1
 
 
-@pytest.mark.xfail(strict=True, reason=(
-    "BACKLOG item 20, known blind spot, not fixed here: _adjustment_coherence "
-    "filters on trades.created_at >= cutoff, and created_at is NULL on every "
-    "trade since the 2026-05-18 PK rebuild dropped its DEFAULT "
-    "(open_paper_trade never writes it), so no bot-era trade is audited for "
-    "a missing OPEN/CLOSE or a seq gap. Remove this mark with the fix."))
 def test_created_at_null_trade_is_audited_for_a_missing_close(tmp_path, monkeypatch):
+    """BACKLOG item 20, fixed 2026-09-19: a trade whose created_at is NULL is
+    keyed on its actual_entry_time instead, so the bot-era rows that carried
+    NULL from the 2026-05-18 rebuild to the backfill are audited too."""
     _old_shape_ledger(tmp_path, monkeypatch, duplicate=False, close_event=False)
     assert lc.audit_ledger().n_post_jplus_closed_missing_close_event == 1
 

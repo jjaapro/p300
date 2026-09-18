@@ -147,15 +147,20 @@ def register_variant(
     notes: str | None = None,
     actor: str = "user",
 ) -> None:
+    # BACKLOG 20: the variants table has no DEFAULT for created_at since the
+    # 2026-05-18 rebuild (item 19), so it is written here, on the canonical
+    # clock like the registration event that follows.
+    from strategies.support import clock
+    created_at = clock.now_utc().isoformat()
     con = _con()
     try:
         con.execute("""
             INSERT INTO variants (id, short_name, long_name, kind, version, status,
-                is_primary, capital_usdt, color, spec_json, notes)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                is_primary, capital_usdt, color, spec_json, notes, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (variant_id, short_name, long_name, kind, version, status,
               1 if is_primary else 0, capital_usdt, color,
-              json.dumps(spec), notes))
+              json.dumps(spec), notes, created_at))
         con.commit()
     finally:
         con.close()
