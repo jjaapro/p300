@@ -1,0 +1,2 @@
+id,side,bar_ts,r_live,r_replay,diff_R,funding_R,booked_cost_R,residual_R,backstop_exit,live_exit,replay_exit,exit_matches
+SJ-4250,stop,1789146000,-0.19161338139904907,-0.22940306674594432,0.03778968534689525,-0.01611200000000003,-0.001639959539295147,0.05554164488619043,False,time_stop,tif,True

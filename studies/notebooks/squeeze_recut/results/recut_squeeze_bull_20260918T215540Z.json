@@ -1,0 +1,25 @@
+{
+ "sleeve": "SQUEEZE_BULL",
+ "as_of": "2026-09-18T21:55:40.888414+00:00",
+ "n_gate": 20,
+ "n_paired": 0,
+ "outcome": "DISABLE_NOSTOP",
+ "notes": [
+  "0 paired fires; the re-cut is due at 20. 20 more needed. Thresholds are NOT evaluated early \u2014 see docs/calibration/squeeze_bull.md.",
+  "but the any-time divergence clause has tripped."
+ ],
+ "clauses": [
+  {
+   "name": "D4_divergence",
+   "text": "any time: live record diverges from the sleeve's own replay by > 0.05 R on any trade (residual, after funding and booked cost)",
+   "value": 0.05554164488619043,
+   "threshold": "<= 0.05 R",
+   "verdict": "FAIL",
+   "action": "DISABLE that variant \u2014 execution or data fault"
+  }
+ ],
+ "n_live_stop": 1,
+ "n_live_nostop": 0,
+ "n_union": 1,
+ "n_reconstructed_fires": 0
+}
