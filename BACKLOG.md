@@ -25,37 +25,20 @@ live in each study's findings file, not here. Data measurements that constrain f
 
 In order. Each step names its section.
 
-1. **Fix the evidence the squeeze bots stand on** — item 30 (§1), then decision 8. Everything downstream of the
-   open-interest table is wrong by one bar until this lands.
-2. **Squeeze pair** (§2.1) — the post-June re-cut, the short_squeeze exit arm, stage B if wanted. Its n = 20 / 30 gates
-   are the nearest real verdict in the fleet.
-3. **Second assets** (§3.1) — SHORT_SQUEEZE and CARRY on ETH. Data exists, nothing to collect, and the validation audit's
-   one-line conclusion was that the constraint is breadth, not edge.
-4. **Chento** (§2.2) — close decisions 14 and 15, then the replay baseline and the time-stop twin.
-5. **Paper-ledger fidelity** (§4) — the defects that would make paper results lie, batched once, before the paper tracks
+1. **Squeeze pair** (§2.1) — decision 8 and the D4 trip are the operator's; then the short_squeeze exit arm and
+   stage B if wanted. Its n = 20 / 30 gates are the nearest real verdict in the fleet.
+2. **Second assets** (§3.1) — CARRY on ETH is studied and waits on the operator (§2.4); SHORT_SQUEEZE on ETH needs
+   its data built first. The validation audit's one-line conclusion was that the constraint is breadth, not edge.
+3. **Chento** (§2.2) — close decisions 14 and 15, then the replay baseline and the time-stop twin.
+4. **Paper-ledger fidelity** (§4) — the defects that would make paper results lie, batched once, before the paper tracks
    are old enough to be read.
-6. **Move-vs-implied-range and the rejection-wick exit** (§3.2) — the two free on-disk tests the exhaustion brainstorm
+5. **Move-vs-implied-range and the rejection-wick exit** (§3.2) — the two free on-disk tests the exhaustion brainstorm
    left; the last of that family worth running.
-7. **R4** (§2.3) — after its first windows have traded; nothing to do before 2026-10-02 but watch.
-8. Then §3.3 onward, in the order listed there.
+6. **R4** (§2.3) — after its first windows have traded; nothing to do before 2026-10-02 but watch.
+7. Then §3.3 onward, in the order listed there.
 
 ## 1. Now
 
-- **30. The live open-interest feed is one bar stale since 2026-06-10, and SJ-4250 fired because of it.** Production
-  fix; needs a go-ahead.
-  - **The defect.** `cd_open_interest.oi_close` stamped at an hour is the open interest at the *start* of that hour since
-    the Binance fetcher replaced CoinDesk. Before that it was the *end* of the hour, which is what squeeze_bull was
-    researched and validated on. Measured against Binance's 5-minute archive, every month matches exactly at one lag.
-  - **SJ-4250 is an artefact.** Its trigger bar (2026-09-11 17:00) had −2.48 % on the stored values but −1.79 % at bar
-    closes, short of the −2 % trigger. Since 06-10 the bull fires are 09-04 14:00 and 09-11 17:00 on stored values,
-    versus a single 09-04 13:00 fire at bar closes.
-  - **Also affected.** The revalidation ledger's post-June rows, and short_squeeze's Asia open-interest change.
-  - **Fix.** In `data/sources/binance.py::fetch_open_interest()`, store the end-of-hour value under each bar's stamp.
-    Backfill from 06-10 (the Binance Vision 5-minute `metrics` archive is the truth series: BTCUSDT from 2020-09,
-    ETHUSDT from 2021-12, ~90 MB, one download), add a monitor check against the 5-minute series, then re-cut the
-    post-June ledger rows. A feed-vintage table (coverage plan §1 item 5) is the follow-on that would have caught this
-    on 2026-06-10 instead of 2026-09-15.
-  - Evidence: `studies/notebooks/exit_policy_2026_09/findings_top_anatomy.md` §7.
 - **Watch r4's first enabled window**, Fri 2026-10-02 04:00 UTC (R4_ETH V1: Tue 2026-10-06 20:00). r4 has never
   traded; confirm the first open and its scheduled close.
 - **Disk.** C: hit 0 bytes free on 2026-09-18 with the fleet live; ~20 GB returned when Firefox closed (deleted-but-open
@@ -77,8 +60,18 @@ One strategy at a time. Each carries its evidence gate (the rule was fixed befor
 
 Cadence: squeeze_bull ~25 fires/yr in bull tape, none in bear; short_squeeze droughts up to 186 days.
 
-- **Decision 8.** Does SJ-4250 count toward the n = 20 / 30 re-cut, given item 30? [no — it did not fire at bar closes]
-- **Re-cut the post-June ledger rows** once item 30 lands; the paired re-cut reads the corrected table.
+- **Decision 8.** Does SJ-4250 count toward the n = 20 / 30 re-cut? On the corrected open-interest table its bar
+  (2026-09-11 17:00) does not fire, in the revalidation study's own harness (`squeeze_bull_revalidation/findings.md`,
+  addendum 2026-09-19: BUILD holds, OOS mean R +0.202 → +0.190, MAR 1.60 → 1.59, margins one fire wide as before).
+  [no — void it as an artefact of the defect]
+- **Decision: the any-time divergence clause D4 has tripped on SJ-4250** (`squeeze_recut/results/`, 2026-09-18
+  21:55Z: residual +0.0555 R against 0.05; the harness says DISABLE and exits 1). Its first evaluation, not a change —
+  the trade closed 09-13, and the 09-12 runs had nothing closed to compare. The residual is the bot's 60 s tick quotes
+  at entry and exit against the replay's bar closes, ~7.6 bp on a 2 % stop; the clause nets funding and booked cost
+  but not tick drift, so its 0.05 R budget on this sleeve is ten basis points wide. The harness labels every D4 trip
+  DISABLE_NOSTOP (pinned by `tests/test_squeeze_recut.py`) though the diverging trade is the stop variant's.
+  [void with decision 8, no disable; then fix the clause's netting and its label, with tests, before a genuine fire
+  trips it for the same reason]
 - **11. Exit-policy, short_squeeze arm** — report-only until its re-cut. A catastrophe stop for the no-stop twin, whose
   only loss exit is the 6 h time stop. Stage 1 showed microstructure events almost never occur inside its trades.
 - **11. Top-anatomy stage B** [user's call]. "Exit after 24 h without a new high" instead of the fixed 48 h,
@@ -141,17 +134,31 @@ Cadence: squeeze_bull ~25 fires/yr in bull tape, none in bear; short_squeeze dro
 
 ### 2.4 ADX and CARRY
 
-Nothing open beyond their paper tracks. ADX on ETH was killed (Sharpe 0.72, corr 0.47 with BTC ADX). CARRY's 30-day
-cumulative exit shipped 2026-09-12. The one defect: **26. `close_carry_trade` takes no write lock** — the losing caller
-of a race logs a close that did not happen (§4).
+ADX on ETH was killed (Sharpe 0.72, corr 0.47 with BTC ADX). CARRY's 30-day cumulative exit shipped 2026-09-12. The
+one defect: **26. `close_carry_trade` takes no write lock** — the losing caller of a race logs a close that did not
+happen (§4).
+
+- **Decision: an ETH paper twin of CARRY** (`studies/notebooks/carry_eth_2026_09/`, pre-registered, CONCLUDED
+  2026-09-19, verdict RECOMMEND). The shipped CUM-30D rule on ETHUSDT settlement prints nets 12.8 %/yr (CI90 9.5 →
+  16.6, worst year +0.36); the equal-weight BTC + ETH book's net ÷ drawdown is 15.1 against BTC alone's 4.9, because
+  the two assets' worst funding stretches do not coincide (daily correlation 0.87). Reported and not hidden: in ETH's
+  worst 90 / 180-day windows the shipped exit lost more than never exiting; the old streak exit was the better
+  insurance there. Costs are BTC's constant, unmeasured on ETH. **Building it is a bot change:** the carry bot is
+  BTC-only in code (`asset="BTC"`, `daily_sums_pct("BTC", …)`, `btc_1m`), so a twin needs an asset parameter,
+  `eth_1m` and `cd_funding_rate_eth`, its own paper variant and a parity test like `tests/test_carry_exit_rule.py`.
+  [yes]
 
 ## 3. New strategies
 
 Pre-registered notebooks; every replay charges measured per-leg costs and funding. Order:
 
-1. **Second assets.** SHORT_SQUEEZE and CARRY on ETH — data exists. SQUEEZE_BULL on ETH has archive open interest for
-   research (ETHUSDT 5-minute from 2021-12) but no live feed. Alts are blocked (the screener feed stopped 2026-05-23).
-   The most direct lever on breadth.
+1. **Second assets.** CARRY on ETH is studied — RECOMMEND, waiting on the operator (§2.4). **SHORT_SQUEEZE on ETH is
+   not "data exists":** the sleeve reads `cd_spot_15m` and `cd_open_interest`, and neither has an ETH twin. It needs
+   Binance Vision spot ETHUSDT 15-minute klines and the 5-minute `metrics` archive (ETHUSDT from 2021-12) rolled to
+   close-of-hour open interest, built as a study-local twin database so the sleeve's own code runs on it unchanged —
+   and its research engine exists only inside two never-executed notebooks (`short_squeeze_sessions/`), so that study
+   is an engine build first. SQUEEZE_BULL on ETH has the same open-interest route and no live feed. Alts are blocked
+   (the screener feed stopped 2026-05-23). The most direct lever on breadth.
 2. **The two free tests the exhaustion brainstorm left**, as exit-information tests with placebos:
    **move vs implied range** (`deribit_dvol_daily`: clean daily OHLC BTC + ETH 2022-09-07 →, no gaps, stamped at the
    UTC day open with the current day partial; a magnitude test has no level-distance confound, and its placebo is the
@@ -197,7 +204,9 @@ Batch them; each needs its own go-ahead as a prod change.
 reference for what each venue publishes, what is forward-only and what an archive still sells. Its measurements hold.
 Its *ordering* does not: it was written under "data itself has value for future research", and this roadmap puts
 strategy work first. So an item is pulled from it only when a scheduled study needs it. Pulled so far: the 5-minute
-`metrics` archive and the feed-vintage table (both into item 30), the bot tick log (§4). Its item 2 is done.
+`metrics` archive (item 30's verification, done), the bot tick log (§4), and **the feed-vintage table** (its item 5),
+still open — it is what would have caught the open-interest shift on 2026-06-10 instead of 2026-09-15. Its item 2 is
+done.
 
 **What was established on 2026-09-18, because it constrains any study that reads liquidations:**
 - `ca_liquidations` (hourly, BTC + ETH, rolling ~89-day source) and `ca_liquidations_daily` (2021-01-01 →) have a live
@@ -213,6 +222,14 @@ strategy work first. So an item is pulled from it only when a scheduled study ne
 - **Gamma levels are blocked on data.** No per-strike option OI history exists anywhere; prod.db
   `deribit_options_daily` carries OI and IV only since 2026-09-06. Testable in a year or two. `trader.db
   cd_options_oi` is misnamed (mark-price OHLC, no OI).
+
+- **Open interest is stamped at the close of its hour again** (item 30, 2026-09-18 21:49 UTC, `0adf114`). The
+  Binance-era rows were moved back one hour and verified against the 5-minute archive by which snapshot each row is
+  *closer* to — 88.6 % start-of-hour before, 85.9 % close-of-hour after; the two Binance series never agree exactly,
+  so no tolerance is honest — and the monitor's daily deep run now scores it (`OI_SEMANTICS`). **One island remains:**
+  18 rows the June migration back-filled inside the CoinDesk era, 2026-06-02 13:00 → 06-03 06:00, still hold the
+  start-of-hour snapshot; the revalidation study reconstructs around them and its bull-gated set is unaffected. The
+  moved block's backup, `cd_open_interest_bak_20260919`, can be dropped when convenient.
 
 **9. The collector** (`collector.py`, written, tested, dry-run clean, not running) — decision. It records what no
 archive sells: liquidation prints (Binance largest-per-second only; Bybit complete for 12 symbols; OKX one per
