@@ -1,43 +1,61 @@
-# Opening Range Breakout (ORB) research and testing plan
+# Opening Range Breakout (ORB) study
 
-**Status: RESEARCH / DRAFT PLAN — 2026-09-14. No ORB backtest has been run.**
+**Status: CONCLUDED 2026-09-15.** The pre-registered campaign ended at validation: both frozen candidates failed
+every performance clause, the lockbox was not opened for confirmation, and the verdict is
+**INCONCLUSIVE + PRICE_SIGNAL_ONLY** with negative point estimates (BTC P0 −6.8 bp per trade net in 2023–24).
+Read [findings.md](findings.md) first. No production code, bot or paper trading was touched.
 
-Scope agreed with the user: **BTC/ETH first; equities and index futures are optional extensions.**
-All work for this study, including later notebooks, scripts, tests, downloaded data,
-caches and results, belongs under this directory. Existing project data is read-only.
+Scope: Binance BTCUSDT and ETHUSDT linear perpetuals, one-minute bars, 2020-01-01 → 2026-09-13. Everything the study
+downloads, builds and writes stays in this directory; prod.db is only ever opened read-only.
 
-Start with:
+## Documents
 
-- [Research and plan notebook](00_research_and_plan.ipynb): a Markdown-only
-  research overview and standalone copy of the testing plan. It contains no executable cells or results.
-- [Research review](RESEARCH.md): what ORB means, the evidence, source limitations,
-  related project studies and data suitability.
-- [Testing plan](TEST_PLAN.md): proposed rules, experiments, execution model,
-  chronological validation, decision criteria and notebook deliverables.
+| File | What it is |
+|---|---|
+| [findings.md](findings.md) | Verdict, development and validation numbers, why ORB fails, exit events, limitations |
+| [PREREGISTRATION.md](PREREGISTRATION.md) | Frozen rules v1.0: data gate (with Amendment A1), P0, the 46-policy family, controls, costs, chronology, selection, continuation rule, verdicts |
+| [TEST_PLAN.md](TEST_PLAN.md), [RESEARCH.md](RESEARCH.md) | The 2026-09-14 draft plan and literature review the pre-registration resolved (kept unchanged) |
+| `trial_ledger.csv` | Every policy evaluation, its block, use and outcome-access time |
+| `results/freeze_F0.json` … `freeze_verdict.json` | SHA-256 freeze manifests with UTC timestamps, in stage order |
 
-The Markdown documents are the editable source of truth. Regenerate the review notebook
-from them when changing the plan; do not maintain divergent specifications.
+## Notebooks (executed; each recomputes from the panels and compares with the frozen results)
 
-Regenerate from the repository root with:
+| Notebook | Question |
+|---|---|
+| [00_research_and_plan.ipynb](00_research_and_plan.ipynb) | The draft plan as a notebook (Markdown only) |
+| [01_data_and_calendars.ipynb](01_data_and_calendars.ipynb) | Is the data good enough? Archive vs REST vs trades, outages, funding, tick size, calendars |
+| [02_reference_engine.ipynb](02_reference_engine.ipynb) | Does the engine do what the rules say? Fixtures, two-implementation parity, truncation, sessions by hand |
+| [03_development.ipynb](03_development.ipynb) | BTC 2020–22: P0, anchors, controls, exits, selection, multiple testing, power |
+| [04_validation_and_verdict.ipynb](04_validation_and_verdict.ipynb) | BTC/ETH 2023–24: the continuation rule and the frozen verdict |
+| [05_exploratory_exits_and_mechanism.ipynb](05_exploratory_exits_and_mechanism.ipynb) | Post-verdict, all blocks and assets: decay, random controls, anchors, exit events, excursions |
+
+## Code
+
+| Module | Role |
+|---|---|
+| `orb_data.py` | Download and checksum the Binance archive; build the dense minute panels and funding arrays |
+| `orb_calendars.py`, `configs/` | Session anchors from frozen NYSE/LSE calendars (IANA time zones, DST-exact) |
+| `orb_engine.py` | Reference engine: one session, one bar at a time |
+| `orb_signals.py` | Independent vectorized implementation used only for parity and the randomized controls |
+| `orb_policies.py` | The policy registry (46-policy family, controls, diagnostics) |
+| `orb_metrics.py`, `orb_controls.py` | Costs, calendar returns, block bootstrap, Holm; randomized and buy-and-hold controls |
+| `orb_checks.py`, `orb_parity.py` | Data gate and engine checks written before F0 |
+| `orb_run.py` | The stages: `freeze0`, `development`, `validation`, `lockbox`; each refuses to rerun past its freeze |
+| `orb_explore.py` | Post-verdict exploratory tables (refuses to run before the verdict) |
+| `tests/` | Synthetic fixtures, calendar checks, accounting checks; `test_run_smoke.py` is opt-in (`ORB_SMOKE=1`) |
+| `build_notebooks.py`, `notebook_cells.py`, `review_plots.py` | Assemble and execute notebooks 01–05 |
+
+## Reproduce (from the repository root)
 
 ```powershell
-venv\Scripts\python.exe studies\notebooks\orb_study\build_review_notebook.py
+venv\Scripts\python.exe studies\notebooks\orb_study\orb_data.py download   # ~290 MB into data/raw (gitignored)
+venv\Scripts\python.exe studies\notebooks\orb_study\orb_data.py build      # ~181 MB into cache (gitignored)
+venv\Scripts\python.exe -m pytest studies\notebooks\orb_study\tests -q
+C:/Python/Python313/python.exe studies/notebooks/orb_study/build_notebooks.py
 ```
 
-The builder only reads these documents and writes their review notebook. It does not
-access market data, import strategy code or execute experiments.
+The raw zips were deleted on 2026-09-15 to relieve a full C: drive and re-downloaded the same day once space
+was freed; all 346 matched the SHA-256 values in `data/raw/binance_um/manifest.json`.
 
-The initial proposal is a fixed BTC **New York 15-minute range**, followed by a
-one-minute close outside the range and entry at the next executable price. ETH is a
-transfer test. A separate resting-stop entry tests the traditional touch-break version.
-Opening-candle momentum and range-break reversal are separate controls.
-
-Research this turn comprised web-source review, inspection of repository code and
-documents, and read-only data inventory. No trading signals, performance statistics,
-parameter search, production change, data download or paper-trading run was performed.
-Existing results quoted in RESEARCH.md are attributed to their original studies.
-
-This is not yet a frozen pre-registration. The next implementation phase should
-resolve the listed data and specification checks, record the final configuration and
-hashes, then execute the numbered study notebooks. A change made after seeing an
-outcome must be recorded as a new exploratory trial, not silently folded into the baseline.
+The stage runner will not redo a stage whose freeze exists. To audit a freeze, compare the SHA-256 values in
+`results/freeze_F0.json` with the files, or run notebook 03, which calls `orb_run.verify_f0()`.

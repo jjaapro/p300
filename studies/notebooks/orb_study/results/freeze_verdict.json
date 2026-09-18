@@ -1,0 +1,16 @@
+{
+ "freeze": "verdict",
+ "created_utc": "2026-09-15T07:52:23+00:00",
+ "lockbox": "closed",
+ "verdicts": {
+  "P0": [
+   "INCONCLUSIVE",
+   "PRICE_SIGNAL_ONLY"
+  ],
+  "EXT_WIDTH": [
+   "INCONCLUSIVE",
+   "PRICE_SIGNAL_ONLY"
+  ]
+ },
+ "basis": "validation block (lockbox stayed closed)"
+}

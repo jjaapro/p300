@@ -1,0 +1,175 @@
+run_id,policy_id,config_sha256,symbol,block,cost_model,selection_use,outcome_access_utc
+run_v1,P0,d0ec28a5451e5a81,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:21+00:00
+run_v1,CORE_NY_R5_CLOSE,ea3e9d74957dcf79,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:21+00:00
+run_v1,CORE_NY_R5_STOP,6e0350dc558e63ed,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:22+00:00
+run_v1,CORE_NY_R15_STOP,ff2cb2b9d2236ddf,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:22+00:00
+run_v1,CORE_NY_R30_CLOSE,3ee4eeebce82dc99,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:23+00:00
+run_v1,CORE_NY_R30_STOP,699ef22e1c97ae21,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:23+00:00
+run_v1,CORE_NY_R60_CLOSE,3c53677686442a66,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:24+00:00
+run_v1,CORE_NY_R60_STOP,f09315042451a9b7,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:24+00:00
+run_v1,CORE_LDN_R5_CLOSE,d46058cf06c05592,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:25+00:00
+run_v1,CORE_LDN_R5_STOP,4eaf7867ba238bfc,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:25+00:00
+run_v1,CORE_LDN_R15_CLOSE,77095bb08849e59c,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:25+00:00
+run_v1,CORE_LDN_R15_STOP,37def027924cecef,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:26+00:00
+run_v1,CORE_LDN_R30_CLOSE,31a95266decd2d2f,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:26+00:00
+run_v1,CORE_LDN_R30_STOP,28822ca9d1ea7df4,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:27+00:00
+run_v1,CORE_LDN_R60_CLOSE,b0909798be877bc4,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:27+00:00
+run_v1,CORE_LDN_R60_STOP,e1d13e7541203908,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:28+00:00
+run_v1,CORE_UTC_R5_CLOSE,d4e2892d7fd4e698,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:29+00:00
+run_v1,CORE_UTC_R5_STOP,94fb85c28d9f55de,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:29+00:00
+run_v1,CORE_UTC_R15_CLOSE,d2c6a09ad1bac3a8,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:30+00:00
+run_v1,CORE_UTC_R15_STOP,a901513147c12a5a,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:31+00:00
+run_v1,CORE_UTC_R30_CLOSE,f88fc9c71377137a,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:32+00:00
+run_v1,CORE_UTC_R30_STOP,407c03611766e741,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:33+00:00
+run_v1,CORE_UTC_R60_CLOSE,73b6626aea3b1abd,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:33+00:00
+run_v1,CORE_UTC_R60_STOP,421bc9bf74f9df27,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:34+00:00
+run_v1,EXT_BUF05,35f72f912b7ee7c0,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:35+00:00
+run_v1,EXT_BUF10,c6ad758e0cd3c9e8,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:35+00:00
+run_v1,EXT_GATE,1ca06b262c7eb81f,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:36+00:00
+run_v1,EXT_RVOL10,95b9c1485fd86ccc,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:36+00:00
+run_v1,EXT_RVOL15,a19ba3ad23f81c7e,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:36+00:00
+run_v1,EXT_RVOL20,acb219381e664199,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:36+00:00
+run_v1,EXT_WIDTH,f2082c07c11d22f7,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:37+00:00
+run_v1,EXT_DL60,54d6e87b330f4526,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:37+00:00
+run_v1,EXT_DL180,a6f9fd272bc5a7a0,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:38+00:00
+run_v1,EXT_STOPMID,42169a48110932fa,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:38+00:00
+run_v1,EXT_TGT1R,002a9644a84f0af4,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:38+00:00
+run_v1,EXT_TGT2R,368c08ab18a1742c,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:39+00:00
+run_v1,EXT_TGT3R,80eff747811c32c5,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:39+00:00
+run_v1,EXT_TX60,7de4897f3a6eafe2,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:40+00:00
+run_v1,INT_RVOL10_TGT2R,bd0b3b06a6a2286e,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:40+00:00
+run_v1,INT_RVOL10_GATE,b67b7da468c8b02d,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:40+00:00
+run_v1,X_REENTER1M,70fc58bc7e67ec6f,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:41+00:00
+run_v1,X_REENTER15M,8bad13862c3cf910,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:41+00:00
+run_v1,X_NOTIME,4201577da4b52de9,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:43+00:00
+run_v1,X_TRAIL,0cdc15f8edf20302,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:43+00:00
+run_v1,X_TRAIL_NOTIME,1ae779deada44888,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:44+00:00
+run_v1,X_VWAP,bc30eded39f72f49,BTCUSDT,development,db (+ scenarios),selection,2026-09-15T07:49:44+00:00
+run_v1,CTL_MOMENTUM,d452d04147d49ba2,BTCUSDT,development,db (+ scenarios),control,2026-09-15T07:49:45+00:00
+run_v1,CTL_CLOCK_LONG,b4d67c7b79990b5b,BTCUSDT,development,db (+ scenarios),control,2026-09-15T07:49:45+00:00
+run_v1,CTL_CLOCK_SHORT,e06278e1b55f557f,BTCUSDT,development,db (+ scenarios),control,2026-09-15T07:49:45+00:00
+run_v1,CTL_FADE,1088d6543a893a55,BTCUSDT,development,db (+ scenarios),control,2026-09-15T07:49:46+00:00
+run_v1,CTL_PLACEBO_M120,a15e80657c6e0a13,BTCUSDT,development,db (+ scenarios),control,2026-09-15T07:49:46+00:00
+run_v1,CTL_PLACEBO_M60,ea189b624f0c366c,BTCUSDT,development,db (+ scenarios),control,2026-09-15T07:49:47+00:00
+run_v1,CTL_PLACEBO_P60,d47a81b3a7da7ae0,BTCUSDT,development,db (+ scenarios),control,2026-09-15T07:49:47+00:00
+run_v1,CTL_PLACEBO_P120,3efca9db8fcaf784,BTCUSDT,development,db (+ scenarios),control,2026-09-15T07:49:48+00:00
+run_v1,DIAG_P0_LAT1,65e3e1db4f09e19e,BTCUSDT,development,db (+ scenarios),diagnostic,2026-09-15T07:49:48+00:00
+run_v1,DIAG_P0_LAT2,7bbc7d73cb448d49,BTCUSDT,development,db (+ scenarios),diagnostic,2026-09-15T07:49:49+00:00
+run_v1,P0,d0ec28a5451e5a81,BTCUSDT,validation,db (+ scenarios),confirmatory,2026-09-15T07:51:58+00:00
+run_v1,EXT_WIDTH,f2082c07c11d22f7,BTCUSDT,validation,db (+ scenarios),confirmatory,2026-09-15T07:51:58+00:00
+run_v1,CTL_MOMENTUM,d452d04147d49ba2,BTCUSDT,validation,db (+ scenarios),control,2026-09-15T07:51:59+00:00
+run_v1,DIAG_P0_LAT1,65e3e1db4f09e19e,BTCUSDT,validation,db (+ scenarios),diagnostic,2026-09-15T07:51:59+00:00
+run_v1,DIAG_P0_LAT2,7bbc7d73cb448d49,BTCUSDT,validation,db (+ scenarios),diagnostic,2026-09-15T07:51:59+00:00
+run_v1,P0,d0ec28a5451e5a81,ETHUSDT,validation,db (+ scenarios),transfer,2026-09-15T07:52:02+00:00
+run_v1,EXT_WIDTH,f2082c07c11d22f7,ETHUSDT,validation,db (+ scenarios),transfer,2026-09-15T07:52:02+00:00
+run_v1,CTL_MOMENTUM,d452d04147d49ba2,ETHUSDT,validation,db (+ scenarios),control,2026-09-15T07:52:03+00:00
+run_v1,DIAG_P0_LAT1,65e3e1db4f09e19e,ETHUSDT,validation,db (+ scenarios),diagnostic,2026-09-15T07:52:03+00:00
+run_v1,DIAG_P0_LAT2,7bbc7d73cb448d49,ETHUSDT,validation,db (+ scenarios),diagnostic,2026-09-15T07:52:03+00:00
+run_v1,P0,d0ec28a5451e5a81,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_NY_R5_CLOSE,ea3e9d74957dcf79,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_NY_R5_STOP,6e0350dc558e63ed,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_NY_R15_STOP,ff2cb2b9d2236ddf,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_NY_R30_CLOSE,3ee4eeebce82dc99,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_NY_R30_STOP,699ef22e1c97ae21,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_NY_R60_CLOSE,3c53677686442a66,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_NY_R60_STOP,f09315042451a9b7,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_LDN_R5_CLOSE,d46058cf06c05592,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_LDN_R5_STOP,4eaf7867ba238bfc,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_LDN_R15_CLOSE,77095bb08849e59c,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_LDN_R15_STOP,37def027924cecef,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_LDN_R30_CLOSE,31a95266decd2d2f,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_LDN_R30_STOP,28822ca9d1ea7df4,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_LDN_R60_CLOSE,b0909798be877bc4,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_LDN_R60_STOP,e1d13e7541203908,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_UTC_R5_CLOSE,d4e2892d7fd4e698,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_UTC_R5_STOP,94fb85c28d9f55de,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_UTC_R15_CLOSE,d2c6a09ad1bac3a8,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_UTC_R15_STOP,a901513147c12a5a,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_UTC_R30_CLOSE,f88fc9c71377137a,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_UTC_R30_STOP,407c03611766e741,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_UTC_R60_CLOSE,73b6626aea3b1abd,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_UTC_R60_STOP,421bc9bf74f9df27,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_BUF05,35f72f912b7ee7c0,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_BUF10,c6ad758e0cd3c9e8,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_GATE,1ca06b262c7eb81f,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_RVOL10,95b9c1485fd86ccc,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_RVOL15,a19ba3ad23f81c7e,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_RVOL20,acb219381e664199,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_WIDTH,f2082c07c11d22f7,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_DL60,54d6e87b330f4526,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_DL180,a6f9fd272bc5a7a0,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_STOPMID,42169a48110932fa,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_TGT1R,002a9644a84f0af4,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_TGT2R,368c08ab18a1742c,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_TGT3R,80eff747811c32c5,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_TX60,7de4897f3a6eafe2,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,INT_RVOL10_TGT2R,bd0b3b06a6a2286e,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,INT_RVOL10_GATE,b67b7da468c8b02d,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,X_REENTER1M,70fc58bc7e67ec6f,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,X_REENTER15M,8bad13862c3cf910,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,X_NOTIME,4201577da4b52de9,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,X_TRAIL,0cdc15f8edf20302,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,X_TRAIL_NOTIME,1ae779deada44888,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,X_VWAP,bc30eded39f72f49,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CTL_MOMENTUM,d452d04147d49ba2,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CTL_CLOCK_LONG,b4d67c7b79990b5b,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CTL_CLOCK_SHORT,e06278e1b55f557f,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CTL_FADE,1088d6543a893a55,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CTL_PLACEBO_M120,a15e80657c6e0a13,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CTL_PLACEBO_M60,ea189b624f0c366c,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CTL_PLACEBO_P60,d47a81b3a7da7ae0,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CTL_PLACEBO_P120,3efca9db8fcaf784,BTCUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,P0,d0ec28a5451e5a81,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_NY_R5_CLOSE,ea3e9d74957dcf79,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_NY_R5_STOP,6e0350dc558e63ed,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_NY_R15_STOP,ff2cb2b9d2236ddf,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_NY_R30_CLOSE,3ee4eeebce82dc99,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_NY_R30_STOP,699ef22e1c97ae21,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_NY_R60_CLOSE,3c53677686442a66,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_NY_R60_STOP,f09315042451a9b7,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_LDN_R5_CLOSE,d46058cf06c05592,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_LDN_R5_STOP,4eaf7867ba238bfc,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_LDN_R15_CLOSE,77095bb08849e59c,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_LDN_R15_STOP,37def027924cecef,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_LDN_R30_CLOSE,31a95266decd2d2f,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_LDN_R30_STOP,28822ca9d1ea7df4,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_LDN_R60_CLOSE,b0909798be877bc4,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_LDN_R60_STOP,e1d13e7541203908,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_UTC_R5_CLOSE,d4e2892d7fd4e698,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_UTC_R5_STOP,94fb85c28d9f55de,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_UTC_R15_CLOSE,d2c6a09ad1bac3a8,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_UTC_R15_STOP,a901513147c12a5a,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_UTC_R30_CLOSE,f88fc9c71377137a,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_UTC_R30_STOP,407c03611766e741,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_UTC_R60_CLOSE,73b6626aea3b1abd,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CORE_UTC_R60_STOP,421bc9bf74f9df27,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_BUF05,35f72f912b7ee7c0,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_BUF10,c6ad758e0cd3c9e8,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_GATE,1ca06b262c7eb81f,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_RVOL10,95b9c1485fd86ccc,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_RVOL15,a19ba3ad23f81c7e,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_RVOL20,acb219381e664199,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_WIDTH,f2082c07c11d22f7,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_DL60,54d6e87b330f4526,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_DL180,a6f9fd272bc5a7a0,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_STOPMID,42169a48110932fa,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_TGT1R,002a9644a84f0af4,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_TGT2R,368c08ab18a1742c,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_TGT3R,80eff747811c32c5,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,EXT_TX60,7de4897f3a6eafe2,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,INT_RVOL10_TGT2R,bd0b3b06a6a2286e,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,INT_RVOL10_GATE,b67b7da468c8b02d,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,X_REENTER1M,70fc58bc7e67ec6f,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,X_REENTER15M,8bad13862c3cf910,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,X_NOTIME,4201577da4b52de9,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,X_TRAIL,0cdc15f8edf20302,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,X_TRAIL_NOTIME,1ae779deada44888,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,X_VWAP,bc30eded39f72f49,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CTL_MOMENTUM,d452d04147d49ba2,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CTL_CLOCK_LONG,b4d67c7b79990b5b,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CTL_CLOCK_SHORT,e06278e1b55f557f,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CTL_FADE,1088d6543a893a55,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CTL_PLACEBO_M120,a15e80657c6e0a13,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CTL_PLACEBO_M60,ea189b624f0c366c,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CTL_PLACEBO_P60,d47a81b3a7da7ae0,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00
+run_v1,CTL_PLACEBO_P120,3efca9db8fcaf784,ETHUSDT,development+validation+lockbox (exploratory),gross + db,exploratory_post_verdict,2026-09-15T07:56:00+00:00

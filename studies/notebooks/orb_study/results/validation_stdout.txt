@@ -1,0 +1,157 @@
+{
+ "block": "validation",
+ "candidates": [
+  "P0",
+  "EXT_WIDTH"
+ ],
+ "assets": {
+  "BTCUSDT": {
+   "P0": {
+    "inference": {
+     "mean_bp": -6.836000908661314,
+     "mean_bp_ci95": [
+      -15.860337563557705,
+      -6.877039780848097,
+      2.7646106173495375
+     ],
+     "p_mean_bp_gt0": 0.9287071292870713,
+     "undefined_draws": 0,
+     "daily_mean": -0.00045822714709220746,
+     "daily_mean_ci95": [
+      -0.0010675674826648267,
+      -0.00046131972873703726,
+      0.00018407857543586392
+     ],
+     "p_daily_mean_gt0": 0.9278072192780722
+    },
+    "halfyears": {
+     "2023-H1": -9.804968496293277,
+     "2023-H2": -6.158236523575746,
+     "2024-H1": -4.201120879936117,
+     "2024-H2": -7.205700941573358
+    },
+    "db_plus5_mean_bp": -11.83544201653965,
+    "trades": 490,
+    "clauses": {
+     "checks_passed": true,
+     "mean_bp_gt0": false,
+     "daily_mean_gt0": false,
+     "halfyears_positive_ge3": false,
+     "db_plus5_ge0": false
+    },
+    "passes": false
+   },
+   "EXT_WIDTH": {
+    "inference": {
+     "mean_bp": -10.848313787763418,
+     "mean_bp_ci95": [
+      -25.119379454204154,
+      -11.087530509493387,
+      4.634605387366473
+     ],
+     "p_mean_bp_gt0": 0.9282071792820717,
+     "undefined_draws": 0,
+     "daily_mean": -0.00040811029981325977,
+     "daily_mean_ci95": [
+      -0.0009516022491950346,
+      -0.00041688403094597437,
+      0.00017155719486657177
+     ],
+     "p_daily_mean_gt0": 0.9282071792820717
+    },
+    "halfyears": {
+     "2023-H1": -16.065651175479566,
+     "2023-H2": 6.225410989729987,
+     "2024-H1": -8.628737364392371,
+     "2024-H2": -23.39150390385409
+    },
+    "db_plus5_mean_bp": -15.84703592320074,
+    "trades": 275,
+    "clauses": {
+     "checks_passed": true,
+     "mean_bp_gt0": false,
+     "daily_mean_gt0": false,
+     "halfyears_positive_ge3": false,
+     "db_plus5_ge0": false
+    },
+    "passes": false
+   }
+  },
+  "ETHUSDT": {
+   "P0": {
+    "inference": {
+     "mean_bp": -7.151573635946782,
+     "mean_bp_ci95": [
+      -20.97357446624405,
+      -7.270054538485869,
+      7.785115694001299
+     ],
+     "p_mean_bp_gt0": 0.8488151184881512,
+     "undefined_draws": 0,
+     "daily_mean": -0.00047546713913408173,
+     "daily_mean_ci95": [
+      -0.0013914767672236774,
+      -0.0004838394271578435,
+      0.0005166803170280236
+     ],
+     "p_daily_mean_gt0": 0.8491150884911509
+    },
+    "halfyears": {
+     "2023-H1": -14.121506805112958,
+     "2023-H2": 8.611818452528562,
+     "2024-H1": -6.085858876545707,
+     "2024-H2": -16.806772687644955
+    },
+    "db_plus5_mean_bp": -12.150949615274515,
+    "trades": 486,
+    "clauses": {
+     "checks_passed": true,
+     "mean_bp_gt0": false,
+     "daily_mean_gt0": false,
+     "halfyears_positive_ge3": false,
+     "db_plus5_ge0": false
+    },
+    "passes": false
+   },
+   "EXT_WIDTH": {
+    "inference": {
+     "mean_bp": -8.21992047875163,
+     "mean_bp_ci95": [
+      -26.723135232095313,
+      -8.584576190125984,
+      12.052701713117562
+     ],
+     "p_mean_bp_gt0": 0.7973202679732027,
+     "undefined_draws": 0,
+     "daily_mean": -0.00031035541068884334,
+     "daily_mean_ci95": [
+      -0.0009978950349694587,
+      -0.00032393892492037116,
+      0.00046181874330686166
+     ],
+     "p_daily_mean_gt0": 0.8038196180381961
+    },
+    "halfyears": {
+     "2023-H1": -17.521509127665755,
+     "2023-H2": 3.7414594440457862,
+     "2024-H1": 11.717757309826208,
+     "2024-H2": -30.55871353192208
+    },
+    "db_plus5_mean_bp": -13.218912100607499,
+    "trades": 276,
+    "clauses": {
+     "checks_passed": true,
+     "mean_bp_gt0": false,
+     "daily_mean_gt0": false,
+     "halfyears_positive_ge3": false,
+     "db_plus5_ge0": false
+    },
+    "passes": false
+   }
+  }
+ },
+ "continuation": {
+  "rule": "at least one BTC candidate passes all clauses",
+  "decision": "closed"
+ }
+}

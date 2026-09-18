@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "C:\Source\Repos\p300\studies\notebooks\orb_study\orb_explore.py", line 203, in <module>
+    main()
+    ~~~~^^
+  File "C:\Source\Repos\p300\studies\notebooks\orb_study\orb_explore.py", line 193, in main
+    (OUT / "diagnostics.json").write_text(json.dumps(diagnostics(full), indent=1, default=str), encoding="utf-8")
+                                                     ~~~~~~~~~~~^^^^^^
+  File "C:\Source\Repos\p300\studies\notebooks\orb_study\orb_explore.py", line 148, in diagnostics
+    "flagged_trades": int((tr.flags.fillna("") != "").sum()),
+                           ^^^^^^^^^^^^^^^
+AttributeError: 'Flags' object has no attribute 'fillna'

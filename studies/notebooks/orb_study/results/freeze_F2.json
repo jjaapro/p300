@@ -1,0 +1,33 @@
+{
+ "freeze": "F2",
+ "created_utc": "2026-09-15T07:52:05+00:00",
+ "note": "After validation, before any lockbox outcome.",
+ "candidates": [
+  "P0",
+  "EXT_WIDTH"
+ ],
+ "lockbox": "closed",
+ "btc_clauses": {
+  "P0": {
+   "checks_passed": true,
+   "mean_bp_gt0": false,
+   "daily_mean_gt0": false,
+   "halfyears_positive_ge3": false,
+   "db_plus5_ge0": false
+  },
+  "EXT_WIDTH": {
+   "checks_passed": true,
+   "mean_bp_gt0": false,
+   "daily_mean_gt0": false,
+   "halfyears_positive_ge3": false,
+   "db_plus5_ge0": false
+  }
+ },
+ "result_files": {
+  "results/run_v1/validation/daily_db_BTCUSDT.csv": "fa43c3cfe747039fc660b29f405d4015b4b262814adad65127d57fdde8aed213",
+  "results/run_v1/validation/daily_db_ETHUSDT.csv": "73bf5bee2581e17b46eaf6260fa552c2f336fc49a1046de430388d23cce6922c",
+  "results/run_v1/validation/summary_BTCUSDT.csv": "c5540f5649f53a1dd81f86c71bf4634725bacab423c8fc24c1d3efef4a403f6a",
+  "results/run_v1/validation/summary_ETHUSDT.csv": "180b62fb10337824adbc1fd8916441d4a33c905cf61e2dd5740ee9d76f936eb3",
+  "results/run_v1/validation/validation_report.json": "2ed329863315e0eaacf22fdf3c8a24ea252ff1a5de7b1d969db175515d598981"
+ }
+}

@@ -1,0 +1,39 @@
+{
+ "freeze": "F1",
+ "created_utc": "2026-09-15T07:50:31+00:00",
+ "note": "After development, before any validation outcome.",
+ "candidates": [
+  "P0",
+  "EXT_WIDTH"
+ ],
+ "challenger_policy": {
+  "id": "EXT_WIDTH",
+  "anchor": "NY",
+  "shift_min": 0,
+  "range_min": 15,
+  "entry": "close",
+  "buffer_w": 0.0,
+  "direction_gate": false,
+  "relvol_min": null,
+  "width_band": true,
+  "deadline_min": 120,
+  "stop": "opposite",
+  "target_r": null,
+  "time_exit": "session",
+  "exit_event": null,
+  "latency_min": 0,
+  "session_min": 390,
+  "censor_days": 7
+ },
+ "selection_reason": "highest eligible development net daily Sharpe",
+ "result_files": {
+  "results/run_v1/development/daily_db_BTCUSDT.csv": "65b759d9ab91554cd12085e5e799bc10f8fc325a1d4d511efccb2eea96436771",
+  "results/run_v1/development/development_report.json": "43ecbf9194ead9a33f112ea8d6b8e4217347c681f51bd96f454e01ef0a3156fc",
+  "results/run_v1/development/halfyear_db_BTCUSDT.csv": "0fd6b1dcce05b76695f6a104416d79fd730b03bc030fdf2cc4b75aad2ded26d8",
+  "results/run_v1/development/random_direction.csv": "9b46605f68a003b7340d3252c50b614bf8d4c31d884e2f3d0f204eba5351ccd0",
+  "results/run_v1/development/random_time.csv": "9084bf18a988fa4fbca81e89aa123a59be883c873409ea515e4ea4f6d59e07ca",
+  "results/run_v1/development/selection_table.csv": "1308bd9ff7c9b0d24c2a07478b08ebe917e81d866d5e4689fd42b327010bd92e",
+  "results/run_v1/development/summary_BTCUSDT.csv": "b8697d7af3c3ffea59f43be0c2a7db128e21656020eccb5cbefbfd53d0ae96b3",
+  "results/run_v1/development/yearly_db_BTCUSDT.csv": "47813ce276d4225c2e0e152fc9c3e450b5f1e5424a42fff8195900800173d28a"
+ }
+}

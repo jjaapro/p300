@@ -1,0 +1,39 @@
+{
+ "freeze": "F0",
+ "created_utc": "2026-09-15T07:49:10+00:00",
+ "note": "Before any ORB outcome. Rules, code, calendars, data manifest and checks.",
+ "policy_registry_sha256": "10936b4bf447eb8ad417c426a97b0e15cda76466f47518ab625d3d5212cb1576",
+ "panel_logical_sha256": {
+  "BTCUSDT": "8220cf02b8ad7fb8800d858af180c0959158ce9c14065532bf4c266446192a08",
+  "ETHUSDT": "1a13a3f4c6e115c6c5fde192553c4b34c79628f3615b92563b52b1390d5289aa"
+ },
+ "files": {
+  "PREREGISTRATION.md": "5b48b4ffc8b755387e1c34dfe6c4d4a40faff63beb5898a00882bd7819c5158e",
+  "TEST_PLAN.md": "df3b337661d5a9ae45b1fef20022ae724ea9cc8e7fc1ec5e765651889a37069f",
+  "RESEARCH.md": "aad365bcfdcf980d795347b76ecedeb6d6da7e8fd18915f0a9e9b6b5bafca611",
+  "orb_calendars.py": "45697a16b0bddb833597c41bd05adf245f844cfd68d307f6f9b8f465974587bc",
+  "orb_checks.py": "2588527026e19f84737644b073d164b5cd826186c756318d5f51964c08fd48c5",
+  "orb_controls.py": "6504a7ac9810555eb87590042bea31f2055b5b182d10d0bfe63578ed90c94a58",
+  "orb_data.py": "22468873614ce1632c2713e5d5b4758b9539a285160436a0f796814c2ed2707f",
+  "orb_engine.py": "f575352332f016803f1f125d60ab4a46719e88c6df788af1d1cf821db98e2f49",
+  "orb_metrics.py": "385c37c2d3ca19d49dd883d8eea3a9eec90aaf1a0bcabbe1cf39ff82b9f20cb9",
+  "orb_parity.py": "7473adb1df09fbafcee25fa37b920fee8445b71cbff5f07a10b5c7bee634d4bb",
+  "orb_policies.py": "97fd5440c4a982bf8f7c31ecd44138cf1d9874e064621789612af44d28b2bcd9",
+  "orb_run.py": "c863d493484c3041c8799bb264730f65161836cfe48468fc390b24c87cd9e9e7",
+  "orb_signals.py": "550b578465218039e19a163168a2446b33b8c826cdac68b97edd34a7dce9314f",
+  "tests/test_calendars.py": "381c92f123ea372f15f818235246be51cc3137de88649fbba65bcccaa4f56c4d",
+  "tests/test_orb_engine.py": "001e1080baba29b8ccb6ae888a434d145e626bc96b5c7cd0e8f7d7a248b30b6f",
+  "tests/test_orb_metrics.py": "f8bdcba61dd6a230fbb6b0f79d19e8e0ac5027c692cc27b0c30e29dd5ee9c454",
+  "tests/test_run_smoke.py": "113eff6587ab1f288774e3cbd7ed11c6c3fab5b5b7d989bf51044df53c1e58bc",
+  "configs/calendar_XLON.json": "c8417d2095ad87c8e8db35a429dbc8249bb914fff0208796dc2d4bdc355ff979",
+  "configs/calendar_XNYS.json": "3f85bf170bb598a2f4cf527750affb13b3a37078174f6ab504a1e7344618fc2d",
+  "configs/make_calendars.py": "bf7009fc28471898dfb02419f93b0487f326c6d0f1309803487f4c99ec6cad99",
+  "data/raw/binance_um/manifest.json": "7f6615cdd1cd6259507e2472edcc3f9540a22e0ae008b6a9c5a3bb4239196d7a",
+  "cache/BTCUSDT_funding.meta.json": "b43a1bc96904b0d9c5e4b45405df9a46860c88a2c2a2a279d3d4e725ff34543d",
+  "cache/BTCUSDT_perp_1m.meta.json": "e72bc7841cc12701d237bbe45f0d34131c8719ebaa3d42da58029357cd986c67",
+  "cache/ETHUSDT_funding.meta.json": "71d8b176b9024a7d1988098fd3ec9c0f3dbb04550332b878ab7600549598fc3f",
+  "cache/ETHUSDT_perp_1m.meta.json": "5dc90390dc6a92d69baa65349a8a1479c8d8946be8b3bde3ddd7da1571a209c7",
+  "results/data_gate.json": "eeffe65ffd33dde384a6a84da99e86dc33f12cdd52aed4694a2c3c2bd1f3e4bd",
+  "results/engine_checks.json": "059dfe39ab414ea94ee456c2e31ffcc1b178e91297062d5ffcab13185fda200b"
+ }
+}

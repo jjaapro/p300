@@ -1,0 +1,61 @@
+{
+ "random_walk_engine_check": {
+  "CTL_CLOCK_LONG": {
+   "trades": 1670,
+   "gross_mean_bp": 0.9734372228092032,
+   "se_bp": 1.1107857629298667
+  },
+  "CTL_CLOCK_SHORT": {
+   "trades": 1670,
+   "gross_mean_bp": 1.4883580505685763,
+   "se_bp": 1.1570025095816392
+  },
+  "P0": {
+   "trades": 1668,
+   "gross_mean_bp": 2.3316033497384314,
+   "se_bp": 1.5839433117493396
+  }
+ },
+ "BTCUSDT_development": {
+  "p0_gross_bp": 12.102663317368743,
+  "random_direction_gross_median_bp": 6.579718307862879,
+  "random_direction_share_ge_p0": 0.12,
+  "random_time_gross_median_bp": 1.6714133999826797,
+  "random_time_share_ge_p0": 0.03
+ },
+ "BTCUSDT_validation": {
+  "p0_gross_bp": 4.680855414197607,
+  "random_direction_gross_median_bp": 10.687780922161537,
+  "random_direction_share_ge_p0": 0.895,
+  "random_time_gross_median_bp": 7.676461716558833,
+  "random_time_share_ge_p0": 0.765
+ },
+ "BTCUSDT_lockbox": {
+  "p0_gross_bp": 2.4076512604214977,
+  "random_direction_gross_median_bp": 5.699422269575507,
+  "random_direction_share_ge_p0": 0.74,
+  "random_time_gross_median_bp": 2.896166110821743,
+  "random_time_share_ge_p0": 0.525
+ },
+ "ETHUSDT_development": {
+  "p0_gross_bp": 12.18229411097876,
+  "random_direction_gross_median_bp": 8.000252280536388,
+  "random_direction_share_ge_p0": 0.2,
+  "random_time_gross_median_bp": 3.01217327051976,
+  "random_time_share_ge_p0": 0.05
+ },
+ "ETHUSDT_validation": {
+  "p0_gross_bp": 4.3768552054961924,
+  "random_direction_gross_median_bp": 9.894821257355964,
+  "random_direction_share_ge_p0": 0.785,
+  "random_time_gross_median_bp": 5.744129833307062,
+  "random_time_share_ge_p0": 0.6
+ },
+ "ETHUSDT_lockbox": {
+  "p0_gross_bp": 18.58775905312763,
+  "random_direction_gross_median_bp": 11.413152288523538,
+  "random_direction_share_ge_p0": 0.22,
+  "random_time_gross_median_bp": 6.030334411862841,
+  "random_time_share_ge_p0": 0.065
+ }
+}

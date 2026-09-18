@@ -1,0 +1,4 @@
+# Large study-local inputs: re-create with `python orb_data.py download` then `build`.
+data/raw/
+cache/
+__pycache__/

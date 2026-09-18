@@ -1,0 +1,860 @@
+{
+ "created_utc": "2026-09-15T07:36:56+00:00",
+ "BTCUSDT_panel": {
+  "minutes": 3525120,
+  "present": 3525120,
+  "duplicates": 0,
+  "non_monotonic": 0,
+  "off_grid": 0,
+  "close_time_mismatch": 0,
+  "timestamp_units": [
+   "ms"
+  ],
+  "non_finite": 0,
+  "invalid_ohlc": 0,
+  "outage_minutes": 369,
+  "outage_runs": [
+   {
+    "start_utc": "2020-09-27T11:13:00+00:00",
+    "minutes": 2
+   },
+   {
+    "start_utc": "2021-03-02T01:01:00+00:00",
+    "minutes": 59
+   },
+   {
+    "start_utc": "2022-05-01T22:26:00+00:00",
+    "minutes": 29
+   },
+   {
+    "start_utc": "2022-05-28T16:40:00+00:00",
+    "minutes": 35
+   },
+   {
+    "start_utc": "2023-09-12T08:34:00+00:00",
+    "minutes": 19
+   },
+   {
+    "start_utc": "2023-11-10T15:07:00+00:00",
+    "minutes": 99
+   },
+   {
+    "start_utc": "2024-10-28T16:21:00+00:00",
+    "minutes": 14
+   },
+   {
+    "start_utc": "2024-10-28T16:36:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2024-10-28T20:00:00+00:00",
+    "minutes": 74
+   },
+   {
+    "start_utc": "2025-01-14T13:32:00+00:00",
+    "minutes": 2
+   },
+   {
+    "start_utc": "2025-01-29T01:23:00+00:00",
+    "minutes": 13
+   },
+   {
+    "start_utc": "2025-01-29T02:41:00+00:00",
+    "minutes": 4
+   },
+   {
+    "start_utc": "2025-08-29T06:19:00+00:00",
+    "minutes": 18
+   }
+  ],
+  "logical_sha256": "8220cf02b8ad7fb8800d858af180c0959158ce9c14065532bf4c266446192a08"
+ },
+ "BTCUSDT_rest15m": {
+  "table": "cd_futures_15m",
+  "overlap_bars": 235008,
+  "archive_bars": 235008,
+  "ohlc_disagree": 35,
+  "ohlc_agree_share": 0.9998510688997821,
+  "volume_rel_diff_p99": 3.214840208117245e-16,
+  "volume_rel_diff_gt_1pct": 33,
+  "disagreements": [
+   {
+    "utc": "2026-06-02T14:15:00+00:00",
+    "max_rel": 0.012718426743030798
+   },
+   {
+    "utc": "2023-11-10T16:30:00+00:00",
+    "max_rel": 0.009489245877141447
+   },
+   {
+    "utc": "2023-11-10T16:15:00+00:00",
+    "max_rel": 0.009084671918672982
+   },
+   {
+    "utc": "2023-11-10T16:00:00+00:00",
+    "max_rel": 0.008160582303240222
+   },
+   {
+    "utc": "2023-11-10T16:45:00+00:00",
+    "max_rel": 0.0067007771188799595
+   },
+   {
+    "utc": "2023-11-10T15:45:00+00:00",
+    "max_rel": 0.004693463256191676
+   },
+   {
+    "utc": "2023-11-10T15:30:00+00:00",
+    "max_rel": 0.004557510148849837
+   },
+   {
+    "utc": "2026-06-05T17:00:00+00:00",
+    "max_rel": 0.004347058419626036
+   },
+   {
+    "utc": "2023-11-10T15:15:00+00:00",
+    "max_rel": 0.0023710120818999127
+   },
+   {
+    "utc": "2024-10-28T20:30:00+00:00",
+    "max_rel": 0.0023341560512995627
+   },
+   {
+    "utc": "2026-07-21T08:30:00+00:00",
+    "max_rel": 0.002084598442895598
+   },
+   {
+    "utc": "2024-10-28T20:00:00+00:00",
+    "max_rel": 0.001974679168647191
+   },
+   {
+    "utc": "2024-10-28T21:00:00+00:00",
+    "max_rel": 0.0015766947318328933
+   },
+   {
+    "utc": "2025-01-29T01:30:00+00:00",
+    "max_rel": 0.0014041488811089495
+   },
+   {
+    "utc": "2025-01-29T01:15:00+00:00",
+    "max_rel": 0.0014031635138127556
+   },
+   {
+    "utc": "2024-03-27T12:30:00+00:00",
+    "max_rel": 0.001239973209753294
+   },
+   {
+    "utc": "2026-09-05T19:30:00+00:00",
+    "max_rel": 0.0011953755398318813
+   },
+   {
+    "utc": "2024-10-28T20:45:00+00:00",
+    "max_rel": 0.0009510791366907312
+   },
+   {
+    "utc": "2026-06-14T22:45:00+00:00",
+    "max_rel": 0.0008540807611420136
+   },
+   {
+    "utc": "2024-10-28T20:15:00+00:00",
+    "max_rel": 0.0007854815390260004
+   },
+   {
+    "utc": "2026-05-18T05:30:00+00:00",
+    "max_rel": 0.0007333589922294397
+   },
+   {
+    "utc": "2026-06-05T06:00:00+00:00",
+    "max_rel": 0.0007054855528478408
+   },
+   {
+    "utc": "2025-01-29T02:30:00+00:00",
+    "max_rel": 0.0006426413147615317
+   },
+   {
+    "utc": "2024-03-27T12:15:00+00:00",
+    "max_rel": 0.0005663336017963719
+   },
+   {
+    "utc": "2026-06-01T05:00:00+00:00",
+    "max_rel": 0.0005581610635010312
+   }
+  ]
+ },
+ "BTCUSDT_funding": {
+  "rows": 7344,
+  "expected_slots": 7344,
+  "unique_slots": 7344,
+  "missing_slots": 0,
+  "max_offset_ms": 47,
+  "rate_min": -0.003,
+  "rate_max": 0.003,
+  "rate_mean_bp": 1.0745126225490196,
+  "from_rest": 39
+ },
+ "ETHUSDT_panel": {
+  "minutes": 3525120,
+  "present": 3525120,
+  "duplicates": 0,
+  "non_monotonic": 0,
+  "off_grid": 0,
+  "close_time_mismatch": 0,
+  "timestamp_units": [
+   "ms"
+  ],
+  "non_finite": 0,
+  "invalid_ohlc": 0,
+  "outage_minutes": 302,
+  "outage_runs": [
+   {
+    "start_utc": "2020-01-20T07:43:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-01-20T07:46:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-01-20T07:51:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-01-20T10:49:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-01-20T15:46:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-01-20T17:11:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-01-20T18:33:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-01-20T20:09:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-01-20T20:50:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-01-20T20:52:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-01-20T21:06:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-01-20T21:10:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-01-20T21:14:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-01-20T21:18:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-01-20T21:40:00+00:00",
+    "minutes": 2
+   },
+   {
+    "start_utc": "2020-01-20T21:47:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-01-20T21:50:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-01-29T05:40:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-01-29T18:55:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-01-30T03:04:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-01-30T03:07:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-02-03T17:43:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-02-03T18:22:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-02-28T17:23:00+00:00",
+    "minutes": 2
+   },
+   {
+    "start_utc": "2020-09-27T11:13:00+00:00",
+    "minutes": 2
+   },
+   {
+    "start_utc": "2020-09-27T11:23:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2020-09-27T11:25:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2021-03-02T01:01:00+00:00",
+    "minutes": 59
+   },
+   {
+    "start_utc": "2022-05-01T22:26:00+00:00",
+    "minutes": 29
+   },
+   {
+    "start_utc": "2022-05-28T16:40:00+00:00",
+    "minutes": 35
+   },
+   {
+    "start_utc": "2023-09-12T08:34:00+00:00",
+    "minutes": 19
+   },
+   {
+    "start_utc": "2023-11-14T11:39:00+00:00",
+    "minutes": 3
+   },
+   {
+    "start_utc": "2024-10-28T16:21:00+00:00",
+    "minutes": 14
+   },
+   {
+    "start_utc": "2024-10-28T16:36:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2024-10-28T20:00:00+00:00",
+    "minutes": 74
+   },
+   {
+    "start_utc": "2025-01-14T13:32:00+00:00",
+    "minutes": 2
+   },
+   {
+    "start_utc": "2025-01-14T15:01:00+00:00",
+    "minutes": 1
+   },
+   {
+    "start_utc": "2025-01-29T01:23:00+00:00",
+    "minutes": 13
+   },
+   {
+    "start_utc": "2025-01-29T02:41:00+00:00",
+    "minutes": 4
+   },
+   {
+    "start_utc": "2025-08-29T06:19:00+00:00",
+    "minutes": 18
+   }
+  ],
+  "logical_sha256": "1a13a3f4c6e115c6c5fde192553c4b34c79628f3615b92563b52b1390d5289aa"
+ },
+ "ETHUSDT_rest15m": {
+  "table": "cd_futures_eth_15m",
+  "overlap_bars": 199872,
+  "archive_bars": 235008,
+  "ohlc_disagree": 21,
+  "ohlc_agree_share": 0.9998949327569645,
+  "volume_rel_diff_p99": 3.237002951030496e-16,
+  "volume_rel_diff_gt_1pct": 23,
+  "disagreements": [
+   {
+    "utc": "2024-10-28T20:30:00+00:00",
+    "max_rel": 0.005054659466161121
+   },
+   {
+    "utc": "2024-10-28T20:45:00+00:00",
+    "max_rel": 0.004912305802959357
+   },
+   {
+    "utc": "2024-10-28T21:00:00+00:00",
+    "max_rel": 0.0048450690789996875
+   },
+   {
+    "utc": "2024-10-28T20:00:00+00:00",
+    "max_rel": 0.003446862201135894
+   },
+   {
+    "utc": "2024-10-28T20:15:00+00:00",
+    "max_rel": 0.003407195710754537
+   },
+   {
+    "utc": "2023-11-10T15:00:00+00:00",
+    "max_rel": 0.0028676653942800233
+   },
+   {
+    "utc": "2025-01-29T01:30:00+00:00",
+    "max_rel": 0.002071807627989649
+   },
+   {
+    "utc": "2025-01-29T01:15:00+00:00",
+    "max_rel": 0.0020653501267886075
+   },
+   {
+    "utc": "2026-08-23T13:45:00+00:00",
+    "max_rel": 0.0020173697573857407
+   },
+   {
+    "utc": "2026-09-05T19:30:00+00:00",
+    "max_rel": 0.0014032562014217773
+   },
+   {
+    "utc": "2025-01-14T15:00:00+00:00",
+    "max_rel": 0.0013527934714375222
+   },
+   {
+    "utc": "2025-01-29T02:30:00+00:00",
+    "max_rel": 0.0012201034519295879
+   },
+   {
+    "utc": "2024-03-27T12:30:00+00:00",
+    "max_rel": 0.0006969593059400447
+   },
+   {
+    "utc": "2026-09-09T08:45:00+00:00",
+    "max_rel": 0.00041269186203392154
+   },
+   {
+    "utc": "2025-01-14T13:30:00+00:00",
+    "max_rel": 0.00040528290912689234
+   },
+   {
+    "utc": "2024-03-27T12:15:00+00:00",
+    "max_rel": 0.00024812719725006134
+   },
+   {
+    "utc": "2026-09-09T22:15:00+00:00",
+    "max_rel": 0.0001630397123979844
+   },
+   {
+    "utc": "2024-03-28T11:45:00+00:00",
+    "max_rel": 4.47432297900017e-05
+   },
+   {
+    "utc": "2024-10-28T16:30:00+00:00",
+    "max_rel": 1.1935405584872804e-05
+   },
+   {
+    "utc": "2022-05-01T22:45:00+00:00",
+    "max_rel": 3.5687647435372448e-06
+   },
+   {
+    "utc": "2025-08-29T06:30:00+00:00",
+    "max_rel": 2.246524626451992e-06
+   }
+  ]
+ },
+ "ETHUSDT_funding": {
+  "rows": 7344,
+  "expected_slots": 7344,
+  "unique_slots": 7344,
+  "missing_slots": 0,
+  "max_offset_ms": 47,
+  "rate_min": -0.00356332,
+  "rate_max": 0.00375,
+  "rate_mean_bp": 1.2689309776688453,
+  "from_rest": 39
+ },
+ "BTCUSDT_rest1m": {
+  "table": "screener_klines_1m",
+  "overlap_bars": 144000,
+  "ohlc_disagree": 0,
+  "volume_rel_diff_gt_1pct": 0,
+  "first_utc": "2026-02-25T11:28:00+00:00",
+  "last_utc": "2026-06-05T11:27:00+00:00"
+ },
+ "BTCUSDT_aggtrades": [
+  {
+   "day": "2020-06-15",
+   "symbol": "BTCUSDT",
+   "zip_bytes": 10420909,
+   "trade_minutes": 510,
+   "expected_minutes": 510,
+   "ohlc_disagree_by_field": {
+    "open": 11,
+    "high": 0,
+    "low": 0,
+    "close": 0
+   },
+   "open_unexplained": 0,
+   "high_low_disagree": 0,
+   "high_low_max_diff_bp": 0.0,
+   "volume_max_rel_diff": 0.004696452612793137,
+   "window_volume_rel_diff": 0.0,
+   "source": "https://data.binance.vision/data/futures/um/daily/aggTrades/BTCUSDT/BTCUSDT-aggTrades-2020-06-15.zip"
+  },
+  {
+   "day": "2021-06-15",
+   "symbol": "BTCUSDT",
+   "zip_bytes": 39559512,
+   "trade_minutes": 510,
+   "expected_minutes": 510,
+   "ohlc_disagree_by_field": {
+    "open": 85,
+    "high": 2,
+    "low": 2,
+    "close": 0
+   },
+   "open_unexplained": 0,
+   "high_low_disagree": 4,
+   "high_low_max_diff_bp": 0.38313213505877297,
+   "volume_max_rel_diff": 0.013557137933847607,
+   "window_volume_rel_diff": 0.0,
+   "source": "https://data.binance.vision/data/futures/um/daily/aggTrades/BTCUSDT/BTCUSDT-aggTrades-2021-06-15.zip"
+  },
+  {
+   "day": "2022-06-15",
+   "symbol": "BTCUSDT",
+   "zip_bytes": 78670063,
+   "trade_minutes": 510,
+   "expected_minutes": 510,
+   "ohlc_disagree_by_field": {
+    "open": 111,
+    "high": 1,
+    "low": 0,
+    "close": 0
+   },
+   "open_unexplained": 0,
+   "high_low_disagree": 1,
+   "high_low_max_diff_bp": 0.048685491724529115,
+   "volume_max_rel_diff": 0.011685954163830283,
+   "window_volume_rel_diff": 0.0,
+   "source": "https://data.binance.vision/data/futures/um/daily/aggTrades/BTCUSDT/BTCUSDT-aggTrades-2022-06-15.zip"
+  }
+ ],
+ "eligibility": {
+  "BTCUSDT_NY": [
+   {
+    "year": "2020",
+    "ok": 251,
+    "sessions": 251,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 2
+   },
+   {
+    "year": "2021",
+    "ok": 251,
+    "sessions": 251,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 1
+   },
+   {
+    "year": "2022",
+    "ok": 250,
+    "sessions": 250,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 1
+   },
+   {
+    "year": "2023",
+    "ok": 248,
+    "sessions": 248,
+    "outage_in_horizon": 1,
+    "early_close_excluded": 2
+   },
+   {
+    "year": "2024",
+    "ok": 249,
+    "sessions": 249,
+    "outage_in_horizon": 1,
+    "early_close_excluded": 3
+   },
+   {
+    "year": "2025",
+    "ok": 247,
+    "sessions": 247,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 3
+   },
+   {
+    "year": "2026",
+    "ok": 174,
+    "sessions": 174,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 0
+   }
+  ],
+  "BTCUSDT_LDN": [
+   {
+    "year": "2020",
+    "ok": 252,
+    "sessions": 252,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 2
+   },
+   {
+    "year": "2021",
+    "ok": 251,
+    "sessions": 251,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 2
+   },
+   {
+    "year": "2022",
+    "ok": 248,
+    "sessions": 248,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 2
+   },
+   {
+    "year": "2023",
+    "ok": 249,
+    "sessions": 249,
+    "outage_in_horizon": 1,
+    "early_close_excluded": 2
+   },
+   {
+    "year": "2024",
+    "ok": 252,
+    "sessions": 252,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 2
+   },
+   {
+    "year": "2025",
+    "ok": 251,
+    "sessions": 251,
+    "outage_in_horizon": 1,
+    "early_close_excluded": 2
+   },
+   {
+    "year": "2026",
+    "ok": 176,
+    "sessions": 176,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 0
+   }
+  ],
+  "BTCUSDT_UTC": [
+   {
+    "year": "2020",
+    "ok": 366,
+    "sessions": 366,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 0
+   },
+   {
+    "year": "2021",
+    "ok": 365,
+    "sessions": 365,
+    "outage_in_horizon": 1,
+    "early_close_excluded": 0
+   },
+   {
+    "year": "2022",
+    "ok": 365,
+    "sessions": 365,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 0
+   },
+   {
+    "year": "2023",
+    "ok": 365,
+    "sessions": 365,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 0
+   },
+   {
+    "year": "2024",
+    "ok": 366,
+    "sessions": 366,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 0
+   },
+   {
+    "year": "2025",
+    "ok": 365,
+    "sessions": 365,
+    "outage_in_horizon": 2,
+    "early_close_excluded": 0
+   },
+   {
+    "year": "2026",
+    "ok": 256,
+    "sessions": 256,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 0
+   }
+  ],
+  "ETHUSDT_NY": [
+   {
+    "year": "2020",
+    "ok": 251,
+    "sessions": 251,
+    "outage_in_horizon": 3,
+    "early_close_excluded": 2
+   },
+   {
+    "year": "2021",
+    "ok": 251,
+    "sessions": 251,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 1
+   },
+   {
+    "year": "2022",
+    "ok": 250,
+    "sessions": 250,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 1
+   },
+   {
+    "year": "2023",
+    "ok": 248,
+    "sessions": 248,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 2
+   },
+   {
+    "year": "2024",
+    "ok": 249,
+    "sessions": 249,
+    "outage_in_horizon": 1,
+    "early_close_excluded": 3
+   },
+   {
+    "year": "2025",
+    "ok": 247,
+    "sessions": 247,
+    "outage_in_horizon": 1,
+    "early_close_excluded": 3
+   },
+   {
+    "year": "2026",
+    "ok": 174,
+    "sessions": 174,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 0
+   }
+  ],
+  "ETHUSDT_LDN": [
+   {
+    "year": "2020",
+    "ok": 252,
+    "sessions": 252,
+    "outage_in_horizon": 1,
+    "early_close_excluded": 2
+   },
+   {
+    "year": "2021",
+    "ok": 251,
+    "sessions": 251,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 2
+   },
+   {
+    "year": "2022",
+    "ok": 248,
+    "sessions": 248,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 2
+   },
+   {
+    "year": "2023",
+    "ok": 249,
+    "sessions": 249,
+    "outage_in_horizon": 2,
+    "early_close_excluded": 2
+   },
+   {
+    "year": "2024",
+    "ok": 252,
+    "sessions": 252,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 2
+   },
+   {
+    "year": "2025",
+    "ok": 251,
+    "sessions": 251,
+    "outage_in_horizon": 1,
+    "early_close_excluded": 2
+   },
+   {
+    "year": "2026",
+    "ok": 176,
+    "sessions": 176,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 0
+   }
+  ],
+  "ETHUSDT_UTC": [
+   {
+    "year": "2020",
+    "ok": 366,
+    "sessions": 366,
+    "outage_in_horizon": 2,
+    "early_close_excluded": 0
+   },
+   {
+    "year": "2021",
+    "ok": 365,
+    "sessions": 365,
+    "outage_in_horizon": 1,
+    "early_close_excluded": 0
+   },
+   {
+    "year": "2022",
+    "ok": 365,
+    "sessions": 365,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 0
+   },
+   {
+    "year": "2023",
+    "ok": 365,
+    "sessions": 365,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 0
+   },
+   {
+    "year": "2024",
+    "ok": 366,
+    "sessions": 366,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 0
+   },
+   {
+    "year": "2025",
+    "ok": 365,
+    "sessions": 365,
+    "outage_in_horizon": 2,
+    "early_close_excluded": 0
+   },
+   {
+    "year": "2026",
+    "ok": 256,
+    "sessions": 256,
+    "outage_in_horizon": 0,
+    "early_close_excluded": 0
+   }
+  ]
+ },
+ "gate": {
+  "grid_and_duplicates": true,
+  "ohlc_valid": true,
+  "rest15m_agree_999": true,
+  "aggtrades_consistent": true,
+  "funding_complete": true
+ },
+ "gate_passed": true
+}
