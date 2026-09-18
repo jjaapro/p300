@@ -1,0 +1,34 @@
+{
+ "created_utc": "2026-09-18T22:19:46+00:00",
+ "f0_created_utc": "2026-09-18T22:19:36+00:00",
+ "verdict": "KEEP_6R",
+ "chosen": null,
+ "passing": [],
+ "clauses": {
+  "P1": {
+   "D1_mar_gain_both_assets": false,
+   "D2_mar_both_halves": false,
+   "D3_bounded_cost": false,
+   "passes": false,
+   "placebo_p95_MAR_R": 2.3058168806531882,
+   "levels_beat_placebo_p95": false
+  },
+  "P2": {
+   "D1_mar_gain_both_assets": false,
+   "D2_mar_both_halves": false,
+   "D3_bounded_cost": false,
+   "passes": false,
+   "placebo_p95_MAR_R": 2.4273688528505457,
+   "levels_beat_placebo_p95": false
+  },
+  "P3": {
+   "D1_mar_gain_both_assets": false,
+   "D2_mar_both_halves": false,
+   "D3_bounded_cost": false,
+   "passes": false,
+   "placebo_p95_MAR_R": 2.4273688528505457,
+   "levels_beat_placebo_p95": false
+  }
+ },
+ "report_sha256": "9707c60ba10c9e7bb2534e807b52f9610a48c3725b8299a3ce236faac0995425"
+}

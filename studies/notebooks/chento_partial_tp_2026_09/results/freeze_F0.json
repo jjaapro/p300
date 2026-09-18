@@ -1,0 +1,63 @@
+{
+ "freeze": "F0",
+ "created_utc": "2026-09-18T22:19:36+00:00",
+ "readme_sha256": "cc65920c3624e883a2e09cb335a237a2eba5b3070a35f8cea7fbbe42fef65214",
+ "engine_sha256": "37c25b64d116a62b3743efe854bdce452a747d98194ee12e23546dcd73d1c482",
+ "a0_reference_sha256": "9e6d4255e46315e814462b3cd266fe341208bb3adf5874e197e2edd2ecfce64f",
+ "inputs": {
+  "snapshot": true,
+  "features_BTC.csv": true,
+  "features_ETH.csv": true,
+  "pool_BTC.csv": true,
+  "pool_ETH.csv": true,
+  "trades_BTC.csv": true,
+  "trades_ETH.csv": true,
+  "pass": true
+ },
+ "ladders": {
+  "P1": [
+   [
+    1.0,
+    0.25
+   ],
+   [
+    2.0,
+    0.2
+   ],
+   [
+    3.0,
+    0.1
+   ],
+   [
+    4.0,
+    0.2
+   ]
+  ],
+  "P2": [
+   [
+    3.0,
+    0.5
+   ]
+  ],
+  "P3": [
+   [
+    1.0,
+    0.5
+   ]
+  ]
+ },
+ "placebo": {
+  "draws": 500,
+  "seed": 7,
+  "range": [
+   0.5,
+   5.5
+  ]
+ },
+ "decision": {
+  "MAR_GAIN": 1.1,
+  "MEAN_D_FLOOR": -0.1,
+  "CI_LOW_FLOOR": -0.3
+ },
+ "note": "Before any partial-close outcome. The A0 reference is the exit-policy study's committed walks."
+}
