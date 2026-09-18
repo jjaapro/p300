@@ -39,7 +39,7 @@ from __future__ import annotations
 import argparse
 import logging
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
@@ -51,15 +51,23 @@ ASSETS: tuple[str, ...] = ("BTC", "ETH")
 # interval -> how often the feed may pull it. Hourly because an uncollected
 # hour expires out of the source window; daily because a day does not.
 INTERVALS: dict[str, str] = {"1hour": "hour", "daily": "day"}
+# The feed's first tick of a new hour lands seconds after the boundary, before
+# the venue has published the bar that just closed. Shifting the throttle
+# clock back by this much makes the pull for hour H happen at H:02, when the
+# H-1 bar exists. (Seen live 2026-09-18 21:00:49: the pull asked for a bar 49
+# seconds old, got nothing, and recorded those 49 seconds as unfillable.)
+PUBLISH_LAG = timedelta(minutes=2)
 
 _done: set[str] = set()
 
 
 def _bucket(now: datetime, cadence: str) -> str:
-    """Throttle key: one pull per UTC hour, or per UTC day."""
+    """Throttle key: one pull per UTC hour, or per UTC day, on a clock shifted
+    back by PUBLISH_LAG so each bucket opens once its last bar is published."""
+    shifted = now - PUBLISH_LAG
     if cadence == "hour":
-        return f"{now.date().isoformat()}:{now.hour}"
-    return now.date().isoformat()
+        return f"{shifted.date().isoformat()}:{shifted.hour}"
+    return shifted.date().isoformat()
 
 
 def refresh(*, now: datetime | None = None, force: bool = False,

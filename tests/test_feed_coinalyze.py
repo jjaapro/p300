@@ -112,7 +112,9 @@ def test_daily_and_hourly_go_to_different_tables(tmp_prod, monkeypatch):
 
 
 def test_a_midnight_hour_is_not_overwritten_by_the_daily_bar(tmp_prod, monkeypatch):
-    midnight = (NOW_S // DAY) * DAY
+    # Yesterday's midnight: a closed day *and* a closed hour, so both tables
+    # accept it. Today's midnight is the forming day and is refused by design.
+    midnight = (int(datetime.now(timezone.utc).timestamp()) // DAY) * DAY - DAY
 
     def responder(p):
         if p["interval"] == "daily":
@@ -308,3 +310,78 @@ def test_bootstrap_and_module_ddl_agree():
         finally:
             con.close()
         assert norm(module_ddl) == norm(boot_ddl), table
+
+
+# ─── the live-refresh defects of 2026-09-18 21:00 ────────────────────────────
+# The feed's hourly pull fired 49 s into the hour, asked for the bar that had
+# just started, got nothing, recorded 49 seconds as unfillable — and the bar
+# stored 49 s into the previous hour was never re-pulled, so a sliver stayed
+# on the table labelled as an hourly bar.
+
+def _seed(path, table, rows):
+    con = sqlite3.connect(path)
+    fetch_coinalyze._ensure_liq_table(con, table)
+    con.executemany(f"INSERT OR REPLACE INTO {table} VALUES (?,?,?,?)", rows)
+    con.commit()
+    con.close()
+
+
+def test_forming_bar_is_never_requested_or_recorded(tmp_prod, monkeypatch):
+    now_s = int(datetime.now(timezone.utc).timestamp())
+    hour = (now_s // H) * H                      # the bar still forming
+    _seed(tmp_prod, "ca_liquidations", [("BTC", hour - H, 5.0, 6.0)])
+
+    calls = _stub(monkeypatch, lambda p: [])     # venue has nothing new yet
+    fetch_coinalyze.fetch_liquidations(("BTC",), interval="1hour")
+
+    assert all(int(c["to"]) < hour for c in calls), "asked for the forming bar"
+    assert not fetch_coinalyze.UNFILLABLE_PATH.exists(), \
+        "an in-window empty answer was recorded as unfillable"
+    assert (("BTC", hour) not in {(a, t) for a, t in _rows(tmp_prod, "ca_liquidations")})
+
+
+def test_trailing_repull_replaces_a_partial_bar(tmp_prod, monkeypatch):
+    now_s = int(datetime.now(timezone.utc).timestamp())
+    last_done = (now_s // H) * H - H              # most recent completed bar
+    _seed(tmp_prod, "ca_liquidations",
+          [("BTC", last_done - H, 5.0, 6.0), ("BTC", last_done, 0.1, 0.0)])  # sliver
+
+    def full(p):                                  # venue now has the whole hour
+        return [{"t": t, "l": 40.0, "s": 50.0}
+                for t in range(int(p["from"]), int(p["to"]) + 1, H)]
+
+    _stub(monkeypatch, full)
+    fetch_coinalyze.fetch_liquidations(("BTC",), interval="1hour")
+
+    con = sqlite3.connect(tmp_prod)
+    try:
+        l, s = con.execute("SELECT long_qty, short_qty FROM ca_liquidations "
+                           "WHERE asset='BTC' AND timestamp=?", (last_done,)).fetchone()
+    finally:
+        con.close()
+    assert (l, s) == (40.0, 50.0), "the partial bar was not re-pulled"
+
+
+def test_in_window_empty_answer_is_not_recorded_unfillable(tmp_prod, monkeypatch):
+    """Inside the source window an empty page means 'not published yet';
+    only what has aged out of the window is a permanent loss."""
+    now_s = int(datetime.now(timezone.utc).timestamp())
+    last_done = (now_s // H) * H - H
+    _seed(tmp_prod, "ca_liquidations", [("BTC", last_done - 3 * H, 1.0, 1.0)])
+    _stub(monkeypatch, lambda p: [])
+    fetch_coinalyze.fetch_liquidations(("BTC",), interval="1hour")
+    assert not fetch_coinalyze.UNFILLABLE_PATH.exists()
+
+
+def test_refresh_waits_for_the_publish_lag(tmp_prod, monkeypatch):
+    seen: list[datetime] = []
+    monkeypatch.setattr(fetch_coinalyze, "fetch_liquidations",
+                        lambda assets, interval="1hour": seen.append(interval) or {})
+    top = datetime(2026, 9, 18, 21, 0, 49, tzinfo=timezone.utc)
+    coinalyze._done.clear()
+    coinalyze.refresh(now=datetime(2026, 9, 18, 20, 30, tzinfo=timezone.utc))   # hour 20 pulled
+    n = len(seen)
+    coinalyze.refresh(now=top)                                    # 49 s into hour 21
+    assert len(seen) == n, "pulled before the venue could have published the 20:00 bar"
+    coinalyze.refresh(now=top.replace(minute=2, second=5))        # 21:02:05
+    assert len(seen) == n + 1, "the hour-21 pull did not happen once the lag had passed"

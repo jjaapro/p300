@@ -258,6 +258,13 @@ def fetch_lsr(assets: tuple[str, ...] = ("BTC", "ETH")) -> dict[str, int]:
 # while its daily history runs years deep (1,500 days back still answers).
 LIQ_ROLLING_WINDOW_DAYS = 89
 EARLIEST_LIQ_TS = EARLIEST_LSR_TS  # 2021-01-01, same floor as the LSR series
+# Every pull re-fetches this many already-stored bars behind the newest one,
+# INSERT OR REPLACE, so a bar the venue published late or revised — or one an
+# earlier run stored while it was still forming — is replaced on the next
+# pull instead of staying wrong forever. (Seen live 2026-09-18: the 20:00
+# hourly bar was stored 49 s into its hour as long 0.109 / short 0.000 and
+# nothing ever asked for it again.)
+REPULL_BARS = 3
 
 # The two cadences go to different tables on purpose. Their timestamps collide
 # at every UTC midnight and neither table carries an interval column, so one
@@ -335,41 +342,46 @@ def fetch_liquidations(assets: tuple[str, ...] = ("BTC",),
             earliest = (EARLIEST_LIQ_TS if interval == "daily"
                         else now_s - LIQ_ROLLING_WINDOW_DAYS * 86400)
             rolling = interval != "daily"
+            # Never ask for the bar still forming. The venue answers it with
+            # nothing or with a sliver, and a sliver written under an hourly
+            # stamp is a lie the table cannot see. `latest` is the newest bar
+            # that has closed.
+            latest = (now_s // cadence_s) * cadence_s - cadence_s
             gaps = []
             if max_ts is None:
-                gaps.append((earliest, now_s))
+                gaps.append((earliest, latest))
             else:
                 # A rolling-window source has no fillable leading gap: the
                 # window edge advances with the clock, so every run would find
                 # a fresh sliver before the earliest stored row, fail to fetch
                 # it, and record it as unfillable — a new entry every hour,
-                # forever. Only the trailing gap is real there.
+                # forever. Only the trailing span is real there.
                 if not rolling and int(min_ts) - earliest > cadence_s:
                     gaps.append((earliest, int(min_ts) - cadence_s))
-                if now_s - int(max_ts) > cadence_s:
-                    gaps.append((int(max_ts) + cadence_s, now_s))
-            # Anything before `earliest` has aged out of the API's window and
-            # will never be served at this cadence. Record it as unfillable
-            # once, then stop asking for it.
-            expired = [(s, min(e, earliest - cadence_s))
-                       for s, e in gaps if s < earliest]
-            for exp_start, exp_end in expired:
-                if exp_end >= exp_start:
+                # Whatever sat between the last stored bar and the window edge
+                # aged out while nothing was fetching — a permanent loss at
+                # this cadence, recorded once (the edge is snapped to the day
+                # so a venue outage cannot re-record it every hour).
+                lost_end = (earliest // 86400) * 86400 - cadence_s
+                if int(max_ts) + cadence_s <= lost_end:
                     _record_unfillable(
-                        table, asset, exp_start, exp_end,
+                        table, asset, int(max_ts) + cadence_s, lost_end,
                         f"older than Coinalyze's {LIQ_ROLLING_WINDOW_DAYS}-day "
                         f"rolling window for interval {interval}",
                     )
-            gaps = [(max(s, earliest), e) for s, e in gaps if e >= earliest]
+                # The trailing span starts REPULL_BARS behind the newest stored
+                # bar, never before the window, and ends at the last closed bar.
+                start = max(int(max_ts) - (REPULL_BARS - 1) * cadence_s, earliest)
+                if start <= latest:
+                    gaps.append((start, latest))
             if not gaps:
-                print(f"  {asset}: up to date")
                 out[asset] = 0
                 continue
-            est_bars = sum((e - s) // cadence_s for s, e in gaps)
-            print(f"  {asset}: {len(gaps)} gap(s), ~{est_bars:,} {interval} bars")
+            est_bars = sum((e - s) // cadence_s + 1 for s, e in gaps)
+            if est_bars > REPULL_BARS:
+                print(f"  {asset}: {len(gaps)} gap(s), ~{est_bars:,} {interval} bars")
             total = 0
             for gap_start, gap_end in gaps:
-                rows_for_gap = 0
                 cursor = gap_start
                 # Coinalyze caps history queries; use 90-day chunks for hourly
                 chunk_days = 90 if interval in ('1hour', '4hour') else 30
@@ -380,25 +392,24 @@ def fetch_liquidations(assets: tuple[str, ...] = ("BTC",),
                         "from": cursor, "to": chunk_end,
                     })
                     if data and isinstance(data, list) and data[0].get("history"):
-                        hist = data[0]["history"]
+                        # Keep only closed bars even if the venue returns more.
                         ins = [(asset, int(r["t"]),
                                  float(r.get("l") or 0),
                                  float(r.get("s") or 0))
-                                for r in hist]
+                                for r in data[0]["history"] if int(r["t"]) <= latest]
                         con.executemany(
                             f"INSERT OR REPLACE INTO {table} "
                             "(asset, timestamp, long_qty, short_qty) "
                             "VALUES (?, ?, ?, ?)", ins)
                         con.commit()
-                        rows_for_gap += len(ins)
                         total += len(ins)
                     cursor = chunk_end + cadence_s
-                if rows_for_gap == 0:
-                    _record_unfillable(
-                        table, asset, gap_start, gap_end,
-                        "Coinalyze returned empty response for liquidation gap",
-                    )
-            print(f"    -> {total:,} rows inserted")
+                # An empty answer inside the window is "not published yet", not
+                # a permanent hole: it is asked for again on the next pull, and
+                # if it never arrives check_gaps reports it, which is the honest
+                # outcome. Recording it here as unfillable was the defect.
+            if est_bars > REPULL_BARS:
+                print(f"    -> {total:,} rows inserted")
             out[asset] = total
         return out
     finally:
