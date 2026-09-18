@@ -1,0 +1,347 @@
+{
+ "created_utc": "2026-09-18T07:24:24+00:00",
+ "exploratory": true,
+ "after_verdict_created_utc": "2026-09-18T07:11:32+00:00",
+ "target_minute_channel": {
+  "chento_BTC": {
+   "first_pattern_minute_is_exit": {
+    "F1_against": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "F1_spot_confirmed": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    }
+   },
+   "pattern_holds_at_exit_minute": {
+    "F1_against": 0,
+    "F1_spot_confirmed": 16
+   }
+  },
+  "chento_ETH": {
+   "first_pattern_minute_is_exit": {
+    "F1_against": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "F1_spot_confirmed": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    }
+   },
+   "pattern_holds_at_exit_minute": {
+    "F1_against": 0,
+    "F1_spot_confirmed": 10
+   }
+  },
+  "squeeze_bull": {
+   "first_pattern_minute_is_exit": {
+    "F1_against": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "F1_spot_confirmed": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    }
+   },
+   "pattern_holds_at_exit_minute": {
+    "F1_against": 1,
+    "F1_spot_confirmed": 32
+   }
+  },
+  "short_squeeze": {
+   "first_pattern_minute_is_exit": {
+    "F1_against": {
+     "target": 1,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "F1_spot_confirmed": {
+     "target": 2,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    }
+   },
+   "pattern_holds_at_exit_minute": {
+    "F1_against": 1,
+    "F1_spot_confirmed": 7
+   }
+  }
+ },
+ "covariate_balance": {
+  "chento_BTC:F1_against": {
+   "rung": "rung1",
+   "event_trades": 59,
+   "control_minutes": 3100,
+   "median_vr": {
+    "event": 0.7257916821578105,
+    "control": 0.7185773312399862
+   },
+   "median_abs_pt": {
+    "event": 0.003912803443661628,
+    "control": 0.0036411480984996913
+   },
+   "ordinal_of_extreme": {
+    "event": [
+     7.0,
+     10.0,
+     14.5
+    ],
+    "control": [
+     6.0,
+     10.0,
+     14.0
+    ]
+   },
+   "session_share": {
+    "event": {
+     "asia": 0.322,
+     "london": 0.322,
+     "ny": 0.305,
+     "remainder": 0.051
+    },
+    "control": {
+     "asia": 0.386,
+     "london": 0.38,
+     "ny": 0.138,
+     "remainder": 0.095
+    }
+   },
+   "weekend_share": {
+    "event": 0.424,
+    "control": 0.344
+   }
+  },
+  "chento_BTC:F1_spot_confirmed": {
+   "rung": "rung1",
+   "event_trades": 104,
+   "control_minutes": 3295,
+   "median_vr": {
+    "event": 0.6646071285644561,
+    "control": 0.6451762346532431
+   },
+   "median_abs_pt": {
+    "event": 0.002323929904834876,
+    "control": 0.002796801003975613
+   },
+   "ordinal_of_extreme": {
+    "event": [
+     4.0,
+     8.0,
+     12.0
+    ],
+    "control": [
+     4.0,
+     8.0,
+     11.0
+    ]
+   },
+   "session_share": {
+    "event": {
+     "asia": 0.327,
+     "london": 0.413,
+     "ny": 0.163,
+     "remainder": 0.096
+    },
+    "control": {
+     "asia": 0.325,
+     "london": 0.423,
+     "ny": 0.219,
+     "remainder": 0.033
+    }
+   },
+   "weekend_share": {
+    "event": 0.404,
+    "control": 0.418
+   }
+  },
+  "chento_ETH:F1_against": {
+   "rung": "rung1",
+   "event_trades": 42,
+   "control_minutes": 1890,
+   "median_vr": {
+    "event": 0.7396209599328305,
+    "control": 0.7321765783488774
+   },
+   "median_abs_pt": {
+    "event": 0.004480788889895337,
+    "control": 0.006372103511661065
+   },
+   "ordinal_of_extreme": {
+    "event": [
+     5.25,
+     9.5,
+     13.0
+    ],
+    "control": [
+     5.0,
+     9.0,
+     14.0
+    ]
+   },
+   "session_share": {
+    "event": {
+     "asia": 0.357,
+     "london": 0.262,
+     "ny": 0.31,
+     "remainder": 0.071
+    },
+    "control": {
+     "asia": 0.207,
+     "london": 0.416,
+     "ny": 0.268,
+     "remainder": 0.108
+    }
+   },
+   "weekend_share": {
+    "event": 0.238,
+    "control": 0.357
+   }
+  },
+  "chento_ETH:F1_spot_confirmed": {
+   "rung": "rung1",
+   "event_trades": 82,
+   "control_minutes": 2360,
+   "median_vr": {
+    "event": 0.7699123683264079,
+    "control": 0.7321765783488774
+   },
+   "median_abs_pt": {
+    "event": 0.004166365170101161,
+    "control": 0.004614686799497725
+   },
+   "ordinal_of_extreme": {
+    "event": [
+     4.0,
+     6.0,
+     9.0
+    ],
+    "control": [
+     4.0,
+     6.0,
+     9.0
+    ]
+   },
+   "session_share": {
+    "event": {
+     "asia": 0.207,
+     "london": 0.402,
+     "ny": 0.256,
+     "remainder": 0.134
+    },
+    "control": {
+     "asia": 0.439,
+     "london": 0.293,
+     "ny": 0.206,
+     "remainder": 0.063
+    }
+   },
+   "weekend_share": {
+    "event": 0.305,
+    "control": 0.246
+   }
+  },
+  "squeeze_bull:F1_against": {
+   "rung": "rung1",
+   "event_trades": 42,
+   "control_minutes": 3246,
+   "median_vr": {
+    "event": 0.5519756580956074,
+    "control": 0.7295807903763383
+   },
+   "median_abs_pt": {
+    "event": 0.0018584035254900488,
+    "control": 0.004459886410642322
+   },
+   "ordinal_of_extreme": {
+    "event": [
+     6.0,
+     11.0,
+     16.0
+    ],
+    "control": [
+     7.0,
+     12.0,
+     18.0
+    ]
+   },
+   "session_share": {
+    "event": {
+     "asia": 0.381,
+     "london": 0.214,
+     "ny": 0.214,
+     "remainder": 0.19
+    },
+    "control": {
+     "asia": 0.369,
+     "london": 0.049,
+     "ny": 0.264,
+     "remainder": 0.318
+    }
+   },
+   "weekend_share": {
+    "event": 0.31,
+    "control": 0.266
+   }
+  },
+  "squeeze_bull:F1_spot_confirmed": {
+   "rung": "rung1",
+   "event_trades": 73,
+   "control_minutes": 2704,
+   "median_vr": {
+    "event": 0.7487881385268932,
+    "control": 0.5778479343794432
+   },
+   "median_abs_pt": {
+    "event": 0.0025915056796461666,
+    "control": 0.0035525606070681004
+   },
+   "ordinal_of_extreme": {
+    "event": [
+     6.0,
+     10.0,
+     14.0
+    ],
+    "control": [
+     5.0,
+     8.0,
+     12.0
+    ]
+   },
+   "session_share": {
+    "event": {
+     "asia": 0.37,
+     "london": 0.068,
+     "ny": 0.288,
+     "remainder": 0.274
+    },
+    "control": {
+     "asia": 0.216,
+     "london": 0.162,
+     "ny": 0.324,
+     "remainder": 0.298
+    }
+   },
+   "weekend_share": {
+    "event": 0.26,
+    "control": 0.358
+   }
+  }
+ }
+}

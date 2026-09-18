@@ -1,0 +1,31 @@
+{
+ "created_utc": "2026-09-15T16:31:33+00:00",
+ "manifest_created_utc": "2026-09-15T16:31:29+00:00",
+ "fires": 122,
+ "shapes": {
+  "spike_reversal": 103,
+  "no_spike": 16,
+  "spike_no_reversal": 3
+ },
+ "spike_reversal": {
+  "median_hours_to_spike": 17.983333333333334,
+  "median_hours_to_top": 28.45,
+  "median_hours_spike_to_top": 2.033333333333333,
+  "median_top_runup_pct": 3.211732668514644,
+  "tops_after_48h": 35,
+  "median_fall_24h_after_top_pct": -3.2384388231767702,
+  "fires_with_false_tops": 56
+ },
+ "case": {
+  "shape": {
+   "shape": "spike_reversal",
+   "S": 4339,
+   "T": 4463,
+   "C": 4700
+  },
+  "top_utc": "2026-09-14T20:23:00+00:00",
+  "top_runup_pct": 2.6802109585399636,
+  "PR_at_top": 1.1447406802403624,
+  "OR_at_top": 0.5114892427720207
+ }
+}

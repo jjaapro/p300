@@ -1,0 +1,3209 @@
+{
+ "created_utc": "2026-09-18T07:01:04+00:00",
+ "P1": {
+  "stage1_inputs_match": true,
+  "stage1_files": {
+   "studies/notebooks/exit_policy_2026_09/PREREGISTRATION_MICROSTRUCTURE.md": {
+    "match": true
+   },
+   "studies/notebooks/exit_policy_2026_09/micro_data.py": {
+    "match": true
+   },
+   "studies/notebooks/exit_policy_2026_09/micro_lib.py": {
+    "match": true
+   },
+   "studies/notebooks/exit_policy_2026_09/micro_run.py": {
+    "match": true
+   },
+   "studies/notebooks/exit_policy_2026_09/tests/test_micro_events.py": {
+    "match": true
+   },
+   "studies/notebooks/exit_policy_2026_09/results/microstructure/preconditions.json": {
+    "match": true
+   },
+   "studies/notebooks/exit_policy_2026_09/cache/BTCUSDT_book1pct_1m.meta.json": {
+    "match": true
+   },
+   "studies/notebooks/exit_policy_2026_09/cache/ETHUSDT_book1pct_1m.meta.json": {
+    "match": true
+   }
+  },
+  "archive": {
+   "files": 422,
+   "hash_mismatches": [],
+   "manifest_sha256": "16038c1e23e42df024f62311758a6203922d70c2128573caeb453f2425c11f79",
+   "format_scan_sha256": "756c1c0e78606e7911126ea11a9c77ea04a1b576b272ea8df33202bc68d7d23b"
+  },
+  "panels": {
+   "BTCUSDT_spot_1m_panel": {
+    "logical_sha256": "e920d94791a9c18776325f773b5480852fed6c56f900dbdccbe5795bbad7bf1e",
+    "file_sha256": "32830d0a2520fa0df162c2ea38fd05e7c5d2f5c4845543b34cbb46092ab5b4da",
+    "file_sha256_now": "32830d0a2520fa0df162c2ea38fd05e7c5d2f5c4845543b34cbb46092ab5b4da",
+    "match": true
+   },
+   "ETHUSDT_spot_1m_panel": {
+    "logical_sha256": "29f4c4cf810ddb03a91f2d41de90ebcff2c1296c1e1eb8500acc4d93c5ab135a",
+    "file_sha256": "1a3bb33d16b44a17f85112b2cded0ab7003ce85bdfb32e7824bfd983e724fea8",
+    "file_sha256_now": "1a3bb33d16b44a17f85112b2cded0ab7003ce85bdfb32e7824bfd983e724fea8",
+    "match": true
+   },
+   "BTCFDUSD_spot_1m_panel": {
+    "logical_sha256": "f562eb6a03e6e02cf5f870d352a5d1d6e94718ba3d740b50485991e3e23b847f",
+    "file_sha256": "3913eed568184d454d30dafb3d258eeb222a4dd00f2efad2a42cce35e182dbce",
+    "file_sha256_now": "3913eed568184d454d30dafb3d258eeb222a4dd00f2efad2a42cce35e182dbce",
+    "match": true
+   },
+   "BTCUSDT_premium_1m_panel": {
+    "logical_sha256": "ef9b7556026170877b64dbb99ae0ba0c5235f46f68908a6835a3f65aecba0c8b",
+    "file_sha256": "1f6dbd80506a3f62db95da890d3c63ad59e3619d3defdedc206908bf227fe561",
+    "file_sha256_now": "1f6dbd80506a3f62db95da890d3c63ad59e3619d3defdedc206908bf227fe561",
+    "match": true
+   },
+   "ETHUSDT_premium_1m_panel": {
+    "logical_sha256": "747c0e00cbee0d9686e38b876fe30fc364df8dd31b3715b56de0082ad22dfb7a",
+    "file_sha256": "8cd14006528f809d87b6c4e4206917607c0ea6286195ac3535579bacbbd0b7a4",
+    "file_sha256_now": "8cd14006528f809d87b6c4e4206917607c0ea6286195ac3535579bacbbd0b7a4",
+    "match": true
+   }
+  },
+  "oi_cache": {
+   "logical_sha256": "d062488f113c39bf5307c414a886f386b3cb474245b0a1a31c582700b72f9bb5",
+   "match": true
+  },
+  "micro_trades_sha256": "9d30f1d3b094f8654b6fd4843b9a0f5a4783345721f35b771cc2362579a8ddcd",
+  "concurrent_study_present_not_read": {
+   "cache/BTCUSDT_spot_1m.npz": "054187c1945034fb8da02196cb20f2f694d921a06e9dd497fb992f871cc3b781",
+   "cache/ETHUSDT_spot_1m.npz": "1000bc2f8fd9af28708a624917bef14a4b19868518311feb5717c489a82f09ec",
+   "cache/BTCUSDT_metrics_5m_full.npz": "1db73c137568580f8842e03e9197a38f33d4b63066a03d12e82704a7b2cdff5d",
+   "cache/ETHUSDT_metrics_5m_full.npz": "4aa257bcad5ef49ca9ad31750e6675fd696d0677e59783eabfb26780d0c8cf56",
+   "data/raw/spot_1m/manifest.json": "917a4f1178cf5dfbc34de4b94593cdd9c45afad272271bc4e5df88ea86de77fc"
+  },
+  "pass": true
+ },
+ "P2": {
+  "stage1_m2": {
+   "chento": {
+    "trades": 392,
+    "equals_A0": true,
+    "A0_rows": 392
+   },
+   "squeeze_bull": {
+    "trades": 122,
+    "equals_S0": true
+   },
+   "short_squeeze": {
+    "trades": 71,
+    "distinct_triggers": 71,
+    "all_london_ny": true
+   },
+   "pass": true
+  },
+  "counts": {
+   "chento_BTC": 208,
+   "chento_ETH": 184,
+   "squeeze_bull": 122,
+   "short_squeeze": 71
+  },
+  "directions": {
+   "chento_BTC": {
+    "long": 120,
+    "short": 88
+   },
+   "chento_ETH": {
+    "long": 106,
+    "short": 78
+   },
+   "squeeze_bull": {
+    "long": 122
+   },
+   "short_squeeze": {
+    "long": 71
+   }
+  },
+  "pass": true
+ },
+ "P3": {
+  "chento": {
+   "trades": 392,
+   "max_rel_diff": 0.0
+  },
+  "squeeze_bull": {
+   "trades": 122,
+   "max_rel_diff": 0.0
+  },
+  "short_squeeze": {
+   "trades": 71,
+   "max_rel_diff": 0.0
+  },
+  "pass": true
+ },
+ "P4": {
+  "trades": 585,
+  "differences": {
+   "i0": 0,
+   "x": 0,
+   "kind": 0,
+   "x_notime": 0,
+   "kind_notime": 0,
+   "level_valid": 0,
+   "exit_price": 0,
+   "exit_price_notime": 0
+  },
+  "pass": true
+ },
+ "P5": {
+  "lags": {
+   "BTC:2020:returns": {
+    "peak_lag": 0,
+    "at_0": 0.9738214476078006,
+    "table": {
+     "-3": 0.0037809722540980656,
+     "-2": -0.02034404940650709,
+     "-1": 0.005821864631361906,
+     "0": 0.9738214476078006,
+     "1": -0.019717509298298568,
+     "2": -0.015830718509136473,
+     "3": 0.00771521229754607
+    }
+   },
+   "BTC:2020:premium": {
+    "peak_lag": -1,
+    "at_0": 0.9293149922391392,
+    "table": {
+     "-3": 0.9159674260684306,
+     "-2": 0.9268827393298589,
+     "-1": 0.9562412156134127,
+     "0": 0.9293149922391392,
+     "1": 0.9175173874640041,
+     "2": 0.9101326743007017,
+     "3": 0.907364634148877
+    }
+   },
+   "BTC:2021:returns": {
+    "peak_lag": 0,
+    "at_0": 0.9835029101967043,
+    "table": {
+     "-3": -0.018397925199825003,
+     "-2": -0.026067862534345537,
+     "-1": 0.02706930551481615,
+     "0": 0.9835029101967043,
+     "1": 0.008861060656345341,
+     "2": -0.03168109565706556,
+     "3": -0.01502092058239009
+    }
+   },
+   "BTC:2021:premium": {
+    "peak_lag": 0,
+    "at_0": 0.8828637448939033,
+    "table": {
+     "-3": 0.8586233574492466,
+     "-2": 0.8625507992226789,
+     "-1": 0.8750441328859387,
+     "0": 0.8828637448939033,
+     "1": 0.861284694209109,
+     "2": 0.8526802265708932,
+     "3": 0.8461114991150807
+    }
+   },
+   "BTC:2022:returns": {
+    "peak_lag": 0,
+    "at_0": 0.9926945636823935,
+    "table": {
+     "-3": -0.0030516884544115716,
+     "-2": -0.01353581648951146,
+     "-1": 0.015545340353973772,
+     "0": 0.9926945636823935,
+     "1": 0.004628384889893389,
+     "2": -0.018319901767361833,
+     "3": -0.004259603173264171
+    }
+   },
+   "BTC:2022:premium": {
+    "peak_lag": 0,
+    "at_0": 0.5188144227100746,
+    "table": {
+     "-3": 0.47620655599148504,
+     "-2": 0.49301209480962915,
+     "-1": 0.4964478432181197,
+     "0": 0.5188144227100746,
+     "1": 0.4765226476187869,
+     "2": 0.4571092547606047,
+     "3": 0.4404613659165066
+    }
+   },
+   "BTC:2023:returns": {
+    "peak_lag": 0,
+    "at_0": 0.9829678751502737,
+    "table": {
+     "-3": -0.011948061096336208,
+     "-2": -0.009848390948513917,
+     "-1": 0.037496179217601414,
+     "0": 0.9829678751502737,
+     "1": 0.000730717560330079,
+     "2": -0.023396417194197976,
+     "3": -0.016699261857402777
+    }
+   },
+   "BTC:2023:premium": {
+    "peak_lag": 2,
+    "at_0": 0.8065656222685728,
+    "table": {
+     "-3": 0.8075156605364977,
+     "-2": 0.7954408976781479,
+     "-1": 0.7892300678867079,
+     "0": 0.8065656222685728,
+     "1": 0.8040895668492505,
+     "2": 0.8093032781722314,
+     "3": 0.8081776053036749
+    }
+   },
+   "BTC:2024:returns": {
+    "peak_lag": 0,
+    "at_0": 0.9921264376908329,
+    "table": {
+     "-3": -0.003464377165367374,
+     "-2": -0.003419951481866517,
+     "-1": -0.007299127155488954,
+     "0": 0.9921264376908329,
+     "1": -0.026549544946370112,
+     "2": -0.0055115101470967634,
+     "3": -0.005916454092954649
+    }
+   },
+   "BTC:2024:premium": {
+    "peak_lag": 0,
+    "at_0": 0.9685956596465166,
+    "table": {
+     "-3": 0.95436934928737,
+     "-2": 0.955493931529195,
+     "-1": 0.9589135672423719,
+     "0": 0.9685956596465166,
+     "1": 0.9575865605062157,
+     "2": 0.9553856520867127,
+     "3": 0.9540711659078656
+    }
+   },
+   "BTC:2025:returns": {
+    "peak_lag": 0,
+    "at_0": 0.9930572389471511,
+    "table": {
+     "-3": -0.002802126386601812,
+     "-2": -0.000679716854699548,
+     "-1": -0.00037352104027679744,
+     "0": 0.9930572389471511,
+     "1": -0.016190721078169268,
+     "2": -0.002500292438223472,
+     "3": -0.003982484475646277
+    }
+   },
+   "BTC:2025:premium": {
+    "peak_lag": 0,
+    "at_0": 0.6938668723820618,
+    "table": {
+     "-3": 0.5784874376250765,
+     "-2": 0.5917034811513188,
+     "-1": 0.609150695032469,
+     "0": 0.6938668723820618,
+     "1": 0.6046670291385975,
+     "2": 0.5866788096689263,
+     "3": 0.5731288131701441
+    }
+   },
+   "BTC:2026:returns": {
+    "peak_lag": 0,
+    "at_0": 0.9913573045035035,
+    "table": {
+     "-3": -0.0022346375461155185,
+     "-2": -0.00567379747580892,
+     "-1": 0.0002695733183246592,
+     "0": 0.9913573045035035,
+     "1": -0.016819745026758464,
+     "2": -0.008881167208076387,
+     "3": -0.0011226069038020316
+    }
+   },
+   "BTC:2026:premium": {
+    "peak_lag": 0,
+    "at_0": 0.5619432313103083,
+    "table": {
+     "-3": 0.43669324487697647,
+     "-2": 0.4490707712294596,
+     "-1": 0.471211660702715,
+     "0": 0.5619432313103083,
+     "1": 0.45606985387881804,
+     "2": 0.43599187951434804,
+     "3": 0.4275829089142119
+    }
+   },
+   "ETH:2020:returns": {
+    "peak_lag": 0,
+    "at_0": 0.9756993004907144,
+    "table": {
+     "-3": 0.00944386777198479,
+     "-2": -0.03419201407855761,
+     "-1": 0.004965950340721254,
+     "0": 0.9756993004907144,
+     "1": -0.018516495309132765,
+     "2": -0.033881784256243525,
+     "3": 0.008896237820858594
+    }
+   },
+   "ETH:2020:premium": {
+    "peak_lag": -1,
+    "at_0": 0.8639634976824033,
+    "table": {
+     "-3": 0.8460889303554513,
+     "-2": 0.8584603690936776,
+     "-1": 0.901025790458125,
+     "0": 0.8639634976824033,
+     "1": 0.8534312767563584,
+     "2": 0.844245110861986,
+     "3": 0.8398796119019137
+    }
+   },
+   "ETH:2021:returns": {
+    "peak_lag": 0,
+    "at_0": 0.9534014087665454,
+    "table": {
+     "-3": -0.008704382885615827,
+     "-2": -0.008220623802751507,
+     "-1": 0.013635332480866765,
+     "0": 0.9534014087665454,
+     "1": 0.026125360908715728,
+     "2": -0.011941351249552852,
+     "3": -0.018631438030480972
+    }
+   },
+   "ETH:2021:premium": {
+    "peak_lag": 0,
+    "at_0": 0.8924222933669278,
+    "table": {
+     "-3": 0.7727772620020821,
+     "-2": 0.7829456926145895,
+     "-1": 0.8478338971756313,
+     "0": 0.8924222933669278,
+     "1": 0.8330342037859595,
+     "2": 0.781986530317354,
+     "3": 0.7499781292513163
+    }
+   },
+   "ETH:2022:returns": {
+    "peak_lag": 0,
+    "at_0": 0.9938863425201621,
+    "table": {
+     "-3": 0.0026930340939765513,
+     "-2": -0.011892852956398305,
+     "-1": 0.01698915277934466,
+     "0": 0.9938863425201621,
+     "1": 0.0035905238669332465,
+     "2": -0.01348113469092604,
+     "3": 0.0001365267309084483
+    }
+   },
+   "ETH:2022:premium": {
+    "peak_lag": 0,
+    "at_0": 0.6186811406419831,
+    "table": {
+     "-3": 0.5903054114529092,
+     "-2": 0.6100636271167801,
+     "-1": 0.6182698655390109,
+     "0": 0.6186811406419831,
+     "1": 0.6027807512605337,
+     "2": 0.5961906336033052,
+     "3": 0.5787097092581133
+    }
+   },
+   "ETH:2023:returns": {
+    "peak_lag": 0,
+    "at_0": 0.9807359053011532,
+    "table": {
+     "-3": -0.00933138008746137,
+     "-2": 0.0029021527473815567,
+     "-1": 0.021616772096977207,
+     "0": 0.9807359053011532,
+     "1": -0.012425761882021118,
+     "2": -0.0112894603541971,
+     "3": -0.012608261121065166
+    }
+   },
+   "ETH:2023:premium": {
+    "peak_lag": -3,
+    "at_0": 0.7746507423210472,
+    "table": {
+     "-3": 0.7903218733862216,
+     "-2": 0.7749661108672233,
+     "-1": 0.7700760708731885,
+     "0": 0.7746507423210472,
+     "1": 0.7635050981441304,
+     "2": 0.7605883809137943,
+     "3": 0.7604604022436128
+    }
+   },
+   "ETH:2024:returns": {
+    "peak_lag": 0,
+    "at_0": 0.9931899836217157,
+    "table": {
+     "-3": 0.003518742334752823,
+     "-2": 0.0128548656394378,
+     "-1": -0.023081719908904386,
+     "0": 0.9931899836217157,
+     "1": -0.03459066228443519,
+     "2": 0.007382474916071917,
+     "3": 0.004151565909613311
+    }
+   },
+   "ETH:2024:premium": {
+    "peak_lag": 0,
+    "at_0": 0.9585290149329817,
+    "table": {
+     "-3": 0.9433465821393039,
+     "-2": 0.9443941899209664,
+     "-1": 0.9462292567269459,
+     "0": 0.9585290149329817,
+     "1": 0.948864139952173,
+     "2": 0.9460568217446202,
+     "3": 0.9442072255427423
+    }
+   },
+   "ETH:2025:returns": {
+    "peak_lag": 0,
+    "at_0": 0.9937117149152214,
+    "table": {
+     "-3": -0.001245266899892287,
+     "-2": -0.006022442296717805,
+     "-1": -0.014781456807501758,
+     "0": 0.9937117149152214,
+     "1": -0.0271085331133142,
+     "2": -0.009780070968798293,
+     "3": -0.0021132261886474425
+    }
+   },
+   "ETH:2025:premium": {
+    "peak_lag": 0,
+    "at_0": 0.5092088792759368,
+    "table": {
+     "-3": 0.3790680353320267,
+     "-2": 0.40692755561083627,
+     "-1": 0.41830493085329395,
+     "0": 0.5092088792759368,
+     "1": 0.4298255598541961,
+     "2": 0.394571842476726,
+     "3": 0.37279445092081426
+    }
+   },
+   "ETH:2026:returns": {
+    "peak_lag": 0,
+    "at_0": 0.9952703069695313,
+    "table": {
+     "-3": 0.003852973355373604,
+     "-2": -0.004784084200406889,
+     "-1": -0.006707469773384695,
+     "0": 0.9952703069695313,
+     "1": -0.017556887303757332,
+     "2": -0.006814619624153455,
+     "3": 0.003253276267275955
+    }
+   },
+   "ETH:2026:premium": {
+    "peak_lag": 0,
+    "at_0": 0.4884985781662503,
+    "table": {
+     "-3": 0.37417383938000487,
+     "-2": 0.38240181243217,
+     "-1": 0.4078921007287316,
+     "0": 0.4884985781662503,
+     "1": 0.4100956395341277,
+     "2": 0.38787245742514004,
+     "3": 0.3806195705356836
+    }
+   }
+  },
+  "pass": false
+ },
+ "P6": {
+  "per_asset_year": {
+   "BTCUSDT:2020": {
+    "median_bp": 4.938086573754719,
+    "p99_bp": 19.692150355435672,
+    "max_bp": 555.4439453234861,
+    "minutes": 525786
+   },
+   "BTCUSDT:2021": {
+    "median_bp": 5.925460719901632,
+    "p99_bp": 23.488372474278655,
+    "max_bp": 419.6323119777157,
+    "minutes": 524548
+   },
+   "BTCUSDT:2022": {
+    "median_bp": 4.453525425645033,
+    "p99_bp": 8.393959590770958,
+    "max_bp": 173.14734708873124,
+    "minutes": 525536
+   },
+   "BTCUSDT:2023": {
+    "median_bp": 4.262627768318872,
+    "p99_bp": 9.595189814454107,
+    "max_bp": 240.40144707667244,
+    "minutes": 525402
+   },
+   "BTCUSDT:2024": {
+    "median_bp": 4.499141649032534,
+    "p99_bp": 12.511695590839977,
+    "max_bp": 111.57905670082569,
+    "minutes": 526951
+   },
+   "BTCUSDT:2025": {
+    "median_bp": 4.445750027763928,
+    "p99_bp": 6.543734423634895,
+    "max_bp": 76.50505050505019,
+    "minutes": 525563
+   },
+   "BTCUSDT:2026": {
+    "median_bp": 4.711474951245576,
+    "p99_bp": 6.912934460916586,
+    "max_bp": 178.448549293031,
+    "minutes": 368640
+   },
+   "BTCFDUSD:2023": {
+    "median_bp": 7.087721866818053,
+    "p99_bp": 25.936082940115263,
+    "max_bp": 325.4636180829673,
+    "minutes": 215402
+   },
+   "BTCFDUSD:2024": {
+    "median_bp": 9.07025678713147,
+    "p99_bp": 44.464793981331965,
+    "max_bp": 120.38263070781818,
+    "minutes": 526951
+   },
+   "BTCFDUSD:2025": {
+    "median_bp": 23.130728517650745,
+    "p99_bp": 45.318718988905495,
+    "max_bp": 1362.285658893705,
+    "minutes": 525563
+   },
+   "BTCFDUSD:2026": {
+    "median_bp": 15.166408901505779,
+    "p99_bp": 28.603650066558426,
+    "max_bp": 157.46631563526404,
+    "minutes": 368640
+   },
+   "ETHUSDT:2020": {
+    "median_bp": 5.573928876668743,
+    "p99_bp": 25.270976089828473,
+    "max_bp": 447.87018255578073,
+    "minutes": 525757
+   },
+   "ETHUSDT:2021": {
+    "median_bp": 5.96525260983749,
+    "p99_bp": 33.25601457106579,
+    "max_bp": 3128.450155401956,
+    "minutes": 524548
+   },
+   "ETHUSDT:2022": {
+    "median_bp": 4.771249441619663,
+    "p99_bp": 11.149309946963186,
+    "max_bp": 262.9571907019934,
+    "minutes": 525536
+   },
+   "ETHUSDT:2023": {
+    "median_bp": 4.306477391378127,
+    "p99_bp": 9.884884602712848,
+    "max_bp": 399.2926967604182,
+    "minutes": 525498
+   },
+   "ETHUSDT:2024": {
+    "median_bp": 4.527724892466889,
+    "p99_bp": 12.165181067689268,
+    "max_bp": 236.50897804940118,
+    "minutes": 526951
+   },
+   "ETHUSDT:2025": {
+    "median_bp": 4.446840916971784,
+    "p99_bp": 6.8101578912666,
+    "max_bp": 278.375946538878,
+    "minutes": 525562
+   },
+   "ETHUSDT:2026": {
+    "median_bp": 4.771659684476015,
+    "p99_bp": 7.525095090484663,
+    "max_bp": 98.3580250992322,
+    "minutes": 368640
+   }
+  },
+  "pass": true,
+  "note": "report only, no threshold; alignment is decided by P5"
+ },
+ "P7": {
+  "panels": {
+   "BTCUSDT_spot_1m_panel": {
+    "rows_read": 3522795,
+    "files": 93,
+    "totals": {
+     "off_grid": 0,
+     "outside_panel": 0,
+     "duplicates_in_file": 0,
+     "duplicates_across_files": 0,
+     "conflicting_duplicates": 0,
+     "identity_failures": 8
+    },
+    "minutes_present": 3522795,
+    "minutes_missing": 2325,
+    "unit_switch_first_us_file": "BTCUSDT-1m-2025-01.zip",
+    "by_year": {
+     "2020": {
+      "present": 525788,
+      "missing": 1252,
+      "dead": 50
+     },
+     "2021": {
+      "present": 524607,
+      "missing": 993,
+      "dead": 89
+     },
+     "2022": {
+      "present": 525600,
+      "missing": 0,
+      "dead": 0
+     },
+     "2023": {
+      "present": 525520,
+      "missing": 80,
+      "dead": 72
+     },
+     "2024": {
+      "present": 527040,
+      "missing": 0,
+      "dead": 0
+     },
+     "2025": {
+      "present": 525600,
+      "missing": 0,
+      "dead": 0
+     },
+     "2026": {
+      "present": 368640,
+      "missing": 0,
+      "dead": 0
+     }
+    },
+    "minutes_dead": 211,
+    "identity_failures": 8,
+    "identity_failure_rows": [
+     {
+      "file": "BTCUSDT-1m-2020-02.zip",
+      "open_utc": "2020-02-19T11:35:00+00:00",
+      "close_minus_open_s": 32.286,
+      "volume": 2.706583
+     },
+     {
+      "file": "BTCUSDT-1m-2020-03.zip",
+      "open_utc": "2020-03-04T09:21:00+00:00",
+      "close_minus_open_s": 46.694,
+      "volume": 0.799084
+     },
+     {
+      "file": "BTCUSDT-1m-2020-12.zip",
+      "open_utc": "2020-12-21T14:09:00+00:00",
+      "close_minus_open_s": -1299.479,
+      "volume": 0.0
+     },
+     {
+      "file": "BTCUSDT-1m-2021-02.zip",
+      "open_utc": "2021-02-11T03:40:00+00:00",
+      "close_minus_open_s": 54.773,
+      "volume": 0.0
+     },
+     {
+      "file": "BTCUSDT-1m-2021-04.zip",
+      "open_utc": "2021-04-25T04:00:00+00:00",
+      "close_minus_open_s": 58.146,
+      "volume": 5.887034
+     },
+     {
+      "file": "BTCUSDT-1m-2021-08.zip",
+      "open_utc": "2021-08-13T01:59:00+00:00",
+      "close_minus_open_s": 59.0,
+      "volume": 5.590268
+     },
+     {
+      "file": "BTCUSDT-1m-2021-12.zip",
+      "open_utc": "2021-12-24T04:59:00+00:00",
+      "close_minus_open_s": 54.362,
+      "volume": 16.24421
+     },
+     {
+      "file": "BTCUSDT-1m-2023-03.zip",
+      "open_utc": "2023-03-24T12:39:00+00:00",
+      "close_minus_open_s": 41.646,
+      "volume": 0.0
+     }
+    ],
+    "grid_matches_perp": true
+   },
+   "ETHUSDT_spot_1m_panel": {
+    "rows_read": 3522794,
+    "files": 93,
+    "totals": {
+     "off_grid": 0,
+     "outside_panel": 0,
+     "duplicates_in_file": 0,
+     "duplicates_across_files": 0,
+     "conflicting_duplicates": 0,
+     "identity_failures": 8
+    },
+    "minutes_present": 3522794,
+    "minutes_missing": 2326,
+    "unit_switch_first_us_file": "ETHUSDT-1m-2025-01.zip",
+    "by_year": {
+     "2020": {
+      "present": 525787,
+      "missing": 1253,
+      "dead": 49
+     },
+     "2021": {
+      "present": 524607,
+      "missing": 993,
+      "dead": 89
+     },
+     "2022": {
+      "present": 525600,
+      "missing": 0,
+      "dead": 0
+     },
+     "2023": {
+      "present": 525520,
+      "missing": 80,
+      "dead": 72
+     },
+     "2024": {
+      "present": 527040,
+      "missing": 0,
+      "dead": 0
+     },
+     "2025": {
+      "present": 525600,
+      "missing": 0,
+      "dead": 0
+     },
+     "2026": {
+      "present": 368640,
+      "missing": 0,
+      "dead": 0
+     }
+    },
+    "minutes_dead": 210,
+    "identity_failures": 8,
+    "identity_failure_rows": [
+     {
+      "file": "ETHUSDT-1m-2020-02.zip",
+      "open_utc": "2020-02-19T11:35:00+00:00",
+      "close_minus_open_s": 32.298,
+      "volume": 218.34968
+     },
+     {
+      "file": "ETHUSDT-1m-2020-03.zip",
+      "open_utc": "2020-03-04T09:21:00+00:00",
+      "close_minus_open_s": 46.7,
+      "volume": 42.34887
+     },
+     {
+      "file": "ETHUSDT-1m-2020-12.zip",
+      "open_utc": "2020-12-21T14:08:00+00:00",
+      "close_minus_open_s": -1239.472,
+      "volume": 0.0
+     },
+     {
+      "file": "ETHUSDT-1m-2021-02.zip",
+      "open_utc": "2021-02-11T03:40:00+00:00",
+      "close_minus_open_s": 55.829,
+      "volume": 0.0
+     },
+     {
+      "file": "ETHUSDT-1m-2021-04.zip",
+      "open_utc": "2021-04-25T04:00:00+00:00",
+      "close_minus_open_s": 59.271,
+      "volume": 161.74877
+     },
+     {
+      "file": "ETHUSDT-1m-2021-08.zip",
+      "open_utc": "2021-08-13T01:59:00+00:00",
+      "close_minus_open_s": 59.0,
+      "volume": 16.36951
+     },
+     {
+      "file": "ETHUSDT-1m-2021-12.zip",
+      "open_utc": "2021-12-24T04:59:00+00:00",
+      "close_minus_open_s": 56.158,
+      "volume": 105.7601
+     },
+     {
+      "file": "ETHUSDT-1m-2023-03.zip",
+      "open_utc": "2023-03-24T12:39:00+00:00",
+      "close_minus_open_s": 43.061,
+      "volume": 0.0
+     }
+    ],
+    "grid_matches_perp": true
+   },
+   "BTCFDUSD_spot_1m_panel": {
+    "rows_read": 1636800,
+    "files": 50,
+    "totals": {
+     "off_grid": 0,
+     "outside_panel": 0,
+     "duplicates_in_file": 0,
+     "duplicates_across_files": 0,
+     "conflicting_duplicates": 0,
+     "identity_failures": 0
+    },
+    "minutes_present": 1636800,
+    "minutes_missing": 1888320,
+    "unit_switch_first_us_file": "BTCFDUSD-1m-2025-01.zip",
+    "by_year": {
+     "2020": {
+      "present": 0,
+      "missing": 527040,
+      "dead": 0
+     },
+     "2021": {
+      "present": 0,
+      "missing": 525600,
+      "dead": 0
+     },
+     "2022": {
+      "present": 0,
+      "missing": 525600,
+      "dead": 0
+     },
+     "2023": {
+      "present": 215520,
+      "missing": 310080,
+      "dead": 13903
+     },
+     "2024": {
+      "present": 527040,
+      "missing": 0,
+      "dead": 0
+     },
+     "2025": {
+      "present": 525600,
+      "missing": 0,
+      "dead": 0
+     },
+     "2026": {
+      "present": 368640,
+      "missing": 0,
+      "dead": 21523
+     }
+    },
+    "minutes_dead": 35426,
+    "identity_failures": 0,
+    "identity_failure_rows": [],
+    "grid_matches_perp": true,
+    "first_present_utc": "2023-08-04T08:00:00+00:00",
+    "all_nan_before": true
+   },
+   "BTCUSDT_premium_1m_panel": {
+    "rows_read": 3513399,
+    "files": 93,
+    "totals": {
+     "off_grid": 0,
+     "outside_panel": 0,
+     "duplicates_in_file": 0,
+     "duplicates_across_files": 0,
+     "conflicting_duplicates": 0,
+     "identity_failures": 0
+    },
+    "minutes_present": 3513399,
+    "minutes_missing": 11721,
+    "unit_switch_first_us_file": null,
+    "by_year": {
+     "2020": {
+      "present": 526905,
+      "missing": 135
+     },
+     "2021": {
+      "present": 518400,
+      "missing": 7200
+     },
+     "2022": {
+      "present": 524110,
+      "missing": 1490
+     },
+     "2023": {
+      "present": 524146,
+      "missing": 1454
+     },
+     "2024": {
+      "present": 527038,
+      "missing": 2
+     },
+     "2025": {
+      "present": 525600,
+      "missing": 0
+     },
+     "2026": {
+      "present": 367200,
+      "missing": 1440
+     }
+    },
+    "minutes_dead": null,
+    "identity_failures": 0,
+    "identity_failure_rows": [],
+    "grid_matches_perp": true,
+    "premium_overlap": {
+     "span": [
+      "2022-01-01T00:00:00+00:00",
+      "2026-09-14T00:00:00+00:00"
+     ],
+     "minutes": 2472480,
+     "identical": true,
+     "differing_minutes": 0,
+     "anatomy_cache_minutes_outside_new_panel": 1440
+    }
+   },
+   "ETHUSDT_premium_1m_panel": {
+    "rows_read": 3513402,
+    "files": 93,
+    "totals": {
+     "off_grid": 0,
+     "outside_panel": 0,
+     "duplicates_in_file": 0,
+     "duplicates_across_files": 0,
+     "conflicting_duplicates": 0,
+     "identity_failures": 0
+    },
+    "minutes_present": 3513402,
+    "minutes_missing": 11718,
+    "unit_switch_first_us_file": null,
+    "by_year": {
+     "2020": {
+      "present": 526905,
+      "missing": 135
+     },
+     "2021": {
+      "present": 518400,
+      "missing": 7200
+     },
+     "2022": {
+      "present": 524113,
+      "missing": 1487
+     },
+     "2023": {
+      "present": 524146,
+      "missing": 1454
+     },
+     "2024": {
+      "present": 527038,
+      "missing": 2
+     },
+     "2025": {
+      "present": 525600,
+      "missing": 0
+     },
+     "2026": {
+      "present": 367200,
+      "missing": 1440
+     }
+    },
+    "minutes_dead": null,
+    "identity_failures": 0,
+    "identity_failure_rows": [],
+    "grid_matches_perp": true
+   }
+  },
+  "pass": true
+ },
+ "P8": {
+  "per_subpop": {
+   "chento_BTC": {
+    "f1": {
+     "minutes": 553852,
+     "with_inputs": 548192,
+     "share": 0.9898
+    },
+    "f2": {
+     "minutes": 553852,
+     "with_inputs": 553852,
+     "share": 1.0
+    },
+    "comp": {
+     "minutes": 553852,
+     "with_inputs": 324405,
+     "share": 0.5857
+    },
+    "oi": {
+     "minutes": 553852,
+     "with_inputs": 498346,
+     "share": 0.8998
+    }
+   },
+   "chento_ETH": {
+    "f1": {
+     "minutes": 466569,
+     "with_inputs": 465225,
+     "share": 0.9971
+    },
+    "f2": {
+     "minutes": 466569,
+     "with_inputs": 466561,
+     "share": 1.0
+    },
+    "comp": {
+     "minutes": 466569,
+     "with_inputs": 0,
+     "share": 0.0
+    },
+    "oi": {
+     "minutes": 466569,
+     "with_inputs": 0,
+     "share": 0.0
+    }
+   },
+   "squeeze_bull": {
+    "f1": {
+     "minutes": 182255,
+     "with_inputs": 182069,
+     "share": 0.999
+    },
+    "f2": {
+     "minutes": 182255,
+     "with_inputs": 182187,
+     "share": 0.9996
+    },
+    "comp": {
+     "minutes": 182255,
+     "with_inputs": 126497,
+     "share": 0.6941
+    },
+    "oi": {
+     "minutes": 182255,
+     "with_inputs": 181123,
+     "share": 0.9938
+    }
+   },
+   "short_squeeze": {
+    "f1": {
+     "minutes": 5067,
+     "with_inputs": 5067,
+     "share": 1.0
+    },
+    "f2": {
+     "minutes": 5067,
+     "with_inputs": 5067,
+     "share": 1.0
+    },
+    "comp": {
+     "minutes": 5067,
+     "with_inputs": 3126,
+     "share": 0.6169
+    },
+    "oi": {
+     "minutes": 5067,
+     "with_inputs": 5067,
+     "share": 1.0
+    }
+   }
+  },
+  "testable": {
+   "chento_BTC": {
+    "f1": true,
+    "f2": true
+   },
+   "chento_ETH": {
+    "f1": true,
+    "f2": true
+   },
+   "squeeze_bull": {
+    "f1": true,
+    "f2": true
+   },
+   "short_squeeze": {
+    "f1": true,
+    "f2": true
+   }
+  },
+  "pass": true,
+  "note": "coverage below 0.90 makes that kind DESCRIPTIVE; it does not stop the stage"
+ },
+ "P9": {
+  "suites": {
+   "test_spotperp_events.py": {
+    "returncode": 0,
+    "tail": "38 passed in 0.88s"
+   },
+   "test_spotperp_data.py": {
+    "returncode": 0,
+    "tail": "19 passed in 0.93s"
+   },
+   "test_micro_events.py": {
+    "returncode": 0,
+    "tail": "23 passed in 0.62s"
+   },
+   "test_anatomy.py": {
+    "returncode": 0,
+    "tail": "10 passed in 0.59s"
+   }
+  },
+  "pass": true
+ },
+ "P10": {
+  "cuts": {
+   "BTC:2801820": {
+    "cut_utc": "2025-04-29T17:00:00+00:00",
+    "differences": {
+     "DP60": 0,
+     "DS60": 0,
+     "zS": 0,
+     "dprem": 0,
+     "pt": 0,
+     "vr": 0,
+     "doi": 0,
+     "ot": 0,
+     "DSplus60": 0,
+     "zP": 0
+    }
+   },
+   "BTC:3200835": {
+    "cut_utc": "2026-01-31T19:15:00+00:00",
+    "differences": {
+     "DP60": 0,
+     "DS60": 0,
+     "zS": 0,
+     "dprem": 0,
+     "pt": 0,
+     "vr": 0,
+     "doi": 0,
+     "ot": 0,
+     "DSplus60": 0,
+     "zP": 0
+    }
+   },
+   "BTC:2046788": {
+    "cut_utc": "2023-11-22T09:08:00+00:00",
+    "differences": {
+     "DP60": 0,
+     "DS60": 0,
+     "zS": 0,
+     "dprem": 0,
+     "pt": 0,
+     "vr": 0,
+     "doi": 0,
+     "ot": 0,
+     "DSplus60": 0,
+     "zP": 0
+    }
+   },
+   "BTC:1325577": {
+    "cut_utc": "2022-07-09T12:57:00+00:00",
+    "differences": {
+     "DP60": 0,
+     "DS60": 0,
+     "zS": 0,
+     "dprem": 0,
+     "pt": 0,
+     "vr": 0,
+     "doi": 0,
+     "ot": 0,
+     "DSplus60": 0,
+     "zP": 0
+    }
+   },
+   "BTC:3177479": {
+    "cut_utc": "2026-01-15T13:59:00+00:00",
+    "differences": {
+     "DP60": 0,
+     "DS60": 0,
+     "zS": 0,
+     "dprem": 0,
+     "pt": 0,
+     "vr": 0,
+     "doi": 0,
+     "ot": 0,
+     "DSplus60": 0,
+     "zP": 0
+    }
+   },
+   "ETH:3397009": {
+    "cut_utc": "2026-06-17T00:49:00+00:00",
+    "differences": {
+     "DP60": 0,
+     "DS60": 0,
+     "zS": 0,
+     "dprem": 0,
+     "pt": 0,
+     "vr": 0,
+     "zP": 0
+    }
+   },
+   "ETH:1287615": {
+    "cut_utc": "2022-06-13T04:15:00+00:00",
+    "differences": {
+     "DP60": 0,
+     "DS60": 0,
+     "zS": 0,
+     "dprem": 0,
+     "pt": 0,
+     "vr": 0,
+     "zP": 0
+    }
+   },
+   "ETH:2254545": {
+    "cut_utc": "2024-04-14T15:45:00+00:00",
+    "differences": {
+     "DP60": 0,
+     "DS60": 0,
+     "zS": 0,
+     "dprem": 0,
+     "pt": 0,
+     "vr": 0,
+     "zP": 0
+    }
+   },
+   "ETH:2955249": {
+    "cut_utc": "2025-08-14T06:09:00+00:00",
+    "differences": {
+     "DP60": 0,
+     "DS60": 0,
+     "zS": 0,
+     "dprem": 0,
+     "pt": 0,
+     "vr": 0,
+     "zP": 0
+    }
+   },
+   "ETH:2908500": {
+    "cut_utc": "2025-07-12T19:00:00+00:00",
+    "differences": {
+     "DP60": 0,
+     "DS60": 0,
+     "zS": 0,
+     "dprem": 0,
+     "pt": 0,
+     "vr": 0,
+     "zP": 0
+    }
+   }
+  },
+  "pass": true
+ },
+ "P11": {
+  "per_subpop": {
+   "chento_BTC": {
+    "F1_against": {
+     "eligible_trades": 208,
+     "trades_with_event": 78,
+     "event_share": 0.375,
+     "median_elapsed_hours": 2.666666666666667,
+     "median_elapsed_share_of_horizon": 0.037037037037037035,
+     "included_rung1": 59,
+     "dropped_for_controls": 19,
+     "mean_controls": 9.5,
+     "included_rung2": 61,
+     "included_rung3": 66,
+     "included_S1": 71,
+     "included_S2": 77,
+     "included_S3": 74,
+     "included_S4": 59,
+     "included_S5": 58,
+     "included_rvol_rung1": 53,
+     "included_rsession_rung1": 20,
+     "included_shared_rung1": 64,
+     "included_shared_rung2": 69,
+     "included_shared_rung3": 73,
+     "decision_rung": "rung1"
+    },
+    "F1_spot_confirmed": {
+     "eligible_trades": 208,
+     "trades_with_event": 176,
+     "event_share": 0.8462,
+     "median_elapsed_hours": 2.1166666666666667,
+     "median_elapsed_share_of_horizon": 0.029398148148148152,
+     "included_rung1": 104,
+     "dropped_for_controls": 72,
+     "mean_controls": 6.482954545454546,
+     "included_rung2": 123,
+     "included_rung3": 133,
+     "included_S1": 134,
+     "included_S2": 157,
+     "included_S3": 139,
+     "included_S4": 104,
+     "included_S5": 103,
+     "included_rvol_rung1": 81,
+     "included_rsession_rung1": 28,
+     "included_shared_rung1": 160,
+     "included_shared_rung2": 162,
+     "included_shared_rung3": 166,
+     "decision_rung": "rung1"
+    },
+    "F1_spot_led": {
+     "eligible_trades": 208,
+     "trades_with_event": 27,
+     "event_share": 0.1298,
+     "median_elapsed_hours": 4.35,
+     "median_elapsed_share_of_horizon": 0.06041666666666667,
+     "included_rung1": 20,
+     "dropped_for_controls": 7,
+     "mean_controls": 11.25925925925926,
+     "included_rung2": 22,
+     "included_rung3": 23,
+     "included_S1": 23,
+     "included_S2": 24,
+     "included_S3": 26,
+     "included_S4": 20,
+     "included_S5": 20,
+     "decision_rung": null
+    },
+    "F1_mirror": {
+     "eligible_trades": 208,
+     "trades_with_event": 67,
+     "event_share": 0.3221,
+     "median_elapsed_hours": 4.5,
+     "median_elapsed_share_of_horizon": 0.0625,
+     "included_rung1": 52,
+     "dropped_for_controls": 15,
+     "mean_controls": 8.388059701492537,
+     "included_rung2": 53,
+     "included_rung3": 59,
+     "included_S1": 58,
+     "included_S2": 63,
+     "included_S3": 57,
+     "included_S4": 52,
+     "included_S5": 52,
+     "decision_rung": "rung1"
+    },
+    "F1_prem_only": {
+     "eligible_trades": 208,
+     "trades_with_event": 180,
+     "event_share": 0.8654,
+     "median_elapsed_hours": 1.775,
+     "median_elapsed_share_of_horizon": 0.02465277777777778,
+     "included_rung1": 85,
+     "dropped_for_controls": 95,
+     "mean_controls": 4.061111111111111,
+     "included_rung2": 126,
+     "included_rung3": 130,
+     "included_S1": 140,
+     "included_S2": 161,
+     "included_S3": 144,
+     "included_S4": 85,
+     "included_S5": 84,
+     "decision_rung": "rung1"
+    },
+    "F1_prem_only_ctrl": {
+     "eligible_trades": 208,
+     "trades_with_event": 174,
+     "event_share": 0.8365,
+     "median_elapsed_hours": 2.2333333333333334,
+     "median_elapsed_share_of_horizon": 0.031018518518518518,
+     "included_rung1": 120,
+     "dropped_for_controls": 54,
+     "mean_controls": 5.971264367816092,
+     "included_rung2": 133,
+     "included_rung3": 142,
+     "included_S1": 139,
+     "included_S2": 155,
+     "included_S3": 147,
+     "included_S4": 120,
+     "included_S5": 118,
+     "decision_rung": "rung1"
+    },
+    "F1_flow_only": {
+     "eligible_trades": 208,
+     "trades_with_event": 92,
+     "event_share": 0.4423,
+     "median_elapsed_hours": 2.675,
+     "median_elapsed_share_of_horizon": 0.03715277777777778,
+     "included_rung1": 70,
+     "dropped_for_controls": 22,
+     "mean_controls": 8.652173913043478,
+     "included_rung2": 72,
+     "included_rung3": 78,
+     "included_S1": 82,
+     "included_S2": 88,
+     "included_S3": 86,
+     "included_S4": 70,
+     "included_S5": 69,
+     "decision_rung": "rung1"
+    },
+    "F1_flow_only_ctrl": {
+     "eligible_trades": 208,
+     "trades_with_event": 182,
+     "event_share": 0.875,
+     "median_elapsed_hours": 2.025,
+     "median_elapsed_share_of_horizon": 0.028124999999999997,
+     "included_rung1": 99,
+     "dropped_for_controls": 83,
+     "mean_controls": 4.417582417582418,
+     "included_rung2": 128,
+     "included_rung3": 128,
+     "included_S1": 140,
+     "included_S2": 159,
+     "included_S3": 131,
+     "included_S4": 99,
+     "included_S5": 99,
+     "decision_rung": "rung1"
+    },
+    "F1_any_extreme": {
+     "eligible_trades": 208,
+     "trades_with_event": 187,
+     "event_share": 0.899,
+     "median_elapsed_hours": 1.6333333333333333,
+     "median_elapsed_share_of_horizon": 0.022685185185185187,
+     "included_rung1": 0,
+     "dropped_for_controls": 187,
+     "mean_controls": 0.0,
+     "included_rung2": 131,
+     "included_rung3": 0,
+     "included_S1": 145,
+     "included_S2": 160,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": "rung2"
+    },
+    "F1_in_profit": {
+     "eligible_trades": 208,
+     "trades_with_event": 29,
+     "event_share": 0.1394,
+     "median_elapsed_hours": 19.016666666666666,
+     "median_elapsed_share_of_horizon": 0.2641203703703704,
+     "included_rung1": 7,
+     "dropped_for_controls": 22,
+     "mean_controls": 2.0689655172413794,
+     "included_rung2": 10,
+     "included_rung3": 19,
+     "included_S1": 20,
+     "included_S2": 28,
+     "included_S3": 28,
+     "included_S4": 7,
+     "included_S5": 7,
+     "decision_rung": null
+    },
+    "F1_in_profit_ctrl": {
+     "eligible_trades": 208,
+     "trades_with_event": 116,
+     "event_share": 0.5577,
+     "median_elapsed_hours": 12.491666666666667,
+     "median_elapsed_share_of_horizon": 0.17349537037037038,
+     "included_rung1": 12,
+     "dropped_for_controls": 104,
+     "mean_controls": 0.853448275862069,
+     "included_rung2": 21,
+     "included_rung3": 49,
+     "included_S1": 23,
+     "included_S2": 69,
+     "included_S3": 87,
+     "included_S4": 12,
+     "included_S5": 11,
+     "decision_rung": "rung3"
+    },
+    "F2_perp_led": {
+     "eligible_trades": 208,
+     "trades_with_event": 13,
+     "event_share": 0.0625,
+     "median_elapsed_hours": 6.6,
+     "median_elapsed_share_of_horizon": 0.09166666666666666,
+     "included_rung1": 5,
+     "dropped_for_controls": 8,
+     "mean_controls": 3.3846153846153846,
+     "included_rung2": 5,
+     "included_rung3": 10,
+     "included_S1": 6,
+     "included_S2": 12,
+     "included_S3": 12,
+     "included_S4": 5,
+     "included_S5": 5,
+     "included_rvol_rung1": 5,
+     "included_rsession_rung1": 0,
+     "included_shared_rung1": 5,
+     "included_shared_rung2": 6,
+     "included_shared_rung3": 11,
+     "decision_rung": null
+    },
+    "F2_spot_confirmed": {
+     "eligible_trades": 208,
+     "trades_with_event": 156,
+     "event_share": 0.75,
+     "median_elapsed_hours": 7.591666666666667,
+     "median_elapsed_share_of_horizon": 0.10543981481481482,
+     "included_rung1": 86,
+     "dropped_for_controls": 70,
+     "mean_controls": 5.346153846153846,
+     "included_rung2": 93,
+     "included_rung3": 113,
+     "included_S1": 102,
+     "included_S2": 132,
+     "included_S3": 118,
+     "included_S4": 86,
+     "included_S5": 85,
+     "included_rvol_rung1": 61,
+     "included_rsession_rung1": 25,
+     "included_shared_rung1": 121,
+     "included_shared_rung2": 129,
+     "included_shared_rung3": 140,
+     "decision_rung": "rung1"
+    },
+    "F2_spot_led": {
+     "eligible_trades": 208,
+     "trades_with_event": 9,
+     "event_share": 0.0433,
+     "median_elapsed_hours": 41.4,
+     "median_elapsed_share_of_horizon": 0.575,
+     "included_rung1": 1,
+     "dropped_for_controls": 8,
+     "mean_controls": 0.5555555555555556,
+     "included_rung2": 1,
+     "included_rung3": 1,
+     "included_S1": 2,
+     "included_S2": 6,
+     "included_S3": 6,
+     "included_S4": 1,
+     "included_S5": 1,
+     "decision_rung": null
+    },
+    "F2_mirror": {
+     "eligible_trades": 208,
+     "trades_with_event": 10,
+     "event_share": 0.0481,
+     "median_elapsed_hours": 5.708333333333334,
+     "median_elapsed_share_of_horizon": 0.07928240740740741,
+     "included_rung1": 9,
+     "dropped_for_controls": 1,
+     "mean_controls": 7.4,
+     "included_rung2": 9,
+     "included_rung3": 10,
+     "included_S1": 9,
+     "included_S2": 10,
+     "included_S3": 9,
+     "included_S4": 9,
+     "included_S5": 9,
+     "decision_rung": null
+    },
+    "F2_perp_extreme": {
+     "eligible_trades": 208,
+     "trades_with_event": 156,
+     "event_share": 0.75,
+     "median_elapsed_hours": 7.591666666666667,
+     "median_elapsed_share_of_horizon": 0.10543981481481482,
+     "included_rung1": 86,
+     "dropped_for_controls": 70,
+     "mean_controls": 5.339743589743589,
+     "included_rung2": 93,
+     "included_rung3": 113,
+     "included_S1": 102,
+     "included_S2": 132,
+     "included_S3": 118,
+     "included_S4": 86,
+     "included_S5": 85,
+     "decision_rung": "rung1"
+    },
+    "F2_perp_extreme_ctrl": {
+     "eligible_trades": 208,
+     "trades_with_event": 149,
+     "event_share": 0.7163,
+     "median_elapsed_hours": 7.033333333333333,
+     "median_elapsed_share_of_horizon": 0.09768518518518518,
+     "included_rung1": 88,
+     "dropped_for_controls": 61,
+     "mean_controls": 6.221476510067114,
+     "included_rung2": 93,
+     "included_rung3": 114,
+     "included_S1": 99,
+     "included_S2": 126,
+     "included_S3": 117,
+     "included_S4": 88,
+     "included_S5": 86,
+     "decision_rung": "rung1"
+    },
+    "F1_oi_up": {
+     "eligible_trades": 192,
+     "trades_with_event": 53,
+     "event_share": 0.276,
+     "median_elapsed_hours": 3.566666666666667,
+     "median_elapsed_share_of_horizon": 0.04953703703703704,
+     "included_rung1": 38,
+     "dropped_for_controls": 15,
+     "mean_controls": 10.169811320754716,
+     "included_rung2": 41,
+     "included_rung3": 43,
+     "included_S1": 49,
+     "included_S2": 53,
+     "included_S3": 52,
+     "included_S4": 38,
+     "included_S5": 38,
+     "decision_rung": "rung1"
+    },
+    "F1_oi_up_ctrl": {
+     "eligible_trades": 192,
+     "trades_with_event": 153,
+     "event_share": 0.7969,
+     "median_elapsed_hours": 3.7666666666666666,
+     "median_elapsed_share_of_horizon": 0.052314814814814814,
+     "included_rung1": 96,
+     "dropped_for_controls": 57,
+     "mean_controls": 7.026143790849673,
+     "included_rung2": 101,
+     "included_rung3": 119,
+     "included_S1": 113,
+     "included_S2": 134,
+     "included_S3": 122,
+     "included_S4": 96,
+     "included_S5": 96,
+     "decision_rung": "rung1"
+    },
+    "F1_oi_down": {
+     "eligible_trades": 192,
+     "trades_with_event": 34,
+     "event_share": 0.1771,
+     "median_elapsed_hours": 2.908333333333333,
+     "median_elapsed_share_of_horizon": 0.040393518518518516,
+     "included_rung1": 23,
+     "dropped_for_controls": 11,
+     "mean_controls": 10.558823529411764,
+     "included_rung2": 25,
+     "included_rung3": 30,
+     "included_S1": 31,
+     "included_S2": 33,
+     "included_S3": 33,
+     "included_S4": 23,
+     "included_S5": 23,
+     "decision_rung": "rung3"
+    },
+    "F1_oi_down_ctrl": {
+     "eligible_trades": 192,
+     "trades_with_event": 133,
+     "event_share": 0.6927,
+     "median_elapsed_hours": 4.15,
+     "median_elapsed_share_of_horizon": 0.05763888888888889,
+     "included_rung1": 87,
+     "dropped_for_controls": 46,
+     "mean_controls": 7.676691729323308,
+     "included_rung2": 94,
+     "included_rung3": 103,
+     "included_S1": 105,
+     "included_S2": 119,
+     "included_S3": 113,
+     "included_S4": 87,
+     "included_S5": 87,
+     "decision_rung": "rung1"
+    },
+    "F1_against_usdt_fdusd": {
+     "eligible_trades": 126,
+     "trades_with_event": 47,
+     "event_share": 0.373,
+     "median_elapsed_hours": 2.533333333333333,
+     "median_elapsed_share_of_horizon": 0.03518518518518519,
+     "included_rung1": 32,
+     "dropped_for_controls": 15,
+     "mean_controls": 7.297872340425532,
+     "included_rung2": 34,
+     "included_rung3": 38,
+     "included_S1": 39,
+     "included_S2": 42,
+     "included_S3": 43,
+     "included_S4": 32,
+     "included_S5": 32,
+     "decision_rung": "rung1"
+    },
+    "F1_against_usdt_fdusd_ctrl": {
+     "eligible_trades": 126,
+     "trades_with_event": 105,
+     "event_share": 0.8333,
+     "median_elapsed_hours": 2.05,
+     "median_elapsed_share_of_horizon": 0.028472222222222218,
+     "included_rung1": 66,
+     "dropped_for_controls": 39,
+     "mean_controls": 5.419047619047619,
+     "included_rung2": 73,
+     "included_rung3": 73,
+     "included_S1": 78,
+     "included_S2": 90,
+     "included_S3": 87,
+     "included_S4": 66,
+     "included_S5": 66,
+     "decision_rung": "rung1"
+    },
+    "F3": {
+     "eligible_trades": 192,
+     "trades_with_event": 33,
+     "event_share": 0.1719,
+     "median_elapsed_hours": 11.7,
+     "median_elapsed_share_of_horizon": 0.1625,
+     "included_rung1": 14,
+     "dropped_for_controls": 19,
+     "mean_controls": 4.575757575757576,
+     "included_rung2": 16,
+     "included_rung3": 22,
+     "included_S1": 21,
+     "included_S2": 29,
+     "included_S3": 32,
+     "included_S4": 14,
+     "included_S5": 14,
+     "decision_rung": null
+    },
+    "F3_spot_confirmed": {
+     "eligible_trades": 192,
+     "trades_with_event": 123,
+     "event_share": 0.6406,
+     "median_elapsed_hours": 9.1,
+     "median_elapsed_share_of_horizon": 0.12638888888888888,
+     "included_rung1": 66,
+     "dropped_for_controls": 57,
+     "mean_controls": 5.845528455284553,
+     "included_rung2": 68,
+     "included_rung3": 89,
+     "included_S1": 80,
+     "included_S2": 109,
+     "included_S3": 95,
+     "included_S4": 66,
+     "included_S5": 64,
+     "decision_rung": "rung1"
+    },
+    "F3_spot_led": {
+     "eligible_trades": 192,
+     "trades_with_event": 11,
+     "event_share": 0.0573,
+     "median_elapsed_hours": 23.066666666666666,
+     "median_elapsed_share_of_horizon": 0.32037037037037036,
+     "included_rung1": 4,
+     "dropped_for_controls": 7,
+     "mean_controls": 5.0,
+     "included_rung2": 6,
+     "included_rung3": 7,
+     "included_S1": 7,
+     "included_S2": 9,
+     "included_S3": 9,
+     "included_S4": 4,
+     "included_S5": 4,
+     "decision_rung": null
+    }
+   },
+   "chento_ETH": {
+    "F1_against": {
+     "eligible_trades": 184,
+     "trades_with_event": 59,
+     "event_share": 0.3207,
+     "median_elapsed_hours": 4.0,
+     "median_elapsed_share_of_horizon": 0.05555555555555555,
+     "included_rung1": 42,
+     "dropped_for_controls": 17,
+     "mean_controls": 8.966101694915254,
+     "included_rung2": 46,
+     "included_rung3": 52,
+     "included_S1": 54,
+     "included_S2": 59,
+     "included_S3": 53,
+     "included_S4": 42,
+     "included_S5": 42,
+     "included_rvol_rung1": 41,
+     "included_rsession_rung1": 15,
+     "included_shared_rung1": 47,
+     "included_shared_rung2": 51,
+     "included_shared_rung3": 55,
+     "decision_rung": "rung1"
+    },
+    "F1_spot_confirmed": {
+     "eligible_trades": 184,
+     "trades_with_event": 145,
+     "event_share": 0.788,
+     "median_elapsed_hours": 2.25,
+     "median_elapsed_share_of_horizon": 0.03125,
+     "included_rung1": 82,
+     "dropped_for_controls": 63,
+     "mean_controls": 5.875862068965517,
+     "included_rung2": 108,
+     "included_rung3": 114,
+     "included_S1": 120,
+     "included_S2": 131,
+     "included_S3": 119,
+     "included_S4": 82,
+     "included_S5": 82,
+     "included_rvol_rung1": 68,
+     "included_rsession_rung1": 21,
+     "included_shared_rung1": 126,
+     "included_shared_rung2": 135,
+     "included_shared_rung3": 136,
+     "decision_rung": "rung1"
+    },
+    "F1_spot_led": {
+     "eligible_trades": 184,
+     "trades_with_event": 32,
+     "event_share": 0.1739,
+     "median_elapsed_hours": 7.050000000000001,
+     "median_elapsed_share_of_horizon": 0.09791666666666667,
+     "included_rung1": 19,
+     "dropped_for_controls": 13,
+     "mean_controls": 7.0,
+     "included_rung2": 21,
+     "included_rung3": 27,
+     "included_S1": 28,
+     "included_S2": 32,
+     "included_S3": 30,
+     "included_S4": 19,
+     "included_S5": 19,
+     "decision_rung": null
+    },
+    "F1_mirror": {
+     "eligible_trades": 184,
+     "trades_with_event": 54,
+     "event_share": 0.2935,
+     "median_elapsed_hours": 2.716666666666667,
+     "median_elapsed_share_of_horizon": 0.037731481481481484,
+     "included_rung1": 42,
+     "dropped_for_controls": 12,
+     "mean_controls": 9.833333333333334,
+     "included_rung2": 43,
+     "included_rung3": 48,
+     "included_S1": 51,
+     "included_S2": 54,
+     "included_S3": 48,
+     "included_S4": 42,
+     "included_S5": 42,
+     "decision_rung": "rung1"
+    },
+    "F1_prem_only": {
+     "eligible_trades": 184,
+     "trades_with_event": 152,
+     "event_share": 0.8261,
+     "median_elapsed_hours": 2.0,
+     "median_elapsed_share_of_horizon": 0.027777777777777776,
+     "included_rung1": 84,
+     "dropped_for_controls": 68,
+     "mean_controls": 4.506578947368421,
+     "included_rung2": 110,
+     "included_rung3": 115,
+     "included_S1": 123,
+     "included_S2": 138,
+     "included_S3": 124,
+     "included_S4": 84,
+     "included_S5": 84,
+     "decision_rung": "rung1"
+    },
+    "F1_prem_only_ctrl": {
+     "eligible_trades": 184,
+     "trades_with_event": 150,
+     "event_share": 0.8152,
+     "median_elapsed_hours": 2.3583333333333334,
+     "median_elapsed_share_of_horizon": 0.032754629629629634,
+     "included_rung1": 95,
+     "dropped_for_controls": 55,
+     "mean_controls": 5.666666666666667,
+     "included_rung2": 114,
+     "included_rung3": 118,
+     "included_S1": 121,
+     "included_S2": 132,
+     "included_S3": 128,
+     "included_S4": 95,
+     "included_S5": 95,
+     "decision_rung": "rung1"
+    },
+    "F1_flow_only": {
+     "eligible_trades": 184,
+     "trades_with_event": 69,
+     "event_share": 0.375,
+     "median_elapsed_hours": 3.466666666666667,
+     "median_elapsed_share_of_horizon": 0.04814814814814815,
+     "included_rung1": 48,
+     "dropped_for_controls": 21,
+     "mean_controls": 8.173913043478262,
+     "included_rung2": 54,
+     "included_rung3": 56,
+     "included_S1": 60,
+     "included_S2": 67,
+     "included_S3": 60,
+     "included_S4": 48,
+     "included_S5": 48,
+     "decision_rung": "rung1"
+    },
+    "F1_flow_only_ctrl": {
+     "eligible_trades": 184,
+     "trades_with_event": 150,
+     "event_share": 0.8152,
+     "median_elapsed_hours": 2.1416666666666666,
+     "median_elapsed_share_of_horizon": 0.029745370370370373,
+     "included_rung1": 79,
+     "dropped_for_controls": 71,
+     "mean_controls": 3.3266666666666667,
+     "included_rung2": 110,
+     "included_rung3": 100,
+     "included_S1": 125,
+     "included_S2": 138,
+     "included_S3": 115,
+     "included_S4": 79,
+     "included_S5": 79,
+     "decision_rung": "rung1"
+    },
+    "F1_any_extreme": {
+     "eligible_trades": 184,
+     "trades_with_event": 155,
+     "event_share": 0.8424,
+     "median_elapsed_hours": 1.8,
+     "median_elapsed_share_of_horizon": 0.025,
+     "included_rung1": 0,
+     "dropped_for_controls": 155,
+     "mean_controls": 0.0,
+     "included_rung2": 116,
+     "included_rung3": 0,
+     "included_S1": 127,
+     "included_S2": 144,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": "rung2"
+    },
+    "F1_in_profit": {
+     "eligible_trades": 184,
+     "trades_with_event": 23,
+     "event_share": 0.125,
+     "median_elapsed_hours": 26.016666666666666,
+     "median_elapsed_share_of_horizon": 0.3613425925925926,
+     "included_rung1": 3,
+     "dropped_for_controls": 20,
+     "mean_controls": 1.2173913043478262,
+     "included_rung2": 4,
+     "included_rung3": 15,
+     "included_S1": 13,
+     "included_S2": 21,
+     "included_S3": 15,
+     "included_S4": 3,
+     "included_S5": 3,
+     "decision_rung": null
+    },
+    "F1_in_profit_ctrl": {
+     "eligible_trades": 184,
+     "trades_with_event": 93,
+     "event_share": 0.5054,
+     "median_elapsed_hours": 15.866666666666667,
+     "median_elapsed_share_of_horizon": 0.22037037037037038,
+     "included_rung1": 4,
+     "dropped_for_controls": 89,
+     "mean_controls": 0.8064516129032258,
+     "included_rung2": 13,
+     "included_rung3": 38,
+     "included_S1": 19,
+     "included_S2": 57,
+     "included_S3": 66,
+     "included_S4": 4,
+     "included_S5": 4,
+     "decision_rung": "rung3"
+    },
+    "F2_perp_led": {
+     "eligible_trades": 184,
+     "trades_with_event": 21,
+     "event_share": 0.1141,
+     "median_elapsed_hours": 21.5,
+     "median_elapsed_share_of_horizon": 0.2986111111111111,
+     "included_rung1": 8,
+     "dropped_for_controls": 13,
+     "mean_controls": 4.857142857142857,
+     "included_rung2": 9,
+     "included_rung3": 12,
+     "included_S1": 12,
+     "included_S2": 18,
+     "included_S3": 17,
+     "included_S4": 8,
+     "included_S5": 8,
+     "included_rvol_rung1": 7,
+     "included_rsession_rung1": 1,
+     "included_shared_rung1": 9,
+     "included_shared_rung2": 10,
+     "included_shared_rung3": 13,
+     "decision_rung": null
+    },
+    "F2_spot_confirmed": {
+     "eligible_trades": 184,
+     "trades_with_event": 127,
+     "event_share": 0.6902,
+     "median_elapsed_hours": 5.883333333333334,
+     "median_elapsed_share_of_horizon": 0.08171296296296296,
+     "included_rung1": 67,
+     "dropped_for_controls": 60,
+     "mean_controls": 5.94488188976378,
+     "included_rung2": 80,
+     "included_rung3": 98,
+     "included_S1": 88,
+     "included_S2": 110,
+     "included_S3": 107,
+     "included_S4": 67,
+     "included_S5": 67,
+     "included_rvol_rung1": 58,
+     "included_rsession_rung1": 20,
+     "included_shared_rung1": 101,
+     "included_shared_rung2": 111,
+     "included_shared_rung3": 116,
+     "decision_rung": "rung1"
+    },
+    "F2_spot_led": {
+     "eligible_trades": 184,
+     "trades_with_event": 8,
+     "event_share": 0.0435,
+     "median_elapsed_hours": 30.791666666666664,
+     "median_elapsed_share_of_horizon": 0.42766203703703703,
+     "included_rung1": 1,
+     "dropped_for_controls": 7,
+     "mean_controls": 2.375,
+     "included_rung2": 2,
+     "included_rung3": 4,
+     "included_S1": 2,
+     "included_S2": 7,
+     "included_S3": 6,
+     "included_S4": 1,
+     "included_S5": 1,
+     "decision_rung": null
+    },
+    "F2_mirror": {
+     "eligible_trades": 184,
+     "trades_with_event": 11,
+     "event_share": 0.0598,
+     "median_elapsed_hours": 9.4,
+     "median_elapsed_share_of_horizon": 0.13055555555555556,
+     "included_rung1": 6,
+     "dropped_for_controls": 5,
+     "mean_controls": 8.0,
+     "included_rung2": 7,
+     "included_rung3": 9,
+     "included_S1": 9,
+     "included_S2": 11,
+     "included_S3": 8,
+     "included_S4": 6,
+     "included_S5": 6,
+     "decision_rung": null
+    },
+    "F2_perp_extreme": {
+     "eligible_trades": 184,
+     "trades_with_event": 127,
+     "event_share": 0.6902,
+     "median_elapsed_hours": 5.8,
+     "median_elapsed_share_of_horizon": 0.08055555555555556,
+     "included_rung1": 67,
+     "dropped_for_controls": 60,
+     "mean_controls": 6.039370078740157,
+     "included_rung2": 80,
+     "included_rung3": 100,
+     "included_S1": 89,
+     "included_S2": 109,
+     "included_S3": 108,
+     "included_S4": 67,
+     "included_S5": 67,
+     "decision_rung": "rung1"
+    },
+    "F2_perp_extreme_ctrl": {
+     "eligible_trades": 184,
+     "trades_with_event": 126,
+     "event_share": 0.6848,
+     "median_elapsed_hours": 5.75,
+     "median_elapsed_share_of_horizon": 0.0798611111111111,
+     "included_rung1": 61,
+     "dropped_for_controls": 65,
+     "mean_controls": 5.825396825396825,
+     "included_rung2": 68,
+     "included_rung3": 96,
+     "included_S1": 81,
+     "included_S2": 109,
+     "included_S3": 107,
+     "included_S4": 61,
+     "included_S5": 61,
+     "decision_rung": "rung1"
+    },
+    "F1_oi_up": {
+     "eligible_trades": 0,
+     "trades_with_event": 0,
+     "event_share": 0.0,
+     "included_rung1": 0,
+     "included_rung2": 0,
+     "included_rung3": 0,
+     "included_S1": 0,
+     "included_S2": 0,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F1_oi_up_ctrl": {
+     "eligible_trades": 0,
+     "trades_with_event": 0,
+     "event_share": 0.0,
+     "included_rung1": 0,
+     "included_rung2": 0,
+     "included_rung3": 0,
+     "included_S1": 0,
+     "included_S2": 0,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F1_oi_down": {
+     "eligible_trades": 0,
+     "trades_with_event": 0,
+     "event_share": 0.0,
+     "included_rung1": 0,
+     "included_rung2": 0,
+     "included_rung3": 0,
+     "included_S1": 0,
+     "included_S2": 0,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F1_oi_down_ctrl": {
+     "eligible_trades": 0,
+     "trades_with_event": 0,
+     "event_share": 0.0,
+     "included_rung1": 0,
+     "included_rung2": 0,
+     "included_rung3": 0,
+     "included_S1": 0,
+     "included_S2": 0,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F1_against_usdt_fdusd": {
+     "eligible_trades": 0,
+     "trades_with_event": 0,
+     "event_share": 0.0,
+     "included_rung1": 0,
+     "included_rung2": 0,
+     "included_rung3": 0,
+     "included_S1": 0,
+     "included_S2": 0,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F1_against_usdt_fdusd_ctrl": {
+     "eligible_trades": 0,
+     "trades_with_event": 0,
+     "event_share": 0.0,
+     "included_rung1": 0,
+     "included_rung2": 0,
+     "included_rung3": 0,
+     "included_S1": 0,
+     "included_S2": 0,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F3": {
+     "eligible_trades": 0,
+     "trades_with_event": 0,
+     "event_share": 0.0,
+     "included_rung1": 0,
+     "included_rung2": 0,
+     "included_rung3": 0,
+     "included_S1": 0,
+     "included_S2": 0,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F3_spot_confirmed": {
+     "eligible_trades": 0,
+     "trades_with_event": 0,
+     "event_share": 0.0,
+     "included_rung1": 0,
+     "included_rung2": 0,
+     "included_rung3": 0,
+     "included_S1": 0,
+     "included_S2": 0,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F3_spot_led": {
+     "eligible_trades": 0,
+     "trades_with_event": 0,
+     "event_share": 0.0,
+     "included_rung1": 0,
+     "included_rung2": 0,
+     "included_rung3": 0,
+     "included_S1": 0,
+     "included_S2": 0,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    }
+   },
+   "squeeze_bull": {
+    "F1_against": {
+     "eligible_trades": 122,
+     "trades_with_event": 50,
+     "event_share": 0.4098,
+     "median_elapsed_hours": 3.0166666666666666,
+     "median_elapsed_share_of_horizon": 0.06284722222222222,
+     "included_rung1": 42,
+     "dropped_for_controls": 8,
+     "mean_controls": 13.66,
+     "included_rung2": 43,
+     "included_rung3": 49,
+     "included_S1": 46,
+     "included_S2": 49,
+     "included_S3": 49,
+     "included_S4": 42,
+     "included_S5": 42,
+     "included_rvol_rung1": 38,
+     "included_rsession_rung1": 21,
+     "included_shared_rung1": 46,
+     "included_shared_rung2": 47,
+     "included_shared_rung3": 50,
+     "decision_rung": "rung1"
+    },
+    "F1_spot_confirmed": {
+     "eligible_trades": 122,
+     "trades_with_event": 100,
+     "event_share": 0.8197,
+     "median_elapsed_hours": 2.45,
+     "median_elapsed_share_of_horizon": 0.051041666666666666,
+     "included_rung1": 73,
+     "dropped_for_controls": 27,
+     "mean_controls": 8.84,
+     "included_rung2": 77,
+     "included_rung3": 79,
+     "included_S1": 87,
+     "included_S2": 92,
+     "included_S3": 86,
+     "included_S4": 73,
+     "included_S5": 73,
+     "included_rvol_rung1": 58,
+     "included_rsession_rung1": 28,
+     "included_shared_rung1": 90,
+     "included_shared_rung2": 97,
+     "included_shared_rung3": 97,
+     "decision_rung": "rung1"
+    },
+    "F1_spot_led": {
+     "eligible_trades": 122,
+     "trades_with_event": 28,
+     "event_share": 0.2295,
+     "median_elapsed_hours": 3.091666666666667,
+     "median_elapsed_share_of_horizon": 0.06440972222222222,
+     "included_rung1": 25,
+     "dropped_for_controls": 3,
+     "mean_controls": 15.571428571428571,
+     "included_rung2": 26,
+     "included_rung3": 27,
+     "included_S1": 27,
+     "included_S2": 28,
+     "included_S3": 28,
+     "included_S4": 25,
+     "included_S5": 25,
+     "decision_rung": null
+    },
+    "F1_mirror": {
+     "eligible_trades": 122,
+     "trades_with_event": 14,
+     "event_share": 0.1148,
+     "median_elapsed_hours": 7.958333333333334,
+     "median_elapsed_share_of_horizon": 0.1657986111111111,
+     "included_rung1": 10,
+     "dropped_for_controls": 4,
+     "mean_controls": 5.357142857142857,
+     "included_rung2": 10,
+     "included_rung3": 11,
+     "included_S1": 11,
+     "included_S2": 13,
+     "included_S3": 11,
+     "included_S4": 10,
+     "included_S5": 10,
+     "decision_rung": null
+    },
+    "F1_prem_only": {
+     "eligible_trades": 122,
+     "trades_with_event": 102,
+     "event_share": 0.8361,
+     "median_elapsed_hours": 1.5833333333333335,
+     "median_elapsed_share_of_horizon": 0.03298611111111111,
+     "included_rung1": 68,
+     "dropped_for_controls": 34,
+     "mean_controls": 4.872549019607843,
+     "included_rung2": 78,
+     "included_rung3": 79,
+     "included_S1": 89,
+     "included_S2": 93,
+     "included_S3": 90,
+     "included_S4": 68,
+     "included_S5": 65,
+     "decision_rung": "rung1"
+    },
+    "F1_prem_only_ctrl": {
+     "eligible_trades": 122,
+     "trades_with_event": 100,
+     "event_share": 0.8197,
+     "median_elapsed_hours": 1.775,
+     "median_elapsed_share_of_horizon": 0.03697916666666667,
+     "included_rung1": 71,
+     "dropped_for_controls": 29,
+     "mean_controls": 9.75,
+     "included_rung2": 77,
+     "included_rung3": 80,
+     "included_S1": 82,
+     "included_S2": 91,
+     "included_S3": 89,
+     "included_S4": 71,
+     "included_S5": 71,
+     "decision_rung": "rung1"
+    },
+    "F1_flow_only": {
+     "eligible_trades": 122,
+     "trades_with_event": 63,
+     "event_share": 0.5164,
+     "median_elapsed_hours": 3.05,
+     "median_elapsed_share_of_horizon": 0.06354166666666666,
+     "included_rung1": 51,
+     "dropped_for_controls": 12,
+     "mean_controls": 11.65079365079365,
+     "included_rung2": 54,
+     "included_rung3": 61,
+     "included_S1": 56,
+     "included_S2": 62,
+     "included_S3": 60,
+     "included_S4": 51,
+     "included_S5": 51,
+     "decision_rung": "rung1"
+    },
+    "F1_flow_only_ctrl": {
+     "eligible_trades": 122,
+     "trades_with_event": 102,
+     "event_share": 0.8361,
+     "median_elapsed_hours": 1.875,
+     "median_elapsed_share_of_horizon": 0.0390625,
+     "included_rung1": 67,
+     "dropped_for_controls": 35,
+     "mean_controls": 7.254901960784314,
+     "included_rung2": 73,
+     "included_rung3": 76,
+     "included_S1": 86,
+     "included_S2": 94,
+     "included_S3": 85,
+     "included_S4": 67,
+     "included_S5": 66,
+     "decision_rung": "rung1"
+    },
+    "F1_any_extreme": {
+     "eligible_trades": 122,
+     "trades_with_event": 104,
+     "event_share": 0.8525,
+     "median_elapsed_hours": 1.475,
+     "median_elapsed_share_of_horizon": 0.03072916666666667,
+     "included_rung1": 0,
+     "dropped_for_controls": 104,
+     "mean_controls": 0.0,
+     "included_rung2": 79,
+     "included_rung3": 0,
+     "included_S1": 89,
+     "included_S2": 98,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": "rung2"
+    },
+    "F1_in_profit": {
+     "eligible_trades": 122,
+     "trades_with_event": 12,
+     "event_share": 0.0984,
+     "median_elapsed_hours": 9.875,
+     "median_elapsed_share_of_horizon": 0.20572916666666669,
+     "included_rung1": 8,
+     "dropped_for_controls": 4,
+     "mean_controls": 3.25,
+     "included_rung2": 9,
+     "included_rung3": 12,
+     "included_S1": 9,
+     "included_S2": 12,
+     "included_S3": 12,
+     "included_S4": 8,
+     "included_S5": 8,
+     "decision_rung": null
+    },
+    "F1_in_profit_ctrl": {
+     "eligible_trades": 122,
+     "trades_with_event": 55,
+     "event_share": 0.4508,
+     "median_elapsed_hours": 14.516666666666667,
+     "median_elapsed_share_of_horizon": 0.30243055555555554,
+     "included_rung1": 17,
+     "dropped_for_controls": 38,
+     "mean_controls": 1.4727272727272727,
+     "included_rung2": 21,
+     "included_rung3": 27,
+     "included_S1": 27,
+     "included_S2": 38,
+     "included_S3": 49,
+     "included_S4": 17,
+     "included_S5": 17,
+     "decision_rung": null
+    },
+    "F2_perp_led": {
+     "eligible_trades": 122,
+     "trades_with_event": 5,
+     "event_share": 0.041,
+     "median_elapsed_hours": 15.216666666666667,
+     "median_elapsed_share_of_horizon": 0.3170138888888889,
+     "included_rung1": 4,
+     "dropped_for_controls": 1,
+     "mean_controls": 4.8,
+     "included_rung2": 4,
+     "included_rung3": 4,
+     "included_S1": 5,
+     "included_S2": 5,
+     "included_S3": 5,
+     "included_S4": 4,
+     "included_S5": 4,
+     "included_rvol_rung1": 3,
+     "included_rsession_rung1": 0,
+     "included_shared_rung1": 4,
+     "included_shared_rung2": 4,
+     "included_shared_rung3": 4,
+     "decision_rung": null
+    },
+    "F2_spot_confirmed": {
+     "eligible_trades": 122,
+     "trades_with_event": 75,
+     "event_share": 0.6148,
+     "median_elapsed_hours": 9.783333333333333,
+     "median_elapsed_share_of_horizon": 0.20381944444444444,
+     "included_rung1": 44,
+     "dropped_for_controls": 31,
+     "mean_controls": 6.8533333333333335,
+     "included_rung2": 48,
+     "included_rung3": 55,
+     "included_S1": 62,
+     "included_S2": 70,
+     "included_S3": 60,
+     "included_S4": 44,
+     "included_S5": 44,
+     "included_rvol_rung1": 29,
+     "included_rsession_rung1": 20,
+     "included_shared_rung1": 58,
+     "included_shared_rung2": 68,
+     "included_shared_rung3": 69,
+     "decision_rung": "rung1"
+    },
+    "F2_spot_led": {
+     "eligible_trades": 122,
+     "trades_with_event": 0,
+     "event_share": 0.0,
+     "included_rung1": 0,
+     "included_rung2": 0,
+     "included_rung3": 0,
+     "included_S1": 0,
+     "included_S2": 0,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F2_mirror": {
+     "eligible_trades": 122,
+     "trades_with_event": 2,
+     "event_share": 0.0164,
+     "median_elapsed_hours": 3.816666666666667,
+     "median_elapsed_share_of_horizon": 0.07951388888888888,
+     "included_rung1": 2,
+     "dropped_for_controls": 0,
+     "mean_controls": 12.5,
+     "included_rung2": 2,
+     "included_rung3": 2,
+     "included_S1": 2,
+     "included_S2": 2,
+     "included_S3": 2,
+     "included_S4": 2,
+     "included_S5": 2,
+     "decision_rung": null
+    },
+    "F2_perp_extreme": {
+     "eligible_trades": 122,
+     "trades_with_event": 75,
+     "event_share": 0.6148,
+     "median_elapsed_hours": 9.616666666666667,
+     "median_elapsed_share_of_horizon": 0.20034722222222223,
+     "included_rung1": 44,
+     "dropped_for_controls": 31,
+     "mean_controls": 6.866666666666666,
+     "included_rung2": 48,
+     "included_rung3": 56,
+     "included_S1": 61,
+     "included_S2": 70,
+     "included_S3": 59,
+     "included_S4": 44,
+     "included_S5": 44,
+     "decision_rung": "rung1"
+    },
+    "F2_perp_extreme_ctrl": {
+     "eligible_trades": 122,
+     "trades_with_event": 67,
+     "event_share": 0.5492,
+     "median_elapsed_hours": 12.316666666666666,
+     "median_elapsed_share_of_horizon": 0.2565972222222222,
+     "included_rung1": 34,
+     "dropped_for_controls": 33,
+     "mean_controls": 6.611940298507463,
+     "included_rung2": 38,
+     "included_rung3": 52,
+     "included_S1": 50,
+     "included_S2": 61,
+     "included_S3": 53,
+     "included_S4": 34,
+     "included_S5": 34,
+     "decision_rung": "rung1"
+    },
+    "F1_oi_up": {
+     "eligible_trades": 122,
+     "trades_with_event": 36,
+     "event_share": 0.2951,
+     "median_elapsed_hours": 4.316666666666666,
+     "median_elapsed_share_of_horizon": 0.08993055555555556,
+     "included_rung1": 29,
+     "dropped_for_controls": 7,
+     "mean_controls": 14.027777777777779,
+     "included_rung2": 30,
+     "included_rung3": 36,
+     "included_S1": 31,
+     "included_S2": 36,
+     "included_S3": 36,
+     "included_S4": 29,
+     "included_S5": 29,
+     "decision_rung": "rung2"
+    },
+    "F1_oi_up_ctrl": {
+     "eligible_trades": 122,
+     "trades_with_event": 83,
+     "event_share": 0.6803,
+     "median_elapsed_hours": 6.183333333333334,
+     "median_elapsed_share_of_horizon": 0.12881944444444443,
+     "included_rung1": 52,
+     "dropped_for_controls": 31,
+     "mean_controls": 9.289156626506024,
+     "included_rung2": 56,
+     "included_rung3": 63,
+     "included_S1": 66,
+     "included_S2": 76,
+     "included_S3": 73,
+     "included_S4": 52,
+     "included_S5": 52,
+     "decision_rung": "rung1"
+    },
+    "F1_oi_down": {
+     "eligible_trades": 122,
+     "trades_with_event": 29,
+     "event_share": 0.2377,
+     "median_elapsed_hours": 2.533333333333333,
+     "median_elapsed_share_of_horizon": 0.05277777777777778,
+     "included_rung1": 27,
+     "dropped_for_controls": 2,
+     "mean_controls": 15.137931034482758,
+     "included_rung2": 28,
+     "included_rung3": 29,
+     "included_S1": 28,
+     "included_S2": 29,
+     "included_S3": 28,
+     "included_S4": 27,
+     "included_S5": 27,
+     "decision_rung": null
+    },
+    "F1_oi_down_ctrl": {
+     "eligible_trades": 122,
+     "trades_with_event": 82,
+     "event_share": 0.6721,
+     "median_elapsed_hours": 3.35,
+     "median_elapsed_share_of_horizon": 0.06979166666666667,
+     "included_rung1": 62,
+     "dropped_for_controls": 20,
+     "mean_controls": 10.24390243902439,
+     "included_rung2": 64,
+     "included_rung3": 71,
+     "included_S1": 71,
+     "included_S2": 78,
+     "included_S3": 69,
+     "included_S4": 62,
+     "included_S5": 62,
+     "decision_rung": "rung1"
+    },
+    "F1_against_usdt_fdusd": {
+     "eligible_trades": 80,
+     "trades_with_event": 32,
+     "event_share": 0.4,
+     "median_elapsed_hours": 2.7750000000000004,
+     "median_elapsed_share_of_horizon": 0.0578125,
+     "included_rung1": 26,
+     "dropped_for_controls": 6,
+     "mean_controls": 10.375,
+     "included_rung2": 28,
+     "included_rung3": 29,
+     "included_S1": 29,
+     "included_S2": 31,
+     "included_S3": 31,
+     "included_S4": 26,
+     "included_S5": 26,
+     "decision_rung": null
+    },
+    "F1_against_usdt_fdusd_ctrl": {
+     "eligible_trades": 80,
+     "trades_with_event": 66,
+     "event_share": 0.825,
+     "median_elapsed_hours": 2.3916666666666666,
+     "median_elapsed_share_of_horizon": 0.04982638888888889,
+     "included_rung1": 43,
+     "dropped_for_controls": 23,
+     "mean_controls": 5.53030303030303,
+     "included_rung2": 46,
+     "included_rung3": 49,
+     "included_S1": 57,
+     "included_S2": 59,
+     "included_S3": 58,
+     "included_S4": 43,
+     "included_S5": 42,
+     "decision_rung": "rung1"
+    },
+    "F3": {
+     "eligible_trades": 122,
+     "trades_with_event": 10,
+     "event_share": 0.082,
+     "median_elapsed_hours": 6.591666666666667,
+     "median_elapsed_share_of_horizon": 0.13732638888888887,
+     "included_rung1": 6,
+     "dropped_for_controls": 4,
+     "mean_controls": 5.9,
+     "included_rung2": 7,
+     "included_rung3": 10,
+     "included_S1": 9,
+     "included_S2": 10,
+     "included_S3": 9,
+     "included_S4": 6,
+     "included_S5": 6,
+     "decision_rung": null
+    },
+    "F3_spot_confirmed": {
+     "eligible_trades": 122,
+     "trades_with_event": 56,
+     "event_share": 0.459,
+     "median_elapsed_hours": 13.325,
+     "median_elapsed_share_of_horizon": 0.27760416666666665,
+     "included_rung1": 29,
+     "dropped_for_controls": 27,
+     "mean_controls": 5.107142857142857,
+     "included_rung2": 34,
+     "included_rung3": 44,
+     "included_S1": 44,
+     "included_S2": 51,
+     "included_S3": 46,
+     "included_S4": 29,
+     "included_S5": 29,
+     "decision_rung": "rung2"
+    },
+    "F3_spot_led": {
+     "eligible_trades": 122,
+     "trades_with_event": 8,
+     "event_share": 0.0656,
+     "median_elapsed_hours": 10.95,
+     "median_elapsed_share_of_horizon": 0.22812500000000002,
+     "included_rung1": 6,
+     "dropped_for_controls": 2,
+     "mean_controls": 10.625,
+     "included_rung2": 7,
+     "included_rung3": 8,
+     "included_S1": 8,
+     "included_S2": 8,
+     "included_S3": 7,
+     "included_S4": 6,
+     "included_S5": 6,
+     "decision_rung": null
+    }
+   },
+   "short_squeeze": {
+    "F1_against": {
+     "eligible_trades": 71,
+     "trades_with_event": 5,
+     "event_share": 0.0704,
+     "median_elapsed_hours": 1.6666666666666667,
+     "median_elapsed_share_of_horizon": 0.2777777777777778,
+     "included_rung1": 0,
+     "dropped_for_controls": 5,
+     "mean_controls": 0.2,
+     "included_rung2": 2,
+     "included_rung3": 1,
+     "included_S1": 2,
+     "included_S2": 3,
+     "included_S3": 4,
+     "included_S4": 0,
+     "included_S5": 0,
+     "included_rvol_rung1": 0,
+     "included_rsession_rung1": 0,
+     "included_shared_rung1": 0,
+     "included_shared_rung2": 2,
+     "included_shared_rung3": 1,
+     "decision_rung": null
+    },
+    "F1_spot_confirmed": {
+     "eligible_trades": 71,
+     "trades_with_event": 14,
+     "event_share": 0.1972,
+     "median_elapsed_hours": 1.7000000000000002,
+     "median_elapsed_share_of_horizon": 0.2833333333333333,
+     "included_rung1": 0,
+     "dropped_for_controls": 14,
+     "mean_controls": 0.21428571428571427,
+     "included_rung2": 3,
+     "included_rung3": 2,
+     "included_S1": 3,
+     "included_S2": 9,
+     "included_S3": 4,
+     "included_S4": 0,
+     "included_S5": 0,
+     "included_rvol_rung1": 0,
+     "included_rsession_rung1": 0,
+     "included_shared_rung1": 0,
+     "included_shared_rung2": 5,
+     "included_shared_rung3": 4,
+     "decision_rung": null
+    },
+    "F1_spot_led": {
+     "eligible_trades": 71,
+     "trades_with_event": 3,
+     "event_share": 0.0423,
+     "median_elapsed_hours": 2.066666666666667,
+     "median_elapsed_share_of_horizon": 0.3444444444444445,
+     "included_rung1": 0,
+     "dropped_for_controls": 3,
+     "mean_controls": 0.6666666666666666,
+     "included_rung2": 1,
+     "included_rung3": 1,
+     "included_S1": 2,
+     "included_S2": 3,
+     "included_S3": 3,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F1_mirror": {
+     "eligible_trades": 71,
+     "trades_with_event": 1,
+     "event_share": 0.0141,
+     "median_elapsed_hours": 1.1166666666666667,
+     "median_elapsed_share_of_horizon": 0.18611111111111112,
+     "included_rung1": 0,
+     "dropped_for_controls": 1,
+     "mean_controls": 1.0,
+     "included_rung2": 0,
+     "included_rung3": 0,
+     "included_S1": 0,
+     "included_S2": 1,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F1_prem_only": {
+     "eligible_trades": 71,
+     "trades_with_event": 20,
+     "event_share": 0.2817,
+     "median_elapsed_hours": 1.65,
+     "median_elapsed_share_of_horizon": 0.275,
+     "included_rung1": 0,
+     "dropped_for_controls": 20,
+     "mean_controls": 0.2,
+     "included_rung2": 3,
+     "included_rung3": 1,
+     "included_S1": 5,
+     "included_S2": 13,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F1_prem_only_ctrl": {
+     "eligible_trades": 71,
+     "trades_with_event": 21,
+     "event_share": 0.2958,
+     "median_elapsed_hours": 1.6666666666666667,
+     "median_elapsed_share_of_horizon": 0.2777777777777778,
+     "included_rung1": 0,
+     "dropped_for_controls": 21,
+     "mean_controls": 0.047619047619047616,
+     "included_rung2": 2,
+     "included_rung3": 2,
+     "included_S1": 7,
+     "included_S2": 16,
+     "included_S3": 4,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F1_flow_only": {
+     "eligible_trades": 71,
+     "trades_with_event": 8,
+     "event_share": 0.1127,
+     "median_elapsed_hours": 2.1916666666666664,
+     "median_elapsed_share_of_horizon": 0.36527777777777776,
+     "included_rung1": 0,
+     "dropped_for_controls": 8,
+     "mean_controls": 0.625,
+     "included_rung2": 2,
+     "included_rung3": 2,
+     "included_S1": 2,
+     "included_S2": 6,
+     "included_S3": 5,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F1_flow_only_ctrl": {
+     "eligible_trades": 71,
+     "trades_with_event": 18,
+     "event_share": 0.2535,
+     "median_elapsed_hours": 1.2000000000000002,
+     "median_elapsed_share_of_horizon": 0.2,
+     "included_rung1": 0,
+     "dropped_for_controls": 18,
+     "mean_controls": 0.16666666666666666,
+     "included_rung2": 3,
+     "included_rung3": 0,
+     "included_S1": 5,
+     "included_S2": 14,
+     "included_S3": 1,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F1_any_extreme": {
+     "eligible_trades": 71,
+     "trades_with_event": 24,
+     "event_share": 0.338,
+     "median_elapsed_hours": 1.3583333333333334,
+     "median_elapsed_share_of_horizon": 0.2263888888888889,
+     "included_rung1": 0,
+     "dropped_for_controls": 24,
+     "mean_controls": 0.0,
+     "included_rung2": 3,
+     "included_rung3": 0,
+     "included_S1": 8,
+     "included_S2": 19,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F1_in_profit": {
+     "eligible_trades": 71,
+     "trades_with_event": 3,
+     "event_share": 0.0423,
+     "median_elapsed_hours": 1.6666666666666667,
+     "median_elapsed_share_of_horizon": 0.2777777777777778,
+     "included_rung1": 0,
+     "dropped_for_controls": 3,
+     "mean_controls": 0.0,
+     "included_rung2": 0,
+     "included_rung3": 0,
+     "included_S1": 1,
+     "included_S2": 2,
+     "included_S3": 2,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F1_in_profit_ctrl": {
+     "eligible_trades": 71,
+     "trades_with_event": 13,
+     "event_share": 0.1831,
+     "median_elapsed_hours": 1.8666666666666667,
+     "median_elapsed_share_of_horizon": 0.3111111111111111,
+     "included_rung1": 0,
+     "dropped_for_controls": 13,
+     "mean_controls": 0.38461538461538464,
+     "included_rung2": 1,
+     "included_rung3": 2,
+     "included_S1": 1,
+     "included_S2": 7,
+     "included_S3": 5,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F2_perp_led": {
+     "eligible_trades": 71,
+     "trades_with_event": 0,
+     "event_share": 0.0,
+     "included_rung1": 0,
+     "included_rung2": 0,
+     "included_rung3": 0,
+     "included_S1": 0,
+     "included_S2": 0,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "included_rvol_rung1": 0,
+     "included_rsession_rung1": 0,
+     "included_shared_rung1": 0,
+     "included_shared_rung2": 0,
+     "included_shared_rung3": 0,
+     "decision_rung": null
+    },
+    "F2_spot_confirmed": {
+     "eligible_trades": 71,
+     "trades_with_event": 2,
+     "event_share": 0.0282,
+     "median_elapsed_hours": 2.45,
+     "median_elapsed_share_of_horizon": 0.4083333333333333,
+     "included_rung1": 0,
+     "dropped_for_controls": 2,
+     "mean_controls": 0.0,
+     "included_rung2": 0,
+     "included_rung3": 1,
+     "included_S1": 1,
+     "included_S2": 2,
+     "included_S3": 2,
+     "included_S4": 0,
+     "included_S5": 0,
+     "included_rvol_rung1": 0,
+     "included_rsession_rung1": 0,
+     "included_shared_rung1": 0,
+     "included_shared_rung2": 0,
+     "included_shared_rung3": 1,
+     "decision_rung": null
+    },
+    "F2_spot_led": {
+     "eligible_trades": 71,
+     "trades_with_event": 0,
+     "event_share": 0.0,
+     "included_rung1": 0,
+     "included_rung2": 0,
+     "included_rung3": 0,
+     "included_S1": 0,
+     "included_S2": 0,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F2_mirror": {
+     "eligible_trades": 71,
+     "trades_with_event": 0,
+     "event_share": 0.0,
+     "included_rung1": 0,
+     "included_rung2": 0,
+     "included_rung3": 0,
+     "included_S1": 0,
+     "included_S2": 0,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F2_perp_extreme": {
+     "eligible_trades": 71,
+     "trades_with_event": 2,
+     "event_share": 0.0282,
+     "median_elapsed_hours": 2.45,
+     "median_elapsed_share_of_horizon": 0.4083333333333333,
+     "included_rung1": 0,
+     "dropped_for_controls": 2,
+     "mean_controls": 0.0,
+     "included_rung2": 0,
+     "included_rung3": 1,
+     "included_S1": 1,
+     "included_S2": 2,
+     "included_S3": 2,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F2_perp_extreme_ctrl": {
+     "eligible_trades": 71,
+     "trades_with_event": 2,
+     "event_share": 0.0282,
+     "median_elapsed_hours": 2.4,
+     "median_elapsed_share_of_horizon": 0.39999999999999997,
+     "included_rung1": 0,
+     "dropped_for_controls": 2,
+     "mean_controls": 0.5,
+     "included_rung2": 0,
+     "included_rung3": 1,
+     "included_S1": 1,
+     "included_S2": 2,
+     "included_S3": 1,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F1_oi_up": {
+     "eligible_trades": 71,
+     "trades_with_event": 3,
+     "event_share": 0.0423,
+     "median_elapsed_hours": 1.6666666666666667,
+     "median_elapsed_share_of_horizon": 0.2777777777777778,
+     "included_rung1": 0,
+     "dropped_for_controls": 3,
+     "mean_controls": 0.0,
+     "included_rung2": 1,
+     "included_rung3": 0,
+     "included_S1": 2,
+     "included_S2": 2,
+     "included_S3": 2,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F1_oi_up_ctrl": {
+     "eligible_trades": 71,
+     "trades_with_event": 10,
+     "event_share": 0.1408,
+     "median_elapsed_hours": 1.8333333333333335,
+     "median_elapsed_share_of_horizon": 0.3055555555555556,
+     "included_rung1": 0,
+     "dropped_for_controls": 10,
+     "mean_controls": 0.3,
+     "included_rung2": 2,
+     "included_rung3": 1,
+     "included_S1": 2,
+     "included_S2": 7,
+     "included_S3": 4,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F1_oi_down": {
+     "eligible_trades": 71,
+     "trades_with_event": 2,
+     "event_share": 0.0282,
+     "median_elapsed_hours": 2.25,
+     "median_elapsed_share_of_horizon": 0.375,
+     "included_rung1": 0,
+     "dropped_for_controls": 2,
+     "mean_controls": 0.5,
+     "included_rung2": 1,
+     "included_rung3": 1,
+     "included_S1": 1,
+     "included_S2": 2,
+     "included_S3": 2,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F1_oi_down_ctrl": {
+     "eligible_trades": 71,
+     "trades_with_event": 11,
+     "event_share": 0.1549,
+     "median_elapsed_hours": 1.95,
+     "median_elapsed_share_of_horizon": 0.325,
+     "included_rung1": 0,
+     "dropped_for_controls": 11,
+     "mean_controls": 0.36363636363636365,
+     "included_rung2": 2,
+     "included_rung3": 2,
+     "included_S1": 2,
+     "included_S2": 7,
+     "included_S3": 5,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F1_against_usdt_fdusd": {
+     "eligible_trades": 45,
+     "trades_with_event": 2,
+     "event_share": 0.0444,
+     "median_elapsed_hours": 2.416666666666667,
+     "median_elapsed_share_of_horizon": 0.4027777777777778,
+     "included_rung1": 0,
+     "dropped_for_controls": 2,
+     "mean_controls": 0.0,
+     "included_rung2": 1,
+     "included_rung3": 0,
+     "included_S1": 1,
+     "included_S2": 2,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F1_against_usdt_fdusd_ctrl": {
+     "eligible_trades": 45,
+     "trades_with_event": 8,
+     "event_share": 0.1778,
+     "median_elapsed_hours": 1.7000000000000002,
+     "median_elapsed_share_of_horizon": 0.2833333333333333,
+     "included_rung1": 0,
+     "dropped_for_controls": 8,
+     "mean_controls": 0.0,
+     "included_rung2": 1,
+     "included_rung3": 0,
+     "included_S1": 1,
+     "included_S2": 5,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F3": {
+     "eligible_trades": 71,
+     "trades_with_event": 1,
+     "event_share": 0.0141,
+     "median_elapsed_hours": 1.65,
+     "median_elapsed_share_of_horizon": 0.275,
+     "included_rung1": 0,
+     "dropped_for_controls": 1,
+     "mean_controls": 1.0,
+     "included_rung2": 0,
+     "included_rung3": 0,
+     "included_S1": 0,
+     "included_S2": 1,
+     "included_S3": 0,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F3_spot_confirmed": {
+     "eligible_trades": 71,
+     "trades_with_event": 3,
+     "event_share": 0.0423,
+     "median_elapsed_hours": 1.1,
+     "median_elapsed_share_of_horizon": 0.18333333333333332,
+     "included_rung1": 0,
+     "dropped_for_controls": 3,
+     "mean_controls": 1.0,
+     "included_rung2": 1,
+     "included_rung3": 1,
+     "included_S1": 1,
+     "included_S2": 3,
+     "included_S3": 2,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    },
+    "F3_spot_led": {
+     "eligible_trades": 71,
+     "trades_with_event": 1,
+     "event_share": 0.0141,
+     "median_elapsed_hours": 1.0833333333333333,
+     "median_elapsed_share_of_horizon": 0.18055555555555555,
+     "included_rung1": 0,
+     "dropped_for_controls": 1,
+     "mean_controls": 0.0,
+     "included_rung2": 0,
+     "included_rung3": 0,
+     "included_S1": 0,
+     "included_S2": 1,
+     "included_S3": 1,
+     "included_S4": 0,
+     "included_S5": 0,
+     "decision_rung": null
+    }
+   }
+  },
+  "family": [
+   "chento_BTC:F1_against",
+   "squeeze_bull:F1_against"
+  ],
+  "pass": true
+ },
+ "pass": false
+}

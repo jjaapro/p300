@@ -1,0 +1,130 @@
+{
+ "fixed_capital_sequence": {
+  "A0": {
+   "BTC": {
+    "trades": 198,
+    "total_return_pct_of_capital": 287.9470448717211,
+    "max_drawdown_pct_of_capital": 33.298658071245406
+   },
+   "ETH": {
+    "trades": 184,
+    "total_return_pct_of_capital": 127.59819021812424,
+    "max_drawdown_pct_of_capital": 21.044618734818325
+   }
+  },
+  "A2_48": {
+   "BTC": {
+    "trades": 198,
+    "total_return_pct_of_capital": 234.76681829817525,
+    "max_drawdown_pct_of_capital": 24.02050910100683
+   },
+   "ETH": {
+    "trades": 184,
+    "total_return_pct_of_capital": 90.09581771075406,
+    "max_drawdown_pct_of_capital": 21.613970707732705
+   }
+  },
+  "A2_168": {
+   "BTC": {
+    "trades": 198,
+    "total_return_pct_of_capital": 321.682153305364,
+    "max_drawdown_pct_of_capital": 44.506875203182275
+   },
+   "ETH": {
+    "trades": 184,
+    "total_return_pct_of_capital": 135.87236736668072,
+    "max_drawdown_pct_of_capital": 33.21582046532101
+   }
+  },
+  "A1": {
+   "BTC": {
+    "trades": 197,
+    "total_return_pct_of_capital": 352.6263798974963,
+    "max_drawdown_pct_of_capital": 48.892147917045875
+   },
+   "ETH": {
+    "trades": 184,
+    "total_return_pct_of_capital": 146.4118766104105,
+    "max_drawdown_pct_of_capital": 43.11886801445951
+   }
+  },
+  "X1": {
+   "BTC": {
+    "trades": 199,
+    "total_return_pct_of_capital": 239.4878261675752,
+    "max_drawdown_pct_of_capital": 32.6845776289652
+   },
+   "ETH": {
+    "trades": 184,
+    "total_return_pct_of_capital": 98.81130785971696,
+    "max_drawdown_pct_of_capital": 29.083458104387866
+   }
+  },
+  "X2": {
+   "BTC": {
+    "trades": 197,
+    "total_return_pct_of_capital": 339.3705180233017,
+    "max_drawdown_pct_of_capital": 48.89214791704591
+   },
+   "ETH": {
+    "trades": 184,
+    "total_return_pct_of_capital": 137.6474682170053,
+    "max_drawdown_pct_of_capital": 41.75466881065018
+   }
+  },
+  "X3": {
+   "BTC": {
+    "trades": 197,
+    "total_return_pct_of_capital": 349.2834816121646,
+    "max_drawdown_pct_of_capital": 55.48654138686252
+   },
+   "ETH": {
+    "trades": 184,
+    "total_return_pct_of_capital": 148.64060455417777,
+    "max_drawdown_pct_of_capital": 41.404457374261824
+   }
+  }
+ },
+ "a0_time_stopped_by_a1_outcome": [
+  {
+   "a1_kind": "censored_data_end",
+   "trades": 3,
+   "mean_a0_R": 1.012,
+   "mean_a1_R": 0.176,
+   "sum_d": -2.507
+  },
+  {
+   "a1_kind": "censored_horizon",
+   "trades": 22,
+   "mean_a0_R": 1.477,
+   "mean_a1_R": 1.629,
+   "sum_d": 3.356
+  },
+  {
+   "a1_kind": "stop",
+   "trades": 77,
+   "mean_a0_R": 0.774,
+   "mean_a1_R": -1.053,
+   "sum_d": -140.752
+  },
+  {
+   "a1_kind": "target",
+   "trades": 57,
+   "mean_a0_R": 2.243,
+   "mean_a1_R": 5.9,
+   "sum_d": 208.48
+  }
+ ],
+ "a0_time_stopped_by_period": [
+  {
+   "period": "2021-2023",
+   "tif_trades": 73,
+   "mean_d_on_tif_trades": 1.003
+  },
+  {
+   "period": "2024-2026",
+   "tif_trades": 86,
+   "mean_d_on_tif_trades": -0.054
+  }
+ ]
+}

@@ -1,0 +1,620 @@
+{
+ "created_utc": "2026-09-15T15:41:02+00:00",
+ "M1": {
+  "inputs_sha256": {
+   "perp_1m_BTC": "b085372e6b3f4c743cdbb2f766f67b8765a6f563b5268c3ad515b24f52606563",
+   "perp_1m_ETH": "77edf3f64467b2b130b6c75476895c61d347c87d6d6208270b7829ced35320e7",
+   "book_1m_BTC": "c57ec7f4a0b68c7515b000ce67a0db014e56f999f263ce35b6abb2766edd514f",
+   "book_1m_ETH": "0f55bb3396f879975a90fbb683333c62437bb60af487194f668d26e3df055a56",
+   "book_manifest": "bd1eff8c8682a6699bd1d3a523554d627b5f60e3c6759fdfda6885230590f913",
+   "chento_features_BTC": "c1762d577495b9b75a9fce3c97c227e1524e33b5cfdd5f1a43f55e946ba7f81c",
+   "chento_features_ETH": "83663d81fca7c309b4eb8656c315fb1e5812f704d658d402a7c35f2e66dcc646",
+   "squeeze_bull_ledger": "d3793c4e419af462709aa25a5c930f8b7b94a73dd489af53cd7cb68100521b14",
+   "short_squeeze_replay": "5e9fd5453122119e5e6764289a80431c6a8d67ab1db6c8368fb614c1e44f6665",
+   "chento_A0_walks": "9e6d4255e46315e814462b3cd266fe341208bb3adf5874e197e2edd2ecfce64f",
+   "squeeze_bull_walks": "592e54eecfadf8ae10f937b4cdf4cdd8cd955d9c404c15b38ff73e1f56282a51"
+  },
+  "perp_1m_BTC_matches_meta": true,
+  "perp_1m_BTC_logical_sha256": "8220cf02b8ad7fb8800d858af180c0959158ce9c14065532bf4c266446192a08",
+  "book_1m_BTC_matches_meta": true,
+  "book_1m_BTC_logical_sha256": "aa1d70555321e3d52a5d601c866324d383b3dff2bd4f9921308d3687a700e8e6",
+  "chento_features_BTC_frozen": true,
+  "perp_1m_ETH_matches_meta": true,
+  "perp_1m_ETH_logical_sha256": "1a13a3f4c6e115c6c5fde192553c4b34c79628f3615b92563b52b1390d5289aa",
+  "book_1m_ETH_matches_meta": true,
+  "book_1m_ETH_logical_sha256": "5ac14eedd4a2d2362868d1106aa15428da84bf79adb69cbb330c6f9ffbb0206b",
+  "chento_features_ETH_frozen": true,
+  "squeeze_bull_ledger_frozen": true,
+  "short_squeeze_replay_committed_unchanged": true,
+  "book_zips": {
+   "verified": 2699,
+   "failed": [],
+   "missing_in_archive": [
+    [
+     "BTCUSDT",
+     "2023-02-08"
+    ],
+    [
+     "BTCUSDT",
+     "2023-02-09"
+    ],
+    [
+     "BTCUSDT",
+     "2024-04-18"
+    ],
+    [
+     "ETHUSDT",
+     "2023-02-08"
+    ],
+    [
+     "ETHUSDT",
+     "2023-02-09"
+    ]
+   ]
+  },
+  "book_build_spot_check": {
+   "days": [
+    {
+     "symbol": "BTCUSDT",
+     "day": "2025-11-10",
+     "mismatched_values": 0
+    },
+    {
+     "symbol": "BTCUSDT",
+     "day": "2024-08-17",
+     "mismatched_values": 0
+    },
+    {
+     "symbol": "BTCUSDT",
+     "day": "2025-06-03",
+     "mismatched_values": 0
+    },
+    {
+     "symbol": "BTCUSDT",
+     "day": "2023-05-03",
+     "mismatched_values": 0
+    },
+    {
+     "symbol": "BTCUSDT",
+     "day": "2024-08-10",
+     "mismatched_values": 0
+    },
+    {
+     "symbol": "ETHUSDT",
+     "day": "2026-08-10",
+     "mismatched_values": 0
+    },
+    {
+     "symbol": "ETHUSDT",
+     "day": "2023-05-09",
+     "mismatched_values": 0
+    },
+    {
+     "symbol": "ETHUSDT",
+     "day": "2024-12-12",
+     "mismatched_values": 0
+    },
+    {
+     "symbol": "ETHUSDT",
+     "day": "2025-10-26",
+     "mismatched_values": 0
+    },
+    {
+     "symbol": "ETHUSDT",
+     "day": "2025-09-21",
+     "mismatched_values": 0
+    }
+   ],
+   "mismatches": 0
+  },
+  "pass": true
+ },
+ "M2": {
+  "chento": {
+   "trades": 392,
+   "equals_A0": true,
+   "A0_rows": 392
+  },
+  "squeeze_bull": {
+   "trades": 122,
+   "equals_S0": true
+  },
+  "short_squeeze": {
+   "trades": 71,
+   "distinct_triggers": 71,
+   "all_london_ny": true
+  },
+  "pass": true
+ },
+ "M3": {
+  "chento": {
+   "trades": 392,
+   "max_rel_diff": 0.0
+  },
+  "squeeze_bull": {
+   "trades": 122,
+   "max_rel_diff": 0.0
+  },
+  "short_squeeze": {
+   "trades": 71,
+   "max_rel_diff": 0.0
+  },
+  "pass": true
+ },
+ "M4": {
+  "squeeze_bull_equal_to_S0": {
+   "equal": 122,
+   "trades": 122
+  },
+  "chento_kind_agreement": {
+   "share": 1.0,
+   "differences": [],
+   "mix_1m": {
+    "stop": 194,
+    "time": 159,
+    "target": 39
+   }
+  },
+  "short_squeeze_kind_agreement": {
+   "share": 0.9577464788732395,
+   "differences": [
+    {
+     "tid": "BTC:1662191100",
+     "kind": "stop",
+     "replay_exit_reason": "time"
+    },
+    {
+     "tid": "BTC:1695634200",
+     "kind": "stop",
+     "replay_exit_reason": "target"
+    },
+    {
+     "tid": "BTC:1770723000",
+     "kind": "stop",
+     "replay_exit_reason": "target"
+    }
+   ],
+   "mix_1m": {
+    "stop": 42,
+    "target": 19,
+    "time": 10
+   }
+  },
+  "pass": true
+ },
+ "M5": {
+  "summary": "23 passed in 0.59s",
+  "pass": true
+ },
+ "M6": {
+  "by_asset_year": {
+   "BTC": {
+    "2023": 510657,
+    "2024": 523808,
+    "2025": 519433,
+    "2026": 360353
+   },
+   "ETH": {
+    "2023": 510657,
+    "2024": 525248,
+    "2025": 519433,
+    "2026": 360353
+   }
+  },
+  "in_trade": {
+   "chento": {
+    "eligible_trades": 290,
+    "minutes": 763456,
+    "share_with_snapshot": 0.9757484386788499,
+    "e3_testable": true
+   },
+   "squeeze_bull": {
+    "eligible_trades": 111,
+    "minutes": 174876,
+    "share_with_snapshot": 0.9899357258857705,
+    "e3_testable": true
+   },
+   "short_squeeze": {
+    "eligible_trades": 50,
+    "minutes": 6209,
+    "share_with_snapshot": 0.9919471734578837,
+    "e3_testable": true
+   }
+  },
+  "pass": true
+ },
+ "M7": {
+  "cuts": [
+   {
+    "asset": "BTC",
+    "cut_minute": 2610883,
+    "cut_utc": "2024-12-18T02:43:00+00:00",
+    "open_trades_at_cut": 2,
+    "feature_differences": {
+     "z_flow": 0,
+     "dp5": 0,
+     "zq": 0
+    },
+    "event_differences": 0
+   },
+   {
+    "asset": "BTC",
+    "cut_minute": 3338154,
+    "cut_utc": "2026-05-07T03:54:00+00:00",
+    "open_trades_at_cut": 4,
+    "feature_differences": {
+     "z_flow": 0,
+     "dp5": 0,
+     "zq": 0
+    },
+    "event_differences": 0
+   },
+   {
+    "asset": "BTC",
+    "cut_minute": 2166611,
+    "cut_utc": "2024-02-13T14:11:00+00:00",
+    "open_trades_at_cut": 3,
+    "feature_differences": {
+     "z_flow": 0,
+     "dp5": 0,
+     "zq": 0
+    },
+    "event_differences": 0
+   },
+   {
+    "asset": "BTC",
+    "cut_minute": 1826773,
+    "cut_utc": "2023-06-22T14:13:00+00:00",
+    "open_trades_at_cut": 5,
+    "feature_differences": {
+     "z_flow": 0,
+     "dp5": 0,
+     "zq": 0
+    },
+    "event_differences": 0
+   },
+   {
+    "asset": "BTC",
+    "cut_minute": 3337125,
+    "cut_utc": "2026-05-06T10:45:00+00:00",
+    "open_trades_at_cut": 1,
+    "feature_differences": {
+     "z_flow": 0,
+     "dp5": 0,
+     "zq": 0
+    },
+    "event_differences": 0
+   },
+   {
+    "asset": "ETH",
+    "cut_minute": 3397211,
+    "cut_utc": "2026-06-17T04:11:00+00:00",
+    "open_trades_at_cut": 2,
+    "feature_differences": {
+     "z_flow": 0,
+     "dp5": 0,
+     "zq": 0
+    },
+    "event_differences": 0
+   },
+   {
+    "asset": "ETH",
+    "cut_minute": 1715717,
+    "cut_utc": "2023-04-06T11:17:00+00:00",
+    "open_trades_at_cut": 1,
+    "feature_differences": {
+     "z_flow": 0,
+     "dp5": 0,
+     "zq": 0
+    },
+    "event_differences": 0
+   },
+   {
+    "asset": "ETH",
+    "cut_minute": 2771707,
+    "cut_utc": "2025-04-08T19:07:00+00:00",
+    "open_trades_at_cut": 1,
+    "feature_differences": {
+     "z_flow": 0,
+     "dp5": 0,
+     "zq": 0
+    },
+    "event_differences": 0
+   },
+   {
+    "asset": "ETH",
+    "cut_minute": 3100745,
+    "cut_utc": "2025-11-23T07:05:00+00:00",
+    "open_trades_at_cut": 5,
+    "feature_differences": {
+     "z_flow": 0,
+     "dp5": 0,
+     "zq": 0
+    },
+    "event_differences": 0
+   },
+   {
+    "asset": "ETH",
+    "cut_minute": 3099285,
+    "cut_utc": "2025-11-22T06:45:00+00:00",
+    "open_trades_at_cut": 6,
+    "feature_differences": {
+     "z_flow": 0,
+     "dp5": 0,
+     "zq": 0
+    },
+    "event_differences": 0
+   }
+  ],
+  "pass": true
+ },
+ "M8": {
+  "populations": {
+   "chento": {
+    "cv_sd_random_minute": 1.7784238030929695,
+    "tests": {
+     "E1_against": {
+      "eligible_trades": 392,
+      "trades_with_event": 122,
+      "share_with_event": 0.3112244897959184,
+      "median_elapsed_hours": 12.983333333333334,
+      "median_elapsed_share_of_horizon": 0.18032407407407408,
+      "event_minutes_per_24h_in_trade": 0.4372702793575438,
+      "included_with_min_controls": 119,
+      "included_time_only": 122,
+      "mde80_R": 0.4059393284162557,
+      "in_family": true
+     },
+     "E2_rejection": {
+      "eligible_trades": 392,
+      "trades_with_event": 219,
+      "share_with_event": 0.5586734693877551,
+      "median_elapsed_hours": 7.85,
+      "median_elapsed_share_of_horizon": 0.10902777777777778,
+      "event_minutes_per_24h_in_trade": 0.3020889311649908,
+      "included_with_min_controls": 215,
+      "included_time_only": 219,
+      "mde80_R": 0.30200586675535035,
+      "in_family": true
+     },
+     "E3_against": {
+      "eligible_trades": 290,
+      "trades_with_event": 51,
+      "share_with_event": 0.17586206896551723,
+      "median_elapsed_hours": 17.166666666666668,
+      "median_elapsed_share_of_horizon": 0.23842592592592593,
+      "event_minutes_per_24h_in_trade": 2.8141503898063545,
+      "included_with_min_controls": 48,
+      "included_time_only": 51,
+      "mde80_R": 0.6391664797519802,
+      "in_family": true
+     },
+     "E4_at_level": {
+      "eligible_trades": 392,
+      "trades_with_event": 27,
+      "share_with_event": 0.06887755102040816,
+      "median_elapsed_hours": 19.916666666666668,
+      "median_elapsed_share_of_horizon": 0.2766203703703704,
+      "event_minutes_per_24h_in_trade": 0.052417257462418494,
+      "included_with_min_controls": 27,
+      "included_time_only": 27,
+      "mde80_R": 0.8522219730026401,
+      "in_family": false
+     },
+     "E1_supportive": {
+      "eligible_trades": 392,
+      "trades_with_event": 71,
+      "share_with_event": 0.18112244897959184,
+      "median_elapsed_hours": 18.0,
+      "median_elapsed_share_of_horizon": 0.25,
+      "event_minutes_per_24h_in_trade": 0.2827773099946261,
+      "included_with_min_controls": 70,
+      "included_time_only": 71,
+      "mde80_R": 0.5292801292355204
+     },
+     "E2_acceptance": {
+      "eligible_trades": 392,
+      "trades_with_event": 35,
+      "share_with_event": 0.08928571428571429,
+      "median_elapsed_hours": 7.783333333333333,
+      "median_elapsed_share_of_horizon": 0.10810185185185185,
+      "event_minutes_per_24h_in_trade": 0.048279052925911774,
+      "included_with_min_controls": 35,
+      "included_time_only": 35,
+      "mde80_R": 0.7485151370594574
+     },
+     "E3_supportive": {
+      "eligible_trades": 290,
+      "trades_with_event": 75,
+      "share_with_event": 0.25862068965517243,
+      "median_elapsed_hours": 18.9,
+      "median_elapsed_share_of_horizon": 0.26249999999999996,
+      "event_minutes_per_24h_in_trade": 4.072218962192975,
+      "included_with_min_controls": 75,
+      "included_time_only": 75,
+      "mde80_R": 0.511333183801584
+     }
+    }
+   },
+   "squeeze_bull": {
+    "cv_sd_random_minute": 0.8643372635055502,
+    "tests": {
+     "E1_against": {
+      "eligible_trades": 122,
+      "trades_with_event": 15,
+      "share_with_event": 0.12295081967213115,
+      "median_elapsed_hours": 9.383333333333333,
+      "median_elapsed_share_of_horizon": 0.1954861111111111,
+      "event_minutes_per_24h_in_trade": 0.25091081894503403,
+      "included_with_min_controls": 15,
+      "included_time_only": 15,
+      "mde80_R": 0.555695595292539,
+      "in_family": false
+     },
+     "E2_rejection": {
+      "eligible_trades": 122,
+      "trades_with_event": 26,
+      "share_with_event": 0.21311475409836064,
+      "median_elapsed_hours": 16.45,
+      "median_elapsed_share_of_horizon": 0.34270833333333334,
+      "event_minutes_per_24h_in_trade": 0.19768731189608743,
+      "included_with_min_controls": 26,
+      "included_time_only": 26,
+      "mde80_R": 0.4220811041008105,
+      "in_family": false
+     },
+     "E3_against": {
+      "eligible_trades": 111,
+      "trades_with_event": 12,
+      "share_with_event": 0.10810810810810811,
+      "median_elapsed_hours": 15.816666666666666,
+      "median_elapsed_share_of_horizon": 0.3295138888888889,
+      "event_minutes_per_24h_in_trade": 9.848349687778768,
+      "included_with_min_controls": 12,
+      "included_time_only": 12,
+      "mde80_R": 0.6212865629356648,
+      "in_family": false
+     },
+     "E4_at_level": {
+      "eligible_trades": 122,
+      "trades_with_event": 5,
+      "share_with_event": 0.040983606557377046,
+      "median_elapsed_hours": 5.933333333333334,
+      "median_elapsed_share_of_horizon": 0.12361111111111112,
+      "event_minutes_per_24h_in_trade": 0.06843022334864565,
+      "included_with_min_controls": 5,
+      "included_time_only": 5,
+      "mde80_R": 0.9624930045889102,
+      "in_family": false
+     },
+     "E1_supportive": {
+      "eligible_trades": 122,
+      "trades_with_event": 19,
+      "share_with_event": 0.1557377049180328,
+      "median_elapsed_hours": 9.183333333333334,
+      "median_elapsed_share_of_horizon": 0.19131944444444446,
+      "event_minutes_per_24h_in_trade": 0.28892760969428166,
+      "included_with_min_controls": 19,
+      "included_time_only": 19,
+      "mde80_R": 0.49374849337080934
+     },
+     "E2_acceptance": {
+      "eligible_trades": 122,
+      "trades_with_event": 11,
+      "share_with_event": 0.09016393442622951,
+      "median_elapsed_hours": 14.483333333333333,
+      "median_elapsed_share_of_horizon": 0.3017361111111111,
+      "event_minutes_per_24h_in_trade": 0.08363693964834469,
+      "included_with_min_controls": 11,
+      "included_time_only": 11,
+      "mde80_R": 0.6489126513156759
+     },
+     "E3_supportive": {
+      "eligible_trades": 111,
+      "trades_with_event": 20,
+      "share_with_event": 0.18018018018018017,
+      "median_elapsed_hours": 6.341666666666667,
+      "median_elapsed_share_of_horizon": 0.13211805555555556,
+      "event_minutes_per_24h_in_trade": 5.270019899814726,
+      "included_with_min_controls": 19,
+      "included_time_only": 20,
+      "mde80_R": 0.49374849337080934
+     }
+    }
+   },
+   "short_squeeze": {
+    "cv_sd_random_minute": 1.3326863715645012,
+    "tests": {
+     "E1_against": {
+      "eligible_trades": 71,
+      "trades_with_event": 0,
+      "share_with_event": 0.0,
+      "median_elapsed_hours": NaN,
+      "median_elapsed_share_of_horizon": NaN,
+      "event_minutes_per_24h_in_trade": 0.0,
+      "included_with_min_controls": 0,
+      "included_time_only": 0,
+      "mde80_R": NaN,
+      "in_family": false
+     },
+     "E2_rejection": {
+      "eligible_trades": 71,
+      "trades_with_event": 1,
+      "share_with_event": 0.014084507042253521,
+      "median_elapsed_hours": 5.4,
+      "median_elapsed_share_of_horizon": 0.9,
+      "event_minutes_per_24h_in_trade": 0.18158890290037832,
+      "included_with_min_controls": 0,
+      "included_time_only": 1,
+      "mde80_R": NaN,
+      "in_family": false
+     },
+     "E3_against": {
+      "eligible_trades": 50,
+      "trades_with_event": 0,
+      "share_with_event": 0.0,
+      "median_elapsed_hours": NaN,
+      "median_elapsed_share_of_horizon": NaN,
+      "event_minutes_per_24h_in_trade": 0.0,
+      "included_with_min_controls": 0,
+      "included_time_only": 0,
+      "mde80_R": NaN,
+      "in_family": false
+     },
+     "E4_at_level": {
+      "eligible_trades": 71,
+      "trades_with_event": 0,
+      "share_with_event": 0.0,
+      "median_elapsed_hours": NaN,
+      "median_elapsed_share_of_horizon": NaN,
+      "event_minutes_per_24h_in_trade": 0.0,
+      "included_with_min_controls": 0,
+      "included_time_only": 0,
+      "mde80_R": NaN,
+      "in_family": false
+     },
+     "E1_supportive": {
+      "eligible_trades": 71,
+      "trades_with_event": 0,
+      "share_with_event": 0.0,
+      "median_elapsed_hours": NaN,
+      "median_elapsed_share_of_horizon": NaN,
+      "event_minutes_per_24h_in_trade": 0.0,
+      "included_with_min_controls": 0,
+      "included_time_only": 0,
+      "mde80_R": NaN
+     },
+     "E2_acceptance": {
+      "eligible_trades": 71,
+      "trades_with_event": 0,
+      "share_with_event": 0.0,
+      "median_elapsed_hours": NaN,
+      "median_elapsed_share_of_horizon": NaN,
+      "event_minutes_per_24h_in_trade": 0.0,
+      "included_with_min_controls": 0,
+      "included_time_only": 0,
+      "mde80_R": NaN
+     },
+     "E3_supportive": {
+      "eligible_trades": 50,
+      "trades_with_event": 2,
+      "share_with_event": 0.04,
+      "median_elapsed_hours": 2.75,
+      "median_elapsed_share_of_horizon": 0.4583333333333333,
+      "event_minutes_per_24h_in_trade": 1.3915284264776937,
+      "included_with_min_controls": 2,
+      "included_time_only": 2,
+      "mde80_R": 2.346455410615103
+     }
+    }
+   }
+  },
+  "family": [
+   "chento:E1_against",
+   "chento:E2_rejection",
+   "chento:E3_against"
+  ],
+  "pass": true
+ },
+ "pass": true
+}

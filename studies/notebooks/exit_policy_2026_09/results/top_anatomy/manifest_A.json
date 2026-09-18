@@ -1,0 +1,27 @@
+{
+ "stage": "A (exploratory)",
+ "created_utc": "2026-09-15T16:31:29+00:00",
+ "fixtures": "10 passed in 0.53s",
+ "files": {
+  "PROTOCOL_TOP_ANATOMY.md": "4e5c142bd33b44da0704b434c435b192018f152ab623a6b6f83be494b4e838d4",
+  "anatomy_lib.py": "8538d183d404fc106cbcfc7f923105d430cac5d0f708289d3b4c20a44232ea91",
+  "anatomy_data.py": "bd78b418eaf64784fc34cb9896ee5f1be83e7a40a4fe3d6e15833846d10c1cce",
+  "anatomy_run.py": "8c69c865d7be11d901de9690fb0cdf54b8f30dfe04d6cb8ccdc24784f4a5e362",
+  "tests/test_anatomy.py": "c2978cb27688687f4487b9f1dc24be2bea088091b13da3adb2be5c18f25f85fe",
+  "cache/BTCUSDT_metrics_5m.meta.json": "02dab665a91e4a9e95e43ead8d3db607f4a692e457ea8cafc4ea6e4a7c64cb89",
+  "cache/BTCUSDT_premium_1m.meta.json": "d94f029da8ee22f3f49f5435e0d8205840235c91ec8534f0e75c9c732ac6a464",
+  "cache/BTCUSDT_case_SJ-4250.meta.json": "238983e1a1972238f37a8bf6ffe1dda9624d6a2ce3242ddd1e1a6d9d2238a28a",
+  "cache/BTCUSDT_book1pct_1m.meta.json": "68467dc9e645c67c19305c49a9df573fbd019f098bea6a196b3d15757e3680a7",
+  "data/raw/anatomy/manifest.json": "70cf5981876d0ca58d9d7c7c812623dd7f289a4e15698bebc7c08718e3ea69b0"
+ },
+ "inputs": {
+  "perp_1m": "b085372e6b3f4c743cdbb2f766f67b8765a6f563b5268c3ad515b24f52606563",
+  "metrics_5m": "907350e07354d204c4f32ba25ea0cca7fa6d11dad332371e160d94113e1e6fa9",
+  "premium_1m": "6845168b0d83560c38009fcf0cfdd15498f085d4f22e3327b7457251c8ffa7f2",
+  "book_1m": "c57ec7f4a0b68c7515b000ce67a0db014e56f999f263ce35b6abb2766edd514f",
+  "case_panel": "7d3b49fdda281dd659600f428689bee94706c1ba79085d52678681f4b85325ea",
+  "ledger": "d3793c4e419af462709aa25a5c930f8b7b94a73dd489af53cd7cb68100521b14",
+  "hourly_snapshot": "dba0db178dcd1502982254c05dd38dc091682fc8acd3050d0aa077758bc50249"
+ },
+ "note": "Written before any feature on a fire's path after entry was computed."
+}

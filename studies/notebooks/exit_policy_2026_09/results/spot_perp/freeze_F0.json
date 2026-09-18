@@ -1,0 +1,64 @@
+{
+ "freeze": "F0",
+ "created_utc": "2026-09-18T07:07:47+00:00",
+ "note": "Before any continuation value at an event. The checks computed event minutes and placebo control counts only; a counts-only smoke pass (results/spot_perp/smoke_counts.json) was read first and its numbers are P11's. No threshold was changed after reading them.",
+ "family": [
+  "chento_BTC:F1_against",
+  "squeeze_bull:F1_against"
+ ],
+ "decision_rungs": {
+  "chento_BTC:F1_against": "rung1",
+  "chento_BTC:F2_perp_led": null,
+  "chento_ETH:F1_against": "rung1",
+  "chento_ETH:F2_perp_led": null,
+  "squeeze_bull:F1_against": "rung1",
+  "squeeze_bull:F2_perp_led": null,
+  "short_squeeze:F1_against": null,
+  "short_squeeze:F2_perp_led": null
+ },
+ "files": {
+  "PREREGISTRATION_SPOT_PERP.md": "983d9fb5b60ae08ab17d816a84bb00bff22b9c055737f53a3c98d41566e9753b",
+  "spotperp_data.py": "9237b2dfeb3a1378008e4babd234481ac05c19d28b54b5e7e40f1c35f6f7c9df",
+  "spotperp_lib.py": "7f49533d9cd69fc8c56a91d2206c15c648ac05569b936a3ab94a61b2665ec6e5",
+  "spotperp_run.py": "2e42ff7176948a401484713ff96f3fb1d5bbfa684e6da52596d066cb38ca5982",
+  "spotperp_download.py": "2f94ba983ed456d4356657ebae2c5aba29206e743ffc0c7092168fcb8be07aee",
+  "tests/test_spotperp_events.py": "a42c891c11d2146f7cb4e3f18f637f6653115653e33c7178c757942553d2daf5",
+  "tests/test_spotperp_data.py": "f72328bd60d933e512dfc22c2476c391083a91cb5b47d796374350f3c0889277",
+  "results/spot_perp/preconditions.json": "0b53669249cb3c9261d493984747805b7f3339d9fe00f8e941808b194726d005",
+  "cache/BTCUSDT_spot_1m_panel.meta.json": "0198d17c6d34c7bc7ffe1019cffb9ae4892fe9e6f6cf325b709b3726e6a80070",
+  "cache/ETHUSDT_spot_1m_panel.meta.json": "3777623c349fd32267e9288fa7f5841359dff7516493924a247a63fd3be378b5",
+  "cache/BTCFDUSD_spot_1m_panel.meta.json": "53529b301897993c691fee891d806f7b7d8940802df51097980967644ea13883",
+  "cache/BTCUSDT_premium_1m_panel.meta.json": "8c24dba904e2b8d579a5422d1301dea2324b63ee7ed4ff08aa7c51db58fb911c",
+  "cache/ETHUSDT_premium_1m_panel.meta.json": "9cd99057892cdfdb506a2d9f23067580742100d5ed982fb94f3967ef50918ff1"
+ },
+ "stage1_inputs_sha256": {
+  "perp_1m_BTC": "b085372e6b3f4c743cdbb2f766f67b8765a6f563b5268c3ad515b24f52606563",
+  "perp_1m_ETH": "77edf3f64467b2b130b6c75476895c61d347c87d6d6208270b7829ced35320e7",
+  "book_1m_BTC": "c57ec7f4a0b68c7515b000ce67a0db014e56f999f263ce35b6abb2766edd514f",
+  "book_1m_ETH": "0f55bb3396f879975a90fbb683333c62437bb60af487194f668d26e3df055a56",
+  "book_manifest": "bd1eff8c8682a6699bd1d3a523554d627b5f60e3c6759fdfda6885230590f913",
+  "chento_features_BTC": "c1762d577495b9b75a9fce3c97c227e1524e33b5cfdd5f1a43f55e946ba7f81c",
+  "chento_features_ETH": "83663d81fca7c309b4eb8656c315fb1e5812f704d658d402a7c35f2e66dcc646",
+  "squeeze_bull_ledger": "d3793c4e419af462709aa25a5c930f8b7b94a73dd489af53cd7cb68100521b14",
+  "short_squeeze_replay": "5e9fd5453122119e5e6764289a80431c6a8d67ab1db6c8368fb614c1e44f6665",
+  "chento_A0_walks": "9e6d4255e46315e814462b3cd266fe341208bb3adf5874e197e2edd2ecfce64f",
+  "squeeze_bull_walks": "592e54eecfadf8ae10f937b4cdf4cdd8cd955d9c404c15b38ff73e1f56282a51"
+ },
+ "stage1_freeze_files": {
+  "studies/notebooks/exit_policy_2026_09/PREREGISTRATION_MICROSTRUCTURE.md": "d0060b050198adfb355ec2e8923cf7a275def5653c69fbfae9a095044ce25b31",
+  "studies/notebooks/exit_policy_2026_09/micro_data.py": "2b7b2f8e0e49e3077b913b705998bb2d8ebc2eb027774469d72040db4a7f7c6f",
+  "studies/notebooks/exit_policy_2026_09/micro_lib.py": "70aaa325a113439ae525877044e5f4417d684702a6703ef69856b8e76d372a79",
+  "studies/notebooks/exit_policy_2026_09/micro_run.py": "f7ae5f021b99ac188433eb3cedf2759b5c225b164233b00091986c1859caef31",
+  "studies/notebooks/exit_policy_2026_09/tests/test_micro_events.py": "7eb251e2b17dc869887c4c8d5ed11a587e935e5b52b27b27a1f13a146256bc7b",
+  "studies/notebooks/exit_policy_2026_09/results/microstructure/preconditions.json": "f14db8baccfb071386528664e1731dbd903e332145bc2338bfc9ad8fc95fd78a",
+  "studies/notebooks/exit_policy_2026_09/cache/BTCUSDT_book1pct_1m.meta.json": "68467dc9e645c67c19305c49a9df573fbd019f098bea6a196b3d15757e3680a7",
+  "studies/notebooks/exit_policy_2026_09/cache/ETHUSDT_book1pct_1m.meta.json": "b1007d7b3dfcd7b3e0ae61e26e11dca1e0d5f91d0322952a6d22cbb5abd263f8"
+ },
+ "panels": {
+  "BTCUSDT_spot_1m_panel": "e920d94791a9c18776325f773b5480852fed6c56f900dbdccbe5795bbad7bf1e",
+  "ETHUSDT_spot_1m_panel": "29f4c4cf810ddb03a91f2d41de90ebcff2c1296c1e1eb8500acc4d93c5ab135a",
+  "BTCFDUSD_spot_1m_panel": "f562eb6a03e6e02cf5f870d352a5d1d6e94718ba3d740b50485991e3e23b847f",
+  "BTCUSDT_premium_1m_panel": "ef9b7556026170877b64dbb99ae0ba0c5235f46f68908a6835a3f65aecba0c8b",
+  "ETHUSDT_premium_1m_panel": "747c0e00cbee0d9686e38b876fe30fc364df8dd31b3715b56de0082ad22dfb7a"
+ }
+}

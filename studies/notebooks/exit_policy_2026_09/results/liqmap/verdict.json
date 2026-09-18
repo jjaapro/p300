@@ -1,0 +1,57 @@
+{
+ "created_utc": "2026-09-18T10:03:49+00:00",
+ "f0_created_utc": "2026-09-18T10:02:21+00:00",
+ "classifications": {
+  "up_touch": "INFORMATIVE",
+  "up_turn": "UNDETERMINED",
+  "down_touch": "INFORMATIVE",
+  "down_turn": "UNDETERMINED",
+  "chento:EV1": "DESCRIPTIVE",
+  "chento:EV1_ctrl": "DESCRIPTIVE",
+  "chento:EV2": "UNDETERMINED",
+  "chento:EV2_ctrl": "DESCRIPTIVE",
+  "chento:EV2_against": "DESCRIPTIVE",
+  "squeeze_bull:EV1": "DESCRIPTIVE",
+  "squeeze_bull:EV1_ctrl": "DESCRIPTIVE",
+  "squeeze_bull:EV2": "DESCRIPTIVE",
+  "squeeze_bull:EV2_ctrl": "DESCRIPTIVE",
+  "squeeze_bull:EV2_against": "DESCRIPTIVE",
+  "squeeze_bull_secondary:EV1": "DESCRIPTIVE",
+  "squeeze_bull_secondary:EV1_ctrl": "DESCRIPTIVE",
+  "squeeze_bull_secondary:EV2": "DESCRIPTIVE",
+  "squeeze_bull_secondary:EV2_ctrl": "DESCRIPTIVE",
+  "squeeze_bull_secondary:EV2_against": "DESCRIPTIVE"
+ },
+ "informative_btc": [
+  "up_touch",
+  "down_touch"
+ ],
+ "family": [
+  "up_touch",
+  "up_turn",
+  "down_touch",
+  "down_turn",
+  "chento:EV2"
+ ],
+ "holm_p": {
+  "up_touch": 0.0004999500049995,
+  "down_touch": 0.0004999500049995,
+  "chento:EV2": 0.7031296870312969,
+  "down_turn": 1.0,
+  "up_turn": 1.0
+ },
+ "l5_caveat_volatility_proxy": true,
+ "verdict": "REPLICATED: up_touch, down_touch",
+ "permits": "nothing in production; a replicated test permits only a separate stage-B pre-registration",
+ "holdout": {
+  "created_utc": "2026-09-18T10:05:54+00:00",
+  "replicated": [
+   "up_touch",
+   "down_touch"
+  ],
+  "classifications_eth": {
+   "up_touch": true,
+   "down_touch": true
+  }
+ }
+}

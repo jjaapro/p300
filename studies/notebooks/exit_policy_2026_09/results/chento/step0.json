@@ -1,0 +1,42 @@
+{
+ "k_values": [
+  1.0,
+  2.0,
+  3.0
+ ],
+ "by_k": {
+  "1.0": {
+   "median_hours": 4.25,
+   "p25_hours": 1.5,
+   "p75_hours": 9.25,
+   "share_within_24h": 0.9642857142857143,
+   "share_within_72h": 1.0,
+   "censored": 0,
+   "per_bar_fire_rate": 0.03518648213390594,
+   "trades": 392
+  },
+  "2.0": {
+   "median_hours": 31.25,
+   "p25_hours": 9.5,
+   "p75_hours": 67.25,
+   "share_within_24h": 0.4260204081632653,
+   "share_within_72h": 0.7678571428571429,
+   "censored": 0,
+   "per_bar_fire_rate": 0.005990323050834201,
+   "trades": 392
+  },
+  "3.0": {
+   "median_hours": 140.125,
+   "p25_hours": 51.5,
+   "p75_hours": 322.9375,
+   "share_within_24h": 0.15816326530612246,
+   "share_within_72h": 0.3163265306122449,
+   "censored": 16,
+   "per_bar_fire_rate": 0.001362487423876681,
+   "trades": 392
+  }
+ },
+ "rule": "smallest k with median time to first fire >= 72 h, else 3 (flagged)",
+ "k": 3.0,
+ "flag_faster_than_time_stop": false
+}

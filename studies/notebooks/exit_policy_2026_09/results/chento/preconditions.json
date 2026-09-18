@@ -1,0 +1,783 @@
+{
+ "created_utc": "2026-09-15T13:10:30+00:00",
+ "P1": {
+  "snapshot": true,
+  "features_BTC.csv": true,
+  "features_ETH.csv": true,
+  "pool_BTC.csv": true,
+  "pool_ETH.csv": true,
+  "trades_BTC.csv": true,
+  "trades_ETH.csv": true,
+  "pass": true
+ },
+ "trades": {
+  "BTC": 208,
+  "ETH": 184
+ },
+ "P2": {
+  "walked": 392,
+  "reference": 392,
+  "matched": 392,
+  "kind_equal": 392,
+  "exit_bar_equal": 392,
+  "max_abs_diff_exit_price": 1.4551915228366852e-11,
+  "max_abs_diff_R": 7.105427357601002e-15,
+  "pass": true
+ },
+ "P4": {
+  "max_settlement_gap_s": 28800,
+  "pass": true
+ },
+ "P5": {
+  "missing_bars_on_720h_paths": 0,
+  "trades_reaching_data_end_before_720h": 4,
+  "pass": true
+ },
+ "P6": {
+  "summary": "20 passed, 1 skipped in 0.62s",
+  "pass": true
+ },
+ "P7": {
+  "cut_utc": "2023-06-01T00:00:00+00:00",
+  "exits_compared": 1360,
+  "differences": 0,
+  "pass": true
+ },
+ "P3_BTC": {
+  "asset": "BTC",
+  "bars": 60,
+  "max_abs_diff": 8.748557434046234e-14,
+  "pass": true,
+  "rows": [
+   {
+    "bar": "2021-04-17T00:00:00+00:00",
+    "abs_diff_cvd_z": 8.881784197001252e-16,
+    "abs_diff_vel_z": 7.327471962526033e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-04-18T00:00:00+00:00",
+    "abs_diff_cvd_z": 1.1102230246251565e-15,
+    "abs_diff_vel_z": 1.7430501486614958e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-04-19T00:00:00+00:00",
+    "abs_diff_cvd_z": 1.3322676295501878e-15,
+    "abs_diff_vel_z": 3.019806626980426e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-05-19T05:15:00+00:00",
+    "abs_diff_cvd_z": 2.7755575615628914e-15,
+    "abs_diff_vel_z": 4.163336342344337e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-05-20T05:15:00+00:00",
+    "abs_diff_cvd_z": 1.1102230246251565e-15,
+    "abs_diff_vel_z": 4.884981308350689e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-05-21T05:15:00+00:00",
+    "abs_diff_cvd_z": 1.887379141862766e-15,
+    "abs_diff_vel_z": 6.38378239159465e-16,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-06-14T18:00:00+00:00",
+    "abs_diff_cvd_z": 1.1102230246251565e-16,
+    "abs_diff_vel_z": 5.551115123125783e-16,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-06-15T18:00:00+00:00",
+    "abs_diff_cvd_z": 2.220446049250313e-15,
+    "abs_diff_vel_z": 6.439293542825908e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-06-16T18:00:00+00:00",
+    "abs_diff_cvd_z": 6.661338147750939e-16,
+    "abs_diff_vel_z": 5.273559366969494e-16,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-26T02:00:00+00:00",
+    "abs_diff_cvd_z": 4.440892098500626e-16,
+    "abs_diff_vel_z": 2.0122792321330962e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-27T02:00:00+00:00",
+    "abs_diff_cvd_z": 1.1102230246251565e-16,
+    "abs_diff_vel_z": 1.1657341758564144e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-28T02:00:00+00:00",
+    "abs_diff_cvd_z": 8.881784197001252e-16,
+    "abs_diff_vel_z": 8.748557434046234e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-26T17:00:00+00:00",
+    "abs_diff_cvd_z": 6.661338147750939e-16,
+    "abs_diff_vel_z": 3.9968028886505635e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-27T17:00:00+00:00",
+    "abs_diff_cvd_z": 2.7755575615628914e-17,
+    "abs_diff_vel_z": 2.3314683517128287e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-28T17:00:00+00:00",
+    "abs_diff_cvd_z": 3.3306690738754696e-16,
+    "abs_diff_vel_z": 3.219646771412954e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-08-07T01:00:00+00:00",
+    "abs_diff_cvd_z": 3.1086244689504383e-15,
+    "abs_diff_vel_z": 2.831068712794149e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-08-08T01:00:00+00:00",
+    "abs_diff_cvd_z": 3.1086244689504383e-15,
+    "abs_diff_vel_z": 3.2862601528904634e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-08-09T01:00:00+00:00",
+    "abs_diff_cvd_z": 6.661338147750939e-15,
+    "abs_diff_vel_z": 1.9317880628477724e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-08-09T19:15:00+00:00",
+    "abs_diff_cvd_z": 8.881784197001252e-16,
+    "abs_diff_vel_z": 1.3433698597964394e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-08-10T19:15:00+00:00",
+    "abs_diff_cvd_z": 2.0816681711721685e-17,
+    "abs_diff_vel_z": 1.3766765505351941e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-08-11T19:15:00+00:00",
+    "abs_diff_cvd_z": 2.220446049250313e-16,
+    "abs_diff_vel_z": 8.326672684688674e-16,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-09-08T07:15:00+00:00",
+    "abs_diff_cvd_z": 3.3306690738754696e-16,
+    "abs_diff_vel_z": 1.9317880628477724e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-09-09T07:15:00+00:00",
+    "abs_diff_cvd_z": 1.8041124150158794e-16,
+    "abs_diff_vel_z": 1.865174681370263e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-09-10T07:15:00+00:00",
+    "abs_diff_cvd_z": 2.220446049250313e-16,
+    "abs_diff_vel_z": 3.597122599785507e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-10-01T20:00:00+00:00",
+    "abs_diff_cvd_z": 5.551115123125783e-16,
+    "abs_diff_vel_z": 8.049116928532385e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-10-02T20:00:00+00:00",
+    "abs_diff_cvd_z": 2.220446049250313e-16,
+    "abs_diff_vel_z": 6.050715484207103e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-10-03T20:00:00+00:00",
+    "abs_diff_cvd_z": 1.6653345369377348e-16,
+    "abs_diff_vel_z": 9.325873406851315e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-10-02T03:15:00+00:00",
+    "abs_diff_cvd_z": 3.3306690738754696e-16,
+    "abs_diff_vel_z": 1.4876988529977098e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-10-03T03:15:00+00:00",
+    "abs_diff_cvd_z": 3.469446951953614e-17,
+    "abs_diff_vel_z": 6.938893903907228e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-10-04T03:15:00+00:00",
+    "abs_diff_cvd_z": 5.551115123125783e-16,
+    "abs_diff_vel_z": 2.942091015256665e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-10-02T10:30:00+00:00",
+    "abs_diff_cvd_z": 8.881784197001252e-16,
+    "abs_diff_vel_z": 6.38378239159465e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-10-03T10:30:00+00:00",
+    "abs_diff_cvd_z": 9.71445146547012e-17,
+    "abs_diff_vel_z": 7.16093850883226e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-10-04T10:30:00+00:00",
+    "abs_diff_cvd_z": 2.220446049250313e-16,
+    "abs_diff_vel_z": 8.215650382226158e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-10-06T14:15:00+00:00",
+    "abs_diff_cvd_z": 0.0,
+    "abs_diff_vel_z": 1.0103029524088925e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-10-07T14:15:00+00:00",
+    "abs_diff_cvd_z": 5.551115123125783e-17,
+    "abs_diff_vel_z": 1.9761969838327786e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-10-08T14:15:00+00:00",
+    "abs_diff_cvd_z": 9.71445146547012e-17,
+    "abs_diff_vel_z": 2.930988785010413e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-10-06T20:45:00+00:00",
+    "abs_diff_cvd_z": 7.771561172376096e-16,
+    "abs_diff_vel_z": 5.995204332975845e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-10-07T20:45:00+00:00",
+    "abs_diff_cvd_z": 8.326672684688674e-17,
+    "abs_diff_vel_z": 1.071365218763276e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-10-08T20:45:00+00:00",
+    "abs_diff_cvd_z": 8.881784197001252e-16,
+    "abs_diff_vel_z": 4.0190073491430667e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-11-16T19:00:00+00:00",
+    "abs_diff_cvd_z": 1.887379141862766e-15,
+    "abs_diff_vel_z": 2.5091040356528538e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-11-17T19:00:00+00:00",
+    "abs_diff_cvd_z": 1.6479873021779667e-17,
+    "abs_diff_vel_z": 2.480654570646834e-16,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-11-18T19:00:00+00:00",
+    "abs_diff_cvd_z": 1.2212453270876722e-15,
+    "abs_diff_vel_z": 4.6851411639181606e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-11-17T10:00:00+00:00",
+    "abs_diff_cvd_z": 3.9968028886505635e-15,
+    "abs_diff_vel_z": 1.4432899320127035e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-11-18T10:00:00+00:00",
+    "abs_diff_cvd_z": 7.771561172376096e-16,
+    "abs_diff_vel_z": 2.4202861936828413e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-11-19T10:00:00+00:00",
+    "abs_diff_cvd_z": 3.9968028886505635e-15,
+    "abs_diff_vel_z": 3.774758283725532e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-12-04T16:15:00+00:00",
+    "abs_diff_cvd_z": 1.5543122344752192e-15,
+    "abs_diff_vel_z": 3.774758283725532e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-12-05T16:15:00+00:00",
+    "abs_diff_cvd_z": 3.774758283725532e-15,
+    "abs_diff_vel_z": 1.0769163338864018e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-12-06T16:15:00+00:00",
+    "abs_diff_cvd_z": 6.661338147750939e-16,
+    "abs_diff_vel_z": 6.328271240363392e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-01-05T03:00:00+00:00",
+    "abs_diff_cvd_z": 1.7763568394002505e-15,
+    "abs_diff_vel_z": 2.1538326677728037e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-01-06T03:00:00+00:00",
+    "abs_diff_cvd_z": 6.245004513516506e-17,
+    "abs_diff_vel_z": 1.2656542480726785e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-01-07T03:00:00+00:00",
+    "abs_diff_cvd_z": 8.326672684688674e-16,
+    "abs_diff_vel_z": 1.1379786002407855e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-01-06T04:45:00+00:00",
+    "abs_diff_cvd_z": 7.327471962526033e-15,
+    "abs_diff_vel_z": 2.7422508708241367e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-01-07T04:45:00+00:00",
+    "abs_diff_cvd_z": 7.327471962526033e-15,
+    "abs_diff_vel_z": 1.2712053631958042e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-01-08T04:45:00+00:00",
+    "abs_diff_cvd_z": 3.191891195797325e-16,
+    "abs_diff_vel_z": 1.2601031329495527e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-01-06T17:15:00+00:00",
+    "abs_diff_cvd_z": 1.7763568394002505e-15,
+    "abs_diff_vel_z": 2.4424906541753444e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-01-07T17:15:00+00:00",
+    "abs_diff_cvd_z": 2.4424906541753444e-15,
+    "abs_diff_vel_z": 3.175237850427948e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-01-08T17:15:00+00:00",
+    "abs_diff_cvd_z": 2.3314683517128287e-15,
+    "abs_diff_vel_z": 3.341771304121721e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-01-26T09:45:00+00:00",
+    "abs_diff_cvd_z": 5.773159728050814e-15,
+    "abs_diff_vel_z": 6.716849298982197e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-01-27T09:45:00+00:00",
+    "abs_diff_cvd_z": 2.4424906541753444e-15,
+    "abs_diff_vel_z": 1.0158540675320182e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-01-28T09:45:00+00:00",
+    "abs_diff_cvd_z": 1.6653345369377348e-15,
+    "abs_diff_vel_z": 1.509903313490213e-14,
+    "decisions_equal": true
+   }
+  ]
+ },
+ "P3_ETH": {
+  "asset": "ETH",
+  "bars": 60,
+  "max_abs_diff": 5.950795411990839e-14,
+  "pass": true,
+  "rows": [
+   {
+    "bar": "2021-07-13T06:00:00+00:00",
+    "abs_diff_cvd_z": 2.220446049250313e-16,
+    "abs_diff_vel_z": 6.8833827526759706e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-14T06:00:00+00:00",
+    "abs_diff_cvd_z": 3.2526065174565133e-19,
+    "abs_diff_vel_z": 1.2434497875801753e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-15T06:00:00+00:00",
+    "abs_diff_cvd_z": 1.1102230246251565e-15,
+    "abs_diff_vel_z": 2.8033131371785203e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-13T12:00:00+00:00",
+    "abs_diff_cvd_z": 7.771561172376096e-16,
+    "abs_diff_vel_z": 7.66053886991358e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-14T12:00:00+00:00",
+    "abs_diff_cvd_z": 2.220446049250313e-16,
+    "abs_diff_vel_z": 2.4424906541753444e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-15T12:00:00+00:00",
+    "abs_diff_cvd_z": 8.881784197001252e-16,
+    "abs_diff_vel_z": 8.659739592076221e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-20T04:30:00+00:00",
+    "abs_diff_cvd_z": 8.881784197001252e-16,
+    "abs_diff_vel_z": 8.326672684688674e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-21T04:30:00+00:00",
+    "abs_diff_cvd_z": 5.551115123125783e-16,
+    "abs_diff_vel_z": 3.4638958368304884e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-22T04:30:00+00:00",
+    "abs_diff_cvd_z": 0.0,
+    "abs_diff_vel_z": 7.549516567451064e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-20T11:30:00+00:00",
+    "abs_diff_cvd_z": 2.220446049250313e-16,
+    "abs_diff_vel_z": 3.247402347028583e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-21T11:30:00+00:00",
+    "abs_diff_cvd_z": 2.220446049250313e-16,
+    "abs_diff_vel_z": 4.052314039881821e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-22T11:30:00+00:00",
+    "abs_diff_cvd_z": 1.2212453270876722e-15,
+    "abs_diff_vel_z": 2.248201624865942e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-20T17:45:00+00:00",
+    "abs_diff_cvd_z": 2.220446049250313e-16,
+    "abs_diff_vel_z": 2.7200464103316335e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-21T17:45:00+00:00",
+    "abs_diff_cvd_z": 2.7755575615628914e-17,
+    "abs_diff_vel_z": 2.3037127760972e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-22T17:45:00+00:00",
+    "abs_diff_cvd_z": 9.71445146547012e-17,
+    "abs_diff_vel_z": 6.661338147750939e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-26T02:00:00+00:00",
+    "abs_diff_cvd_z": 1.5543122344752192e-15,
+    "abs_diff_vel_z": 4.996003610813204e-16,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-27T02:00:00+00:00",
+    "abs_diff_cvd_z": 2.220446049250313e-16,
+    "abs_diff_vel_z": 9.992007221626409e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-07-28T02:00:00+00:00",
+    "abs_diff_cvd_z": 1.7763568394002505e-15,
+    "abs_diff_vel_z": 2.042810365310288e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-09-01T14:45:00+00:00",
+    "abs_diff_cvd_z": 8.881784197001252e-16,
+    "abs_diff_vel_z": 1.1102230246251565e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-09-02T14:45:00+00:00",
+    "abs_diff_cvd_z": 1.5543122344752192e-15,
+    "abs_diff_vel_z": 5.10702591327572e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-09-03T14:45:00+00:00",
+    "abs_diff_cvd_z": 2.220446049250313e-16,
+    "abs_diff_vel_z": 1.609823385706477e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-12-04T13:00:00+00:00",
+    "abs_diff_cvd_z": 2.4424906541753444e-15,
+    "abs_diff_vel_z": 3.164135620181696e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-12-05T13:00:00+00:00",
+    "abs_diff_cvd_z": 8.326672684688674e-17,
+    "abs_diff_vel_z": 6.522560269672795e-16,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2021-12-06T13:00:00+00:00",
+    "abs_diff_cvd_z": 4.996003610813204e-16,
+    "abs_diff_vel_z": 6.661338147750939e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-01-25T06:15:00+00:00",
+    "abs_diff_cvd_z": 4.440892098500626e-15,
+    "abs_diff_vel_z": 1.2212453270876722e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-01-26T06:15:00+00:00",
+    "abs_diff_cvd_z": 1.7763568394002505e-15,
+    "abs_diff_vel_z": 6.8833827526759706e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-01-27T06:15:00+00:00",
+    "abs_diff_cvd_z": 1.942890293094024e-16,
+    "abs_diff_vel_z": 4.9960036108132044e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-01-25T12:45:00+00:00",
+    "abs_diff_cvd_z": 3.1086244689504383e-15,
+    "abs_diff_vel_z": 5.329070518200751e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-01-26T12:45:00+00:00",
+    "abs_diff_cvd_z": 3.774758283725532e-15,
+    "abs_diff_vel_z": 3.774758283725532e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-01-27T12:45:00+00:00",
+    "abs_diff_cvd_z": 2.886579864025407e-15,
+    "abs_diff_vel_z": 5.967448757360216e-16,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-02-05T11:15:00+00:00",
+    "abs_diff_cvd_z": 3.3306690738754696e-15,
+    "abs_diff_vel_z": 3.885780586188048e-16,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-02-06T11:15:00+00:00",
+    "abs_diff_cvd_z": 1.0824674490095276e-15,
+    "abs_diff_vel_z": 7.494005416219807e-16,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-02-07T11:15:00+00:00",
+    "abs_diff_cvd_z": 1.0547118733938987e-15,
+    "abs_diff_vel_z": 5.967448757360216e-16,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-03-05T03:15:00+00:00",
+    "abs_diff_cvd_z": 3.4416913763379853e-15,
+    "abs_diff_vel_z": 4.107825191113079e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-03-06T03:15:00+00:00",
+    "abs_diff_cvd_z": 1.3877787807814457e-16,
+    "abs_diff_vel_z": 2.275957200481571e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-03-07T03:15:00+00:00",
+    "abs_diff_cvd_z": 4.440892098500626e-15,
+    "abs_diff_vel_z": 1.1657341758564144e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-03-08T16:45:00+00:00",
+    "abs_diff_cvd_z": 1.6653345369377348e-15,
+    "abs_diff_vel_z": 5.551115123125783e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-03-09T16:45:00+00:00",
+    "abs_diff_cvd_z": 1.5543122344752192e-15,
+    "abs_diff_vel_z": 2.3869795029440866e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-03-10T16:45:00+00:00",
+    "abs_diff_cvd_z": 1.3877787807814457e-16,
+    "abs_diff_vel_z": 4.579669976578771e-16,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-03-19T05:45:00+00:00",
+    "abs_diff_cvd_z": 2.220446049250313e-15,
+    "abs_diff_vel_z": 3.552713678800501e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-03-20T05:45:00+00:00",
+    "abs_diff_cvd_z": 1.3322676295501878e-15,
+    "abs_diff_vel_z": 3.3861802251067274e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-03-21T05:45:00+00:00",
+    "abs_diff_cvd_z": 3.9968028886505635e-15,
+    "abs_diff_vel_z": 7.216449660063518e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-06-11T02:45:00+00:00",
+    "abs_diff_cvd_z": 5.88418203051333e-15,
+    "abs_diff_vel_z": 1.0408340855860843e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-06-12T02:45:00+00:00",
+    "abs_diff_cvd_z": 6.328271240363392e-15,
+    "abs_diff_vel_z": 5.950795411990839e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-06-13T02:45:00+00:00",
+    "abs_diff_cvd_z": 9.769962616701378e-15,
+    "abs_diff_vel_z": 2.2648549702353193e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-06-11T10:00:00+00:00",
+    "abs_diff_cvd_z": 5.440092820663267e-15,
+    "abs_diff_vel_z": 7.105427357601002e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-06-12T10:00:00+00:00",
+    "abs_diff_cvd_z": 4.649058915617843e-16,
+    "abs_diff_vel_z": 8.548717289613705e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-06-13T10:00:00+00:00",
+    "abs_diff_cvd_z": 4.9960036108132044e-15,
+    "abs_diff_vel_z": 1.4654943925052066e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-06-11T16:00:00+00:00",
+    "abs_diff_cvd_z": 2.398081733190338e-14,
+    "abs_diff_vel_z": 1.4016565685892601e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-06-12T16:00:00+00:00",
+    "abs_diff_cvd_z": 7.771561172376096e-16,
+    "abs_diff_vel_z": 1.2656542480726785e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-06-13T16:00:00+00:00",
+    "abs_diff_cvd_z": 4.440892098500626e-14,
+    "abs_diff_vel_z": 5.240252676230739e-14,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-06-20T09:15:00+00:00",
+    "abs_diff_cvd_z": 4.6629367034256575e-15,
+    "abs_diff_vel_z": 4.218847493575595e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-06-21T09:15:00+00:00",
+    "abs_diff_cvd_z": 3.219646771412954e-15,
+    "abs_diff_vel_z": 9.992007221626409e-16,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-06-22T09:15:00+00:00",
+    "abs_diff_cvd_z": 2.3314683517128287e-15,
+    "abs_diff_vel_z": 5.689893001203927e-16,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-06-20T15:15:00+00:00",
+    "abs_diff_cvd_z": 6.439293542825908e-15,
+    "abs_diff_vel_z": 4.3021142204224816e-16,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-06-21T15:15:00+00:00",
+    "abs_diff_cvd_z": 1.1102230246251565e-15,
+    "abs_diff_vel_z": 3.7470027081099033e-16,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-06-22T15:15:00+00:00",
+    "abs_diff_cvd_z": 2.3869795029440866e-15,
+    "abs_diff_vel_z": 5.551115123125783e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-06-20T21:30:00+00:00",
+    "abs_diff_cvd_z": 3.774758283725532e-15,
+    "abs_diff_vel_z": 2.609024107869118e-15,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-06-21T21:30:00+00:00",
+    "abs_diff_cvd_z": 1.2212453270876722e-15,
+    "abs_diff_vel_z": 9.43689570931383e-16,
+    "decisions_equal": true
+   },
+   {
+    "bar": "2022-06-22T21:30:00+00:00",
+    "abs_diff_cvd_z": 2.4424906541753444e-15,
+    "abs_diff_vel_z": 1.734723475976807e-16,
+    "decisions_equal": true
+   }
+  ]
+ },
+ "pass": true
+}

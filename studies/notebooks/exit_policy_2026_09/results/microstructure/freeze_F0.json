@@ -1,0 +1,33 @@
+{
+ "freeze": "F0",
+ "created_utc": "2026-09-15T15:41:36+00:00",
+ "note": "Before any continuation value at an event. The checks computed event minutes, placebo control counts (no exit prices) and the sd of the continuation value at one random open minute per trade. After the first checks run, a scratch diagnostic confirmed the near-zero short_squeeze counts are not a bug: on all BTC minutes |z| >= 3 holds in 0.90 % / 0.94 % (buy / sell side), E1 against (long) in 0.018 %, E1 supportive (long) in 0.027 %, zq <= -3 in 0.35 %, zq >= 3 in 0.26 %; inside short_squeeze trades (7,930 minutes) the median trade's largest |z| is 1.74. No threshold was changed.",
+ "family": [
+  "chento:E1_against",
+  "chento:E2_rejection",
+  "chento:E3_against"
+ ],
+ "inputs_sha256": {
+  "perp_1m_BTC": "b085372e6b3f4c743cdbb2f766f67b8765a6f563b5268c3ad515b24f52606563",
+  "perp_1m_ETH": "77edf3f64467b2b130b6c75476895c61d347c87d6d6208270b7829ced35320e7",
+  "book_1m_BTC": "c57ec7f4a0b68c7515b000ce67a0db014e56f999f263ce35b6abb2766edd514f",
+  "book_1m_ETH": "0f55bb3396f879975a90fbb683333c62437bb60af487194f668d26e3df055a56",
+  "book_manifest": "bd1eff8c8682a6699bd1d3a523554d627b5f60e3c6759fdfda6885230590f913",
+  "chento_features_BTC": "c1762d577495b9b75a9fce3c97c227e1524e33b5cfdd5f1a43f55e946ba7f81c",
+  "chento_features_ETH": "83663d81fca7c309b4eb8656c315fb1e5812f704d658d402a7c35f2e66dcc646",
+  "squeeze_bull_ledger": "d3793c4e419af462709aa25a5c930f8b7b94a73dd489af53cd7cb68100521b14",
+  "short_squeeze_replay": "5e9fd5453122119e5e6764289a80431c6a8d67ab1db6c8368fb614c1e44f6665",
+  "chento_A0_walks": "9e6d4255e46315e814462b3cd266fe341208bb3adf5874e197e2edd2ecfce64f",
+  "squeeze_bull_walks": "592e54eecfadf8ae10f937b4cdf4cdd8cd955d9c404c15b38ff73e1f56282a51"
+ },
+ "files": {
+  "studies/notebooks/exit_policy_2026_09/PREREGISTRATION_MICROSTRUCTURE.md": "d0060b050198adfb355ec2e8923cf7a275def5653c69fbfae9a095044ce25b31",
+  "studies/notebooks/exit_policy_2026_09/micro_data.py": "2b7b2f8e0e49e3077b913b705998bb2d8ebc2eb027774469d72040db4a7f7c6f",
+  "studies/notebooks/exit_policy_2026_09/micro_lib.py": "70aaa325a113439ae525877044e5f4417d684702a6703ef69856b8e76d372a79",
+  "studies/notebooks/exit_policy_2026_09/micro_run.py": "f7ae5f021b99ac188433eb3cedf2759b5c225b164233b00091986c1859caef31",
+  "studies/notebooks/exit_policy_2026_09/tests/test_micro_events.py": "7eb251e2b17dc869887c4c8d5ed11a587e935e5b52b27b27a1f13a146256bc7b",
+  "studies/notebooks/exit_policy_2026_09/results/microstructure/preconditions.json": "f14db8baccfb071386528664e1731dbd903e332145bc2338bfc9ad8fc95fd78a",
+  "studies/notebooks/exit_policy_2026_09/cache/BTCUSDT_book1pct_1m.meta.json": "68467dc9e645c67c19305c49a9df573fbd019f098bea6a196b3d15757e3680a7",
+  "studies/notebooks/exit_policy_2026_09/cache/ETHUSDT_book1pct_1m.meta.json": "b1007d7b3dfcd7b3e0ae61e26e11dca1e0d5f91d0322952a6d22cbb5abd263f8"
+ }
+}

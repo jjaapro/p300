@@ -1,0 +1,20 @@
+{
+ "created_utc": "2026-09-18T07:11:32+00:00",
+ "promoted": [],
+ "per_kind": {
+  "F1_against": {
+   "informative_family_tests": [],
+   "replication": "not evaluated"
+  },
+  "F2_perp_led": {
+   "informative_family_tests": [],
+   "replication": "not evaluated"
+  }
+ },
+ "classifications": {
+  "chento_BTC:F1_against": "CONTRARY",
+  "squeeze_bull:F1_against": "UNDETERMINED"
+ },
+ "verdict": "NONE PROMOTED",
+ "permits": "nothing in production; a promotion permits only a separate stage 2 pre-registration"
+}

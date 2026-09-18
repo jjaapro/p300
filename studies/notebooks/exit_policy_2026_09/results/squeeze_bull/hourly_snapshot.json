@@ -1,0 +1,10 @@
+{
+ "captured_utc": "2026-09-15T13:20:05+00:00",
+ "rows": 40530,
+ "first_utc": "2022-01-30T06:00:00+00:00",
+ "last_utc": "2026-09-14T23:00:00+00:00",
+ "cutoff_utc_exclusive": "2026-09-15T00:00:00+00:00",
+ "query": "cd_futures_ohlcv JOIN cd_open_interest ON timestamp, ts >= 2022-01-30, ts < cutoff, non-null close and oi_close",
+ "logical_sha256": "144cde98287d9d15464d44f7d8860c518258cf45496fb9c6fce481d6948e33b2",
+ "file_sha256": "dba0db178dcd1502982254c05dd38dc091682fc8acd3050d0aa077758bc50249"
+}

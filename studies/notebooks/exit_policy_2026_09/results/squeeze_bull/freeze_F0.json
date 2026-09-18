@@ -1,0 +1,21 @@
+{
+ "freeze": "F0",
+ "created_utc": "2026-09-15T13:26:44+00:00",
+ "note": "Report-only. Before any arm outcome on the perp path. Q6 walked every arm on pre-2024 fires in memory for an equality check only; no statistic was computed or shown.",
+ "inputs_sha256": {
+  "ledger": "d3793c4e419af462709aa25a5c930f8b7b94a73dd489af53cd7cb68100521b14",
+  "perp_1m": "b085372e6b3f4c743cdbb2f766f67b8765a6f563b5268c3ad515b24f52606563",
+  "funding": "6dc2cfd68485ea4b146a7c4e780c018b718ccd15dc0c733582fa823030a794e2",
+  "hourly_snapshot": "dba0db178dcd1502982254c05dd38dc091682fc8acd3050d0aa077758bc50249"
+ },
+ "files": {
+  "studies/notebooks/exit_policy_2026_09/PREREGISTRATION_SQUEEZE_BULL.md": "a7c005b840f1dee7a9b00068a413577fc73b84d10b6669f359b86a61aacccd42",
+  "studies/notebooks/exit_policy_2026_09/sqb_lib.py": "3fd2fc274a9091f61f6126774c90f788d36cff50031c5a53cf570d8d2519b5f4",
+  "studies/notebooks/exit_policy_2026_09/sqb_run.py": "2d669da3340d3e185ca1be04ab511cf869b5e05ac4d13a9719f54dcc9197cb88",
+  "studies/notebooks/exit_policy_2026_09/tests/test_sqb_walk.py": "86996c3c9d397e4942253f2b068a4e39ec061e7fb33b056c08f8d9a4401fe66b",
+  "studies/notebooks/exit_policy_2026_09/results/squeeze_bull/hourly_snapshot.json": "040d4f70abd4e2fed67cbc8091a1a9500f7ce4d8b41b77c04f265e988ec3cdfc",
+  "studies/notebooks/exit_policy_2026_09/results/squeeze_bull/preconditions.json": "faed3238cbd4d06ca04ca339effeec59e90ab9eeef7901ceb32177f852485af4",
+  "bots/squeeze_bull/strategy/math.py": "6607a69789601c014ca878158271e905f19ca1618fc44c5b2eb009d84271b1fc",
+  "bots/squeeze_bull/strategy/config.py": "90472360242a822b5acd7039f9f84ef72ea327ae418523c6564f89153807f55d"
+ }
+}

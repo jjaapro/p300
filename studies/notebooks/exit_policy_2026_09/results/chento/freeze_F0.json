@@ -1,0 +1,30 @@
+{
+ "freeze": "F0",
+ "created_utc": "2026-09-15T13:10:55+00:00",
+ "note": "Before any exit-arm outcome other than the OKX study's already-disclosed A0. P7 walked every arm on pre-2023-06 trades in memory for an equality check only; no statistic was computed or shown.",
+ "k": 3.0,
+ "snapshot_sha256": "f3decffe3e5d740bf2678a9f6db29997ace4731ea0655a25274e71aa56b75c81",
+ "okx_inputs_sha256": {
+  "features_BTC.csv": "c1762d577495b9b75a9fce3c97c227e1524e33b5cfdd5f1a43f55e946ba7f81c",
+  "features_ETH.csv": "83663d81fca7c309b4eb8656c315fb1e5812f704d658d402a7c35f2e66dcc646",
+  "pool_BTC.csv": "1063f2f501199d6c508d018b1045276ac4fb51b5cbb9052350e4e0db1d9587d2",
+  "pool_ETH.csv": "15f41e5af9e3616743446929be6db177edc279b83bb787a604a0fdd0fe8d44e9",
+  "trades_BTC.csv": "c8741298816498413e1111f951d7bdeb45802d961a7f02f3419517ac5aa9f1bf",
+  "trades_ETH.csv": "9d9c936604d35edbe360a6dccba3e6945fffba9e58dd4c48a421db885f527ef6"
+ },
+ "files": {
+  "studies/notebooks/exit_policy_2026_09/PREREGISTRATION_CHENTO.md": "babd44c18b372b7f7a24f81380bc5b547eb82bb0579a49e71c762e0ab2488460",
+  "studies/notebooks/exit_policy_2026_09/chento_lib.py": "c9a876b276dca96b91456258fa45d0b40de50af00f2ef7954365d87771dcbd00",
+  "studies/notebooks/exit_policy_2026_09/chento_checks.py": "1414648befd5ac59db78805c6412fe3ba965099c2e636f061256b7fe72cadb8c",
+  "studies/notebooks/exit_policy_2026_09/chento_run.py": "c815c4520d616ec54fcd9037b2cc0122587ca868d4cbfe9c7a54d58221edfabb",
+  "studies/notebooks/exit_policy_2026_09/tests/test_chento_outcomes_smoke.py": "51917a85999646e72ff4fd10613079acf972028d6b43b5de9e3dd4ad468c478a",
+  "studies/notebooks/exit_policy_2026_09/tests/test_chento_walk.py": "6b92135f8ec46f7693adbabca7e9a8c56957053215ffc00b4f6be40327659f44",
+  "studies/notebooks/exit_policy_2026_09/results/chento/step0.json": "2b09bf9c22e5d050966e9987087898ec87f806ca7c10ddd1d03b3eef3d05955d",
+  "studies/notebooks/exit_policy_2026_09/results/chento/preconditions.json": "05bffe2164924901b7966fa271a752cafffe851d196bee530de9c17830d78d8e",
+  "bots/chento_v3/strategy/math.py": "f78c8973a3b3daad1de79eac171258822f4c453d8cb6e624863bd4eb322a5bf6",
+  "bots/chento_v3/strategy/config.py": "5517dbb9f2a88312b6464f287389acf42de50a7c32b6127a6cd60e2456fd639d",
+  "studies/notebooks/okx_gate_revalidation/okxlib.py": "1b00a6787df06cca86f9ce3ca07b783595ff863585082b1a636b077e757adc3d",
+  "studies/notebooks/orb_study/cache/BTCUSDT_funding.npz": "6dc2cfd68485ea4b146a7c4e780c018b718ccd15dc0c733582fa823030a794e2",
+  "studies/notebooks/orb_study/cache/ETHUSDT_funding.npz": "d9756f67f1a50b1f0ac033ba152b968a8e182b107a25421acecc34d6603b7187"
+ }
+}

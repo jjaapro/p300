@@ -1,0 +1,34 @@
+{
+ "freeze": "F0",
+ "created_utc": "2026-09-18T10:02:21+00:00",
+ "note": "Before any Q1 touch or turn label, any continuation value at an event, any matched placebo and any paired difference. The checks built both BTC maps, every feature, both thresholds, the tercile cuts, L5's correlations and each trade's first event minute of every kind (section 6).",
+ "family": [
+  "up_touch",
+  "up_turn",
+  "down_touch",
+  "down_turn",
+  "chento:EV2"
+ ],
+ "inputs_sha256": {
+  "metrics_5m_BTC": "1db73c137568580f8842e03e9197a38f33d4b63066a03d12e82704a7b2cdff5d",
+  "metrics_5m_ETH": "4aa257bcad5ef49ca9ad31750e6675fd696d0677e59783eabfb26780d0c8cf56",
+  "metrics_manifest": "96a07b072e2262c429da3a6f30233135be5b8f876039273bee9ec037ce6d3088",
+  "perp_1m_BTC": "b085372e6b3f4c743cdbb2f766f67b8765a6f563b5268c3ad515b24f52606563",
+  "perp_1m_ETH": "77edf3f64467b2b130b6c75476895c61d347c87d6d6208270b7829ced35320e7",
+  "chento_features_BTC": "c1762d577495b9b75a9fce3c97c227e1524e33b5cfdd5f1a43f55e946ba7f81c",
+  "chento_features_ETH": "83663d81fca7c309b4eb8656c315fb1e5812f704d658d402a7c35f2e66dcc646",
+  "squeeze_bull_ledger": "d3793c4e419af462709aa25a5c930f8b7b94a73dd489af53cd7cb68100521b14",
+  "micro_trades": "9d30f1d3b094f8654b6fd4843b9a0f5a4783345721f35b771cc2362579a8ddcd",
+  "trader_db": "ed7e845aa523e2349049272b5bf577b1f9b7ce89d165ee7c58cc6e89f4d467b6"
+ },
+ "files": {
+  "studies/notebooks/exit_policy_2026_09/PREREGISTRATION_LIQMAP.md": "e39427d4bffe7a7007d39d7f3a751675ef61b2b317ff11fa102187e6751cdf5b",
+  "studies/notebooks/exit_policy_2026_09/liqmap_data.py": "831d2ea57850b0a818e34f71653f994d743747228e2740d43c336f240c14d975",
+  "studies/notebooks/exit_policy_2026_09/liqmap_lib.py": "d1921484b26cf06692af5f3c483ac776caa9d8b8b2b287aae55486e82fde9bdd",
+  "studies/notebooks/exit_policy_2026_09/liqmap_run.py": "8b420476846bcdb2b7349bb15c0b653efb62000d4969f33caded9980f9dd0af9",
+  "studies/notebooks/exit_policy_2026_09/tests/test_liqmap.py": "8a948e0016bc82babc532559b9e3eb5928e047eb7e286b2318ad213613db0887",
+  "studies/notebooks/exit_policy_2026_09/results/liqmap/preconditions.json": "9679fb508dff83b3ecda61a6dc2ab459db55553a08395a6f7be44197f127889f",
+  "studies/notebooks/exit_policy_2026_09/cache/BTCUSDT_metrics_5m_full.meta.json": "dfdd18208bf2c09bfa76883847197112fd811a7a08d9105342445c7cfb1cf8db",
+  "studies/notebooks/exit_policy_2026_09/cache/ETHUSDT_metrics_5m_full.meta.json": "c94cc2db04331653335aa716c8b490b89a6dbb35b5cbad37b90d9ff2170aeaff"
+ }
+}

@@ -1,0 +1,30 @@
+{
+ "created_utc": "2026-09-15T15:41:54+00:00",
+ "f0_created_utc": "2026-09-15T15:41:36+00:00",
+ "verdict": "NONE PROMOTED",
+ "classifications": {
+  "chento:E1_against": "UNDETERMINED",
+  "chento:E2_rejection": "UNDETERMINED",
+  "chento:E3_against": "UNDETERMINED",
+  "chento:E4_at_level": "DESCRIPTIVE",
+  "squeeze_bull:E1_against": "DESCRIPTIVE",
+  "squeeze_bull:E2_rejection": "DESCRIPTIVE",
+  "squeeze_bull:E3_against": "DESCRIPTIVE",
+  "squeeze_bull:E4_at_level": "DESCRIPTIVE",
+  "short_squeeze:E1_against": "DESCRIPTIVE",
+  "short_squeeze:E2_rejection": "DESCRIPTIVE",
+  "short_squeeze:E3_against": "DESCRIPTIVE",
+  "short_squeeze:E4_at_level": "DESCRIPTIVE"
+ },
+ "family": [
+  "chento:E1_against",
+  "chento:E2_rejection",
+  "chento:E3_against"
+ ],
+ "holm_p": {
+  "chento:E2_rejection": 0.6890310968903111,
+  "chento:E1_against": 0.8273172682731726,
+  "chento:E3_against": 0.8273172682731726
+ },
+ "permits": "nothing in production; a promotion permits only a separate stage 2 pre-registration"
+}

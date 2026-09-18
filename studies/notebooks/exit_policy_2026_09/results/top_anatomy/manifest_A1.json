@@ -1,0 +1,11 @@
+{
+ "stage": "A amendment A1 (exploratory)",
+ "created_utc": "2026-09-15T16:34:59+00:00",
+ "files": {
+  "PROTOCOL_TOP_ANATOMY.md": "d8b667cfbdaeb5cf61e3bf18f017ff3d2ffddf3373ec3f1d33b1dd15922ee629",
+  "anatomy_amend_a1.py": "08d43636e29db996973e1e2140b21b69c7779aa456e415e6bccb1ad8c439a903",
+  "anatomy_lib.py": "8538d183d404fc106cbcfc7f923105d430cac5d0f708289d3b4c20a44232ea91",
+  "results/top_anatomy/shapes.csv": "c38b32ae8e6716878f9d57ab4c23fc5cdb3dda5b9b4443b684d56907229ad115",
+  "results/top_anatomy/manifest_A.json": "ae923feacbf182a4e302083c4fe8069f96ac10bb463fdb315d6c424dbd21e1c1"
+ }
+}

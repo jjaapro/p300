@@ -1,0 +1,40 @@
+{
+ "created_utc": "2026-09-15T13:26:24+00:00",
+ "inputs_sha256": {
+  "ledger": "d3793c4e419af462709aa25a5c930f8b7b94a73dd489af53cd7cb68100521b14",
+  "perp_1m": "b085372e6b3f4c743cdbb2f766f67b8765a6f563b5268c3ad515b24f52606563",
+  "funding": "6dc2cfd68485ea4b146a7c4e780c018b718ccd15dc0c733582fa823030a794e2",
+  "hourly_snapshot": "dba0db178dcd1502982254c05dd38dc091682fc8acd3050d0aa077758bc50249"
+ },
+ "Q1": {
+  "hourly_snapshot_matches_capture": true,
+  "perp_panel_logical_sha256": "8220cf02b8ad7fb8800d858af180c0959158ce9c14065532bf4c266446192a08",
+  "pass": true
+ },
+ "Q2": {
+  "fires": 122,
+  "max_rel_diff": 0.0,
+  "pass": true
+ },
+ "Q3": {
+  "max_abs_diff_R": 2.220446049250313e-16,
+  "exit_kind_equal": 122,
+  "pass": true
+ },
+ "Q4": {
+  "max_settlement_gap_s": 28800,
+  "missing_minutes_on_paths": 1277,
+  "pass": true
+ },
+ "Q5": {
+  "summary": "12 passed in 0.57s",
+  "pass": true
+ },
+ "Q6": {
+  "cut_utc": "2024-01-01T00:00:00+00:00",
+  "exits_compared": 764,
+  "differences": 0,
+  "pass": true
+ },
+ "pass": true
+}

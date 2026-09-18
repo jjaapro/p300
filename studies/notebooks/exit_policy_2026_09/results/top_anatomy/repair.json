@@ -1,0 +1,40 @@
+{
+ "fires": 122,
+ "PR": {
+  "reached": 105,
+  "median_first_hours": 13.35,
+  "mean_fwd24_pct": 0.8048714578585611,
+  "median_fwd24_pct": 0.4023665723705605,
+  "share_fwd24_negative": 0.4,
+  "median_pct_from_entry": 1.466848995077874,
+  "spike_reversal_reached": 99,
+  "share_before_top": 0.9090909090909091,
+  "median_pct_below_top": -1.7982978723404153
+ },
+ "OR": {
+  "reached": 91,
+  "median_first_hours": 21.15,
+  "mean_fwd24_pct": 0.6536928007413416,
+  "median_fwd24_pct": 0.4382825555606207,
+  "share_fwd24_negative": 0.38461538461538464,
+  "median_pct_from_entry": 1.631153219302095,
+  "spike_reversal_reached": 80,
+  "share_before_top": 0.625,
+  "median_pct_below_top": -1.7689375762927784
+ },
+ "at_top": {
+  "fires": 103,
+  "PR_median": 2.288018194975708,
+  "PR_quartiles": [
+   1.6485356221458842,
+   3.8062144700763576
+  ],
+  "share_PR_ge_1": 0.8737864077669902,
+  "OR_median": 0.49387401352486815,
+  "OR_quartiles": [
+   -0.28199581317642464,
+   1.6577744873516098
+  ],
+  "share_OR_ge_1": 0.34951456310679613
+ }
+}

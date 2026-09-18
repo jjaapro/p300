@@ -1,0 +1,152 @@
+{
+ "chento_BTC": {
+  "trades": 208,
+  "F1_against": {
+   "event_trades": 78,
+   "rung1": 59,
+   "rung2": 61,
+   "rung3": 66,
+   "rvol_rung1": 53,
+   "rsession_rung1": 20,
+   "shared_rung1": 64
+  },
+  "F1_spot_confirmed": {
+   "event_trades": 176,
+   "rung1": 104,
+   "rung2": 123,
+   "rung3": 133,
+   "rvol_rung1": 81,
+   "rsession_rung1": 28,
+   "shared_rung1": 160
+  },
+  "F2_perp_led": {
+   "event_trades": 13,
+   "rung1": 5,
+   "rung2": 5,
+   "rung3": 10,
+   "rvol_rung1": 5,
+   "rsession_rung1": 0,
+   "shared_rung1": 5
+  },
+  "F2_spot_confirmed": {
+   "event_trades": 156,
+   "rung1": 86,
+   "rung2": 93,
+   "rung3": 113,
+   "rvol_rung1": 61,
+   "rsession_rung1": 25,
+   "shared_rung1": 121
+  }
+ },
+ "chento_ETH": {
+  "trades": 184,
+  "F1_against": {
+   "event_trades": 59,
+   "rung1": 42,
+   "rung2": 46,
+   "rung3": 52,
+   "rvol_rung1": 41,
+   "rsession_rung1": 15,
+   "shared_rung1": 47
+  },
+  "F1_spot_confirmed": {
+   "event_trades": 145,
+   "rung1": 82,
+   "rung2": 108,
+   "rung3": 114,
+   "rvol_rung1": 68,
+   "rsession_rung1": 21,
+   "shared_rung1": 126
+  },
+  "F2_perp_led": {
+   "event_trades": 21,
+   "rung1": 8,
+   "rung2": 9,
+   "rung3": 12,
+   "rvol_rung1": 7,
+   "rsession_rung1": 1,
+   "shared_rung1": 9
+  },
+  "F2_spot_confirmed": {
+   "event_trades": 127,
+   "rung1": 67,
+   "rung2": 80,
+   "rung3": 98,
+   "rvol_rung1": 58,
+   "rsession_rung1": 20,
+   "shared_rung1": 101
+  }
+ },
+ "squeeze_bull": {
+  "trades": 122,
+  "F1_against": {
+   "event_trades": 50,
+   "rung1": 42,
+   "rung2": 43,
+   "rung3": 49,
+   "rvol_rung1": 38,
+   "rsession_rung1": 21,
+   "shared_rung1": 46
+  },
+  "F1_spot_confirmed": {
+   "event_trades": 100,
+   "rung1": 73,
+   "rung2": 77,
+   "rung3": 79,
+   "rvol_rung1": 58,
+   "rsession_rung1": 28,
+   "shared_rung1": 90
+  },
+  "F2_perp_led": {
+   "event_trades": 5,
+   "rung1": 4,
+   "rung2": 4,
+   "rung3": 4,
+   "rvol_rung1": 3,
+   "rsession_rung1": 0,
+   "shared_rung1": 4
+  },
+  "F2_spot_confirmed": {
+   "event_trades": 75,
+   "rung1": 44,
+   "rung2": 48,
+   "rung3": 55,
+   "rvol_rung1": 29,
+   "rsession_rung1": 20,
+   "shared_rung1": 58
+  }
+ },
+ "short_squeeze": {
+  "trades": 71,
+  "F1_against": {
+   "event_trades": 5,
+   "rung1": 0,
+   "rung2": 2,
+   "rung3": 1,
+   "rvol_rung1": 0,
+   "rsession_rung1": 0,
+   "shared_rung1": 0
+  },
+  "F1_spot_confirmed": {
+   "event_trades": 14,
+   "rung1": 0,
+   "rung2": 3,
+   "rung3": 2,
+   "rvol_rung1": 0,
+   "rsession_rung1": 0,
+   "shared_rung1": 0
+  },
+  "F2_perp_led": {
+   "event_trades": 0
+  },
+  "F2_spot_confirmed": {
+   "event_trades": 2,
+   "rung1": 0,
+   "rung2": 0,
+   "rung3": 1,
+   "rvol_rung1": 0,
+   "rsession_rung1": 0,
+   "shared_rung1": 0
+  }
+ }
+}
