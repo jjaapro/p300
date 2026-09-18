@@ -3,6 +3,254 @@
 	<rates>
 
 		<rate>
+			<effectiveDate>2026-09-16</effectiveDate>
+			<type>EFFR</type>
+			<percentRate>3.63</percentRate>
+			<percentPercentile1>3.60</percentPercentile1>
+			<percentPercentile25>3.63</percentPercentile25>
+			<percentPercentile75>3.64</percentPercentile75>
+			<percentPercentile99>3.65</percentPercentile99>
+			<targetRateFrom>3.50</targetRateFrom>
+			<targetRateTo>3.75</targetRateTo>
+			<volumeInBillions>90</volumeInBillions>
+			<revisionIndicator></revisionIndicator>
+		</rate>
+
+		<rate>
+			<effectiveDate>2026-09-16</effectiveDate>
+			<type>OBFR</type>
+			<percentRate>3.63</percentRate>
+			<percentPercentile1>3.53</percentPercentile1>
+			<percentPercentile25>3.62</percentPercentile25>
+			<percentPercentile75>3.63</percentPercentile75>
+			<percentPercentile99>3.70</percentPercentile99>
+			<volumeInBillions>227</volumeInBillions>
+			<revisionIndicator></revisionIndicator>
+		</rate>
+
+		<rate>
+			<effectiveDate>2026-09-16</effectiveDate>
+			<type>TGCR</type>
+			<percentRate>3.60</percentRate>
+			<percentPercentile1>3.53</percentPercentile1>
+			<percentPercentile25>3.60</percentPercentile25>
+			<percentPercentile75>3.60</percentPercentile75>
+			<percentPercentile99>3.65</percentPercentile99>
+			<volumeInBillions>1191</volumeInBillions>
+			<revisionIndicator></revisionIndicator>
+		</rate>
+
+		<rate>
+			<effectiveDate>2026-09-16</effectiveDate>
+			<type>BGCR</type>
+			<percentRate>3.60</percentRate>
+			<percentPercentile1>3.53</percentPercentile1>
+			<percentPercentile25>3.60</percentPercentile25>
+			<percentPercentile75>3.61</percentPercentile75>
+			<percentPercentile99>3.66</percentPercentile99>
+			<volumeInBillions>1223</volumeInBillions>
+			<revisionIndicator></revisionIndicator>
+		</rate>
+
+		<rate>
+			<effectiveDate>2026-09-16</effectiveDate>
+			<type>SOFR</type>
+			<percentRate>3.62</percentRate>
+			<percentPercentile1>3.58</percentPercentile1>
+			<percentPercentile25>3.60</percentPercentile25>
+			<percentPercentile75>3.67</percentPercentile75>
+			<percentPercentile99>3.70</percentPercentile99>
+			<volumeInBillions>2931</volumeInBillions>
+			<revisionIndicator></revisionIndicator>
+		</rate>
+
+		<rate>
+			<effectiveDate>2026-09-15</effectiveDate>
+			<type>EFFR</type>
+			<percentRate>3.63</percentRate>
+			<percentPercentile1>3.60</percentPercentile1>
+			<percentPercentile25>3.62</percentPercentile25>
+			<percentPercentile75>3.63</percentPercentile75>
+			<percentPercentile99>3.64</percentPercentile99>
+			<targetRateFrom>3.50</targetRateFrom>
+			<targetRateTo>3.75</targetRateTo>
+			<volumeInBillions>100</volumeInBillions>
+			<revisionIndicator></revisionIndicator>
+		</rate>
+
+		<rate>
+			<effectiveDate>2026-09-15</effectiveDate>
+			<type>OBFR</type>
+			<percentRate>3.63</percentRate>
+			<percentPercentile1>3.55</percentPercentile1>
+			<percentPercentile25>3.62</percentPercentile25>
+			<percentPercentile75>3.63</percentPercentile75>
+			<percentPercentile99>3.70</percentPercentile99>
+			<volumeInBillions>238</volumeInBillions>
+			<revisionIndicator></revisionIndicator>
+		</rate>
+
+		<rate>
+			<effectiveDate>2026-09-15</effectiveDate>
+			<type>TGCR</type>
+			<percentRate>3.62</percentRate>
+			<percentPercentile1>3.53</percentPercentile1>
+			<percentPercentile25>3.62</percentPercentile25>
+			<percentPercentile75>3.63</percentPercentile75>
+			<percentPercentile99>3.65</percentPercentile99>
+			<volumeInBillions>1177</volumeInBillions>
+			<revisionIndicator></revisionIndicator>
+		</rate>
+
+		<rate>
+			<effectiveDate>2026-09-15</effectiveDate>
+			<type>BGCR</type>
+			<percentRate>3.62</percentRate>
+			<percentPercentile1>3.53</percentPercentile1>
+			<percentPercentile25>3.62</percentPercentile25>
+			<percentPercentile75>3.63</percentPercentile75>
+			<percentPercentile99>3.67</percentPercentile99>
+			<volumeInBillions>1208</volumeInBillions>
+			<revisionIndicator></revisionIndicator>
+		</rate>
+
+		<rate>
+			<effectiveDate>2026-09-15</effectiveDate>
+			<type>SOFR</type>
+			<percentRate>3.64</percentRate>
+			<percentPercentile1>3.57</percentPercentile1>
+			<percentPercentile25>3.62</percentPercentile25>
+			<percentPercentile75>3.69</percentPercentile75>
+			<percentPercentile99>3.72</percentPercentile99>
+			<volumeInBillions>2952</volumeInBillions>
+			<revisionIndicator></revisionIndicator>
+		</rate>
+
+		<rate>
+			<effectiveDate>2026-09-14</effectiveDate>
+			<type>EFFR</type>
+			<percentRate>3.63</percentRate>
+			<percentPercentile1>3.60</percentPercentile1>
+			<percentPercentile25>3.62</percentPercentile25>
+			<percentPercentile75>3.63</percentPercentile75>
+			<percentPercentile99>3.64</percentPercentile99>
+			<targetRateFrom>3.50</targetRateFrom>
+			<targetRateTo>3.75</targetRateTo>
+			<volumeInBillions>91</volumeInBillions>
+			<revisionIndicator></revisionIndicator>
+		</rate>
+
+		<rate>
+			<effectiveDate>2026-09-14</effectiveDate>
+			<type>OBFR</type>
+			<percentRate>3.63</percentRate>
+			<percentPercentile1>3.53</percentPercentile1>
+			<percentPercentile25>3.62</percentPercentile25>
+			<percentPercentile75>3.63</percentPercentile75>
+			<percentPercentile99>3.70</percentPercentile99>
+			<volumeInBillions>226</volumeInBillions>
+			<revisionIndicator></revisionIndicator>
+		</rate>
+
+		<rate>
+			<effectiveDate>2026-09-14</effectiveDate>
+			<type>TGCR</type>
+			<percentRate>3.60</percentRate>
+			<percentPercentile1>3.53</percentPercentile1>
+			<percentPercentile25>3.60</percentPercentile25>
+			<percentPercentile75>3.60</percentPercentile75>
+			<percentPercentile99>3.63</percentPercentile99>
+			<volumeInBillions>1155</volumeInBillions>
+			<revisionIndicator></revisionIndicator>
+		</rate>
+
+		<rate>
+			<effectiveDate>2026-09-14</effectiveDate>
+			<type>BGCR</type>
+			<percentRate>3.60</percentRate>
+			<percentPercentile1>3.53</percentPercentile1>
+			<percentPercentile25>3.60</percentPercentile25>
+			<percentPercentile75>3.61</percentPercentile75>
+			<percentPercentile99>3.66</percentPercentile99>
+			<volumeInBillions>1183</volumeInBillions>
+			<revisionIndicator></revisionIndicator>
+		</rate>
+
+		<rate>
+			<effectiveDate>2026-09-14</effectiveDate>
+			<type>SOFR</type>
+			<percentRate>3.62</percentRate>
+			<percentPercentile1>3.57</percentPercentile1>
+			<percentPercentile25>3.60</percentPercentile25>
+			<percentPercentile75>3.67</percentPercentile75>
+			<percentPercentile99>3.70</percentPercentile99>
+			<volumeInBillions>2861</volumeInBillions>
+			<revisionIndicator></revisionIndicator>
+		</rate>
+
+		<rate>
+			<effectiveDate>2026-09-11</effectiveDate>
+			<type>EFFR</type>
+			<percentRate>3.63</percentRate>
+			<percentPercentile1>3.60</percentPercentile1>
+			<percentPercentile25>3.62</percentPercentile25>
+			<percentPercentile75>3.63</percentPercentile75>
+			<percentPercentile99>3.64</percentPercentile99>
+			<targetRateFrom>3.50</targetRateFrom>
+			<targetRateTo>3.75</targetRateTo>
+			<volumeInBillions>105</volumeInBillions>
+			<revisionIndicator></revisionIndicator>
+		</rate>
+
+		<rate>
+			<effectiveDate>2026-09-11</effectiveDate>
+			<type>OBFR</type>
+			<percentRate>3.63</percentRate>
+			<percentPercentile1>3.55</percentPercentile1>
+			<percentPercentile25>3.62</percentPercentile25>
+			<percentPercentile75>3.63</percentPercentile75>
+			<percentPercentile99>3.68</percentPercentile99>
+			<volumeInBillions>235</volumeInBillions>
+			<revisionIndicator></revisionIndicator>
+		</rate>
+
+		<rate>
+			<effectiveDate>2026-09-11</effectiveDate>
+			<type>TGCR</type>
+			<percentRate>3.60</percentRate>
+			<percentPercentile1>3.53</percentPercentile1>
+			<percentPercentile25>3.60</percentPercentile25>
+			<percentPercentile75>3.61</percentPercentile75>
+			<percentPercentile99>3.63</percentPercentile99>
+			<volumeInBillions>1158</volumeInBillions>
+			<revisionIndicator></revisionIndicator>
+		</rate>
+
+		<rate>
+			<effectiveDate>2026-09-11</effectiveDate>
+			<type>BGCR</type>
+			<percentRate>3.60</percentRate>
+			<percentPercentile1>3.53</percentPercentile1>
+			<percentPercentile25>3.60</percentPercentile25>
+			<percentPercentile75>3.61</percentPercentile75>
+			<percentPercentile99>3.66</percentPercentile99>
+			<volumeInBillions>1187</volumeInBillions>
+			<revisionIndicator></revisionIndicator>
+		</rate>
+
+		<rate>
+			<effectiveDate>2026-09-11</effectiveDate>
+			<type>SOFR</type>
+			<percentRate>3.62</percentRate>
+			<percentPercentile1>3.57</percentPercentile1>
+			<percentPercentile25>3.60</percentPercentile25>
+			<percentPercentile75>3.67</percentPercentile75>
+			<percentPercentile99>3.69</percentPercentile99>
+			<volumeInBillions>2867</volumeInBillions>
+			<revisionIndicator></revisionIndicator>
+		</rate>
+
+		<rate>
 			<effectiveDate>2026-09-10</effectiveDate>
 			<type>EFFR</type>
 			<percentRate>3.63</percentRate>
