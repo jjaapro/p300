@@ -1,0 +1,2220 @@
+{
+ "created_utc": "2026-09-18T23:24:04+00:00",
+ "P1": {
+  "imported": {
+   "micro_lib.py": {
+    "sha256": "fc76e9f3be88773eb6c9d22148914d943c1ddfb4bb07be72908eb7e62e508941",
+    "git_clean": true,
+    "head_blob": "a61b87897a7228baa88b071f75fd7ec4edd70562",
+    "earlier_freeze": "results/microstructure/freeze_F0.json"
+   },
+   "micro_run.py": {
+    "sha256": "b067fd24a5a7265e25bf9fd8336398ba161bd829586e98e147189e627460d930",
+    "git_clean": true,
+    "head_blob": "856369fe8a4cd34f0d83d572a1ed855d6e457a2c",
+    "earlier_freeze": "results/microstructure/freeze_F0.json"
+   },
+   "spotperp_lib.py": {
+    "sha256": "2b0dedf9da4702517bc01d16026d53f835bbbc38785c4caf7591839c17016cef",
+    "git_clean": true,
+    "head_blob": "3aeac86e42e047c8740e1f84632da57ce5314824",
+    "earlier_freeze": "results/spot_perp/freeze_F0.json"
+   }
+  },
+  "perp_panels": {
+   "BTC": {
+    "match": true,
+    "logical_sha256": "8220cf02b8ad7fb8800d858af180c0959158ce9c14065532bf4c266446192a08"
+   },
+   "ETH": {
+    "match": true,
+    "logical_sha256": "1a13a3f4c6e115c6c5fde192553c4b34c79628f3615b92563b52b1390d5289aa"
+   }
+  },
+  "stage1_inputs": {
+   "perp_1m_BTC": {
+    "match": true
+   },
+   "perp_1m_ETH": {
+    "match": true
+   },
+   "book_1m_BTC": {
+    "match": true
+   },
+   "book_1m_ETH": {
+    "match": true
+   },
+   "book_manifest": {
+    "match": true
+   },
+   "chento_features_BTC": {
+    "match": true
+   },
+   "chento_features_ETH": {
+    "match": true
+   },
+   "squeeze_bull_ledger": {
+    "match": false,
+    "sha256_now": "4010efdd1553d1e4e11e3d0ffe1044bc28576ea2e6a7c29b9f1efea54e656242",
+    "stage1_sha256": "d3793c4e419af462709aa25a5c930f8b7b94a73dd489af53cd7cb68100521b14",
+    "git_clean": true,
+    "head_blob": "f2451eb2b76cde3363a0c4d0843a4dd6bc2650b3",
+    "last_commit": "599e8b6 2026-09-19 00:58:07 +0300 study(squeeze_bull): re-cut on the corrected open-interest table \u2014 BUILD holds by the same hair"
+   },
+   "short_squeeze_replay": {
+    "match": true
+   },
+   "chento_A0_walks": {
+    "match": true
+   },
+   "squeeze_bull_walks": {
+    "match": true
+   }
+  },
+  "micro_trades_sha256": "9d30f1d3b094f8654b6fd4843b9a0f5a4783345721f35b771cc2362579a8ddcd",
+  "dvol_export_sha256": "d49a16da1b27a245480fe3e19501d12deff41a3cef707036371ba19c3e23ca31",
+  "head": "d871947",
+  "pass": true
+ },
+ "P2": {
+  "stage1_m2": {
+   "chento": {
+    "trades": 392,
+    "equals_A0": true,
+    "A0_rows": 392
+   },
+   "squeeze_bull": {
+    "trades": 122,
+    "equals_S0": false
+   },
+   "short_squeeze": {
+    "trades": 71,
+    "distinct_triggers": 71,
+    "all_london_ny": true
+   },
+   "pass": false
+  },
+  "counts": {
+   "chento_BTC": 208,
+   "chento_ETH": 184,
+   "squeeze_bull": 122,
+   "short_squeeze": 71
+  },
+  "directions": {
+   "chento_BTC": {
+    "long": 120,
+    "short": 88
+   },
+   "chento_ETH": {
+    "long": 106,
+    "short": 78
+   },
+   "squeeze_bull": {
+    "long": 122
+   },
+   "short_squeeze": {
+    "long": 71
+   }
+  },
+  "i_eligible": {
+   "chento_BTC": 164,
+   "chento_ETH": 154,
+   "squeeze_bull": 111,
+   "short_squeeze": 55
+  },
+  "squeeze_bull_vs_stage1": {
+   "stage1_trades": 122,
+   "trades_now": 122,
+   "shared": 121,
+   "only_in_stage1": [
+    "BTC:1788530400"
+   ],
+   "only_now": [
+    "BTC:1788526800"
+   ]
+  },
+  "pass": true
+ },
+ "P3": {
+  "trades_now": 585,
+  "stage1_trades": 585,
+  "compared": 584,
+  "not_in_stage1": [
+   "BTC:1788526800"
+  ],
+  "differences": {
+   "i0": 0,
+   "x": 0,
+   "kind": 0,
+   "x_notime": 0,
+   "kind_notime": 0,
+   "level_valid": 0,
+   "exit_price": 0,
+   "exit_price_notime": 0,
+   "level": 0
+  },
+  "pass": true
+ },
+ "P4": {
+  "facts": {
+   "BTC": {
+    "rows": 1472,
+    "first_day": "2022-09-07",
+    "last_day": "2026-09-17",
+    "missing_days_inside_span": 0,
+    "missing_days": [],
+    "bad_closes": 0
+   },
+   "ETH": {
+    "rows": 1472,
+    "first_day": "2022-09-07",
+    "last_day": "2026-09-17",
+    "missing_days_inside_span": 0,
+    "missing_days": [],
+    "bad_closes": 0
+   }
+  },
+  "first_eligible_day": "2022-09-08",
+  "pass": true
+ },
+ "P5": {
+  "returncode": 0,
+  "tail": [
+   "........................                                                 [100%]",
+   "24 passed in 1.79s"
+  ],
+  "pass": true
+ },
+ "P6": {
+  "cuts": [
+   {
+    "asset": "BTC",
+    "tid": "BTC:1745856000",
+    "cut_minute": 2801820,
+    "cut_day": "2025-04-29",
+    "open_trades": 1,
+    "changed": []
+   },
+   {
+    "asset": "BTC",
+    "tid": "BTC:1769756400:short",
+    "cut_minute": 3200835,
+    "cut_day": "2026-01-31",
+    "open_trades": 2,
+    "changed": []
+   },
+   {
+    "asset": "BTC",
+    "tid": "BTC:1700607600",
+    "cut_minute": 2046788,
+    "cut_day": "2023-11-22",
+    "open_trades": 1,
+    "changed": []
+   },
+   {
+    "asset": "BTC",
+    "tid": "BTC:1657272600:long",
+    "cut_minute": 1325577,
+    "cut_day": "2022-07-09",
+    "open_trades": 3,
+    "changed": []
+   },
+   {
+    "asset": "BTC",
+    "tid": "BTC:1768482000:long",
+    "cut_minute": 3177479,
+    "cut_day": "2026-01-15",
+    "open_trades": 2,
+    "changed": []
+   },
+   {
+    "asset": "ETH",
+    "tid": "ETH:1781614800:long",
+    "cut_minute": 3397009,
+    "cut_day": "2026-06-17",
+    "open_trades": 2,
+    "changed": []
+   },
+   {
+    "asset": "ETH",
+    "tid": "ETH:1654963200:short",
+    "cut_minute": 1287615,
+    "cut_day": "2022-06-13",
+    "open_trades": 2,
+    "changed": []
+   },
+   {
+    "asset": "ETH",
+    "tid": "ETH:1712979000:short",
+    "cut_minute": 2254545,
+    "cut_day": "2024-04-14",
+    "open_trades": 1,
+    "changed": []
+   },
+   {
+    "asset": "ETH",
+    "tid": "ETH:1755127800:long",
+    "cut_minute": 2955249,
+    "cut_day": "2025-08-14",
+    "open_trades": 4,
+    "changed": []
+   },
+   {
+    "asset": "ETH",
+    "tid": "ETH:1752216300:long",
+    "cut_minute": 2908500,
+    "cut_day": "2025-07-12",
+    "open_trades": 5,
+    "changed": []
+   }
+  ],
+  "pass": true
+ },
+ "P7": {
+  "per_subpop": {
+   "chento_BTC": {
+    "coverage_I": 1.0,
+    "coverage_J_bars": 1.0,
+    "coverage_I_by_year": {
+     "2022": 1.0,
+     "2023": 1.0,
+     "2024": 1.0,
+     "2025": 1.0,
+     "2026": 1.0
+    }
+   },
+   "chento_ETH": {
+    "coverage_I": 1.0,
+    "coverage_J_bars": 1.0,
+    "coverage_I_by_year": {
+     "2022": 1.0,
+     "2023": 1.0,
+     "2024": 1.0,
+     "2025": 1.0,
+     "2026": 1.0
+    }
+   },
+   "squeeze_bull": {
+    "coverage_I": 1.0,
+    "coverage_J_bars": 1.0,
+    "coverage_I_by_year": {
+     "2023": 1.0,
+     "2024": 1.0,
+     "2025": 1.0,
+     "2026": 1.0
+    }
+   },
+   "short_squeeze": {
+    "coverage_I": 1.0,
+    "coverage_J_bars": 1.0,
+    "coverage_I_by_year": {
+     "2022": 0.0,
+     "2023": 1.0,
+     "2024": 1.0,
+     "2025": 1.0,
+     "2026": 1.0
+    }
+   }
+  },
+  "descriptive": {
+   "chento_BTC": {
+    "I": false,
+    "J": false
+   },
+   "chento_ETH": {
+    "I": false,
+    "J": false
+   },
+   "squeeze_bull": {
+    "I": false,
+    "J": false
+   },
+   "short_squeeze": {
+    "I": false,
+    "J": false
+   }
+  },
+  "pass": true
+ },
+ "P8": {
+  "per_subpop": {
+   "chento_BTC": {
+    "I1_implied": {
+     "eligible_trades": 164,
+     "trades_with_event": 80,
+     "event_share": 0.4878048780487805,
+     "median_elapsed_hours": 13.308333333333334,
+     "event_minutes_total": 96670,
+     "dropped_for_lack_of_controls_rung1": 51,
+     "mean_distinct_controls_rung1": 2.6,
+     "included": {
+      "rung1": 29,
+      "rung2": 25,
+      "rung3": 49,
+      "S1": 36,
+      "S2": 57,
+      "S3": 67,
+      "S4": 29,
+      "rvol_rung3": 48,
+      "rsession_rung3": 11,
+      "shared_rung3": 72
+     },
+     "decision_rung": "rung3",
+     "balance": {
+      "n": 80,
+      "event": {
+       "vr_median": 2.47881912217466,
+       "mark_median": 1.247639785418488,
+       "ord_q": [
+        20.0,
+        27.0,
+        39.0
+       ],
+       "session_share": {
+        "2": 0.375,
+        "0": 0.2875,
+        "1": 0.2375,
+        "3": 0.1
+       },
+       "weekend_share": 0.3875
+      },
+      "controls": {
+       "vr_median": 2.090222722220965,
+       "mark_median": 0.8313027117053746,
+       "ord_q": [
+        19.0,
+        25.0,
+        34.0
+       ],
+       "session_share": {
+        "2": 0.4715233182440257,
+        "1": 0.2923465627960838,
+        "0": 0.14580482156016422,
+        "3": 0.09032529739972629
+       },
+       "weekend_share": 0.3120328455626908
+      }
+     }
+    },
+    "I1_realised": {
+     "eligible_trades": 164,
+     "trades_with_event": 91,
+     "event_share": 0.5548780487804879,
+     "median_elapsed_hours": 12.933333333333334,
+     "event_minutes_total": 117963,
+     "dropped_for_lack_of_controls_rung1": 55,
+     "mean_distinct_controls_rung1": 3.2637362637362637,
+     "included": {
+      "rung1": 36,
+      "rung2": 31,
+      "rung3": 56,
+      "S1": 41,
+      "S2": 59,
+      "S3": 72,
+      "S4": 36,
+      "rvol_rung1": 35,
+      "rsession_rung1": 8,
+      "shared_rung1": 62
+     },
+     "decision_rung": "rung1",
+     "balance": {
+      "n": 91,
+      "event": {
+       "vr_median": 2.586589256032177,
+       "mark_median": 1.074735793097264,
+       "ord_q": [
+        19.0,
+        25.0,
+        32.0
+       ],
+       "session_share": {
+        "2": 0.3626373626373626,
+        "0": 0.3076923076923077,
+        "1": 0.23076923076923078,
+        "3": 0.0989010989010989
+       },
+       "weekend_share": 0.3516483516483517
+      },
+      "controls": {
+       "vr_median": 1.462019223630946,
+       "mark_median": 0.594780056852198,
+       "ord_q": [
+        16.0,
+        22.0,
+        28.0
+       ],
+       "session_share": {
+        "1": 0.42446853442207516,
+        "2": 0.31493735041531745,
+        "0": 0.19273546388849783,
+        "3": 0.06785865127410953
+       },
+       "weekend_share": 0.34633253554835985
+      }
+     }
+    },
+    "I1_implied_only": {
+     "eligible_trades": 164,
+     "trades_with_event": 12,
+     "event_share": 0.07317073170731707,
+     "median_elapsed_hours": 18.791666666666664,
+     "event_minutes_total": 942,
+     "dropped_for_lack_of_controls_rung1": 6,
+     "mean_distinct_controls_rung1": 3.0,
+     "included": {
+      "rung1": 6,
+      "rung2": 3,
+      "rung3": 10,
+      "S1": 10,
+      "S2": 12,
+      "S3": 10,
+      "S4": 6
+     },
+     "decision_rung": null
+    },
+    "I2_day": {
+     "eligible_trades": 164,
+     "trades_with_event": 89,
+     "event_share": 0.5426829268292683,
+     "median_elapsed_hours": 6.15,
+     "event_minutes_total": 45627,
+     "dropped_for_lack_of_controls_rung1": 36,
+     "mean_distinct_controls_rung1": 8.741573033707866,
+     "included": {
+      "rung1": 53,
+      "rung2": 47,
+      "rung3": 66,
+      "S1": 59,
+      "S2": 75,
+      "S3": 83,
+      "S4": 53,
+      "rvol_rung1": 50,
+      "rsession_rung1": 19,
+      "shared_rung1": 62
+     },
+     "decision_rung": "rung1"
+    },
+    "I2_day_realised": {
+     "eligible_trades": 164,
+     "trades_with_event": 98,
+     "event_share": 0.5975609756097561,
+     "median_elapsed_hours": 3.8916666666666666,
+     "event_minutes_total": 56188,
+     "dropped_for_lack_of_controls_rung1": 35,
+     "mean_distinct_controls_rung1": 9.438775510204081,
+     "included": {
+      "rung1": 63,
+      "rung2": 50,
+      "rung3": 79,
+      "S1": 69,
+      "S2": 84,
+      "S3": 88,
+      "S4": 63,
+      "rvol_rung1": 61,
+      "rsession_rung1": 21,
+      "shared_rung1": 82
+     },
+     "decision_rung": "rung1"
+    },
+    "J_wick": {
+     "eligible_trades": 208,
+     "trades_with_event": 152,
+     "event_share": 0.7307692307692307,
+     "median_elapsed_hours": 7.983333333333333,
+     "event_minutes_total": 1571,
+     "dropped_for_lack_of_controls_rung1": 45,
+     "mean_distinct_controls_rung1": 9.43421052631579,
+     "included": {
+      "rung1": 107,
+      "rung2": 95,
+      "rung3": 126,
+      "S1": 114,
+      "S2": 133,
+      "S3": 127,
+      "S4": 107,
+      "rvol_rung1": 97,
+      "rsession_rung1": 40,
+      "shared_rung1": 126
+     },
+     "decision_rung": "rung1",
+     "balance": {
+      "n": 152,
+      "event": {
+       "vr_median": 1.993019781974751,
+       "mark_median": 0.48918575580794127,
+       "ord_q": [
+        15.0,
+        20.0,
+        26.0
+       ],
+       "session_share": {
+        "2": 0.4407894736842105,
+        "1": 0.3026315789473684,
+        "0": 0.17763157894736842,
+        "3": 0.07894736842105263
+       },
+       "weekend_share": 0.35526315789473684
+      },
+      "controls": {
+       "vr_median": 0.9147008642132466,
+       "mark_median": 0.2961607197260388,
+       "ord_q": [
+        11.0,
+        15.0,
+        21.0
+       ],
+       "session_share": {
+        "1": 0.44226044226044225,
+        "0": 0.241128609981069,
+        "2": 0.21432311596246023,
+        "3": 0.10228783179602852
+       },
+       "weekend_share": 0.40115599951665526
+      }
+     }
+    },
+    "J_nolevel": {
+     "eligible_trades": 208,
+     "trades_with_event": 165,
+     "event_share": 0.7932692307692307,
+     "median_elapsed_hours": 5.233333333333333,
+     "event_minutes_total": 3816,
+     "dropped_for_lack_of_controls_rung1": 45,
+     "mean_distinct_controls_rung1": 13.242424242424242,
+     "included": {
+      "rung1": 120,
+      "rung2": 116,
+      "rung3": 142,
+      "S1": 122,
+      "S2": 146,
+      "S3": 140,
+      "S4": 120,
+      "rvol_rung1": 110,
+      "rsession_rung1": 71,
+      "shared_rung1": 146
+     },
+     "decision_rung": "rung1",
+     "balance": {
+      "n": 165,
+      "event": {
+       "vr_median": 1.2161637834008943,
+       "mark_median": 0.3302165599344987,
+       "ord_q": [
+        12.0,
+        17.0,
+        23.0
+       ],
+       "session_share": {
+        "1": 0.38181818181818183,
+        "2": 0.2727272727272727,
+        "0": 0.26666666666666666,
+        "3": 0.07878787878787878
+       },
+       "weekend_share": 0.41818181818181815
+      },
+      "controls": {
+       "vr_median": 0.7900739579905675,
+       "mark_median": 0.205059023367204,
+       "ord_q": [
+        9.0,
+        13.0,
+        18.0
+       ],
+       "session_share": {
+        "1": 0.42353110787821596,
+        "0": 0.2969370502889946,
+        "2": 0.18342311170526482,
+        "3": 0.0961087301275246
+       },
+       "weekend_share": 0.4214340948112033
+      }
+     }
+    },
+    "J_accept": {
+     "eligible_trades": 208,
+     "trades_with_event": 156,
+     "event_share": 0.75,
+     "median_elapsed_hours": 7.108333333333333,
+     "event_minutes_total": 3698,
+     "dropped_for_lack_of_controls_rung1": 52,
+     "mean_distinct_controls_rung1": 9.301282051282051,
+     "included": {
+      "rung1": 104,
+      "rung2": 85,
+      "rung3": 129,
+      "S1": 109,
+      "S2": 136,
+      "S3": 129,
+      "S4": 104,
+      "rvol_rung1": 98,
+      "rsession_rung1": 39,
+      "shared_rung1": 126
+     },
+     "decision_rung": "rung1"
+    },
+    "J_shape": {
+     "eligible_trades": 208,
+     "trades_with_event": 173,
+     "event_share": 0.8317307692307693,
+     "median_elapsed_hours": 3.9833333333333334,
+     "event_minutes_total": 5387,
+     "dropped_for_lack_of_controls_rung1": 33,
+     "mean_distinct_controls_rung1": 14.971098265895954,
+     "included": {
+      "rung1": 140,
+      "rung2": 135,
+      "rung3": 155,
+      "S1": 143,
+      "S2": 159,
+      "S3": 152,
+      "S4": 140,
+      "rvol_rung1": 125,
+      "rsession_rung1": 80,
+      "shared_rung1": 158
+     },
+     "decision_rung": "rung1"
+    },
+    "J_wick_1m": {
+     "eligible_trades": 208,
+     "trades_with_event": 160,
+     "event_share": 0.7692307692307693,
+     "median_elapsed_hours": 7.058333333333334,
+     "event_minutes_total": 12250,
+     "dropped_for_lack_of_controls_rung1": 57,
+     "mean_distinct_controls_rung1": 8.26875,
+     "included": {
+      "rung1": 103,
+      "rung2": 98,
+      "rung3": 131,
+      "S1": 107,
+      "S2": 137,
+      "S3": 131,
+      "S4": 103,
+      "rvol_rung1": 91,
+      "rsession_rung1": 43,
+      "shared_rung1": 135
+     },
+     "decision_rung": "rung1"
+    },
+    "J_nolevel_1m": {
+     "eligible_trades": 208,
+     "trades_with_event": 173,
+     "event_share": 0.8317307692307693,
+     "median_elapsed_hours": 3.35,
+     "event_minutes_total": 51774,
+     "dropped_for_lack_of_controls_rung1": 41,
+     "mean_distinct_controls_rung1": 12.653179190751445,
+     "included": {
+      "rung1": 132,
+      "rung2": 130,
+      "rung3": 148,
+      "S1": 137,
+      "S2": 156,
+      "S3": 147,
+      "S4": 132,
+      "rvol_rung1": 122,
+      "rsession_rung1": 69,
+      "shared_rung1": 158
+     },
+     "decision_rung": "rung1"
+    },
+    "_base_rates": {
+     "share_eligible_trades_crossing_IMP": 0.4878048780487805,
+     "share_eligible_trades_crossing_RV": 0.5548780487804879,
+     "armed_bars": 20166,
+     "armed_bars_with_rejection_shape": 5387,
+     "share_armed_with_shape": 0.26713279777843896,
+     "share_shape_at_level": 0.2916279933172452,
+     "mean_candidate_levels_per_trade": 5.778846153846154
+    },
+    "_power": {
+     "sd_cv_random_minute": 1.9219792113842706,
+     "mde_R": {
+      "I1_implied": 0.5350606829155851,
+      "I1_realised": 0.5016806342834316,
+      "I1_implied_only": 1.381520742761619,
+      "I2_day": 0.5072861784814221,
+      "I2_day_realised": 0.48343155554811185,
+      "J_wick": 0.38817381782290067,
+      "J_nolevel": 0.3725684379039998,
+      "J_accept": 0.3831649135495471,
+      "J_shape": 0.3638521801117396,
+      "J_wick_1m": 0.3783450372359153,
+      "J_nolevel_1m": 0.3638521801117396
+     }
+    }
+   },
+   "chento_ETH": {
+    "I1_implied": {
+     "eligible_trades": 154,
+     "trades_with_event": 77,
+     "event_share": 0.5,
+     "median_elapsed_hours": 15.433333333333334,
+     "event_minutes_total": 95012,
+     "dropped_for_lack_of_controls_rung1": 54,
+     "mean_distinct_controls_rung1": 1.9870129870129871,
+     "included": {
+      "rung1": 23,
+      "rung2": 22,
+      "rung3": 40,
+      "S1": 31,
+      "S2": 47,
+      "S3": 50,
+      "S4": 23,
+      "rvol_rung3": 39,
+      "rsession_rung3": 11,
+      "shared_rung3": 56
+     },
+     "decision_rung": "rung3",
+     "balance": {
+      "n": 77,
+      "event": {
+       "vr_median": 2.613851442170084,
+       "mark_median": 1.2268022755397956,
+       "ord_q": [
+        19.0,
+        26.0,
+        32.0
+       ],
+       "session_share": {
+        "2": 0.42857142857142855,
+        "1": 0.2077922077922078,
+        "3": 0.18181818181818182,
+        "0": 0.18181818181818182
+       },
+       "weekend_share": 0.2597402597402597
+      },
+      "controls": {
+       "vr_median": 1.976508141557083,
+       "mark_median": 0.8213067896288404,
+       "ord_q": [
+        16.0,
+        22.0,
+        28.0
+       ],
+       "session_share": {
+        "2": 0.5477728663719823,
+        "1": 0.24096112433412673,
+        "0": 0.12320072537685595,
+        "3": 0.08806528391703503
+       },
+       "weekend_share": 0.37107559786920546
+      }
+     }
+    },
+    "I1_realised": {
+     "eligible_trades": 154,
+     "trades_with_event": 76,
+     "event_share": 0.4935064935064935,
+     "median_elapsed_hours": 13.716666666666667,
+     "event_minutes_total": 110032,
+     "dropped_for_lack_of_controls_rung1": 46,
+     "mean_distinct_controls_rung1": 2.723684210526316,
+     "included": {
+      "rung1": 30,
+      "rung2": 27,
+      "rung3": 44,
+      "S1": 33,
+      "S2": 50,
+      "S3": 57,
+      "S4": 30,
+      "rvol_rung1": 28,
+      "rsession_rung1": 6,
+      "shared_rung1": 44
+     },
+     "decision_rung": "rung1",
+     "balance": {
+      "n": 76,
+      "event": {
+       "vr_median": 2.398395544539283,
+       "mark_median": 1.044449223543991,
+       "ord_q": [
+        16.75,
+        24.0,
+        29.0
+       ],
+       "session_share": {
+        "2": 0.34210526315789475,
+        "1": 0.32894736842105265,
+        "0": 0.19736842105263158,
+        "3": 0.13157894736842105
+       },
+       "weekend_share": 0.25
+      },
+      "controls": {
+       "vr_median": 1.5483627016796455,
+       "mark_median": 0.6432423390106343,
+       "ord_q": [
+        14.0,
+        19.0,
+        26.0
+       ],
+       "session_share": {
+        "2": 0.49606763664962644,
+        "1": 0.2866692882422336,
+        "0": 0.16220998820290994,
+        "3": 0.055053086905230045
+       },
+       "weekend_share": 0.396578843885175
+      }
+     }
+    },
+    "I1_implied_only": {
+     "eligible_trades": 154,
+     "trades_with_event": 18,
+     "event_share": 0.11688311688311688,
+     "median_elapsed_hours": 13.633333333333333,
+     "event_minutes_total": 2308,
+     "dropped_for_lack_of_controls_rung1": 6,
+     "mean_distinct_controls_rung1": 3.4444444444444446,
+     "included": {
+      "rung1": 12,
+      "rung2": 7,
+      "rung3": 14,
+      "S1": 14,
+      "S2": 17,
+      "S3": 16,
+      "S4": 12
+     },
+     "decision_rung": null
+    },
+    "I2_day": {
+     "eligible_trades": 154,
+     "trades_with_event": 86,
+     "event_share": 0.5584415584415584,
+     "median_elapsed_hours": 7.275,
+     "event_minutes_total": 34696,
+     "dropped_for_lack_of_controls_rung1": 42,
+     "mean_distinct_controls_rung1": 6.825581395348837,
+     "included": {
+      "rung1": 44,
+      "rung2": 31,
+      "rung3": 58,
+      "S1": 51,
+      "S2": 61,
+      "S3": 68,
+      "S4": 44,
+      "rvol_rung1": 43,
+      "rsession_rung1": 15,
+      "shared_rung1": 54
+     },
+     "decision_rung": "rung1"
+    },
+    "I2_day_realised": {
+     "eligible_trades": 154,
+     "trades_with_event": 91,
+     "event_share": 0.5909090909090909,
+     "median_elapsed_hours": 5.516666666666667,
+     "event_minutes_total": 50647,
+     "dropped_for_lack_of_controls_rung1": 40,
+     "mean_distinct_controls_rung1": 7.373626373626373,
+     "included": {
+      "rung1": 51,
+      "rung2": 39,
+      "rung3": 66,
+      "S1": 56,
+      "S2": 69,
+      "S3": 73,
+      "S4": 51,
+      "rvol_rung1": 51,
+      "rsession_rung1": 22,
+      "shared_rung1": 65
+     },
+     "decision_rung": "rung1"
+    },
+    "J_wick": {
+     "eligible_trades": 184,
+     "trades_with_event": 118,
+     "event_share": 0.6413043478260869,
+     "median_elapsed_hours": 8.358333333333333,
+     "event_minutes_total": 828,
+     "dropped_for_lack_of_controls_rung1": 41,
+     "mean_distinct_controls_rung1": 8.796610169491526,
+     "included": {
+      "rung1": 77,
+      "rung2": 62,
+      "rung3": 92,
+      "S1": 83,
+      "S2": 99,
+      "S3": 96,
+      "S4": 77,
+      "rvol_rung1": 71,
+      "rsession_rung1": 36,
+      "shared_rung1": 91
+     },
+     "decision_rung": "rung1",
+     "balance": {
+      "n": 118,
+      "event": {
+       "vr_median": 1.9484314240905563,
+       "mark_median": 0.552801143690081,
+       "ord_q": [
+        14.0,
+        21.0,
+        29.0
+       ],
+       "session_share": {
+        "2": 0.4576271186440678,
+        "1": 0.288135593220339,
+        "0": 0.2033898305084746,
+        "3": 0.05084745762711865
+       },
+       "weekend_share": 0.2627118644067797
+      },
+      "controls": {
+       "vr_median": 0.9833177238705378,
+       "mark_median": 0.2403501429050529,
+       "ord_q": [
+        8.0,
+        12.0,
+        18.0
+       ],
+       "session_share": {
+        "1": 0.385360435984193,
+        "2": 0.2924555104992639,
+        "0": 0.22822016168608106,
+        "3": 0.09396389183046207
+       },
+       "weekend_share": 0.24950280238654854
+      }
+     }
+    },
+    "J_nolevel": {
+     "eligible_trades": 184,
+     "trades_with_event": 133,
+     "event_share": 0.7228260869565217,
+     "median_elapsed_hours": 4.983333333333333,
+     "event_minutes_total": 4018,
+     "dropped_for_lack_of_controls_rung1": 33,
+     "mean_distinct_controls_rung1": 12.721804511278195,
+     "included": {
+      "rung1": 100,
+      "rung2": 93,
+      "rung3": 116,
+      "S1": 107,
+      "S2": 117,
+      "S3": 120,
+      "S4": 100,
+      "rvol_rung1": 90,
+      "rsession_rung1": 49,
+      "shared_rung1": 121
+     },
+     "decision_rung": "rung1",
+     "balance": {
+      "n": 133,
+      "event": {
+       "vr_median": 1.530613230110073,
+       "mark_median": 0.3505455397122367,
+       "ord_q": [
+        11.0,
+        16.0,
+        20.0
+       ],
+       "session_share": {
+        "2": 0.37593984962406013,
+        "1": 0.3458646616541353,
+        "0": 0.18045112781954886,
+        "3": 0.09774436090225563
+       },
+       "weekend_share": 0.2631578947368421
+      },
+      "controls": {
+       "vr_median": 0.9592635853033555,
+       "mark_median": 0.1892349973432467,
+       "ord_q": [
+        7.0,
+        11.0,
+        15.0
+       ],
+       "session_share": {
+        "1": 0.37586952604072804,
+        "2": 0.2895837087763561,
+        "0": 0.2380248693458281,
+        "3": 0.09652189583708776
+       },
+       "weekend_share": 0.2409262930257704
+      }
+     }
+    },
+    "J_accept": {
+     "eligible_trades": 184,
+     "trades_with_event": 113,
+     "event_share": 0.6141304347826086,
+     "median_elapsed_hours": 7.733333333333333,
+     "event_minutes_total": 1891,
+     "dropped_for_lack_of_controls_rung1": 30,
+     "mean_distinct_controls_rung1": 9.221238938053098,
+     "included": {
+      "rung1": 83,
+      "rung2": 77,
+      "rung3": 93,
+      "S1": 86,
+      "S2": 98,
+      "S3": 96,
+      "S4": 83,
+      "rvol_rung1": 81,
+      "rsession_rung1": 26,
+      "shared_rung1": 92
+     },
+     "decision_rung": "rung1"
+    },
+    "J_shape": {
+     "eligible_trades": 184,
+     "trades_with_event": 139,
+     "event_share": 0.7554347826086957,
+     "median_elapsed_hours": 3.9833333333333334,
+     "event_minutes_total": 4846,
+     "dropped_for_lack_of_controls_rung1": 35,
+     "mean_distinct_controls_rung1": 14.0,
+     "included": {
+      "rung1": 104,
+      "rung2": 98,
+      "rung3": 125,
+      "S1": 111,
+      "S2": 127,
+      "S3": 124,
+      "S4": 104,
+      "rvol_rung1": 97,
+      "rsession_rung1": 58,
+      "shared_rung1": 130
+     },
+     "decision_rung": "rung1"
+    },
+    "J_wick_1m": {
+     "eligible_trades": 184,
+     "trades_with_event": 119,
+     "event_share": 0.6467391304347826,
+     "median_elapsed_hours": 7.2,
+     "event_minutes_total": 5836,
+     "dropped_for_lack_of_controls_rung1": 41,
+     "mean_distinct_controls_rung1": 8.193277310924369,
+     "included": {
+      "rung1": 78,
+      "rung2": 71,
+      "rung3": 95,
+      "S1": 81,
+      "S2": 101,
+      "S3": 101,
+      "S4": 78,
+      "rvol_rung1": 73,
+      "rsession_rung1": 28,
+      "shared_rung1": 99
+     },
+     "decision_rung": "rung1"
+    },
+    "J_nolevel_1m": {
+     "eligible_trades": 184,
+     "trades_with_event": 142,
+     "event_share": 0.7717391304347826,
+     "median_elapsed_hours": 2.65,
+     "event_minutes_total": 54392,
+     "dropped_for_lack_of_controls_rung1": 32,
+     "mean_distinct_controls_rung1": 11.640845070422536,
+     "included": {
+      "rung1": 110,
+      "rung2": 107,
+      "rung3": 127,
+      "S1": 114,
+      "S2": 127,
+      "S3": 126,
+      "S4": 110,
+      "rvol_rung1": 99,
+      "rsession_rung1": 49,
+      "shared_rung1": 136
+     },
+     "decision_rung": "rung1"
+    },
+    "_base_rates": {
+     "share_eligible_trades_crossing_IMP": 0.5,
+     "share_eligible_trades_crossing_RV": 0.4935064935064935,
+     "armed_bars": 17534,
+     "armed_bars_with_rejection_shape": 4846,
+     "share_armed_with_shape": 0.27637732405611953,
+     "share_shape_at_level": 0.17086256706562114,
+     "mean_candidate_levels_per_trade": 4.858695652173913
+    },
+    "_power": {
+     "sd_cv_random_minute": 1.6685572918861593,
+     "mde_R": {
+      "I1_implied": 0.473472879589805,
+      "I1_realised": 0.4765776530508098,
+      "I1_implied_only": 0.979273985989501,
+      "I2_day": 0.44801364848193004,
+      "I2_day_realised": 0.4355317037632262,
+      "J_wick": 0.38247184136347107,
+      "J_nolevel": 0.36025884296664734,
+      "J_accept": 0.3908420194781619,
+      "J_shape": 0.35239770405514353,
+      "J_wick_1m": 0.38086142645769877,
+      "J_nolevel_1m": 0.3486553214756173
+     }
+    }
+   },
+   "squeeze_bull": {
+    "I1_implied": {
+     "eligible_trades": 111,
+     "trades_with_event": 15,
+     "event_share": 0.13513513513513514,
+     "median_elapsed_hours": 16.65,
+     "event_minutes_total": 3601,
+     "dropped_for_lack_of_controls_rung1": 8,
+     "mean_distinct_controls_rung1": 2.0,
+     "included": {
+      "rung1": 7,
+      "rung2": 6,
+      "rung3": 11,
+      "S1": 9,
+      "S2": 14,
+      "S3": 12,
+      "S4": 7
+     },
+     "decision_rung": null
+    },
+    "I1_realised": {
+     "eligible_trades": 111,
+     "trades_with_event": 37,
+     "event_share": 0.3333333333333333,
+     "median_elapsed_hours": 16.4,
+     "event_minutes_total": 7392,
+     "dropped_for_lack_of_controls_rung1": 16,
+     "mean_distinct_controls_rung1": 4.756756756756757,
+     "included": {
+      "rung1": 21,
+      "rung2": 20,
+      "rung3": 30,
+      "S1": 25,
+      "S2": 30,
+      "S3": 34,
+      "S4": 21,
+      "rvol_rung3": 29,
+      "rsession_rung3": 11,
+      "shared_rung3": 35
+     },
+     "decision_rung": "rung3",
+     "balance": {
+      "n": 37,
+      "event": {
+       "vr_median": 1.6217563066010625,
+       "mark_median": 1.1218340983660702,
+       "ord_q": [
+        26.0,
+        35.0,
+        38.0
+       ],
+       "session_share": {
+        "2": 0.32432432432432434,
+        "3": 0.24324324324324326,
+        "1": 0.21621621621621623,
+        "0": 0.21621621621621623
+       },
+       "weekend_share": 0.2702702702702703
+      },
+      "controls": {
+       "vr_median": 1.1887633242161928,
+       "mark_median": 0.8563638498919264,
+       "ord_q": [
+        21.0,
+        30.0,
+        37.0
+       ],
+       "session_share": {
+        "0": 0.39200534249189084,
+        "2": 0.296508299942759,
+        "1": 0.22114100362526234,
+        "3": 0.09034535394008777
+       },
+       "weekend_share": 0.3064300705972143
+      }
+     }
+    },
+    "I1_implied_only": {
+     "eligible_trades": 111,
+     "trades_with_event": 3,
+     "event_share": 0.02702702702702703,
+     "median_elapsed_hours": 22.166666666666668,
+     "event_minutes_total": 117,
+     "dropped_for_lack_of_controls_rung1": 2,
+     "mean_distinct_controls_rung1": 2.0,
+     "included": {
+      "rung1": 1,
+      "rung2": 1,
+      "rung3": 2,
+      "S1": 2,
+      "S2": 3,
+      "S3": 2,
+      "S4": 1
+     },
+     "decision_rung": null
+    },
+    "I2_day": {
+     "eligible_trades": 111,
+     "trades_with_event": 19,
+     "event_share": 0.17117117117117117,
+     "median_elapsed_hours": 1.8333333333333333,
+     "event_minutes_total": 2668,
+     "dropped_for_lack_of_controls_rung1": 5,
+     "mean_distinct_controls_rung1": 18.68421052631579,
+     "included": {
+      "rung1": 14,
+      "rung2": 14,
+      "rung3": 17,
+      "S1": 15,
+      "S2": 17,
+      "S3": 19,
+      "S4": 14
+     },
+     "decision_rung": null
+    },
+    "I2_day_realised": {
+     "eligible_trades": 111,
+     "trades_with_event": 27,
+     "event_share": 0.24324324324324326,
+     "median_elapsed_hours": 10.3,
+     "event_minutes_total": 4149,
+     "dropped_for_lack_of_controls_rung1": 10,
+     "mean_distinct_controls_rung1": 13.25925925925926,
+     "included": {
+      "rung1": 17,
+      "rung2": 14,
+      "rung3": 23,
+      "S1": 23,
+      "S2": 25,
+      "S3": 25,
+      "S4": 17
+     },
+     "decision_rung": null
+    },
+    "J_wick": {
+     "eligible_trades": 122,
+     "trades_with_event": 70,
+     "event_share": 0.5737704918032787,
+     "median_elapsed_hours": 11.483333333333333,
+     "event_minutes_total": 362,
+     "dropped_for_lack_of_controls_rung1": 19,
+     "mean_distinct_controls_rung1": 9.771428571428572,
+     "included": {
+      "rung1": 51,
+      "rung2": 44,
+      "rung3": 58,
+      "S1": 55,
+      "S2": 66,
+      "S3": 60,
+      "S4": 51,
+      "rvol_rung1": 50,
+      "rsession_rung1": 21,
+      "shared_rung1": 60
+     },
+     "decision_rung": "rung1",
+     "balance": {
+      "n": 70,
+      "event": {
+       "vr_median": 1.2357668316582033,
+       "mark_median": 0.5798753143731563,
+       "ord_q": [
+        17.0,
+        24.5,
+        34.5
+       ],
+       "session_share": {
+        "2": 0.38571428571428573,
+        "1": 0.24285714285714285,
+        "0": 0.2,
+        "3": 0.17142857142857143
+       },
+       "weekend_share": 0.2857142857142857
+      },
+      "controls": {
+       "vr_median": 0.7666321697761783,
+       "mark_median": 0.41914459391252284,
+       "ord_q": [
+        13.0,
+        18.0,
+        26.0
+       ],
+       "session_share": {
+        "0": 0.4425484324831343,
+        "2": 0.20743894079873013,
+        "1": 0.19874454345394857,
+        "3": 0.15126808326418703
+       },
+       "weekend_share": 0.3363036184566543
+      }
+     }
+    },
+    "J_nolevel": {
+     "eligible_trades": 122,
+     "trades_with_event": 88,
+     "event_share": 0.7213114754098361,
+     "median_elapsed_hours": 3.9833333333333334,
+     "event_minutes_total": 1145,
+     "dropped_for_lack_of_controls_rung1": 16,
+     "mean_distinct_controls_rung1": 18.420454545454547,
+     "included": {
+      "rung1": 72,
+      "rung2": 69,
+      "rung3": 80,
+      "S1": 75,
+      "S2": 82,
+      "S3": 79,
+      "S4": 72,
+      "rvol_rung1": 65,
+      "rsession_rung1": 44,
+      "shared_rung1": 86
+     },
+     "decision_rung": "rung1",
+     "balance": {
+      "n": 88,
+      "event": {
+       "vr_median": 0.8146299575763232,
+       "mark_median": 0.3513627261016205,
+       "ord_q": [
+        12.0,
+        17.0,
+        24.0
+       ],
+       "session_share": {
+        "0": 0.4659090909090909,
+        "2": 0.23863636363636365,
+        "3": 0.18181818181818182,
+        "1": 0.11363636363636363
+       },
+       "weekend_share": 0.3181818181818182
+      },
+      "controls": {
+       "vr_median": 0.6468578119315734,
+       "mark_median": 0.2565965145920326,
+       "ord_q": [
+        9.0,
+        14.0,
+        18.0
+       ],
+       "session_share": {
+        "0": 0.4142918781204413,
+        "3": 0.263442296233897,
+        "2": 0.21172772287399066,
+        "1": 0.11053810277167102
+       },
+       "weekend_share": 0.2976515789689959
+      }
+     }
+    },
+    "J_accept": {
+     "eligible_trades": 122,
+     "trades_with_event": 72,
+     "event_share": 0.5901639344262295,
+     "median_elapsed_hours": 7.233333333333333,
+     "event_minutes_total": 1019,
+     "dropped_for_lack_of_controls_rung1": 18,
+     "mean_distinct_controls_rung1": 11.277777777777779,
+     "included": {
+      "rung1": 54,
+      "rung2": 48,
+      "rung3": 63,
+      "S1": 58,
+      "S2": 68,
+      "S3": 64,
+      "S4": 54,
+      "rvol_rung1": 46,
+      "rsession_rung1": 27,
+      "shared_rung1": 66
+     },
+     "decision_rung": "rung1"
+    },
+    "J_shape": {
+     "eligible_trades": 122,
+     "trades_with_event": 92,
+     "event_share": 0.7540983606557377,
+     "median_elapsed_hours": 3.7333333333333334,
+     "event_minutes_total": 1507,
+     "dropped_for_lack_of_controls_rung1": 18,
+     "mean_distinct_controls_rung1": 18.02173913043478,
+     "included": {
+      "rung1": 74,
+      "rung2": 70,
+      "rung3": 86,
+      "S1": 80,
+      "S2": 87,
+      "S3": 82,
+      "S4": 74,
+      "rvol_rung1": 66,
+      "rsession_rung1": 43,
+      "shared_rung1": 90
+     },
+     "decision_rung": "rung1"
+    },
+    "J_wick_1m": {
+     "eligible_trades": 122,
+     "trades_with_event": 76,
+     "event_share": 0.6229508196721312,
+     "median_elapsed_hours": 5.991666666666667,
+     "event_minutes_total": 3317,
+     "dropped_for_lack_of_controls_rung1": 24,
+     "mean_distinct_controls_rung1": 10.131578947368421,
+     "included": {
+      "rung1": 52,
+      "rung2": 51,
+      "rung3": 62,
+      "S1": 55,
+      "S2": 66,
+      "S3": 68,
+      "S4": 52,
+      "rvol_rung1": 50,
+      "rsession_rung1": 24,
+      "shared_rung1": 64
+     },
+     "decision_rung": "rung1"
+    },
+    "J_nolevel_1m": {
+     "eligible_trades": 122,
+     "trades_with_event": 94,
+     "event_share": 0.7704918032786885,
+     "median_elapsed_hours": 2.325,
+     "event_minutes_total": 13005,
+     "dropped_for_lack_of_controls_rung1": 18,
+     "mean_distinct_controls_rung1": 17.26595744680851,
+     "included": {
+      "rung1": 76,
+      "rung2": 72,
+      "rung3": 86,
+      "S1": 78,
+      "S2": 86,
+      "S3": 83,
+      "S4": 76,
+      "rvol_rung1": 71,
+      "rsession_rung1": 48,
+      "shared_rung1": 93
+     },
+     "decision_rung": "rung1"
+    },
+    "_base_rates": {
+     "share_eligible_trades_crossing_IMP": 0.13513513513513514,
+     "share_eligible_trades_crossing_RV": 0.3333333333333333,
+     "armed_bars": 5758,
+     "armed_bars_with_rejection_shape": 1507,
+     "share_armed_with_shape": 0.2617228204237583,
+     "share_shape_at_level": 0.2402123424021234,
+     "mean_candidate_levels_per_trade": 4.959016393442623
+    },
+    "_power": {
+     "sd_cv_random_minute": 0.8756808889949887,
+     "mde_R": {
+      "I1_implied": 0.5629885849451698,
+      "I1_realised": 0.3584630178700436,
+      "I1_implied_only": 1.2588807464938143,
+      "I2_day": 0.5002284847251761,
+      "I2_day_realised": 0.4196269154979381,
+      "J_wick": 0.2606130739423723,
+      "J_nolevel": 0.2324362620766485,
+      "J_accept": 0.2569679563269857,
+      "J_shape": 0.22732714889986172,
+      "J_wick_1m": 0.25011424236258806,
+      "J_nolevel_1m": 0.22489577258920265
+     }
+    }
+   },
+   "short_squeeze": {
+    "I1_implied": {
+     "eligible_trades": 55,
+     "trades_with_event": 0,
+     "event_share": 0.0,
+     "included": {
+      "rung1": 0,
+      "rung2": 0,
+      "rung3": 0,
+      "S1": 0,
+      "S2": 0,
+      "S3": 0,
+      "S4": 0
+     },
+     "decision_rung": null
+    },
+    "I1_realised": {
+     "eligible_trades": 55,
+     "trades_with_event": 0,
+     "event_share": 0.0,
+     "included": {
+      "rung1": 0,
+      "rung2": 0,
+      "rung3": 0,
+      "S1": 0,
+      "S2": 0,
+      "S3": 0,
+      "S4": 0
+     },
+     "decision_rung": null
+    },
+    "I1_implied_only": {
+     "eligible_trades": 55,
+     "trades_with_event": 0,
+     "event_share": 0.0,
+     "included": {
+      "rung1": 0,
+      "rung2": 0,
+      "rung3": 0,
+      "S1": 0,
+      "S2": 0,
+      "S3": 0,
+      "S4": 0
+     },
+     "decision_rung": null
+    },
+    "I2_day": {
+     "eligible_trades": 55,
+     "trades_with_event": 0,
+     "event_share": 0.0,
+     "included": {
+      "rung1": 0,
+      "rung2": 0,
+      "rung3": 0,
+      "S1": 0,
+      "S2": 0,
+      "S3": 0,
+      "S4": 0
+     },
+     "decision_rung": null
+    },
+    "I2_day_realised": {
+     "eligible_trades": 55,
+     "trades_with_event": 0,
+     "event_share": 0.0,
+     "included": {
+      "rung1": 0,
+      "rung2": 0,
+      "rung3": 0,
+      "S1": 0,
+      "S2": 0,
+      "S3": 0,
+      "S4": 0
+     },
+     "decision_rung": null
+    },
+    "J_wick": {
+     "eligible_trades": 71,
+     "trades_with_event": 14,
+     "event_share": 0.19718309859154928,
+     "median_elapsed_hours": 2.4833333333333334,
+     "event_minutes_total": 31,
+     "dropped_for_lack_of_controls_rung1": 10,
+     "mean_distinct_controls_rung1": 2.0714285714285716,
+     "included": {
+      "rung1": 4,
+      "rung2": 1,
+      "rung3": 7,
+      "S1": 4,
+      "S2": 9,
+      "S3": 7,
+      "S4": 4
+     },
+     "decision_rung": null
+    },
+    "J_nolevel": {
+     "eligible_trades": 71,
+     "trades_with_event": 17,
+     "event_share": 0.23943661971830985,
+     "median_elapsed_hours": 1.9833333333333334,
+     "event_minutes_total": 65,
+     "dropped_for_lack_of_controls_rung1": 9,
+     "mean_distinct_controls_rung1": 2.6470588235294117,
+     "included": {
+      "rung1": 8,
+      "rung2": 0,
+      "rung3": 9,
+      "S1": 9,
+      "S2": 12,
+      "S3": 12,
+      "S4": 8
+     },
+     "decision_rung": null
+    },
+    "J_accept": {
+     "eligible_trades": 71,
+     "trades_with_event": 17,
+     "event_share": 0.23943661971830985,
+     "median_elapsed_hours": 1.2333333333333334,
+     "event_minutes_total": 45,
+     "dropped_for_lack_of_controls_rung1": 10,
+     "mean_distinct_controls_rung1": 1.9411764705882353,
+     "included": {
+      "rung1": 7,
+      "rung2": 0,
+      "rung3": 12,
+      "S1": 9,
+      "S2": 14,
+      "S3": 13,
+      "S4": 7
+     },
+     "decision_rung": null
+    },
+    "J_shape": {
+     "eligible_trades": 71,
+     "trades_with_event": 20,
+     "event_share": 0.28169014084507044,
+     "median_elapsed_hours": 1.4833333333333334,
+     "event_minutes_total": 96,
+     "dropped_for_lack_of_controls_rung1": 12,
+     "mean_distinct_controls_rung1": 2.65,
+     "included": {
+      "rung1": 8,
+      "rung2": 1,
+      "rung3": 14,
+      "S1": 8,
+      "S2": 15,
+      "S3": 12,
+      "S4": 8
+     },
+     "decision_rung": null
+    },
+    "J_wick_1m": {
+     "eligible_trades": 71,
+     "trades_with_event": 21,
+     "event_share": 0.29577464788732394,
+     "median_elapsed_hours": 1.0666666666666667,
+     "event_minutes_total": 196,
+     "dropped_for_lack_of_controls_rung1": 14,
+     "mean_distinct_controls_rung1": 2.0,
+     "included": {
+      "rung1": 7,
+      "rung2": 0,
+      "rung3": 13,
+      "S1": 7,
+      "S2": 14,
+      "S3": 16,
+      "S4": 7
+     },
+     "decision_rung": null
+    },
+    "J_nolevel_1m": {
+     "eligible_trades": 71,
+     "trades_with_event": 26,
+     "event_share": 0.36619718309859156,
+     "median_elapsed_hours": 1.1,
+     "event_minutes_total": 687,
+     "dropped_for_lack_of_controls_rung1": 16,
+     "mean_distinct_controls_rung1": 2.0,
+     "included": {
+      "rung1": 10,
+      "rung2": 0,
+      "rung3": 20,
+      "S1": 11,
+      "S2": 20,
+      "S3": 20,
+      "S4": 10
+     },
+     "decision_rung": null
+    },
+    "_base_rates": {
+     "share_eligible_trades_crossing_IMP": 0.0,
+     "share_eligible_trades_crossing_RV": 0.0,
+     "armed_bars": 295,
+     "armed_bars_with_rejection_shape": 96,
+     "share_armed_with_shape": 0.3254237288135593,
+     "share_shape_at_level": 0.3229166666666667,
+     "mean_candidate_levels_per_trade": 4.295774647887324
+    },
+    "_power": {
+     "sd_cv_random_minute": 1.0656676172719932,
+     "mde_R": {
+      "J_wick": 0.7091810106363381,
+      "J_nolevel": 0.643571280473746,
+      "J_accept": 0.643571280473746,
+      "J_shape": 0.5933434031764611,
+      "J_wick_1m": 0.5790438704434393,
+      "J_nolevel_1m": 0.5203965899588391
+     }
+    }
+   }
+  },
+  "family": [
+   "chento_BTC:I1_implied",
+   "chento_BTC:J_wick",
+   "squeeze_bull:J_wick"
+  ],
+  "decision_rungs": {
+   "chento_BTC:I1_implied": "rung3",
+   "chento_BTC:J_wick": "rung1",
+   "squeeze_bull:I1_implied": null,
+   "squeeze_bull:J_wick": "rung1"
+  },
+  "exit_minute_channel": {
+   "chento_BTC": {
+    "I1_implied": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "I1_realised": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "I1_implied_only": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "I2_day": {
+     "target": 1,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "I2_day_realised": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_wick": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_nolevel": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_accept": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_shape": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_wick_1m": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_nolevel_1m": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    }
+   },
+   "chento_ETH": {
+    "I1_implied": {
+     "target": 1,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "I1_realised": {
+     "target": 1,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "I1_implied_only": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "I2_day": {
+     "target": 2,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "I2_day_realised": {
+     "target": 1,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_wick": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_nolevel": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_accept": {
+     "target": 1,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_shape": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_wick_1m": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_nolevel_1m": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    }
+   },
+   "squeeze_bull": {
+    "I1_implied": {
+     "target": 7,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "I1_realised": {
+     "target": 4,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "I1_implied_only": {
+     "target": 1,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "I2_day": {
+     "target": 4,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "I2_day_realised": {
+     "target": 3,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_wick": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_nolevel": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_accept": {
+     "target": 1,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_shape": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_wick_1m": {
+     "target": 1,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_nolevel_1m": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    }
+   },
+   "short_squeeze": {
+    "I1_implied": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "I1_realised": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "I1_implied_only": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "I2_day": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "I2_day_realised": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_wick": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_nolevel": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_accept": {
+     "target": 1,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_shape": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_wick_1m": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    },
+    "J_nolevel_1m": {
+     "target": 0,
+     "stop": 0,
+     "time": 0,
+     "other": 0
+    }
+   }
+  },
+  "overlap": {
+   "chento_ETH:I1_implied": {
+    "event_trades": 77,
+    "overlapping_btc_event_trade": 33,
+    "non_overlap_tids": [
+     "ETH:1663289100:short",
+     "ETH:1663336800:short",
+     "ETH:1663361100:short",
+     "ETH:1666589400:long",
+     "ETH:1666708200:long",
+     "ETH:1666731600:long",
+     "ETH:1666755000:long",
+     "ETH:1673067600:long",
+     "ETH:1673261100:long",
+     "ETH:1695375000:short",
+     "ETH:1696940100:short",
+     "ETH:1704941100:long",
+     "ETH:1704964500:long",
+     "ETH:1704993300:long",
+     "ETH:1705014900:long",
+     "ETH:1705968000:short",
+     "ETH:1706013900:short",
+     "ETH:1706076900:short",
+     "ETH:1708878600:long",
+     "ETH:1708965900:long",
+     "ETH:1709009100:long",
+     "ETH:1709031600:long",
+     "ETH:1709055000:long",
+     "ETH:1712979000:short",
+     "ETH:1720745100:long",
+     "ETH:1720768500:long",
+     "ETH:1729745100:short",
+     "ETH:1729768500:short",
+     "ETH:1730484900:short",
+     "ETH:1741705200:short",
+     "ETH:1744055100:short",
+     "ETH:1748390400:long",
+     "ETH:1748412000:long",
+     "ETH:1749557700:long",
+     "ETH:1752139800:long",
+     "ETH:1752161400:long",
+     "ETH:1754729100:long",
+     "ETH:1762225200:short",
+     "ETH:1762254000:short",
+     "ETH:1764729000:long",
+     "ETH:1767405600:long",
+     "ETH:1778957100:short",
+     "ETH:1779579000:short",
+     "ETH:1784091600:long"
+    ]
+   },
+   "squeeze_bull:I1_implied": {
+    "event_trades": 15,
+    "overlapping_btc_event_trade": 2,
+    "non_overlap_tids": [
+     "BTC:1698426000",
+     "BTC:1717354800",
+     "BTC:1722110400",
+     "BTC:1746406800",
+     "BTC:1746590400",
+     "BTC:1747598400",
+     "BTC:1747746000",
+     "BTC:1747857600",
+     "BTC:1749157200",
+     "BTC:1753452000",
+     "BTC:1776798000",
+     "BTC:1777485600",
+     "BTC:1778677200"
+    ]
+   },
+   "chento_ETH:J_wick": {
+    "event_trades": 118,
+    "overlapping_btc_event_trade": 52,
+    "non_overlap_tids": [
+     "ETH:1626177600:short",
+     "ETH:1626755400:short",
+     "ETH:1630507500:long",
+     "ETH:1644059700:long",
+     "ETH:1646450100:short",
+     "ETH:1647668700:long",
+     "ETH:1655716500:long",
+     "ETH:1655738100:long",
+     "ETH:1655760600:long",
+     "ETH:1656130500:long",
+     "ETH:1658043000:long",
+     "ETH:1658064600:long",
+     "ETH:1658107800:long",
+     "ETH:1658151000:long",
+     "ETH:1658172600:long",
+     "ETH:1663289100:short",
+     "ETH:1663336800:short",
+     "ETH:1663361100:short",
+     "ETH:1666589400:long",
+     "ETH:1666708200:long",
+     "ETH:1666731600:long",
+     "ETH:1666755000:long",
+     "ETH:1673067600:long",
+     "ETH:1673099100:long",
+     "ETH:1673261100:long",
+     "ETH:1680681600:long",
+     "ETH:1685389500:long",
+     "ETH:1686046500:short",
+     "ETH:1689343200:long",
+     "ETH:1695375000:short",
+     "ETH:1696940100:short",
+     "ETH:1704941100:long",
+     "ETH:1704964500:long",
+     "ETH:1705014900:long",
+     "ETH:1705968000:short",
+     "ETH:1706013900:short",
+     "ETH:1706076900:short",
+     "ETH:1708878600:long",
+     "ETH:1708900200:long",
+     "ETH:1708965900:long",
+     "ETH:1709009100:long",
+     "ETH:1709031600:long",
+     "ETH:1709055000:long",
+     "ETH:1712979000:short",
+     "ETH:1720745100:long",
+     "ETH:1720768500:long",
+     "ETH:1729745100:short",
+     "ETH:1729768500:short",
+     "ETH:1730484900:short",
+     "ETH:1744055100:short",
+     "ETH:1748390400:long",
+     "ETH:1748412000:long",
+     "ETH:1749557700:long",
+     "ETH:1752139800:long",
+     "ETH:1752161400:long",
+     "ETH:1752188400:long",
+     "ETH:1752216300:long",
+     "ETH:1752265800:long",
+     "ETH:1754729100:long",
+     "ETH:1755061200:long",
+     "ETH:1755083700:long",
+     "ETH:1755106200:long",
+     "ETH:1762225200:short",
+     "ETH:1762254000:short",
+     "ETH:1778957100:short",
+     "ETH:1779579000:short"
+    ]
+   },
+   "squeeze_bull:J_wick": {
+    "event_trades": 70,
+    "overlapping_btc_event_trade": 14,
+    "non_overlap_tids": [
+     "BTC:1648224000",
+     "BTC:1648508400",
+     "BTC:1659405600",
+     "BTC:1659564000",
+     "BTC:1660089600",
+     "BTC:1660474800",
+     "BTC:1674057600",
+     "BTC:1674338400",
+     "BTC:1674604800",
+     "BTC:1674781200",
+     "BTC:1676066400",
+     "BTC:1676588400",
+     "BTC:1679428800",
+     "BTC:1679655600",
+     "BTC:1679774400",
+     "BTC:1680195600",
+     "BTC:1680462000",
+     "BTC:1680552000",
+     "BTC:1689033600",
+     "BTC:1698426000",
+     "BTC:1698807600",
+     "BTC:1699034400",
+     "BTC:1699545600",
+     "BTC:1700344800",
+     "BTC:1700607600",
+     "BTC:1702558800",
+     "BTC:1703102400",
+     "BTC:1703235600",
+     "BTC:1708448400",
+     "BTC:1708545600",
+     "BTC:1709247600",
+     "BTC:1711141200",
+     "BTC:1717354800",
+     "BTC:1722110400",
+     "BTC:1728514800",
+     "BTC:1730473200",
+     "BTC:1731938400",
+     "BTC:1732053600",
+     "BTC:1732201200",
+     "BTC:1732644000",
+     "BTC:1734033600",
+     "BTC:1734321600",
+     "BTC:1745856000",
+     "BTC:1746129600",
+     "BTC:1746406800",
+     "BTC:1746590400",
+     "BTC:1747598400",
+     "BTC:1747746000",
+     "BTC:1747857600",
+     "BTC:1748001600",
+     "BTC:1753452000",
+     "BTC:1776938400",
+     "BTC:1777485600",
+     "BTC:1778468400",
+     "BTC:1778677200",
+     "BTC:1788526800"
+    ]
+   }
+  },
+  "pass": true
+ },
+ "pass": true
+}

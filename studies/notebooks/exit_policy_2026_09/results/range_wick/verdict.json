@@ -1,0 +1,21 @@
+{
+ "created_utc": "2026-09-18T23:27:14+00:00",
+ "promoted": [],
+ "per_kind": {
+  "I1_implied": {
+   "informative_family_tests": [],
+   "replication": "not evaluated"
+  },
+  "J_wick": {
+   "informative_family_tests": [],
+   "replication": "not evaluated"
+  }
+ },
+ "classifications": {
+  "chento_BTC:I1_implied": "UNDETERMINED",
+  "chento_BTC:J_wick": "UNDETERMINED",
+  "squeeze_bull:J_wick": "UNDETERMINED"
+ },
+ "verdict": "NONE PROMOTED",
+ "permits": "nothing in production; a promotion permits only a separate stage 2 pre-registration"
+}

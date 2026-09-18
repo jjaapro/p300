@@ -17,6 +17,7 @@ Nothing in this folder changes a bot; any change a verdict permits is proposed t
 | A | **squeeze_bull top anatomy** (exploratory stage A) | **DONE 2026-09-15** | What happens just before a bounce reverses looks the same at the top as at earlier highs that kept going; nothing real-time marks the top. The bounce's extra return fades after 24 h without a new high (next 24 h +0.12 % vs +0.51 % while fresh) or once price is past 1.5 flush-sizes. Found on the way: the live OI feed has carried each hour's opening value since 2026-06-10, and **SJ-4250 fired only because of it** (−2.48 % stored vs −1.79 % at bar closes). Stage B candidate: exit after 24 h without a new high. [findings_top_anatomy.md](findings_top_anatomy.md) |
 | F | **spot-led versus perp-led extremes** (brainstorm item F; chento BTC + ETH, squeeze_bull, short_squeeze) | **CONCLUDED 2026-09-18** | **NONE PROMOTED.** A new high carried by perpetual takers and a rising premium while Binance spot lags carries no exit information. On chento BTC it points the other way (Δ +1.068 R, 95 % +0.100 to +2.034: holding after one of those highs beat holding at matched highs), on squeeze_bull it is flat (−0.036), and short_squeeze cannot be asked (5 event trades). The venue leg is what separates and its sign is the opposite of the hypothesis. [findings_spot_perp.md](findings_spot_perp.md) |
 | B | **liquidation map** (brainstorm candidate B; chento BTC + ETH, squeeze_bull) | **CONCLUDED 2026-09-18** | **`REPLICATED: up_touch, down_touch` — and it is worth nothing.** The map's cluster is touched inside 24 h more often than the level a control map built by the same code with the information removed puts out (BTC +2.87 and +2.20 pp, ETH +4.10 and +2.80 pp), but the turn is absent and the burst exit is null (chento BTC EV2 −0.26 R, placebo comparison +0.04 R). The §7 diagnostic settles the touch result: the actual cluster sits nearer price in 64.8 % of states, and matching the two levels on distance takes the difference to zero (≤ 20 bp: +0.10 pp BTC, +0.09 pp ETH). The map tells you to put your level nearer, not where price will go. Its estimated **amount** series is worth keeping (range-controlled ρ ≈ 0.56 against measured liquidations); its side split is not. No production change, no stage B. [findings_liqmap.md](findings_liqmap.md) |
+| R | **move vs implied range and the rejection-wick exit** (brainstorm rows I and J; chento BTC + ETH, squeeze_bull, short_squeeze) | **CONCLUDED 2026-09-19** | **NONE PROMOTED.** Neither the first minute at which a trade's favourable move exceeds one option-implied daily move (DVOL / √365) nor the first 15-minute bar that rejects from a causal level while ≥ 0.3 R in profit (Paladin's exit, his best variant) carries exit information: chento BTC Δ +0.26 R and +0.37 R, squeeze_bull +0.08 R, all UNDETERMINED with holding after the event paying *more* than at matched moments. The legs are empty: the implied scale scores above its realised-vol control (+0.22 R, 95 % +0.00 to +0.46, the wrong way) and the level adds nothing to the shape (−0.03 R). As exit arms both lose on every population (chento wick exit −0.55 R per trade; Paladin's +0.12 R does not transfer). One ETH implied-range line is negative (−0.92 R, p 0.048) against a positive BTC line on the same rule — recorded, not a result. Closes the brainstorm's last pair. [findings_range_wick.md](findings_range_wick.md) |
 | — | ADX, CARRY, R4 | out of scope | Their exits define the strategy (regime exits, the funding exit, the calendar window), per the item-11 census |
 
 Related evidence from outside this folder: the ORB study's exit arms (`studies/notebooks/orb_study/findings.md` §5) — on
@@ -103,6 +104,21 @@ Inputs outside the repository: the OKX re-validation's read-only snapshot
 Phase F needs the ORB study's 1-minute perpetual panels and about 600 MB of Binance archive zips (gitignored under
 `data/raw/spotperp/`). Rebuild with `spotperp_download.py`, then `spotperp_data.py build`, then `spotperp_run.py checks`.
 Rebuild the notebook with `build_notebook_spotperp.py`.
+
+## Stage R files (move vs implied range, rejection-wick exit)
+
+| File | Role |
+|---|---|
+| [PREREGISTRATION_RANGE_WICK.md](PREREGISTRATION_RANGE_WICK.md) | Events, the matched-placebo statistic, the decision rule and disclosure, frozen before any continuation value; amendment A1 |
+| `rangewick_lib.py` | DVOL and realised-vol scales, 15-minute bars, causal levels, the kinds, grids, the matched placebo, the exit-arm overlay |
+| `rangewick_run.py` | `checks` (P1–P8, the DVOL export), `freeze0`, `outcomes` (verdict written last; neither stage reruns) |
+| `tests/test_rangewick_events.py` | 24 fixtures: the scales at their day boundaries, every event threshold at both twins, bars, levels, the placebo rungs and exclusions, the overlay, the verdict refusals |
+| `results/range_wick/` | `dvol_daily.csv`, `preconditions.json`, `freeze_F0.json`, `events.csv.gz`, `trades.csv.gz`, `report.json`, `verdict.json` |
+| [07_range_wick_information.ipynb](07_range_wick_information.ipynb) | Executed review: recomputes every decision line from the saved events and checks it against the report |
+| [findings_range_wick.md](findings_range_wick.md) | Verdict and what it closes |
+
+Stage R reads the ORB perpetual panels, stage 1's populations and walks, and `deribit_dvol_daily` from prod.db
+(read-only, exported once at `checks`).
 
 ## Liquidation-map files (brainstorm candidate B)
 

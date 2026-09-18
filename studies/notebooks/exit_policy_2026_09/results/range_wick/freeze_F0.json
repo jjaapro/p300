@@ -1,0 +1,59 @@
+{
+ "freeze": "F0",
+ "created_utc": "2026-09-18T23:25:14+00:00",
+ "note": "Before any continuation value at an event. The checks computed event minutes, placebo control counts, base rates and the power line's random-minute sd only. No threshold was changed after reading them.",
+ "family": [
+  "chento_BTC:I1_implied",
+  "chento_BTC:J_wick",
+  "squeeze_bull:J_wick"
+ ],
+ "decision_rungs": {
+  "chento_BTC:I1_implied": "rung3",
+  "chento_BTC:J_wick": "rung1",
+  "squeeze_bull:I1_implied": null,
+  "squeeze_bull:J_wick": "rung1"
+ },
+ "descriptive": {
+  "chento_BTC": {
+   "I": false,
+   "J": false
+  },
+  "chento_ETH": {
+   "I": false,
+   "J": false
+  },
+  "squeeze_bull": {
+   "I": false,
+   "J": false
+  },
+  "short_squeeze": {
+   "I": false,
+   "J": false
+  }
+ },
+ "files": {
+  "PREREGISTRATION_RANGE_WICK.md": "90f7dfb4317fa2c0a82d80e1c59be22f77356d3575c1017ec96ca83f5d0638bc",
+  "rangewick_lib.py": "274cbc16f39969891ee720b987c8a53868ff7e527dbdb7ccbe3898b62148f0f5",
+  "rangewick_run.py": "a7808adf5a2e442a2b3beb4ea91f35c4d3fe72291e5c0317645488723f090b49",
+  "tests/test_rangewick_events.py": "f0ca3733fc68bf886231282ef25c9e6b583fa5bb3561e61f5a59efc02f583dd8",
+  "results/range_wick/preconditions.json": "1da37213ffe9e484ee7196dbaf98b68955a8ba6a56a4fae4cc8f24e9f1b97bc5",
+  "results/range_wick/dvol_daily.csv": "d49a16da1b27a245480fe3e19501d12deff41a3cef707036371ba19c3e23ca31"
+ },
+ "imported_freezes": {
+  "results/microstructure/freeze_F0.json": "2b3c9afce4d3c0a66d079b779cebe013bac493b95248fb755a9a872a85b74f64",
+  "results/spot_perp/freeze_F0.json": "2e0252b81dcf528ecc7509a36bb9757a4cf3aa860ca3e4339e8176c8a2f8e371"
+ },
+ "stage1_inputs_sha256": {
+  "perp_1m_BTC": "b085372e6b3f4c743cdbb2f766f67b8765a6f563b5268c3ad515b24f52606563",
+  "perp_1m_ETH": "77edf3f64467b2b130b6c75476895c61d347c87d6d6208270b7829ced35320e7",
+  "book_1m_BTC": "c57ec7f4a0b68c7515b000ce67a0db014e56f999f263ce35b6abb2766edd514f",
+  "book_1m_ETH": "0f55bb3396f879975a90fbb683333c62437bb60af487194f668d26e3df055a56",
+  "book_manifest": "bd1eff8c8682a6699bd1d3a523554d627b5f60e3c6759fdfda6885230590f913",
+  "chento_features_BTC": "c1762d577495b9b75a9fce3c97c227e1524e33b5cfdd5f1a43f55e946ba7f81c",
+  "chento_features_ETH": "83663d81fca7c309b4eb8656c315fb1e5812f704d658d402a7c35f2e66dcc646",
+  "squeeze_bull_ledger": "4010efdd1553d1e4e11e3d0ffe1044bc28576ea2e6a7c29b9f1efea54e656242",
+  "short_squeeze_replay": "5e9fd5453122119e5e6764289a80431c6a8d67ab1db6c8368fb614c1e44f6665",
+  "chento_A0_walks": "9e6d4255e46315e814462b3cd266fe341208bb3adf5874e197e2edd2ecfce64f",
+  "squeeze_bull_walks": "592e54eecfadf8ae10f937b4cdf4cdd8cd955d9c404c15b38ff73e1f56282a51"
+ }
+}

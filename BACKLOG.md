@@ -12,7 +12,8 @@ unexecuted notebook gets written (decided 2026-09-18: do not backfill notebooks 
 not policy. The aim is to replace each with an exit that knows the trade is wrong (an invalidation level, the way
 chento trades: "lose 80.4 and we see 77"), and to test partial take-profits alongside. Nothing changes until something
 measurably better exists: the exit-policy study has so far found nothing that beats the placeholders (chento arm
-INCONCLUSIVE, microstructure and spot/perp NONE PROMOTED), and that is the bar any replacement must clear.
+INCONCLUSIVE; microstructure, spot/perp, the implied range and the rejection wick NONE PROMOTED; partial
+take-profits KEEP_6R), and that is the bar any replacement must clear. The exhaustion brainstorm is exhausted.
 
 **Rules of this file.** Open work only; done and obsolete items are deleted in the commit that finishes them, and the
 history lives in git (last long-form version: `git show 5c72c8c:BACKLOG.md`). **Numbered items keep their numbers**
@@ -30,10 +31,8 @@ In order. Each step names its section.
 2. **Second assets** (§3.1) — CARRY on ETH is studied and waits on the operator (§2.4); SHORT_SQUEEZE on ETH needs
    its data built first. The validation audit's one-line conclusion was that the constraint is breadth, not edge.
 3. **Chento** (§2.2) — close decisions 14 and 15, then the replay baseline and the time-stop twin.
-4. **Move-vs-implied-range and the rejection-wick exit** (§3.2) — the two free on-disk tests the exhaustion brainstorm
-   left; the last of that family worth running.
-5. **R4** (§2.3) — after its first windows have traded; nothing to do before 2026-10-02 but watch.
-6. Then §3.3 onward, in the order listed there.
+4. **R4** (§2.3) — after its first windows have traded; nothing to do before 2026-10-02 but watch.
+5. Then §3.2 onward, in the order listed there.
 
 ## 1. Now
 
@@ -157,16 +156,10 @@ Pre-registered notebooks; every replay charges measured per-leg costs and fundin
    and its research engine exists only inside two never-executed notebooks (`short_squeeze_sessions/`), so that study
    is an engine build first. SQUEEZE_BULL on ETH has the same open-interest route and no live feed. Alts are blocked
    (the screener feed stopped 2026-05-23). The most direct lever on breadth.
-2. **The two free tests the exhaustion brainstorm left**, as exit-information tests with placebos:
-   **move vs implied range** (`deribit_dvol_daily`: clean daily OHLC BTC + ETH 2022-09-07 →, no gaps, stamped at the
-   UTC day open with the current day partial; a magnitude test has no level-distance confound, and its placebo is the
-   same rule with the implied range replaced by trailing realised volatility) and the **rejection-wick exit**
-   (Paladin's, +0.12 R on his entries, never tried on our sleeves; its levels must be causal). Everything else in that
-   brainstorm is dead or blocked — see §5 and §6.
-3. **ETH/BTC regime spread** (strong-bull days only) and hedged expressions of existing signals.
-4. **Shelf re-cost** under the no-stop style at measured costs (R4 windows, PDO), then fleet compounding through the
+2. **ETH/BTC regime spread** (strong-bull days only) and hedged expressions of existing signals.
+3. **Shelf re-cost** under the no-stop style at measured costs (R4 windows, PDO), then fleet compounding through the
    liquidation walk. Bar: net ≥ 2× the round trip in both halves.
-5. **Hawkes / liquidation cascades.** The hourly feed it needs is live since 2026-09-18 (it works on hourly counts, not
+4. **Hawkes / liquidation cascades.** The hourly feed it needs is live since 2026-09-18 (it works on hourly counts, not
    prints), so its clock runs without the collector. Stored hourly history is 2026-02-25 → now, less the lost
    2026-05-24 → 06-21. Re-date its estimate against that before picking it up; the old "≥ 2028-06" assumed no feed.
 
@@ -268,7 +261,9 @@ smallest-first sizing with a circuit breaker.
   two Deribit `is_liquid()` constants (its item 1) are a two-line deletion that stops discarding 49 % / 61 % of option
   OI at every snapshot — do it when anything touches `deribit.py`.
 - Do not re-propose: the estimated liquidation map, spot- vs perp-led highs as an exit, absorption in any form, FVG /
-  LVN magnets, the OKX gate, calendar cells, ORB, Coinbase premium, delta-neutral, basis carry, the VRP strangle.
+  LVN magnets, the OKX gate, calendar cells, ORB, Coinbase premium, delta-neutral, basis carry, the VRP strangle,
+  the implied-range exit (any multiplier, scale or anchor) and the rejection wick at levels (any bar size or level
+  set) — exit-policy stage R, 2026-09-19, the exhaustion brainstorm's last pair.
 
 **Operations hygiene** — batch when convenient; none affects a strategy result.
 19. Live schema drift from the 2026-05-18 PK rebuild: `trades` lost NOT NULL and DEFAULTs; `variants` has no PRIMARY
