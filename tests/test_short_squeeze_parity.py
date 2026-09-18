@@ -41,7 +41,7 @@ SESSION_HOURS = range(7, 21)   # london(7-14) + ny(14-21)
 def _load_universe(days: int = 220) -> pd.DataFrame:
     """Notebook-style universe: London/NY 15m bars with perp_cvd/divergence
     computed the notebook's way (base volumes, spot reindexed onto perp)."""
-    con = sqlite3.connect(str(_db_mod.PROD_DB))
+    con = sqlite3.connect(f"file:{_db_mod.PROD_DB}?mode=ro", uri=True)   # a test never writes prod.db
     lo = int((datetime.now(timezone.utc) - timedelta(days=days)).timestamp())
     perp = pd.read_sql(
         "SELECT timestamp, open, high, low, close, volume_buy, volume_sell "

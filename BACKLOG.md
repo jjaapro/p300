@@ -277,7 +277,8 @@ smallest-first sizing with a circuit breaker.
     KEY (two simultaneous starts of one bot can register a duplicate); `trade_adjustments` and `ai_quant_decisions`
     lost DEFAULTs. `tests/test_live_schema_constraints.py` pins each; a fix updates its pin.
 21. 288 orphan `trade_adjustments` rows (ids 69–356). Archive, delete or leave, and record it.
-- 27 tests open prod.db read-write for SELECTs; the dry-run probe covers only `botlib.point_at_db_copy`; the chento
+- Tests still reach prod.db read-write through library helpers (`botlib`, `monitor`); the test-side opens are
+  read-only since 2026-09-19, and a `conftest` connect guard like `okx_gate_revalidation`'s would settle it; the dry-run probe covers only `botlib.point_at_db_copy`; the chento
   fixture hash alarm fires on B-tree page layout; `strategy_health`'s 2.5× gross-headroom default reads negative for
   chento; cadences with no owner (weekly `strategy_health`, monthly attribution, periodic memory audit); MFE/MAE per
   closed trade (confirm `btc_1m` retention first); `.env` still names the archived AI_QUANT variables.
