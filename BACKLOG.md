@@ -28,9 +28,9 @@ In order. Each step names its section.
 
 1. **Squeeze pair** (§2.1) — SJ-4250 voided (decision 8, 2026-09-19); the short_squeeze exit arm and stage B if
    wanted. Its n = 20 / 30 gates are the nearest real verdict in the fleet.
-2. **Second assets** (§3.1) — CARRY's ETH paper twin shipped 2026-09-19 (§2.4); SHORT_SQUEEZE on ETH is killed;
-   SQUEEZE_BULL on ETH is the one left, and its data route now exists. The validation audit's one-line
-   conclusion was that the constraint is breadth, not edge.
+2. **Second assets** (§3.1) — done: CARRY's ETH paper twin runs since 2026-09-19 (§2.4); SHORT_SQUEEZE and
+   SQUEEZE_BULL on ETH are killed. The validation audit's one-line conclusion was that the constraint is breadth,
+   not edge; the two rules that could be twinned from disk do not transfer, and alts stay blocked.
 3. **Chento** (§2.2) — the replay baseline and the time-stop twin, built with the operator.
 4. **R4** (§2.3) — after its first windows have traded; nothing to do before 2026-10-02 but watch.
 5. Then §3.2 onward, in the order listed there.
@@ -130,9 +130,11 @@ Pre-registered notebooks; every replay charges measured per-leg costs and fundin
    +0.18 R). The five tables the sleeve reads are now built from on-disk panels for any asset the panels cover
    (`ss_eth_lib.tables_from_panels`: 15-minute perp and spot bar for bar what prod holds, hourly bars, close-of-hour
    open interest from the 5-minute archive), faithful to prod for BTC (Jaccard 0.986, fills identical), and the
-   execution study's port of the sleeve ran on them unchanged. **SQUEEZE_BULL on ETH** is the one second-asset study
-   left: the same open-interest route, the revalidation study's hourly engine, and no live ETH feed. Alts are blocked
-   (the screener feed stopped 2026-05-23).
+   execution study's port of the sleeve ran on them unchanged. **SQUEEZE_BULL on ETH: KILL** in substance
+   (`studies/notebooks/squeeze_bull_eth_2026_09/`, 2026-09-19, pre-registered: 174 bull-gated fires, mean −0.16 R,
+   every year and every regime negative; the frozen fidelity gate's 1e-9 replay tolerance failed on one shared BTC
+   fire of 115 — a seven-hour hole in the 1-minute panel — so the formal label is DESCRIPTIVE and the findings say
+   so). No ETH open-interest feed is needed. Alts are blocked (the screener feed stopped 2026-05-23).
 2. **Shelf re-cost** under the no-stop style at measured costs (R4 windows, PDO), then fleet compounding through the
    liquidation walk. Bar: net ≥ 2× the round trip in both halves.
 3. **Hawkes / liquidation cascades.** The hourly feed it needs is live since 2026-09-18 (it works on hourly counts, not
@@ -245,7 +247,9 @@ smallest-first sizing with a circuit breaker.
   state as a sleeve and cross-asset hedging of chento's trades (`studies/notebooks/eth_btc_spread_2026_09/`,
   2026-09-19: the spread is one year, 2025, at a 63 % drawdown; a hedge in the other asset removes the market move
   chento's timing is paid in, −1.04 R and −0.59 R per trade); SHORT_SQUEEZE on ETH at the shipped rule
-  (`short_squeeze_eth_2026_09/`, 2026-09-19: net +0.14 R, second half negative, the edge is 2022).
+  (`short_squeeze_eth_2026_09/`, 2026-09-19: net +0.14 R, second half negative, the edge is 2022); SQUEEZE_BULL on
+  ETH at the shipped rule (`squeeze_bull_eth_2026_09/`, 2026-09-19: −0.16 R per fire on 174 bull-gated fires, the
+  stop wins 60 : 40, no regime separates) — an ETH flush is a different mechanism statement, not a twin.
 - The ETH/BTC regime thesis, for the record: on strong_bull days long ETH beat long BTC over 2020-26 (+190.7 % vs
   +93.1 % net of 10 bp and funding), but as a relative position it gives back more than it protects, and even the
   long is a 2020-and-2025 story (2021 −5.5 %, 2024 +2.6 %).

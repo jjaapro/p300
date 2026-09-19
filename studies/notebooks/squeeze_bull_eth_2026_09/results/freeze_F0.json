@@ -1,0 +1,21 @@
+{
+ "freeze": "F0",
+ "created_utc": "2026-09-19T08:27:16+00:00",
+ "note": "Before any ETH number. The README's engine, costs, gates and clauses are fixed here.",
+ "files": {
+  "README.md": "9d57edd37222cdff6881cb3c9988114ce551d5fc9e10a5ff000669bf00f8e800",
+  "sqb_eth_lib.py": "b7d278a9d0804b110b1d172b377962cbe5931ca14e365fc02473c8319b199174",
+  "run_sqb_eth.py": "a0c1d6e677cafe6988c48909297702ced00fefe5417781143989da58df14dceb",
+  "tests/test_sqb_eth.py": "37eb8b2e6c6f288a0207ee5aa84519c861cffc6aca111713c97a4b7473654377"
+ },
+ "data": {
+  "perp_BTC": "b085372e6b3f4c743cdbb2f766f67b8765a6f563b5268c3ad515b24f52606563",
+  "perp_ETH": "77edf3f64467b2b130b6c75476895c61d347c87d6d6208270b7829ced35320e7",
+  "metrics_BTC": "1db73c137568580f8842e03e9197a38f33d4b63066a03d12e82704a7b2cdff5d",
+  "metrics_ETH": "4aa257bcad5ef49ca9ad31750e6675fd696d0677e59783eabfb26780d0c8cf56",
+  "reference_ledger": "4010efdd1553d1e4e11e3d0ffe1044bc28576ea2e6a7c29b9f1efea54e656242",
+  "june_engine": "e64a41e5a665ed8d3cabf81f53d2bc473b09603e82f2f2914a301d7c406b79b1",
+  "revalidation_lib": "50518b3e7e0f0ded927b7e6d1af47aeded68be2f3736fe8f7e1518029d362996",
+  "builders": "efddf1327db75ed89a5358f9437cd21cb71027fec32c2ea326ee94657627dfba"
+ }
+}
