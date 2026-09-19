@@ -417,3 +417,108 @@ def test_sleeve_config_matches_the_calibration_logs():
     assert (ss.stop_policy, ss.nostop_policy) == ("P0_shipped", "P1_time_only")
     assert (ss.tif_h, ss.bar_step, ss.bar_key) == (6, 900, "bar_ts_utc")
     assert ss.retire_sleeve_if_both_negative and not sb.retire_sleeve_if_both_negative
+
+
+# ── 2026-09-19: the voided trade, D4's label, quote timing ─────────────────
+
+def _ledger_db(tmp_path, rows):
+    """A prod-shaped trades / trade_adjustments pair with the columns load_live reads."""
+    import sqlite3
+    path = tmp_path / "prod.db"
+    con = sqlite3.connect(str(path))
+    con.execute("CREATE TABLE trades (id TEXT PRIMARY KEY, strategy_variant TEXT, strategy TEXT, status TEXT, "
+                "actual_entry_time TEXT, actual_exit_time TEXT, entry_price REAL, exit_price REAL, size_usdt REAL, "
+                "current_size_usdt REAL, leverage REAL, pnl_usdt REAL, pnl_pct REAL, unique_key TEXT, notes TEXT)")
+    con.execute("CREATE TABLE trade_adjustments (trade_id TEXT, seq INTEGER, event_type TEXT, fee_usdt REAL)")
+    for r in rows:
+        con.execute("INSERT INTO trades VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)", r)
+    con.commit()
+    con.row_factory = sqlite3.Row
+    return con
+
+
+def test_voided_trades_are_struck_from_the_live_ledger(tmp_path):
+    """SJ-4250 fired only on the mis-stamped open-interest table (item 30) and was voided by the operator
+    (decision 8, 2026-09-19): it leaves the live ledger before anything is counted, and the report names it."""
+    cfg = recut_lib.SLEEVES["squeeze_bull"]
+    notes = ('{"trigger": "squeeze_bull_oi_flush", "bar_ts": 1789146000, "_stop_price": 75944.022}'
+             "\nSQUEEZE_BULL_EXIT: time_stop; fees=7bp RT, slip=0bp RT, funding=-0.032%")
+    con = _ledger_db(tmp_path, [
+        ("SJ-4250", cfg.stop_id, "SQUEEZE_BULL", "closed", "2026-09-11T18:00:31+00:00",
+         "2026-09-13T17:00:20+00:00", 77493.9, 77276.14, 5000.0, 5000.0, 0.5, -19.16, -0.38, "k1", notes),
+        ("SJ-9001", cfg.stop_id, "SQUEEZE_BULL", "closed", "2026-10-01T18:00:31+00:00",
+         "2026-10-03T17:00:20+00:00", 80000.0, 80800.0, 5000.0, 5000.0, 0.5, 45.0, 0.9, "k2",
+         notes.replace("1789146000", "1790874000"))])
+    live = recut_lib.load_live(cfg, AS_OF, con=con)
+    assert list(live.id) == ["SJ-9001"]
+    assert live.attrs["voided"] == {"SJ-4250": recut_lib.VOIDED_TRADES["squeeze_bull"]["SJ-4250"]}
+    assert "item 30" in live.attrs["voided"]["SJ-4250"]
+    assert recut_lib.VOIDED_TRADES["short_squeeze"] == {}
+
+
+def test_d4_names_the_variant_that_diverged():
+    """Before 2026-09-19 every D4 trip read DISABLE_NOSTOP, even SJ-4250's, a stop-variant trade."""
+    def div_for(*sides):
+        return pd.DataFrame([dict(id=f"SJ-{s}", side=s, bar_ts=BAR0, r_live=0.1, r_replay=0.3, diff_R=-0.2,
+                                  funding_R=0.0, booked_cost_R=0.0, residual_R=-0.2, live_exit="time_stop",
+                                  replay_exit="tif", exit_matches=True) for s in sides])
+    assert _decide("squeeze_bull", [], div=div_for("stop")).outcome == "DISABLE_STOP"
+    assert _decide("squeeze_bull", [], div=div_for("nostop")).outcome == "DISABLE_NOSTOP"
+    assert _decide("squeeze_bull", [], div=div_for("stop", "nostop")).outcome == "DISABLE_BOTH"
+    # at the gate too, and D4 outranks a promotion but not the other DISABLE clauses
+    v = _decide("squeeze_bull", [(0.5, 0.6)] * 20, div=div_for("stop"))
+    assert _clause(v, "D4_divergence").verdict == "FAIL" and v.outcome == "DISABLE_STOP"
+    v = _decide("squeeze_bull", [(0.5, -0.1)] * 20, div=div_for("stop"))
+    assert v.outcome == "DISABLE_NOSTOP"                       # D1 fails as well: the no-stop variant goes
+
+
+def _quote_pair(gap_bars: float, live_exit: str = "time_stop", replay_kind: str = "tif"):
+    """One closed stop-variant trade whose only difference from its replay is the 60 s poll: live entered 0.1
+    above the replay's fill and exited 0.2 above its exit (a long, 2 % stop, entry 100)."""
+    cfg = recut_lib.SLEEVES["squeeze_bull"]
+    risk = 0.02
+    booked_bp = 7.0
+    price_r_live = (101.0 - 100.0) / (100.0 * risk)
+    r_live_net = price_r_live - (booked_bp / 1e4) / risk
+    price_r_rep = (100.8 - 99.9) / (99.9 * risk)
+    r_rep_net = price_r_rep - (recut_lib.sl.cost_bp(cfg.sleeve) / 1e4) / risk
+    exit_ts = BAR0 + 48 * 3600
+    live = pd.DataFrame([dict(
+        id="SJ-1", side="stop", still_open=False, bar_ts=BAR0, r_live_net=r_live_net, risk_pct=risk,
+        entry_price=100.0, exit_price=101.0, size_usdt=5000.0, booked_bp=booked_bp,
+        entry_time=datetime.fromtimestamp(BAR0 + 3600, tz=timezone.utc).isoformat(),
+        exit_time=datetime.fromtimestamp(exit_ts, tz=timezone.utc).isoformat(),
+        exit_reason=live_exit, backstop_exit=False)])
+    rep = pd.DataFrame([dict(bar_ts=BAR0, side="stop", r_net=r_rep_net, kind=replay_kind,
+                             fill_spot=99.9, exit_spot=100.8,
+                             exit_ts=int(exit_ts - gap_bars * cfg.bar_step))])
+    return cfg, live, rep
+
+
+def test_divergence_nets_quote_timing_when_the_exits_match_within_two_bars(monkeypatch):
+    from strategies.support import funding
+    monkeypatch.setattr(funding, "accrued_pct", lambda *a: 0.0)
+    cfg, live, rep = _quote_pair(gap_bars=1)
+    div = recut_lib.divergence(cfg, live, rep)
+    row = div.iloc[0]
+    assert row.quote_drift_R == pytest.approx(((101.0 - 100.8) - (100.0 - 99.9)) / (100.0 * 0.02))   # +0.05 R
+    assert row.exit_gap_bars == pytest.approx(1.0)
+    assert abs(row.residual_R) < 0.002                          # the poll explained the whole difference
+    assert _clause(recut_lib.decide(cfg, live, _union(live), div, AS_OF, 20), "D4_divergence").verdict == "PASS"
+
+
+def test_quote_timing_is_not_netted_across_a_different_exit_or_a_late_exit(monkeypatch):
+    from strategies.support import funding
+    monkeypatch.setattr(funding, "accrued_pct", lambda *a: 0.0)
+    cfg, live, rep = _quote_pair(gap_bars=3)                   # exits three bars apart: a fault, not the poll
+    row = recut_lib.divergence(cfg, live, rep).iloc[0]
+    assert row.quote_drift_R == 0.0 and row.exit_gap_bars == pytest.approx(3.0)
+    assert abs(row.residual_R - 0.05) < 0.002
+    cfg, live, rep = _quote_pair(gap_bars=0, live_exit="stop_hit", replay_kind="tif")
+    row = recut_lib.divergence(cfg, live, rep).iloc[0]
+    assert row.quote_drift_R == 0.0 and not row.exit_matches
+    cfg, live, rep = _quote_pair(gap_bars=1)
+    rep = rep.drop(columns=["exit_ts", "fill_spot", "exit_spot"])   # a replay without prices: no netting, no error
+    row = recut_lib.divergence(cfg, live, rep).iloc[0]
+    assert row.quote_drift_R == 0.0 and row.exit_gap_bars is None
+

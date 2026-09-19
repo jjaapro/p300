@@ -48,8 +48,11 @@ def report(cfg: R.SleeveCfg, live, union, rep, div, verdict) -> str:
     n_stop = int((live.side == "stop").sum()) if len(live) else 0
     n_nost = int((live.side == "nostop").sum()) if len(live) else 0
     n_open = int(live.still_open.sum()) if len(live) else 0
+    voided = getattr(live, "attrs", {}).get("voided", {})
     L += [f"  LIVE LEDGER      stop variant {n_stop:>3}      "
-          f"no-stop variant {n_nost:>3}      still open {n_open:>3}",
+          f"no-stop variant {n_nost:>3}      still open {n_open:>3}"
+          + (f"      voided {len(voided)}" if voided else ""),
+          *[f"  VOIDED           {k}: {why}" for k, why in voided.items()],
           f"  UNION OF FIRES   {len(union):>3} trigger bars"
           + (f"   ({int((union.klass == 'BOTH').sum())} BOTH, "
              f"{int((union.klass == 'STOP_ONLY').sum())} stop-only, "
@@ -150,7 +153,8 @@ def run_one(key: str, as_of: datetime, n_gate: int | None,
              clauses=[c.__dict__ for c in v.clauses],
              n_live_stop=int((live.side == "stop").sum()) if len(live) else 0,
              n_live_nostop=int((live.side == "nostop").sum()) if len(live) else 0,
-             n_union=len(union), n_reconstructed_fires=len(fires)),
+             n_union=len(union), n_reconstructed_fires=len(fires),
+             voided=getattr(live, "attrs", {}).get("voided", {})),
         indent=1, default=str), encoding="utf-8")
     if len(union):
         union.to_csv(R.RESULTS / f"union_{key}_{stamp}.csv", index=False)

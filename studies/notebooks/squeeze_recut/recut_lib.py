@@ -56,6 +56,21 @@ N_TRIALS = 30
 # fires by > 0.05 R on any trade".
 DIVERGENCE_R = 0.05
 
+# Live trades struck from the record by the operator, per sleeve: {trade id: reason}. A voided trade is not a fire
+# of the rule — load_live drops it before the union, the pairing, the divergence and every clause, and names it in
+# the report. SJ-4250 fired only on the open-interest table's hour-start stamp (item 30); on the corrected table its
+# bar does not fire (decision 8, 2026-09-19).
+VOIDED_TRADES: dict[str, dict[str, str]] = {
+    "squeeze_bull": {"SJ-4250": "fired only on the mis-stamped open-interest table (item 30); "
+                                "voided by the operator 2026-09-19 (decision 8)"},
+    "short_squeeze": {},
+}
+
+# Quote timing: the bot enters and exits at 60 s tick quotes, the replay at bar closes and level fills. When the
+# live and replayed exits are the same kind and land within this many signal bars of each other, the price
+# difference at entry and at exit is timing, not a fault, and divergence() nets it (since 2026-09-19).
+QUOTE_DRIFT_MAX_BARS = 2
+
 # Float tolerance for threshold comparisons. Thresholds are stated to two
 # decimals; without this, 0.30 - 0.40 == -0.10000000000000003 turns a clause
 # the doc calls "not a breach" into a DISABLE.
@@ -241,6 +256,11 @@ def load_live(cfg: SleeveCfg, as_of: datetime,
     df = pd.DataFrame(recs)
     if not df.empty:
         df = df[df.entry_time <= as_of.isoformat()].reset_index(drop=True)
+    voided = VOIDED_TRADES.get(cfg.key, {})
+    present = {k: v for k, v in voided.items() if not df.empty and k in set(df.id)}
+    if present:
+        df = df[~df.id.isin(present)].reset_index(drop=True)
+    df.attrs["voided"] = present
     return df
 
 
@@ -431,7 +451,10 @@ def replay(cfg: SleeveCfg, union: pd.DataFrame, as_of: datetime,
                              r_net=t["r"] - (sl.cost_bp(cfg.sleeve) / 1e4) / t["risk_pct"],
                              still_open=still_open,
                              i_fill=t["i_fill"], i_exit=t["i_exit"],
-                             fill_spot=t["fill_spot"], exit_spot=t["exit_spot"]))
+                             fill_spot=t["fill_spot"], exit_spot=t["exit_spot"],
+                             exit_ts=(int(path.ts[t["i_exit"]])
+                                      if t.get("i_exit") is not None and 0 <= t["i_exit"] < len(path.ts)
+                                      else None)))
     return pd.DataFrame(rows)
 
 
@@ -494,13 +517,33 @@ def divergence(cfg: SleeveCfg, live: pd.DataFrame,
         cost_r = 0.0
         if np.isfinite(booked) and lv.risk_pct:
             cost_r = -((booked - sl.cost_bp(cfg.sleeve)) / 1e4) / lv.risk_pct
-        residual = d - (funding_r if np.isfinite(funding_r) else 0.0) - cost_r
+        # Quote timing (2026-09-19): when both exits are the same kind and within QUOTE_DRIFT_MAX_BARS of
+        # each other, the live-vs-replay price difference at entry and at exit is the 60 s poll, not a
+        # fault. SJ-4250's 0.0555 R "divergence" was this: tick quotes against bar closes on a 2 % stop.
+        quote_r, exit_gap_bars = 0.0, None
+        same_kind = _norm_exit(lv.exit_reason) == rp.kind
+        rp_exit_ts, rp_fill, rp_exit = (getattr(rp, "exit_ts", None), getattr(rp, "fill_spot", None),
+                                        getattr(rp, "exit_spot", None))
+        try:
+            if (same_kind and rp_exit_ts is not None and lv.exit_time and lv.exit_price is not None
+                    and rp_fill is not None and rp_exit is not None and lv.risk_pct and lv.entry_price
+                    and np.isfinite(float(rp_fill)) and np.isfinite(float(rp_exit))):
+                lv_exit_ts = int(datetime.fromisoformat(lv.exit_time).timestamp())
+                exit_gap_bars = abs(lv_exit_ts - int(rp_exit_ts)) / cfg.bar_step
+                if exit_gap_bars <= QUOTE_DRIFT_MAX_BARS:
+                    denom = float(lv.entry_price) * float(lv.risk_pct)
+                    quote_r = ((float(lv.exit_price) - float(rp_exit))
+                               - (float(lv.entry_price) - float(rp_fill))) / denom
+        except (TypeError, ValueError):
+            quote_r, exit_gap_bars = 0.0, None
+        residual = d - (funding_r if np.isfinite(funding_r) else 0.0) - cost_r - quote_r
         out.append(dict(id=lv.id, side=lv.side, bar_ts=int(lv.bar_ts),
                         r_live=lv.r_live_net, r_replay=rp.r_net, diff_R=d,
-                        funding_R=funding_r, booked_cost_R=cost_r,
+                        funding_R=funding_r, booked_cost_R=cost_r, quote_drift_R=quote_r,
+                        exit_gap_bars=exit_gap_bars,
                         residual_R=residual, backstop_exit=lv.backstop_exit,
                         live_exit=lv.exit_reason, replay_exit=rp.kind,
-                        exit_matches=(_norm_exit(lv.exit_reason) == rp.kind)))
+                        exit_matches=same_kind))
     return pd.DataFrame(out)
 
 
@@ -555,6 +598,17 @@ def paired_frame(live: pd.DataFrame, union: pd.DataFrame) -> pd.DataFrame:
     return wide.dropna(subset=["stop", "nostop"])
 
 
+def _d4_outcome(div: pd.DataFrame) -> str:
+    """D4 names the variant whose trade diverged (since 2026-09-19; before, every trip read DISABLE_NOSTOP
+    whichever variant's trade it was)."""
+    bad = set(div.loc[div.residual_R.abs() > DIVERGENCE_R, "side"]) if not div.empty else set()
+    if bad == {"stop"}:
+        return "DISABLE_STOP"
+    if bad == {"stop", "nostop"}:
+        return "DISABLE_BOTH"
+    return "DISABLE_NOSTOP"
+
+
 def decide(cfg: SleeveCfg, live: pd.DataFrame, union: pd.DataFrame,
            div: pd.DataFrame, as_of: datetime, n_gate: int) -> Verdict:
     paired = paired_frame(live, union)
@@ -582,7 +636,7 @@ def decide(cfg: SleeveCfg, live: pd.DataFrame, union: pd.DataFrame,
             f"{n_gate - n_paired} more needed. Thresholds are NOT evaluated "
             f"early — see {cfg.doc}.")
         if worst_resid is not None and worst_resid > DIVERGENCE_R:
-            v.outcome = "DISABLE_NOSTOP"
+            v.outcome = _d4_outcome(div)
             v.notes.append("but the any-time divergence clause has tripped.")
         return v
 
@@ -642,8 +696,10 @@ def decide(cfg: SleeveCfg, live: pd.DataFrame, union: pd.DataFrame,
     if any(c.name == "D7_retire_sleeve" for c in fails):
         v.outcome = "RETIRE_SLEEVE"
     elif any(c.name in ("D1_nostop_mean", "D2_paired_gap", "D3_worst_trade",
-                        "D4_divergence", "D5_dsr") for c in fails):
+                        "D5_dsr") for c in fails):
         v.outcome = "DISABLE_NOSTOP"
+    elif any(c.name == "D4_divergence" for c in fails):
+        v.outcome = _d4_outcome(div)
     elif any(c.name == "D6_promote" and c.verdict == "PASS" for c in v.clauses):
         v.outcome = "CONTINUE_AND_CONSIDER_PROMOTION"
     else:
