@@ -28,8 +28,8 @@ In order. Each step names its section.
 
 1. **Squeeze pair** (§2.1) — decision 8 and the D4 trip are the operator's; then the short_squeeze exit arm and
    stage B if wanted. Its n = 20 / 30 gates are the nearest real verdict in the fleet.
-2. **Second assets** (§3.1) — CARRY on ETH is studied and waits on the operator (§2.4); SHORT_SQUEEZE on ETH is
-   killed; SQUEEZE_BULL on ETH is the one left, and its data route now exists. The validation audit's one-line
+2. **Second assets** (§3.1) — CARRY's ETH paper twin shipped 2026-09-19 (§2.4); SHORT_SQUEEZE on ETH is killed;
+   SQUEEZE_BULL on ETH is the one left, and its data route now exists. The validation audit's one-line
    conclusion was that the constraint is breadth, not edge.
 3. **Chento** (§2.2) — close decisions 14 and 15, then the replay baseline and the time-stop twin.
 4. **R4** (§2.3) — after its first windows have traded; nothing to do before 2026-10-02 but watch.
@@ -39,9 +39,8 @@ In order. Each step names its section.
 
 - **Watch r4's first enabled window**, Fri 2026-10-02 04:00 UTC (R4_ETH V1: Tue 2026-10-06 20:00). r4 has never
   traded; confirm the first open and its scheduled close.
-- **Restart the bots** (`start_fleet.ps1`) to pick up the 2026-09-19 runner changes: the entry-path exit guard
-  (item 23) and the tick log. Until then every bot process runs the old code, and the fire count starts at the
-  restart, not at the commit.
+- **Start `carry_eth`** (`.\start_fleet.ps1 -Units carry_eth`): the ETH paper twin of CARRY, shipped 2026-09-19 on
+  the operator's go-ahead; nothing starts it until then. Its first decision comes at the next UTC day boundary.
 
 ## 2. Existing strategies
 
@@ -146,7 +145,7 @@ ADX on ETH was killed (Sharpe 0.72, corr 0.47 with BTC ADX). CARRY's 30-day cumu
 
 Pre-registered notebooks; every replay charges measured per-leg costs and funding. Order:
 
-1. **Second assets.** CARRY on ETH is studied — RECOMMEND, waiting on the operator (§2.4). **SHORT_SQUEEZE on ETH:
+1. **Second assets.** CARRY's ETH paper twin shipped 2026-09-19 (§2.4). **SHORT_SQUEEZE on ETH:
    KILL** (`studies/notebooks/short_squeeze_eth_2026_09/`, 2026-09-19, pre-registered: 70 triggers, net +0.14 R at
    10 bp with the second half −0.09 R, DSR 0.75; the edge is 2022, and BTC itself would fail the same bar at net
    +0.18 R). The five tables the sleeve reads are now built from on-disk panels for any asset the panels cover

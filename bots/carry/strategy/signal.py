@@ -18,7 +18,12 @@ This is paper-ONLY. No exchange calls. Daily idempotent via a trade-exists-
 per-day check.
 
 Daily funding is the sum of 3 settlements (00:00 / 08:00 / 16:00 UTC), each
-pulled from cd_funding_rate (Binance BTC perp).
+pulled from the asset's settlement table (cd_funding_rate for BTC,
+cd_funding_rate_eth for ETH — strategies.support.funding maps it).
+
+One process trades one asset: `config.ASSET` (CARRY_ASSET in the environment,
+BTC by default). The ETH twin (bots/carry_eth, 2026-09-19, pre-registered in
+studies/notebooks/carry_eth_2026_09/) runs this same module with ASSET=ETH.
 """
 from __future__ import annotations
 
@@ -37,6 +42,7 @@ from .config import (
     FR_WINDOW_DAYS, FR_ENTRY_THRESHOLD, EXIT_CUM_DAYS, EXIT_CUM_THRESHOLD_PCT,
     ENTRY_EXIT_COST_PCT,
 )
+from . import config as _cfg          # ASSET and PRICE_SOURCES, read at call time
 
 
 # ─── Funding rate loading ────────────────────────────────────────────────────
@@ -57,33 +63,18 @@ def _load_recent_daily_funding(days: int = 30) -> list[dict]:
     from strategies.support import funding
     upper_ts = clock.now_ts()
     since_ts = upper_ts - (days + 2) * 86400
+    asset = _cfg.ASSET
 
-    funding_by_day = funding.daily_sums_pct("BTC", since_ts, upper_ts,
+    funding_by_day = funding.daily_sums_pct(asset, since_ts, upper_ts,
                                              complete_only=True)
 
+    sources = _cfg.PRICE_SOURCES[asset]
     con = sqlite3.connect(str(db.TRADER_DB))
-    spot_rows = con.execute(
-        "SELECT timestamp, close FROM cd_spot_binance "
-        "WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp",
-        (since_ts, upper_ts),
-    ).fetchall()
-    perp_rows = con.execute(
-        "SELECT timestamp, close FROM cd_futures_ohlcv "
-        "WHERE timestamp >= ? AND timestamp <= ? ORDER BY timestamp",
-        (since_ts, upper_ts),
-    ).fetchall()
-    con.close()
-
-    spot_by_day: dict[str, float] = {}
-    for ts, c in spot_rows:
-        if c:
-            d = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d")
-            spot_by_day[d] = c
-    perp_by_day: dict[str, float] = {}
-    for ts, c in perp_rows:
-        if c:
-            d = datetime.fromtimestamp(ts, tz=timezone.utc).strftime("%Y-%m-%d")
-            perp_by_day[d] = c
+    try:
+        spot_by_day = _daily_closes(con, *sources["spot"], since_ts, upper_ts)
+        perp_by_day = _daily_closes(con, *sources["perp"], since_ts, upper_ts)
+    finally:
+        con.close()
 
     today = clock.now_utc().strftime("%Y-%m-%d")
     all_days = sorted((set(funding_by_day) - {today})
@@ -93,6 +84,24 @@ def _load_recent_daily_funding(days: int = 30) -> list[dict]:
          "spot_close": spot_by_day[d], "perp_close": perp_by_day[d]}
         for d in all_days
     ]
+
+
+def _daily_closes(con: sqlite3.Connection, table: str, ts_col: str, per_second: int,
+                  row_filter: str | None, since_ts: int, upper_ts: int) -> dict[str, float]:
+    """{UTC day: the day's last close in `table`} over [since_ts, upper_ts]. `per_second`
+    scales the table's timestamp column (1000 for the ms-stamped minute tables);
+    `row_filter` is an optional SQL clause that keeps the fetch small."""
+    where = f"{ts_col} >= ? AND {ts_col} <= ?" + (f" AND {row_filter}" if row_filter else "")
+    rows = con.execute(
+        f"SELECT {ts_col}, close FROM {table} WHERE {where} ORDER BY {ts_col}",
+        (since_ts * per_second, upper_ts * per_second),
+    ).fetchall()
+    out: dict[str, float] = {}
+    for ts, c in rows:
+        if c:
+            d = datetime.fromtimestamp(ts / per_second, tz=timezone.utc).strftime("%Y-%m-%d")
+            out[d] = c
+    return out
 
 
 def _rolling_avg(values: list[float], window: int) -> list[float | None]:
@@ -145,7 +154,8 @@ def _evaluate_today(records: list[dict]) -> dict | None:
 # ─── DB helpers (variant-scoped) ─────────────────────────────────────────────
 
 def _get_open_carry_trades(variant_id: str) -> list[dict]:
-    """CARRY is BTC-only; delegates to strategies.trades.get_open_trades."""
+    """One asset per process, so no asset filter is needed; delegates to
+    strategies.trades.get_open_trades."""
     from strategies.trades import get_open_trades
     return get_open_trades(variant_id, "CARRY")
 
@@ -179,7 +189,7 @@ def _open_carry_paper(variant: dict, entry_price: float, allocation_pct: float,
     from strategies.trades import open_paper_trade
     return open_paper_trade(
         variant=variant, sleeve_name="CARRY",
-        asset="BTC", direction="LONG",
+        asset=_cfg.ASSET, direction="LONG",
         entry_price=entry_price, allocation_pct=allocation_pct, leverage=leverage,
         reason=reason, scheduled_exit_dt=None,
         signal_time_iso=signal_day,
@@ -261,7 +271,7 @@ def decide(variant: dict, *, weight_pct: float = 0.0, leverage: float = 1.0,
             "_signal_day": today,
         }
         intent = Intent(
-            asset="BTC", direction="LONG",
+            asset=_cfg.ASSET, direction="LONG",
             allocation_pct=alloc_pct, leverage=leverage,
             conviction=100,
             priority=float(priority),

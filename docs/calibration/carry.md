@@ -56,10 +56,29 @@ Replaces the stranded legacy CARRY (SJ-3452, closed 2026-07-22
 cadence cutover 2026-04-13 (1h predicted → 8h settlement) — the sleeve's
 7d window is fully post-cutover in live operation.
 
+## ETH twin — `bots/carry_eth`, variant `bot_carry_eth_v1` (2026-09-19)
+
+The same sleeve module with `CARRY_ASSET=ETH` (set by the wrapper before the
+sleeve is imported, as chento's ETH leg does): the same entry (7-day mean of
+daily ETHUSDT funding > 0), the same CUM-30D exit, fixed-notional 1× of its own
+$10,000, `ENTRY_EXIT_COST_PCT` 0.20 % (declared, not measured on ETH). Data:
+funding from `cd_funding_rate_eth` (8-hour settlement rows), the spot close
+from the last minute of the UTC day in `eth_1m`, the perp close from the last
+`cd_futures_eth_15m` bar; mgmt tables `eth_1m`, `cd_futures_eth_15m`,
+`cd_funding_rate_eth`. The carry close books the trade's own asset's funding
+(`strategies.trades.close_carry_trade`, changed the same day). Pre-registered
+and concluded RECOMMEND in `studies/notebooks/carry_eth_2026_09/` (12.8 %/yr
+net, CI90 9.5–16.6, worst year +0.36; equal-weight BTC + ETH book net ÷ DD 15.1
+against BTC alone 4.9). Research baseline: one completed episode
+(`bots/carry_eth/research_baseline.json`, +67.05 % of capital 2019-12-03 →
+2022-09-12, left-censored), so the per-trade AMBER test is as unusable as on
+BTC. Operator go-ahead 2026-09-19.
+
 ## Change history
 
 | Date | Change | Why / provenance |
 |---|---|---|
+| 2026-09-19 | **ETH paper twin** `bots/carry_eth` (`bot_carry_eth_v1`); the sleeve gained `config.ASSET` / `PRICE_SOURCES`; `close_carry_trade` reads the trade's asset. No change to the BTC bot's rule or numbers. | `studies/notebooks/carry_eth_2026_09/findings.md` RECOMMEND; operator go-ahead 2026-09-19. `tests/test_carry_eth.py`. |
 | 2026-09-14 | **No calibration change.** The scheduled-exit backstop now closes an overdue CARRY trade through `signal._close_carry_paper`: delta-neutral, short-leg funding minus 0.20 % fees and 0.04 % slippage, no price P&L. Before, it used the generic perp close, which would have booked a directional long at 15 bp with long-side funding, silently wrong. The path is still unreachable: CARRY trades carry the 2099 no-exit placeholder (open SJ-4242 does). The backstop now shares the sleeve close's known gap: `close_carry_trade` takes no write lock (BACKLOG 4.5). Also: a tick whose `decide()` raises now still runs the backstop and reports heartbeat `error`. Takes effect when carry restarts. Restarted 2026-09-14 19:06:27Z stop / 19:06:59Z start (commits 1c201c5, 5485899, 5ce3e7e); backstop closes before that booked the old defaults. | BACKLOG 4.4 and 18; operator go-ahead 2026-09-14. Kept as defence in depth; `tests/test_carry_bot.py` forces a real exit time (−14.00 on $10,000, where the old backstop booked +75.00). |
 | 2026-09-12 | Exit rule: 3-consecutive-negative-days streak → trailing 30-day cumulative funding < −0.5 % (`EXIT_NEG_DAYS` removed; `EXIT_CUM_DAYS`, `EXIT_CUM_THRESHOLD_PCT` added) | `studies/notebooks/carry_exit_rule_2026_09/findings.md` — pre-registered RECOMMEND (+0.74 %/yr, CI90 excludes 0, better worst year); brainstorm validation C2 first measured the streak exit at −0.85 %/yr vs always-on. User go-ahead 2026-09-12. |
 | 2026-07-22 | Extracted to standalone bot; fixed-notional 1× | Bot-extraction plan P4; market-neutral diversifier for the long-heavy fleet |

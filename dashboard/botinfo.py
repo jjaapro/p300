@@ -90,6 +90,15 @@ BOTS: dict[str, dict] = {
         "diag": None,
         "cadence_note": "daily funding decision; positions held for weeks",
     },
+    "carry_eth": {
+        "display": "Carry S-078 (ETH)",
+        "variant_id": "bot_carry_eth_v1",
+        "asset": "ETH",
+        "card": "carry_eth.md",
+        "calibration": "carry.md",
+        "diag": None,
+        "cadence_note": "daily funding decision on ETHUSDT; the BTC sleeve's rule, paper twin since 2026-09-19",
+    },
     "r4": {
         "display": "R4 calendar (ETH windows)",
         "variant_id": "bot_r4_v1",
@@ -235,12 +244,19 @@ def params(bot: str) -> list[dict]:
                ssrc),
         ]
 
-    if bot == "carry":
-        from bots.carry import config as b
+    if bot in ("carry", "carry_eth"):
         from bots.carry.strategy import config as s
-        bsrc, ssrc = ("bots/carry/config.py",
-                      "bots/carry/strategy/config.py")
+        if bot == "carry":
+            from bots.carry import config as b
+            bsrc = "bots/carry/config.py"
+        else:
+            from bots.carry_eth import config as b
+            bsrc = "bots/carry_eth/config.py"
+        ssrc = "bots/carry/strategy/config.py"
         return [
+            _p("Data", "asset / funding table",
+               "ETH / cd_funding_rate_eth" if bot == "carry_eth" else "BTC / cd_funding_rate",
+               "(CARRY_ASSET, set by the wrapper)", ssrc),
             _p("Sizing", "notional", b.CARRY_NOTIONAL_X,
                "× capital (fixed, no stop — delta-neutral)", bsrc),
             _p("Cadence", "tick", b.TICK_SECONDS,

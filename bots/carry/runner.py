@@ -15,6 +15,9 @@ Prerequisite: `python feed.py` running.
 Usage:
   python bots/carry/runner.py           # live loop, 60s ticks
   python bots/carry/runner.py --once    # single tick and exit
+
+The ETH twin (bots/carry_eth/runner.py, 2026-09-19) runs this loop with its
+own config and CARRY_ASSET=ETH.
 """
 from __future__ import annotations
 
@@ -193,6 +196,16 @@ def main(argv: list[str] | None = None) -> int:
             time.sleep(1)
     log.info("shutdown complete")
     return 0
+
+
+def run(cfg, argv: list[str] | None = None) -> int:
+    """Entry point for the per-asset wrapper bot (bots/carry_eth): swap in its
+    config module, then run the shared loop. The wrapper must set CARRY_ASSET
+    BEFORE importing this module, because the sleeve reads it when its config
+    is first imported (inside the first tick)."""
+    global botcfg
+    botcfg = cfg
+    return main(argv)
 
 
 if __name__ == "__main__":

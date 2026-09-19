@@ -1,0 +1,22 @@
+{
+  "_about": "Research per-trade results for the results warning (BACKLOG item 16), the ETH twin of the BTC baseline in bots/carry/research_baseline.json: one research episode's net result in % of the variant's paper capital under the live sizing and booked costs. A reference distribution, not a study.",
+  "variants": {
+    "bot_carry_eth_v1": {
+      "unit": "pct_of_capital",
+      "n": 1,
+      "mean": 67.054,
+      "win_rate": 1.0,
+      "comparable_from": "2026-09-19T08:00:00+00:00",
+      "comparable_from_note": "the ETH twin ships (2026-09-19)",
+      "window": "Binance ETHUSDT settlement prints 2019-11-27 08:00 \u2192 2026-09-18 16:00 (7,463 prints, the CARRY-on-ETH study's cache, written 2026-09-19 01:04). The live sleeve's CUM-30D state machine completes one episode: entry 2019-12-03 16:00 UTC (the first evaluable print), exit 2022-09-12 08:00 UTC (3,042 prints, +67.29 % gross). The next episode opened 2022-10-13 16:00 and is still open at the end of the data (+27.82 % gross marked at 2026-09-18).",
+      "source": "studies/notebooks/carry_eth_2026_09/run_eth.py (daily_frame, rule_states CUM30D, hold_from_states) on studies/notebooks/brainstorm_validation_2026_09/cache/binance_funding_ETHUSDT.json, read as a file (the fetcher would refresh a cache older than 12 h). Booking as bots/carry/research_baseline.json: funding collected on the short leg over the held prints minus 0.24 % (ENTRY_EXIT_COST_PCT 0.20 + CARRY_SLIPPAGE_PCT 0.04) once per episode; notional = capital.",
+      "method": "The study's state machine also books seven one-day 'corner' toggles in 2022-09-29 \u2192 2022-10-12 (7-day mean > 0 while the 30-day exit is still active), each about \u22120.23 %. The live sleeve waits instead (bots/carry/strategy/signal.py decide(): no entry while exit_trigger is active; tests/test_carry_exit_rule.py), so those are excluded, exactly as the BTC baseline excludes them.",
+      "caveats": "n = 1: the per-trade AMBER test is not meaningful; the dashboard says 'research sample too small'. The episode is left-censored (entered on the first evaluable print). Costs are the BTC assumption, not measured on ETH. Delta-neutral: basis, mark-to-market and margin ignored, as live.",
+      "notes": "Live bot_carry_eth_v1 has no trades yet; its first decision comes at the first UTC day boundary after it starts.",
+      "generated": "2026-09-19, scratch computation at the twin's build; nothing tuned",
+      "values": [
+        67.054
+      ]
+    }
+  }
+}

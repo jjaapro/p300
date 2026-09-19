@@ -52,10 +52,11 @@ def test_entrypoint_check_rejects_a_non_callable_attribute(monkeypatch):
 
 def test_every_running_bot_is_covered():
     """A bot with no entry-point row would be silently unchecked.
-    chento_v3_eth reuses the chento_v3 runner, so it has none of its own."""
+    chento_v3_eth and carry_eth reuse their BTC runners, so they have none of
+    their own."""
     assert set(health.BOT_ENTRYPOINTS) == {
         "adx", "carry", "chento_v3", "short_squeeze", "squeeze_bull", "r4"}
-    assert set(health.BOT_CONFIGS) == set(health.BOT_ENTRYPOINTS) | {"chento_v3_eth"}
+    assert set(health.BOT_CONFIGS) == set(health.BOT_ENTRYPOINTS) | {"chento_v3_eth", "carry_eth"}
 
 
 def test_entry_points_match_what_the_runners_actually_call():

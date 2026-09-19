@@ -590,7 +590,8 @@ def close_carry_trade(trade_id: str, exit_price: float, reason: str,
 
     P&L is collected funding minus (round-trip fees + slippage) on both legs.
     Price PnL is assumed zero (delta-neutral). The short-perp leg's funding
-    accrual is computed as ``strategies.support.funding.accrued_pct(BTC, entry, now, "SHORT")``.
+    accrual is computed as ``strategies.support.funding.accrued_pct(asset, entry, now, "SHORT")``
+    with the trade's own asset (ETH since the carry_eth twin, 2026-09-19).
 
     ``cost_pct`` covers exchange fees on the synthetic position (4 fills);
     ``slippage_pct`` covers bid-ask spread + impact. The two are tracked
@@ -600,7 +601,7 @@ def close_carry_trade(trade_id: str, exit_price: float, reason: str,
     con.row_factory = sqlite3.Row
     try:
         row = con.execute(
-            "SELECT entry_price, qty, size_usdt, actual_entry_time "
+            "SELECT entry_price, qty, size_usdt, actual_entry_time, asset "
             "FROM trades WHERE id=?", (trade_id,),
         ).fetchone()
     finally:
@@ -615,7 +616,7 @@ def close_carry_trade(trade_id: str, exit_price: float, reason: str,
 
     try:
         from strategies.support import funding as _funding
-        funding_pct = _funding.accrued_pct("BTC", entry_dt, now, "SHORT")
+        funding_pct = _funding.accrued_pct(row["asset"] or "BTC", entry_dt, now, "SHORT")
     except (TypeError, ValueError):
         funding_pct = 0.0
 

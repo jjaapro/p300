@@ -1,4 +1,23 @@
 """S-078 Filtered Carry signal parameters."""
+import os
+
+# The traded asset. One process trades one asset: the ETH wrapper (bots/carry_eth)
+# sets CARRY_ASSET before the sleeve is imported, the way chento's ETH leg does.
+# Read at call time by signal.py (`_cfg.ASSET`), so a test can point it at ETH.
+ASSET = os.environ.get("CARRY_ASSET", "BTC").upper()
+
+# Where the daily spot and perp closes come from, per asset: (table, timestamp
+# column, timestamp units per second, optional row filter). BTC keeps its hourly
+# tables; ETH has no spot hourly table, so its spot close is the last minute of
+# each UTC day in eth_1m (the filter keeps the fetch to the day's last 10 minutes)
+# and its perp close the last 15-minute bar of the day. Funding comes from
+# strategies.support.funding, which maps the asset to its settlement table.
+PRICE_SOURCES = {
+    "BTC": {"spot": ("cd_spot_binance", "timestamp", 1, None),
+            "perp": ("cd_futures_ohlcv", "timestamp", 1, None)},
+    "ETH": {"spot": ("eth_1m", "open_time", 1000, "((open_time / 60000) % 1440) >= 1430"),
+            "perp": ("cd_futures_eth_15m", "timestamp", 1, None)},
+}
 
 # Rolling window (days) for the funding-rate average that gates entry.
 FR_WINDOW_DAYS = 7

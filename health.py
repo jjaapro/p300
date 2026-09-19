@@ -210,7 +210,7 @@ BOT_ENTRYPOINTS: dict[str, tuple[str, tuple[str, ...]]] = {
 
 # Bot config modules, for the variant-registration check. chento_v3_eth reuses
 # the chento_v3 runner, so it has no entry points of its own.
-BOT_CONFIGS = ("adx", "carry", "chento_v3", "chento_v3_eth", "r4",
+BOT_CONFIGS = ("adx", "carry", "carry_eth", "chento_v3", "chento_v3_eth", "r4",
                "short_squeeze", "squeeze_bull")
 
 

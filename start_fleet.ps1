@@ -25,7 +25,7 @@
 .PARAMETER Units
     Which units to start. Default: all of them (feed, collector, the seven
     bots, the dashboard). Names: feed collector chento_v3 chento_v3_eth
-    short_squeeze adx carry squeeze_bull r4 dashboard monitor. `monitor` is
+    short_squeeze adx carry carry_eth squeeze_bull r4 dashboard monitor. `monitor` is
     only started when named here or via -Monitor.
 
 .PARAMETER Monitor
@@ -74,7 +74,7 @@ param(
     # mechanism) and rejoined them 2026-09-12 with ONLY its ETH windows enabled
     # (bots/r4/config.py ENABLED; reasoning in docs/calibration/r4.md).
     [string[]]$Units = @("feed", "collector", "chento_v3", "chento_v3_eth", "short_squeeze",
-                         "adx", "carry", "squeeze_bull", "r4", "dashboard"),
+                         "adx", "carry", "carry_eth", "squeeze_bull", "r4", "dashboard"),
     [switch]$Monitor,
     [switch]$SkipGapFix,
     [switch]$ForceFeed,
@@ -111,6 +111,7 @@ $Fleet = [ordered]@{
     short_squeeze = @{ Script = "bots/short_squeeze/runner.py"; Args = @() }
     adx           = @{ Script = "bots/adx/runner.py";           Args = @() }
     carry         = @{ Script = "bots/carry/runner.py";         Args = @() }
+    carry_eth     = @{ Script = "bots/carry_eth/runner.py";     Args = @() }
     r4            = @{ Script = "bots/r4/runner.py";            Args = @() }
     squeeze_bull  = @{ Script = "bots/squeeze_bull/runner.py"; Args = @() }
     dashboard     = @{ Script = "dashboard/server.py";          Args = @() }

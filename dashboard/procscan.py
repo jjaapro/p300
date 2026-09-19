@@ -36,6 +36,7 @@ UNIT_SCRIPTS: dict[str, str] = {
     "short_squeeze": "bots/short_squeeze/runner.py",
     "adx":           "bots/adx/runner.py",
     "carry":         "bots/carry/runner.py",
+    "carry_eth":     "bots/carry_eth/runner.py",
     "r4":            "bots/r4/runner.py",
     "squeeze_bull":  "bots/squeeze_bull/runner.py",
 }
