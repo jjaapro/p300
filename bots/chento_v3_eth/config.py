@@ -24,10 +24,10 @@ MGMT_TABLES = ["cd_futures_eth_15m", "eth_1m"]
 # okx_perp_eth_1h left 2026-09-14 with the OKX gate (see bots/chento_v3/config.py).
 ENTRY_TABLES = ["ca_long_short_ratio"]
 
-# Per-asset tilt policy (overlay study + backward-only confirmation,
-# 2026-08-23): ETH disables the sleeve's skip-after-loss (FILTER_NO_TILT is
-# False when ASSET=ETH) and instead halves risk on the trade after a loss —
-# on ETH this matched skip's MAR while keeping ~64% more income.
-TILT_HALF_AFTER_LOSS = True
+# Post-loss sizing — RETIRED 2026-09-19 (BACKLOG decision 15): ETH used to
+# halve risk on the trade after a loss (the overlay study's rule differed from
+# the bot's on 54 of 184 trades, and on the gate-off pool the effect is noise).
+# The runner's code path is kept, flag off.
+TILT_HALF_AFTER_LOSS = False
 
 DIAG_PATH = str(Path(__file__).resolve().parent / "logs" / "diag.jsonl")

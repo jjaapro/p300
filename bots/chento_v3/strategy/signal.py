@@ -395,9 +395,10 @@ def _check_triple_at_idx(idx: int) -> str | None:
 
 def _filter_passes(direction: str, idx: int, entry_price: float, risk: float,
                     variant_id: str) -> tuple[bool, dict]:
-    """Apply the filter gates. Returns (passes, diag_dict). Three are live on
-    BTC, two on ETH (FILTER_NO_TILT is BTC only);
-    filter 3 (OKX) is off since 2026-09-14 — see FILTER_OKX_ALIGNED."""
+    """Apply the filter gates. Returns (passes, diag_dict). Two are live on
+    both assets (the order-block veto here and the regime skip on shorts);
+    filter 1 (no-tilt) is off since 2026-09-19 and filter 3 (OKX) since
+    2026-09-14 — see FILTER_NO_TILT and FILTER_OKX_ALIGNED."""
     df = _cached_features.get("df")
     if df is None:
         return False, {"reason": "no_cache"}

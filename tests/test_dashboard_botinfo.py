@@ -33,8 +33,8 @@ def test_eth_view_overrides():
            for p in botinfo.params("chento_v3_eth")}
     assert "cd_futures_15m" in str(btc[("Data", "candles / OKX")])
     assert "cd_futures_eth_15m" in str(eth[("Data", "candles / OKX")])
-    assert "skip" in str(btc[("Filters", "tilt policy")])
-    assert "half" in str(eth[("Filters", "tilt policy")])
+    assert "off" in str(btc[("Filters", "tilt policy")])     # no-tilt retired 2026-09-19
+    assert "off" in str(eth[("Filters", "tilt policy")])     # half-after-loss retired 2026-09-19
 
 
 def test_unknown_bot_raises():

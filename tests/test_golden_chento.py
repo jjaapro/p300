@@ -263,8 +263,8 @@ def _run_eth(anchor: datetime, *, execute: bool) -> dict:
 
 
 def test_golden_chento_eth_runs_as_eth_with_its_own_filter_set(env):
-    """FILTER_NO_TILT is True for BTC and False for ETH — the assets are
-    behaviourally different, so this is not a table rename."""
+    """The ETH runner resolves the ETH tables and its own config; FILTER_NO_TILT
+    is off on both assets since 2026-09-19 (it was BTC-only before)."""
     doc = _run_eth(FIRE_A, execute=True)
     assert doc["asset_under_test"] == "ETH"
     assert doc["filter_no_tilt"] is False

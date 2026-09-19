@@ -74,13 +74,13 @@ B7_Z_THRESHOLD = 2.0                # median |z| > threshold w/ all 4 TFs same s
 TRIPLE_WINDOW_HOURS = 24
 
 # ─── Filter gates ──────────────────────────────────────────────────────────
-# Filter 1: no-tilt. As coded (signal.py): skip entries for 48h after a stop
-# loss; the overlay study ranked a different rule (skip after any losing
-# predecessor in trigger order, BACKLOG 15). Per-asset per the overlay
-# study's backward-only confirmation (2026-08-23): BTC keeps skip-after-loss
-# (MAR champion); ETH disables the skip and instead HALVES risk after a loss
-# at the bot layer (skip≈half on ETH MAR but half keeps ~64% more income).
-FILTER_NO_TILT = ASSET == "BTC"
+# Filter 1: no-tilt — RETIRED 2026-09-19 (BACKLOG decision 15), both assets.
+# As coded it skipped entries for 48h after a stop loss (BTC only); the
+# overlay study had ranked a different rule (skip after any losing predecessor
+# in trigger order) and the 48h was never fitted; on the honest gate-off pool
+# the effect is noise-sized (MAR none 7.20 / skip 8.16 / half 8.34, and skip
+# lowers DSR 0.73 -> 0.46). The code path is kept, flag off.
+FILTER_NO_TILT = False
 
 # Filter 2: no_resist_OB_within_2R
 FILTER_NO_RESIST_OB = True

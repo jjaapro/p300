@@ -15,7 +15,6 @@
     "_atr_at_entry": 349.5468701,
     "_entry_price": 75255.8,
     "_filter_diag": {
-     "no_tilt": "pass",
      "resist_ob_dist_R": 99.0
     },
     "_inside_va": false,

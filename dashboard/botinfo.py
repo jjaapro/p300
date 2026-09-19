@@ -132,14 +132,14 @@ def params(bot: str) -> list[dict]:
             from bots.chento_v3 import config as b
             tables = (s.PERP_15M_TABLE, s.OKX_1H_TABLE)
             tilt = ("skip entries 48h after a stop loss (not TIF; cleared on restart)"
-                    if s.FILTER_NO_TILT else "off")
+                    if s.FILTER_NO_TILT else "off — no post-loss rule (retired 2026-09-19)")
         else:
             from bots.chento_v3_eth import config as b
             eth = s._ASSET_TABLES["ETH"]
             tables = (eth["perp_15m"], eth["okx_1h"])
             tilt = ("half risk on trade after a loss"
                     if getattr(b, "TILT_HALF_AFTER_LOSS", False)
-                    else "off")
+                    else "off — no post-loss rule (retired 2026-09-19)")
         return [
             _p("Sizing", "risk per trade", b.RISK_PCT, "% of capital", bsrc),
             _p("Sizing", "notional cap", b.NOTIONAL_MAX_X,

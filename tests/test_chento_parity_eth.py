@@ -94,4 +94,4 @@ def test_asset_config_resolution():
 
     from bots.chento_v3.strategy import config as c
     assert c.PERP_15M_TABLE == "cd_futures_15m"
-    assert c.FILTER_NO_TILT is True
+    assert c.FILTER_NO_TILT is False                     # retired on both assets 2026-09-19

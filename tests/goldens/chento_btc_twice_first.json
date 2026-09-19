@@ -14,7 +14,6 @@
      "_atr_at_entry": 412.8498453,
      "_entry_price": 77143.2,
      "_filter_diag": {
-      "no_tilt": "pass",
       "resist_ob_dist_R": 99.0
      },
      "_inside_va": false,
@@ -63,7 +62,6 @@
     "_atr_at_entry": 412.8498453,
     "_entry_price": 77143.2,
     "_filter_diag": {
-     "no_tilt": "pass",
      "resist_ob_dist_R": 99.0
     },
     "_inside_va": false,

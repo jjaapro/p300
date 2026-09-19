@@ -26,12 +26,12 @@ live in each study's findings file, not here. Data measurements that constrain f
 
 In order. Each step names its section.
 
-1. **Squeeze pair** (§2.1) — decision 8 and the D4 trip are the operator's; then the short_squeeze exit arm and
-   stage B if wanted. Its n = 20 / 30 gates are the nearest real verdict in the fleet.
+1. **Squeeze pair** (§2.1) — SJ-4250 voided (decision 8, 2026-09-19); the short_squeeze exit arm and stage B if
+   wanted. Its n = 20 / 30 gates are the nearest real verdict in the fleet.
 2. **Second assets** (§3.1) — CARRY's ETH paper twin shipped 2026-09-19 (§2.4); SHORT_SQUEEZE on ETH is killed;
    SQUEEZE_BULL on ETH is the one left, and its data route now exists. The validation audit's one-line
    conclusion was that the constraint is breadth, not edge.
-3. **Chento** (§2.2) — close decisions 14 and 15, then the replay baseline and the time-stop twin.
+3. **Chento** (§2.2) — the replay baseline and the time-stop twin, built with the operator.
 4. **R4** (§2.3) — after its first windows have traded; nothing to do before 2026-10-02 but watch.
 5. Then §3.2 onward, in the order listed there.
 
@@ -39,8 +39,8 @@ In order. Each step names its section.
 
 - **Watch r4's first enabled window**, Fri 2026-10-02 04:00 UTC (R4_ETH V1: Tue 2026-10-06 20:00). r4 has never
   traded; confirm the first open and its scheduled close.
-- **Start `carry_eth`** (`.\start_fleet.ps1 -Units carry_eth`): the ETH paper twin of CARRY, shipped 2026-09-19 on
-  the operator's go-ahead; nothing starts it until then. Its first decision comes at the next UTC day boundary.
+- **Restart chento_v3 and chento_v3_eth** to drop the post-loss rules (decision 15, 2026-09-19); until then the
+  running BTC process still skips 48 h after a stop and the ETH process still halves after a loss.
 
 ## 2. Existing strategies
 
@@ -56,23 +56,12 @@ One strategy at a time. Each carries its evidence gate (the rule was fixed befor
 
 Cadence: squeeze_bull ~25 fires/yr in bull tape, none in bear; short_squeeze droughts up to 186 days.
 
-- **Decision 8.** Does SJ-4250 count toward the n = 20 / 30 re-cut? On the corrected open-interest table its bar
-  (2026-09-11 17:00) does not fire, in the revalidation study's own harness (`squeeze_bull_revalidation/findings.md`,
-  addendum 2026-09-19: BUILD holds, OOS mean R +0.202 → +0.190, MAR 1.60 → 1.59, margins one fire wide as before).
-  [no — void it as an artefact of the defect]
-- **Decision: the any-time divergence clause D4 has tripped on SJ-4250** (`squeeze_recut/results/`, 2026-09-18
-  21:55Z: residual +0.0555 R against 0.05; the harness says DISABLE and exits 1). Its first evaluation, not a change —
-  the trade closed 09-13, and the 09-12 runs had nothing closed to compare. The residual is the bot's 60 s tick quotes
-  at entry and exit against the replay's bar closes, ~7.6 bp on a 2 % stop; the clause nets funding and booked cost
-  but not tick drift, so its 0.05 R budget on this sleeve is ten basis points wide. The harness labels every D4 trip
-  DISABLE_NOSTOP (pinned by `tests/test_squeeze_recut.py`) though the diverging trade is the stop variant's.
-  [void with decision 8, no disable; then fix the clause's netting and its label, with tests, before a genuine fire
-  trips it for the same reason]
 - **11. Exit-policy, short_squeeze arm** — report-only until its re-cut. A catastrophe stop for the no-stop twin, whose
   only loss exit is the 6 h time stop. Stage 1 showed microstructure events almost never occur inside its trades.
 - **11. Top-anatomy stage B** [user's call]. "Exit after 24 h without a new high" instead of the fixed 48 h,
   pre-registered on ETH long flushes and BTC flat/bear flushes (both untouched so far). Expect exposure cut at
-  drift-level value, not losses avoided. Note ETH flushes are also §3.1's holdout — decide which uses them first.
+  drift-level value, not losses avoided. The ETH flushes go to §3.1's SQUEEZE_BULL-on-ETH study first (decided
+  2026-09-19); stage B keeps the BTC flat/bear flushes as its holdout.
 - Parked behind the n = 30 re-cut: alternative trend gates for squeeze_bull (ADX state, weekly EMA); funding-cadence
   fidelity and a symmetric `is_long_macro` detector for short_squeeze.
 
@@ -80,18 +69,8 @@ Cadence: squeeze_bull ~25 fires/yr in bull tape, none in bear; short_squeeze dro
 
 | Gate | Rule | Where |
 |---|---|---|
-| Gate-off paper track | dashboard results warnings (item 16); decision 14 decides whether a hard rule remains | `docs/calibration/chento_triple_v3.md`, from 2026-09-14 08:45 UTC |
+| Gate-off paper track | dashboard results warnings (item 16) are the only rule — the OKX-era kill rule is retired (decision 14, 2026-09-19) | `docs/calibration/chento_triple_v3.md`, from 2026-09-14 08:45 UTC |
 
-- **Decision 14. Figures measured on OKX-gated pools** describe a configuration that no longer runs: the ETH kill rule
-  (< +0.3 R after 15 trades), the +0.739 / +0.605 R expectancies, the overlay tilt ranking, the attribution split, the
-  LSR B5 scores, the audit DSRs. [retire them all; item 16's AMBER warning covers the ETH rule; re-cut only what a
-  named decision needs]
-- **Decision 15. Post-loss rules.** The bots' rules are not the overlay study's rules: BTC's `FILTER_NO_TILT` skips 48 h
-  after a *closed* stop loss, the study skipped after any losing predecessor closed or not (94 vs 198 of 208 BTC
-  triggers); ETH's half-after-loss disagrees on 54 of 184 trades. The 48 h was never fitted and the research rule was
-  in-sample; on the honest pool the effect is noise-sized (MAR none 7.20 / skip 8.16 / half 8.34; skip lowers DSR
-  0.726 → 0.461). A study is designed, not written (`studies/notebooks/post_loss_rules/`). [retire: take the default,
-  no rule on either asset, and close it — more data sharpens an estimate nobody should size on]
 - **A new replay baseline** (bounded loaders, 10 bp, gate off), replacing the superseded `__replay_p0gate`. This is
   also where chento's core calibration gets its executed notebook. **Scoped 2026-09-19: an engineering task, not a
   research one.** The runner has no replay mode (`--once`, `--interval`, `--verbose` only); the tooling that
