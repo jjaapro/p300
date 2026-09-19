@@ -91,7 +91,14 @@ and any rule that books earlier on a fixed trigger gives it back.
   against 15). The contrast is partly "a pushy bar in a running trend versus a quiet fresh high", and the trend
   side won.
 - Walker identity with stage 1 held on all 584 shared trades; the squeeze_bull set differs from stage 1's by the one
-  fire item 30 moved (2026-09-11 17:00 → 16:00). Causality cuts clean after the A1 fix.
+  fire item 30 moved. Causality cuts clean after the A1 fix.
+
+**Erratum (2026-09-19, after the run; the frozen pre-registration is left as it was).** Amendment A1 and the first
+version of this section dated the moved fire "2026-09-11 17:00 → 16:00". The two trade ids are epoch seconds
+`1788530400` and `1788526800`, which are **2026-09-04 14:00 and 13:00 UTC**: the corrected open-interest table moved
+the last bull-regime fire in the revalidation ledger back one hour on 09-04. SJ-4250's bar (2026-09-11 17:00) is in
+neither set — on the corrected table it does not fire at all, which is decision 8's evidence. The mistake was a
+date read off memory instead of the timestamp; nothing computed depends on it.
 
 ## 5. What this permits and closes
 
